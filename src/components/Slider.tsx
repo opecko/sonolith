@@ -13,7 +13,7 @@ export default function Slider({ value, max, onCommit, onChange, live = false, s
   step: number;
   label: string;
   format?: (v: number) => string;
-  /** "hover" labels the point under the pointer (seek preview); "value" labels the current value at the thumb. */
+  /** "hover" labels the point under the pointer (seek preview); "value" labels the current value (still placed at the pointer). */
   tooltip?: "hover" | "value";
   disabled?: boolean;
   className?: string;
@@ -80,7 +80,7 @@ export default function Slider({ value, max, onCommit, onChange, live = false, s
       />
       {(hover !== null || drag !== null) && format && max > 0 && (
         <div className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded bg-[var(--surface-3)] px-2 py-1 text-xs tabular-nums shadow"
-          style={{ left: tooltip === "value" ? `${pct}%` : `${((hover ?? shown) / max) * 100}%` }}>
+          style={{ left: `${((hover ?? shown) / max) * 100}%` }}>
           {format(tooltip === "value" ? shown : hover ?? shown)}
         </div>
       )}
