@@ -145,7 +145,7 @@ function VolumeControl() {
       <button className="icon-btn h-10 w-10" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted}>
         <Icon size={20} />
       </button>
-      <Slider className="w-24" value={muted ? 0 : volume} max={1} step={0.05} live onCommit={setVolume} label="Volume" format={(v) => `${Math.round(v * 100)} %`} />
+      <Slider className="w-24" value={muted ? 0 : volume} max={1} step={0.05} live onCommit={setVolume} label="Volume" tooltip="value" format={(v) => `${Math.round(v * 100)} %`} />
     </div>
   );
 }

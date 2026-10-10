@@ -4,7 +4,7 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
  * Thin track with a thumb that appears on hover/drag. `onChange` fires live while dragging
  * when `live` is set, otherwise only `onCommit` fires on release.
  */
-export default function Slider({ value, max, onCommit, onChange, live = false, step, label, format, disabled, className = "" }: {
+export default function Slider({ value, max, onCommit, onChange, live = false, step, label, format, tooltip = "hover", disabled, className = "" }: {
   value: number;
   max: number;
   onCommit: (v: number) => void;
@@ -13,6 +13,8 @@ export default function Slider({ value, max, onCommit, onChange, live = false, s
   step: number;
   label: string;
   format?: (v: number) => string;
+  /** "hover" labels the point under the pointer (seek preview); "value" labels the current value at the thumb. */
+  tooltip?: "hover" | "value";
   disabled?: boolean;
   className?: string;
 }) {
@@ -76,10 +78,10 @@ export default function Slider({ value, max, onCommit, onChange, live = false, s
         className={`absolute h-3 w-3 -translate-x-1/2 rounded-full bg-[var(--accent)] shadow ${drag !== null ? "block" : "hidden group-hover:block group-focus-visible:block"}`}
         style={{ left: `${pct}%` }}
       />
-      {hover !== null && format && max > 0 && (
+      {(hover !== null || drag !== null) && format && max > 0 && (
         <div className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded bg-[var(--surface-3)] px-2 py-1 text-xs tabular-nums shadow"
-          style={{ left: `${(hover / max) * 100}%` }}>
-          {format(hover)}
+          style={{ left: tooltip === "value" ? `${pct}%` : `${((hover ?? shown) / max) * 100}%` }}>
+          {format(tooltip === "value" ? shown : hover ?? shown)}
         </div>
       )}
     </div>
