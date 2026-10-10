@@ -648,7 +648,11 @@ function updateMediaSession(track: Track) {
   }
 }
 
-if (!nativeMpris && "mediaSession" in navigator) {
+if (nativeMpris && "mediaSession" in navigator) {
+  // WebKitGTK exports its own MPRIS player for a playing <audio>, titled after the page when there's no metadata.
+  // It only registers with a non-empty title, so an empty one keeps ours (src-tauri/src/mpris.rs) the only player.
+  navigator.mediaSession.metadata = new MediaMetadata({ title: "" });
+} else if ("mediaSession" in navigator) {
   const s = () => usePlayer.getState();
   navigator.mediaSession.setActionHandler("play", () => s().togglePlay());
   navigator.mediaSession.setActionHandler("pause", () => s().togglePlay());
