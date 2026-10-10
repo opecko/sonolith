@@ -2,7 +2,7 @@
 # Builds ytdesk from source on Arch. Source tarball: run packaging/arch/make-src.sh first
 # (or point source=() at a release tarball / git URL once the repo is public).
 pkgname=ytdesk
-pkgver=1.1.6
+pkgver=1.2.0
 pkgrel=1
 pkgdesc="YouTube Music desktop client"
 url='https://github.com/opecko/ytdesk'

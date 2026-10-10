@@ -16,6 +16,8 @@ own. It's not a wrapped browser tab, so it starts quickly and uses little memory
 - **Likes, dislikes and playlists**: the ⋮ menu on every track works like on YouTube Music (play next, add to queue,
   save to playlist, go to artist/album…)
 - **Podcasts**: show pages, playback speed, skip −10 s / +30 s, optional video
+- **Appearance**: over 100 color palettes (dark and light), your own colors for every part of the UI, theme
+  import/export, accent from the cover art, corner radius, compact density and interface size
 - **Discord Rich Presence**: shows what you're listening to on your profile (can be turned off)
 - **Desktop integration**: media keys, system tray, OS media controls with cover art
 - Remembers your queue and position between restarts
