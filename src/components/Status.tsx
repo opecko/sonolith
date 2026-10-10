@@ -54,15 +54,15 @@ export function ErrorBox({ error, onRetry }: { error: Error; onRetry?: () => voi
   const login = useAuth((s) => s.login);
   const isAuth = error instanceof AuthError;
   return (
-    <div role="alert" className="my-6 flex max-w-2xl gap-4 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-4">
-      <AlertCircle size={24} className="shrink-0 text-[var(--danger)]" aria-hidden />
+    <div role="alert" className="my-6 flex max-w-2xl gap-4 rounded-lg border border-[var(--c-error)]/30 bg-[var(--c-error)]/10 p-4">
+      <AlertCircle size={24} className="shrink-0 text-[var(--c-error)]" aria-hidden />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{isAuth ? "Please sign in" : "Something went wrong"}</p>
-        <p className="mt-1 select-text whitespace-pre-wrap break-words text-sm text-[var(--text-2)]">{error.message}</p>
+        <p className="mt-1 select-text whitespace-pre-wrap break-words text-sm text-[var(--c-text-muted)]">{error.message}</p>
         <div className="mt-4 flex gap-2">
-          {isAuth && <button onClick={login} className="h-8 rounded-full bg-white px-4 text-sm font-medium text-black">Sign in</button>}
+          {isAuth && <button onClick={login} className="h-8 rounded-full bg-button px-4 text-sm font-medium text-on-button">Sign in</button>}
           {onRetry && (
-            <button onClick={onRetry} className="flex h-8 items-center gap-2 rounded-full border border-[var(--line)] px-4 text-sm hover:bg-[var(--hover)]">
+            <button onClick={onRetry} className="flex h-8 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]">
               <RotateCw size={16} aria-hidden /> Retry
             </button>
           )}
@@ -76,7 +76,7 @@ export function EmptyState({ title, detail }: { title: string; detail?: string }
   return (
     <div className="mx-auto mt-16 max-w-sm text-center">
       <p className="text-base font-medium">{title}</p>
-      {detail && <p className="mt-2 text-sm text-[var(--text-2)]">{detail}</p>}
+      {detail && <p className="mt-2 text-sm text-[var(--c-text-muted)]">{detail}</p>}
     </div>
   );
 }

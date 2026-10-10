@@ -18,14 +18,14 @@ function CardImpl({ item, fluid = false }: { item: Item; fluid?: boolean }) {
         <button onClick={() => activateItem(item)} className="block w-full" aria-label={`Open ${item.title}`}>
           <span className="relative block">
             <Thumb src={item.thumbnail} round={round} className={`${item.art === "wide" ? "aspect-video" : "aspect-square"} w-full`} />
-            <span className={`absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 ${round ? "rounded-full" : "rounded-[var(--radius)]"}`} />
+            <span className={`absolute inset-0 bg-scrim/30 opacity-0 group-hover:opacity-100 ${round ? "rounded-full" : "rounded-[var(--radius)]"}`} />
           </span>
         </button>
         {canPlay && (
           <button
             onClick={() => void playItem(item)}
             aria-label={`Play ${item.title}`}
-            className={`absolute flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white opacity-0 hover:scale-110 hover:bg-black/90 focus-visible:opacity-100 group-hover:opacity-100 ${
+            className={`absolute flex h-10 w-10 items-center justify-center rounded-full bg-scrim/70 text-on-scrim opacity-0 hover:scale-110 hover:bg-scrim/90 focus-visible:opacity-100 group-hover:opacity-100 ${
               item.type === "track" ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" : "bottom-2 right-2"
             }`}
           >
@@ -36,7 +36,7 @@ function CardImpl({ item, fluid = false }: { item: Item; fluid?: boolean }) {
       <div className="mt-2 flex items-start gap-1">
         <button onClick={() => activateItem(item)} className={`min-w-0 flex-1 text-left ${round ? "text-center" : ""}`}>
           <span className="line-clamp-2 text-sm font-medium leading-5 hover:underline" title={item.title}>{item.title}</span>
-          <span className="mt-0.5 line-clamp-2 text-sm leading-5 text-[var(--text-2)]" title={item.subtitle}>{item.subtitle}</span>
+          <span className="mt-0.5 line-clamp-2 text-sm leading-5 text-[var(--c-text-muted)]" title={item.subtitle}>{item.subtitle}</span>
         </button>
         <ItemMenu item={item} className="-mr-2 opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
       </div>

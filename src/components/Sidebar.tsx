@@ -44,13 +44,13 @@ function NewPlaylist() {
           onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
           placeholder="Playlist name"
           aria-label="New playlist name"
-          className="h-10 w-full select-text rounded-full border border-[var(--line)] bg-[var(--surface-2)] px-4 text-sm outline-none focus:border-[var(--text-3)]"
+          className="h-10 w-full select-text rounded-full border border-[var(--c-outline)] bg-[var(--c-surface-2)] px-4 text-sm outline-none focus:border-[var(--c-text-subtle)]"
         />
       </form>
     );
   return (
     <button onClick={() => setEditing(true)}
-      className="mx-2 flex h-10 items-center justify-center gap-2 rounded-full bg-[var(--hover)] text-sm font-medium hover:bg-[var(--active)]">
+      className="mx-2 flex h-10 items-center justify-center gap-2 rounded-full bg-[var(--c-hover)] text-sm font-medium hover:bg-[var(--c-active)]">
       <Plus size={20} aria-hidden /> New playlist
     </button>
   );
@@ -63,7 +63,7 @@ function PlaylistList() {
   useEffect(() => {
     if (!playlists) void load();
   }, [playlists, load]);
-  if (error) return <button onClick={() => void load()} className="px-4 py-2 text-left text-xs text-[var(--danger)]">Playlists failed to load. Retry</button>;
+  if (error) return <button onClick={() => void load()} className="px-4 py-2 text-left text-xs text-[var(--c-error)]">Playlists failed to load. Retry</button>;
   if (!playlists)
     return <div className="space-y-4 px-4 pt-2">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-8" />)}</div>;
   return (
@@ -73,9 +73,9 @@ function PlaylistList() {
         return (
           <li key={p.id}>
             <button onClick={() => go({ name: "playlist", id: p.id })} onPointerEnter={() => prefetchItem(p)} onPointerLeave={() => prefetchItem(null)}
-              className={`w-full rounded-[var(--radius)] px-4 py-2 text-left hover:bg-[var(--hover)] ${active ? "bg-[var(--hover)]" : ""}`}>
+              className={`w-full rounded-[var(--radius)] px-4 py-2 text-left hover:bg-[var(--c-hover)] ${active ? "bg-[var(--c-hover)]" : ""}`}>
               <span className="block truncate text-sm font-medium">{p.title}</span>
-              {p.subtitle && <span className="block truncate text-xs text-[var(--text-2)]">{p.subtitle}</span>}
+              {p.subtitle && <span className="block truncate text-xs text-[var(--c-text-muted)]">{p.subtitle}</span>}
             </button>
           </li>
         );
@@ -89,9 +89,9 @@ export default function Sidebar() {
   const go = useNav((s) => s.go);
   const signedIn = useAuth((s) => s.status === "signedIn");
   return (
-    <nav aria-label="Main" className="flex w-60 shrink-0 flex-col border-r border-[var(--line)] bg-[var(--bg)]">
+    <nav aria-label="Main" className="flex w-60 shrink-0 flex-col border-r border-[var(--c-outline)] bg-[var(--c-bg)]">
       <div className="flex h-16 items-center gap-2 px-6">
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent)]" aria-hidden>
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--c-accent)]" aria-hidden>
           <span className="ml-0.5 h-0 w-0 border-y-[6px] border-l-[10px] border-y-transparent border-l-white" />
         </span>
         <span className="text-xl font-bold tracking-tight">ytdesk</span>
@@ -101,14 +101,14 @@ export default function Sidebar() {
           const active = current === route.name;
           return (
             <button key={label} onClick={() => go(route)} aria-current={active ? "page" : undefined}
-              className={`flex h-12 w-full items-center gap-6 rounded-[var(--radius)] px-4 text-left text-base hover:bg-[var(--hover)] ${active ? "bg-[var(--hover)] font-medium" : "text-[var(--text-2)]"}`}>
+              className={`flex h-12 w-full items-center gap-6 rounded-[var(--radius)] px-4 text-left text-base hover:bg-[var(--c-hover)] ${active ? "bg-[var(--c-hover)] font-medium" : "text-[var(--c-text-muted)]"}`}>
               {icon}
               {label}
             </button>
           );
         })}
       </div>
-      <hr className="mx-6 my-4 border-[var(--line)]" />
+      <hr className="mx-6 my-4 border-[var(--c-outline)]" />
       {signedIn && (
         <>
           <NewPlaylist />
@@ -118,7 +118,7 @@ export default function Sidebar() {
         </>
       )}
       <button onClick={() => go({ name: "settings" })} aria-current={current === "settings" ? "page" : undefined}
-        className="mx-2 mb-3 mt-auto flex h-10 items-center gap-6 rounded-[var(--radius)] px-4 text-sm text-[var(--text-2)] hover:bg-[var(--hover)]">
+        className="mx-2 mb-3 mt-auto flex h-10 items-center gap-6 rounded-[var(--radius)] px-4 text-sm text-[var(--c-text-muted)] hover:bg-[var(--c-hover)]">
         <Settings size={20} aria-hidden /> Settings
       </button>
     </nav>

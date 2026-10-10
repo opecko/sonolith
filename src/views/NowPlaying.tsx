@@ -50,7 +50,7 @@ const Backdrop = memo(function Backdrop({ src }: { src?: string }) {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden will-change-transform" aria-hidden>
       {layers.map((l) => <AmbientLayer key={l} src={l} />)}
-      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-[var(--c-overlay)]" />
     </div>
   );
 });
@@ -66,12 +66,12 @@ function Artwork() {
     <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-6 p-8">
       {/* Audio / Video only exists for podcast episodes, like YouTube Music. */}
       {podcast && (
-        <div className="flex rounded-full bg-white/10 p-1 text-sm" role="group" aria-label="Playback mode">
+        <div className="flex rounded-full bg-fg/10 p-1 text-sm" role="group" aria-label="Playback mode">
           {(["Audio", "Video"] as const).map((m) => {
             const on = (m === "Video") === video;
             return (
               <button key={m} aria-pressed={on} onClick={() => useUi.getState().setPodcastVideo(m === "Video")}
-                className={`rounded-full px-4 py-1 ${on ? "bg-white/20 font-medium" : "text-[var(--text-2)] hover:text-[var(--text-1)]"}`}>
+                className={`rounded-full px-4 py-1 ${on ? "bg-fg/20 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
                 {m}
               </button>
             );
@@ -83,7 +83,7 @@ function Artwork() {
           <PodcastVideo key={track.id} videoId={track.id} />
         </div>
       ) : (
-        <div className="aspect-square overflow-hidden rounded-[var(--radius)] bg-[var(--surface-2)] shadow-[0_24px_64px_rgba(0,0,0,0.6)] will-change-transform"
+        <div className="aspect-square overflow-hidden rounded-[var(--radius)] bg-[var(--c-surface-2)] shadow-[0_24px_64px_color-mix(in_srgb,var(--c-scrim)_60%,transparent)] will-change-transform"
           style={{ width: "min(60vh, 45vw)" }}>
           {src && <img key={src} src={src} alt="" referrerPolicy="no-referrer" onError={() => hi && setFailed(hi)} className="h-full w-full object-cover" draggable={false} />}
         </div>
@@ -102,7 +102,7 @@ function UpNextTab() {
     <>
       <div className="mb-4 flex shrink-0 items-start justify-between gap-4 px-2">
         <div className="min-w-0">
-          <p className="text-xs text-[var(--text-2)]">{caption}</p>
+          <p className="text-xs text-[var(--c-text-muted)]">{caption}</p>
           {title && <p className="truncate text-base font-semibold">{title}</p>}
         </div>
         <AutoplayToggle />
@@ -131,7 +131,7 @@ function LyricsTab({ videoId, target }: { videoId: string; target: BrowseRef }) 
   return (
     <div className="px-2">
       <p className="select-text whitespace-pre-wrap text-lg leading-8">{data.text}</p>
-      {data.source && <p className="mt-6 text-xs text-[var(--text-3)]">{data.source}</p>}
+      {data.source && <p className="mt-6 text-xs text-[var(--c-text-subtle)]">{data.source}</p>}
     </div>
   );
 }
@@ -150,10 +150,10 @@ function SidePanel() {
   const active = tabs.find((t) => t.id === tab && t.show) ? tab : "upnext";
   return (
     <section className="flex w-[min(560px,45vw)] shrink-0 flex-col pb-4 pr-6 pt-6">
-      <div role="tablist" aria-label="Now playing" className="mb-4 flex border-b border-[var(--line)]">
+      <div role="tablist" aria-label="Now playing" className="mb-4 flex border-b border-[var(--c-outline)]">
         {tabs.filter((t) => t.show).map((t) => (
           <button key={t.id} role="tab" aria-selected={active === t.id} onClick={() => setTab(t.id)}
-            className={`flex-1 border-b-2 px-4 pb-3 pt-2 text-sm font-medium uppercase tracking-wide ${active === t.id ? "border-white text-[var(--text-1)]" : "border-transparent text-[var(--text-2)] hover:text-[var(--text-1)]"}`}>
+            className={`flex-1 border-b-2 px-4 pb-3 pt-2 text-sm font-medium uppercase tracking-wide ${active === t.id ? "border-fg text-[var(--c-text)]" : "border-transparent text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
             {t.label}
           </button>
         ))}
@@ -187,7 +187,7 @@ export default function NowPlaying() {
 
   if (!open) return null;
   return (
-    <div role="dialog" aria-label="Now playing" className="slide-up fixed inset-x-0 bottom-[72px] top-0 z-30 flex bg-[var(--bg)]"
+    <div role="dialog" aria-label="Now playing" className="slide-up fixed inset-x-0 bottom-[72px] top-0 z-30 flex bg-[var(--c-bg)]"
       onAnimationEnd={(e) => e.target === e.currentTarget && useUi.getState().setNowPlayingCovering(true)}>
       <Backdrop src={thumb} />
       <button onClick={close} aria-label="Close now playing" className="icon-btn absolute left-4 top-4 z-10 h-10 w-10">

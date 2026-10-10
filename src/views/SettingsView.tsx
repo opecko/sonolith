@@ -1,5 +1,6 @@
-import { ChevronDown, Download, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, Download, ExternalLink, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { ytdlpInstall, ytdlpSetPath, ytdlpStatus, ytdlpUpdate } from "../api/ytdlp";
 import { invoke } from "@tauri-apps/api/core";
 import AutoplayToggle from "../components/AutoplayToggle";
@@ -12,7 +13,7 @@ import { useUpdate } from "../stores/update";
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-4 py-2 text-sm">
-      <span className="w-32 shrink-0 text-[var(--text-2)]">{label}</span>
+      <span className="w-32 shrink-0 text-[var(--c-text-muted)]">{label}</span>
       <span className="min-w-0 flex-1 select-text break-all">{children}</span>
     </div>
   );
@@ -34,7 +35,7 @@ function FlagSetting({ id, get, set, title, detail }: { id: string; get: string;
     <div className="flex items-center justify-between gap-4">
       <div>
         <p className="text-sm">{title}</p>
-        <p className="text-sm text-[var(--text-2)]">{detail}</p>
+        <p className="text-sm text-[var(--c-text-muted)]">{detail}</p>
       </div>
       <Switch on={flag.data ?? true} onChange={(v) => void change(v)} label={title} disabled={busy || flag.data === undefined} />
     </div>
@@ -66,14 +67,14 @@ function YtdlpSettings() {
   return (
     <div>
       <h3 className="mb-1 text-base font-semibold">yt-dlp</h3>
-      <p className="mb-4 text-sm text-[var(--text-2)]">
+      <p className="mb-4 text-sm text-[var(--c-text-muted)]">
         Fallback for resolving audio streams. The app keeps its own up-to-date copy unless you set a path.
       </p>
       {status.error ? <ErrorBox error={status.error} onRetry={status.reload} /> : !s ? <Loading variant="list" /> : (
         <>
-          <Row label="Binary">{s.path}{s.managed && <span className="ml-2 text-xs text-[var(--text-3)]">(managed)</span>}</Row>
-          <Row label="Version">{s.version ?? <span className="text-[var(--danger)]">not runnable</span>}</Row>
-          <Row label="JS runtime">{s.jsRuntime ?? <span className="text-[var(--danger)]">none found: install deno (recommended) or node</span>}</Row>
+          <Row label="Binary">{s.path}{s.managed && <span className="ml-2 text-xs text-[var(--c-text-subtle)]">(managed)</span>}</Row>
+          <Row label="Version">{s.version ?? <span className="text-[var(--c-error)]">not runnable</span>}</Row>
+          <Row label="JS runtime">{s.jsRuntime ?? <span className="text-[var(--c-error)]">none found: install deno (recommended) or node</span>}</Row>
         </>
       )}
       <div className="mt-4 flex flex-wrap gap-2">
@@ -90,11 +91,11 @@ function YtdlpSettings() {
           onChange={(e) => setPath(e.target.value)}
           placeholder="Custom yt-dlp path (empty = managed copy)"
           aria-label="Custom yt-dlp path"
-          className="h-10 min-w-0 flex-1 select-text rounded-lg border border-[var(--line)] bg-[var(--surface-2)] px-4 text-sm outline-none focus:border-[var(--text-3)]"
+          className="h-10 min-w-0 flex-1 select-text rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-2)] px-4 text-sm outline-none focus:border-[var(--c-text-subtle)]"
         />
         <button className="chip h-10" disabled={!!busy}>Save</button>
       </form>
-      {note && <p className={`mt-3 select-text whitespace-pre-wrap text-xs ${note.ok ? "text-[var(--text-2)]" : "text-[var(--danger)]"}`}>{note.text}</p>}
+      {note && <p className={`mt-3 select-text whitespace-pre-wrap text-xs ${note.ok ? "text-[var(--c-text-muted)]" : "text-[var(--c-error)]"}`}>{note.text}</p>}
     </div>
   );
 }
@@ -103,7 +104,7 @@ function HistorySetting() {
   const { saveHistory, set } = useSettings();
   return (
     <div className="mt-4 flex items-center justify-between gap-4">
-      <p className="text-sm text-[var(--text-2)]">Save played songs to your YouTube Music history (also improves recommendations).</p>
+      <p className="text-sm text-[var(--c-text-muted)]">Save played songs to your YouTube Music history (also improves recommendations).</p>
       <Switch on={saveHistory} onChange={(v) => set({ saveHistory: v })} label="Save listening history" />
     </div>
   );
@@ -112,26 +113,26 @@ function HistorySetting() {
 function DiscordSettings() {
   const { discordRpc, discordButton, discordPodcasts, set } = useSettings();
   return (
-    <section className="mb-6 rounded-lg bg-[var(--surface-1)] p-6">
+    <section className="mb-6 rounded-lg bg-[var(--c-surface)] p-6">
       <h2 className="mb-1 text-lg font-semibold">Discord</h2>
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm">Rich Presence</p>
-          <p className="text-sm text-[var(--text-2)]">Show what you're listening to on your Discord profile: song, artist, album, cover and progress.</p>
+          <p className="text-sm text-[var(--c-text-muted)]">Show what you're listening to on your Discord profile: song, artist, album, cover and progress.</p>
         </div>
         <Switch on={discordRpc} onChange={(v) => set({ discordRpc: v })} label="Discord Rich Presence" />
       </div>
       <div className="mt-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm">"Listen on YouTube Music" button</p>
-          <p className="text-sm text-[var(--text-2)]">Lets others open the song you're playing.</p>
+          <p className="text-sm text-[var(--c-text-muted)]">Lets others open the song you're playing.</p>
         </div>
         <Switch on={discordButton} onChange={(v) => set({ discordButton: v })} label="Listen on YouTube Music button" disabled={!discordRpc} />
       </div>
       <div className="mt-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm">Show podcasts</p>
-          <p className="text-sm text-[var(--text-2)]">Also show podcast episodes you're listening to. Off by default.</p>
+          <p className="text-sm text-[var(--c-text-muted)]">Also show podcast episodes you're listening to. Off by default.</p>
         </div>
         <Switch on={discordPodcasts} onChange={(v) => set({ discordPodcasts: v })} label="Show podcasts on Discord" disabled={!discordRpc} />
       </div>
@@ -155,21 +156,21 @@ function UpdateSettings() {
     }
   };
   return (
-    <section className="mb-6 rounded-lg bg-[var(--surface-1)] p-6">
+    <section className="mb-6 rounded-lg bg-[var(--c-surface)] p-6">
       <h2 className="mb-1 text-lg font-semibold">Updates</h2>
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm">Check for updates on startup</p>
-          <p className="text-sm text-[var(--text-2)]">Looks for a new ytdesk release on GitHub when the app starts.</p>
+          <p className="text-sm text-[var(--c-text-muted)]">Looks for a new ytdesk release on GitHub when the app starts.</p>
         </div>
         <Switch on={updateCheck} onChange={(v) => set({ updateCheck: v })} label="Check for updates on startup" />
       </div>
       <div className="mt-4 flex items-center gap-4">
         <button onClick={() => void checkNow()} disabled={state.busy}
-          className="flex h-9 shrink-0 items-center gap-2 rounded-full bg-[var(--hover)] px-4 text-sm font-medium hover:bg-[var(--active)] disabled:opacity-60">
+          className="flex h-9 shrink-0 items-center gap-2 rounded-full bg-[var(--c-hover)] px-4 text-sm font-medium hover:bg-[var(--c-active)] disabled:opacity-60">
           <RefreshCw size={16} className={state.busy ? "animate-spin" : ""} aria-hidden /> Check now
         </button>
-        {state.text && <p className={`select-text text-sm ${state.error ? "text-[var(--danger)]" : "text-[var(--text-2)]"}`}>{state.text}</p>}
+        {state.text && <p className={`select-text text-sm ${state.error ? "text-[var(--c-error)]" : "text-[var(--c-text-muted)]"}`}>{state.text}</p>}
       </div>
     </section>
   );
@@ -178,12 +179,12 @@ function UpdateSettings() {
 function Advanced() {
   const [open, setOpen] = useState(false);
   return (
-    <section className="rounded-lg bg-[var(--surface-1)]">
+    <section className="rounded-lg bg-[var(--c-surface)]">
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open}
-        className="flex w-full items-center justify-between rounded-lg p-6 text-left hover:bg-[var(--hover)]">
+        className="flex w-full items-center justify-between rounded-lg p-6 text-left hover:bg-[var(--c-hover)]">
         <span>
           <span className="block text-lg font-semibold">Advanced</span>
-          <span className="block text-sm text-[var(--text-2)]">Playback fallback (yt-dlp)</span>
+          <span className="block text-sm text-[var(--c-text-muted)]">Playback fallback (yt-dlp)</span>
         </span>
         <ChevronDown size={20} className={open ? "rotate-180" : ""} aria-hidden />
       </button>
@@ -192,19 +193,43 @@ function Advanced() {
   );
 }
 
+function CreditLink({ name, children }: { name: string; children: React.ReactNode }) {
+  return (
+    <button className="inline-flex items-center gap-1 text-[var(--c-text)] underline-offset-2 hover:underline" onClick={() => void invoke("open_credit", { name })}>
+      {children}
+      <ExternalLink size={12} aria-hidden />
+    </button>
+  );
+}
+
+function About() {
+  const [version, setVersion] = useState("");
+  useEffect(() => {
+    getVersion().then(setVersion, () => {});
+  }, []);
+  return (
+    <section className="mt-6 rounded-lg bg-[var(--c-surface)] p-6">
+      <h2 className="mb-1 text-lg font-semibold">About</h2>
+      <p className="text-sm text-[var(--c-text-muted)]">
+        <CreditLink name="ytdesk">ytdesk</CreditLink> {version}, MIT license.
+      </p>
+    </section>
+  );
+}
+
 export default function SettingsView() {
   return (
     <div className="max-w-2xl">
       <h1 className="mb-6 text-2xl font-bold">Settings</h1>
-      <section className="mb-6 rounded-lg bg-[var(--surface-1)] p-6">
+      <section className="mb-6 rounded-lg bg-[var(--c-surface)] p-6">
         <h2 className="mb-1 text-lg font-semibold">Playback</h2>
         <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-[var(--text-2)]">Autoplay similar music when a song, playlist or album ends.</p>
+          <p className="text-sm text-[var(--c-text-muted)]">Autoplay similar music when a song, playlist or album ends.</p>
           <AutoplayToggle withLabel={false} />
         </div>
         <HistorySetting />
       </section>
-      <section className="mb-6 rounded-lg bg-[var(--surface-1)] p-6">
+      <section className="mb-6 rounded-lg bg-[var(--c-surface)] p-6">
         <h2 className="mb-1 text-lg font-semibold">Performance</h2>
         <FlagSetting
           id="render-gpu"
@@ -226,6 +251,7 @@ export default function SettingsView() {
       <DiscordSettings />
       <UpdateSettings />
       <Advanced />
+      <About />
     </div>
   );
 }

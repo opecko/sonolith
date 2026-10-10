@@ -3,6 +3,14 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { openMenuAt } from "./components/Menu";
 import "./index.css";
+import { useSettings } from "./stores/settings";
+import { applyTheme } from "./theme";
+
+// Theme goes on synchronously before the first render, so startup never flashes the default colors.
+applyTheme(useSettings.getState().appearance);
+useSettings.subscribe((s, prev) => {
+  if (s.appearance !== prev.appearance) applyTheme(s.appearance);
+});
 
 // The browser context menu (Back, Forward, Reload, Inspect Element…) never shows. Right-click on anything with a ⋮
 // menu (track rows, cards, the player bar) opens that menu at the pointer instead.

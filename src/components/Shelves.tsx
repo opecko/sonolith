@@ -32,16 +32,16 @@ function useScroller() {
 
 function QuickPickRow({ track }: { track: Track & Item }) {
   return (
-    <div className="group flex w-[360px] items-center gap-3 rounded-[var(--radius)] pr-1 hover:bg-[var(--hover)]">
+    <div className="group flex w-[360px] items-center gap-3 rounded-[var(--radius)] pr-1 hover:bg-[var(--c-hover)]">
       <button onClick={() => void playItem(track)} className="relative shrink-0" aria-label={`Play ${track.title}`}>
         <Thumb src={track.thumbnail} className="h-12 w-12" />
-        <span className="absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-black/50 opacity-0 group-hover:opacity-100">
+        <span className="absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/50 opacity-0 group-hover:opacity-100">
           <Play size={20} fill="currentColor" />
         </span>
       </button>
       <button onClick={() => activateItem(track)} className="min-w-0 flex-1 text-left">
         <span className="block truncate text-sm font-medium">{track.title}</span>
-        <span className="block truncate text-sm text-[var(--text-2)]">{track.subtitle}</span>
+        <span className="block truncate text-sm text-[var(--c-text-muted)]">{track.subtitle}</span>
       </button>
       <ItemMenu item={track} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
     </div>
@@ -60,7 +60,7 @@ export function ShelfRow({ shelf }: { shelf: Shelf }) {
       {(shelf.title || arrows) && (
         <header className="mb-4 flex items-end gap-4">
           <div className="min-w-0 flex-1">
-            {shelf.strapline && <p className="mb-1 text-xs uppercase tracking-wider text-[var(--text-2)]">{shelf.strapline}</p>}
+            {shelf.strapline && <p className="mb-1 text-xs uppercase tracking-wider text-[var(--c-text-muted)]">{shelf.strapline}</p>}
             {shelf.title && <h2 className="truncate text-2xl font-bold tracking-tight">{shelf.title}</h2>}
           </div>
           {shelf.more && (
@@ -68,14 +68,14 @@ export function ShelfRow({ shelf }: { shelf: Shelf }) {
               const { browseId, params } = shelf.more!;
               go(browseId.startsWith("VL") ? { name: "playlist", id: browseId.slice(2) } : { name: "browse", id: browseId, params, title: shelf.title });
             }}
-              className="h-8 rounded-full border border-[var(--line)] px-4 text-sm font-medium hover:bg-[var(--hover)]">
+              className="h-8 rounded-full border border-[var(--c-outline)] px-4 text-sm font-medium hover:bg-[var(--c-hover)]">
               More
             </button>
           )}
           {arrows && (
             <div className="flex gap-2">
-              <button className="icon-btn h-8 w-8 border border-[var(--line)]" disabled={edges.start} onClick={() => page(-1)} aria-label="Scroll left"><ChevronLeft size={20} /></button>
-              <button className="icon-btn h-8 w-8 border border-[var(--line)]" disabled={edges.end} onClick={() => page(1)} aria-label="Scroll right"><ChevronRight size={20} /></button>
+              <button className="icon-btn h-8 w-8 border border-[var(--c-outline)]" disabled={edges.start} onClick={() => page(-1)} aria-label="Scroll left"><ChevronLeft size={20} /></button>
+              <button className="icon-btn h-8 w-8 border border-[var(--c-outline)]" disabled={edges.end} onClick={() => page(1)} aria-label="Scroll right"><ChevronRight size={20} /></button>
             </div>
           )}
         </header>

@@ -69,17 +69,17 @@ export default function Slider({ value, max, onCommit, onChange, live = false, s
       onPointerLeave={() => setHover(null)}
       className={`group relative flex h-4 cursor-pointer touch-none items-center ${disabled ? "pointer-events-none opacity-40" : ""} ${className}`}
     >
-      <div className="relative h-1 w-full overflow-hidden rounded-full bg-white/20 group-hover:h-1.5">
-        {hover !== null && max > 0 && <div className="absolute inset-0 origin-left bg-white/20" style={{ transform: `scaleX(${hover / max})` }} />}
+      <div className="relative h-1 w-full overflow-hidden rounded-full bg-[var(--c-slider-track)] group-hover:h-1.5">
+        {hover !== null && max > 0 && <div className="absolute inset-0 origin-left bg-fg/20" style={{ transform: `scaleX(${hover / max})` }} />}
         {/* scaleX instead of width: no layout on every clock tick */}
-        <div className="absolute inset-0 origin-left bg-[var(--accent)]" style={{ transform: `scaleX(${pct / 100})` }} />
+        <div className="absolute inset-0 origin-left bg-[var(--c-slider-fill)]" style={{ transform: `scaleX(${pct / 100})` }} />
       </div>
       <div
-        className={`absolute h-3 w-3 -translate-x-1/2 rounded-full bg-[var(--accent)] shadow ${drag !== null ? "block" : "hidden group-hover:block group-focus-visible:block"}`}
+        className={`absolute h-3 w-3 -translate-x-1/2 rounded-full bg-[var(--c-accent)] shadow ${drag !== null ? "block" : "hidden group-hover:block group-focus-visible:block"}`}
         style={{ left: `${pct}%` }}
       />
       {(hover !== null || drag !== null) && format && max > 0 && (
-        <div className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded bg-[var(--surface-3)] px-2 py-1 text-xs tabular-nums shadow whitespace-nowrap"
+        <div className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded bg-[var(--c-surface-3)] px-2 py-1 text-xs tabular-nums shadow whitespace-nowrap"
           style={{ left: `${((hover ?? shown) / max) * 100}%` }}>
           {format(tooltip === "value" ? shown : hover ?? shown)}
         </div>

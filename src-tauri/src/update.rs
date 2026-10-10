@@ -108,6 +108,16 @@ pub fn update_open_page(app: AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+/// Opens a project page from Settings → About. Only these known links, never an arbitrary URL from the webview.
+#[tauri::command]
+pub fn open_credit(app: AppHandle, name: String) -> Result<(), String> {
+    let url = match name.as_str() {
+        "ytdesk" => format!("https://github.com/{REPO}"),
+        _ => return Err(format!("unknown link {name}")),
+    };
+    app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
+}
+
 /// Hash for `name` from a `sha256sum` listing ("<hex>  <name>" or "<hex> *<name>").
 fn expected_sha256(sums: &str, name: &str) -> Option<String> {
     sums.lines().find_map(|line| {

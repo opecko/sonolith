@@ -21,12 +21,12 @@ export default function PageHeader({ title, subtitle, thumbnail, tracks, round, 
       <Thumb src={thumbnail} round={round} className="h-56 w-56 shrink-0 shadow-2xl" />
       <div className="min-w-0 pb-2">
         <h1 className="line-clamp-2 text-4xl font-bold tracking-tight">{title}</h1>
-        <p className="mt-2 line-clamp-2 text-sm text-[var(--text-2)]">{subtitle}</p>
+        <p className="mt-2 line-clamp-2 text-sm text-[var(--c-text-muted)]">{subtitle}</p>
         {(!!tracks?.length || radio) && (
           <div className="mt-6 flex gap-3">
             {!!tracks?.length && (<>
             <button onClick={() => playQueue(tracks, 0, { playlistId, title })}
-              className="flex h-10 items-center gap-2 rounded-full bg-white px-6 text-sm font-medium text-black hover:scale-105 active:scale-95">
+              className="flex h-10 items-center gap-2 rounded-full bg-button px-6 text-sm font-medium text-on-button hover:scale-105 active:scale-95">
               <Play size={20} fill="currentColor" aria-hidden /> Play
             </button>
             <button
@@ -34,13 +34,13 @@ export default function PageHeader({ title, subtitle, thumbnail, tracks, round, 
                 if (!shuffleOn) toggleShuffle();
                 playQueue(tracks, Math.floor(Math.random() * tracks.length), { playlistId, title });
               }}
-              className="flex h-10 items-center gap-2 rounded-full border border-[var(--line)] px-6 text-sm font-medium hover:bg-[var(--hover)]">
+              className="flex h-10 items-center gap-2 rounded-full border border-[var(--c-outline)] px-6 text-sm font-medium hover:bg-[var(--c-hover)]">
               <Shuffle size={20} aria-hidden /> Shuffle
             </button>
             </>)}
             {radio && (
               <button onClick={() => void startRadio(radio, title)} disabled={radioPending}
-                className="flex h-10 items-center gap-2 rounded-full border border-[var(--line)] px-6 text-sm font-medium hover:bg-[var(--hover)] disabled:opacity-60">
+                className="flex h-10 items-center gap-2 rounded-full border border-[var(--c-outline)] px-6 text-sm font-medium hover:bg-[var(--c-hover)] disabled:opacity-60">
                 {radioPending ? <Loader2 size={20} className="animate-spin" aria-hidden /> : <Radio size={20} aria-hidden />} Radio
               </button>
             )}

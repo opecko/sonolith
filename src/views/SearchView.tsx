@@ -25,8 +25,8 @@ function activate(item: Item) {
 }
 
 const pill = "flex h-9 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium";
-const primary = `${pill} bg-white text-black hover:bg-white/90`;
-const secondary = `${pill} border border-white/25 hover:bg-white/10`;
+const primary = `${pill} bg-button text-on-button hover:bg-button/90`;
+const secondary = `${pill} border border-fg/25 hover:bg-fg/10`;
 
 /** Shuffle / Mix (artists) and Play / Save (songs), as on the YouTube Music top-result card. */
 function CardButtons({ top, actions }: { top: Item; actions: CardAction[] }) {
@@ -55,20 +55,20 @@ function TopResult({ items, actions }: { items: Item[]; actions: CardAction[] })
   if (!top) return null;
   const round = top.art === "round" || top.type === "artist";
   return (
-    <section className="mb-10 flex flex-col overflow-hidden rounded-lg bg-[linear-gradient(110deg,rgba(255,255,255,0.16),rgba(255,255,255,0.05))] md:flex-row" aria-label="Top result">
+    <section className="mb-10 flex flex-col overflow-hidden rounded-lg bg-[linear-gradient(110deg,color-mix(in_srgb,var(--c-text)_16%,transparent),color-mix(in_srgb,var(--c-text)_5%,transparent))] md:flex-row" aria-label="Top result">
       <div className="flex min-w-0 flex-1 items-center gap-5 p-5">
         <button onClick={() => activate(top)} aria-label={isTrack(top) ? `Play ${top.title}` : `Open ${top.title}`} className="group relative shrink-0">
           <Thumb src={top.thumbnail} round={round} className="h-28 w-28" />
           {isTrack(top) && (
-            <span className="absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-black/30 group-hover:bg-black/50" aria-hidden>
+            <span className="absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/30 group-hover:bg-scrim/50" aria-hidden>
               <Play size={36} fill="currentColor" />
             </span>
           )}
         </button>
         <div className="min-w-0 flex-1">
           <button onClick={() => activate(top)} className="block max-w-full truncate text-left text-3xl font-bold tracking-tight hover:underline">{top.title}</button>
-          <p className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-[var(--text-2)]">
-            {isTrack(top) && top.explicit && <span className="shrink-0 rounded-sm bg-[var(--text-3)] px-1 text-[10px] font-bold text-black" aria-label="Explicit">E</span>}
+          <p className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-[var(--c-text-muted)]">
+            {isTrack(top) && top.explicit && <span className="shrink-0 rounded-sm bg-[var(--c-text-subtle)] px-1 text-[10px] font-bold text-[var(--c-bg)]" aria-label="Explicit">E</span>}
             <span className="truncate">{top.subtitle}</span>
           </p>
           {actions.length > 0 && <CardButtons top={top} actions={actions} />}
@@ -76,21 +76,21 @@ function TopResult({ items, actions }: { items: Item[]; actions: CardAction[] })
         <ItemMenu item={top} className="self-start" />
       </div>
       {rest.length > 0 && (
-        <ul className="flex min-w-0 flex-1 flex-col justify-center border-t border-white/10 p-2 md:border-l md:border-t-0">
+        <ul className="flex min-w-0 flex-1 flex-col justify-center border-t border-fg/10 p-2 md:border-l md:border-t-0">
           {rest.slice(0, 3).map((r) => (
-            <li key={`${r.type}:${r.id}`} className="group flex items-center rounded-[var(--radius)] pr-1 hover:bg-white/10">
+            <li key={`${r.type}:${r.id}`} className="group flex items-center rounded-[var(--radius)] pr-1 hover:bg-fg/10">
               <button onClick={() => activate(r)} className="flex min-w-0 flex-1 items-center gap-4 p-2 text-left">
                 <span className="relative shrink-0">
                   <Thumb src={r.thumbnail} round={r.type === "artist"} className="h-14 w-14" />
                   {isTrack(r) && (
-                    <span className="absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-black/60 opacity-0 group-hover:opacity-100" aria-hidden>
+                    <span className="absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/60 opacity-0 group-hover:opacity-100" aria-hidden>
                       <Play size={20} fill="currentColor" />
                     </span>
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-base font-medium">{r.title}</span>
-                  <span className="block truncate text-sm text-[var(--text-2)]">{r.subtitle}</span>
+                  <span className="block truncate text-sm text-[var(--c-text-muted)]">{r.subtitle}</span>
                 </span>
               </button>
               <ItemMenu item={r} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />

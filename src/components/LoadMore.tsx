@@ -11,7 +11,7 @@ export default function LoadMore({ onVisible, active, loading }: { onVisible: ()
     return () => io.disconnect();
   }, [active, onVisible]);
   return (
-    <div ref={ref} className="flex h-16 items-center justify-center text-[var(--text-3)]" aria-live="polite">
+    <div ref={ref} className="flex h-16 items-center justify-center text-[var(--c-text-subtle)]" aria-live="polite">
       {loading && <Loader2 size={24} className="animate-spin" aria-label="Loading more" />}
     </div>
   );

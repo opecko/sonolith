@@ -20,9 +20,9 @@ function SignInPrompt() {
   return (
     <div className="mx-auto mt-24 max-w-sm text-center">
       <h2 className="text-2xl font-bold tracking-tight">Sign in to YouTube Music</h2>
-      <p className="mt-2 text-sm text-[var(--text-2)]">A Google sign-in window will open. Your cookies are stored in the OS keyring.</p>
-      <button onClick={login} className="mt-6 h-10 rounded-full bg-white px-6 text-sm font-medium text-black hover:scale-105">Sign in</button>
-      {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
+      <p className="mt-2 text-sm text-[var(--c-text-muted)]">A Google sign-in window will open. Your cookies are stored in the OS keyring.</p>
+      <button onClick={login} className="mt-6 h-10 rounded-full bg-button px-6 text-sm font-medium text-on-button hover:scale-105">Sign in</button>
+      {error && <p className="mt-3 text-sm text-[var(--c-error)]">{error}</p>}
     </div>
   );
 }

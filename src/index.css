@@ -1,43 +1,75 @@
 @import "tailwindcss";
 
-/* YT Music-like dark palette; one accent. Spacing follows Tailwind's 4px scale used in 8px steps. */
+/*
+ * Theme tokens. These defaults are the built-in YT Music-like dark palette; src/theme/ overrides them inline on
+ * <html> for a chosen palette and the user's own tweaks. Spacing follows Tailwind's 4px scale in 8px steps.
+ */
 :root {
   color-scheme: dark;
-  --bg: #030303;
-  --surface-1: #0f0f0f;
-  --surface-2: #1d1d1d;
-  --surface-3: #282828;
-  --hover: rgba(255, 255, 255, 0.1);
-  --active: rgba(255, 255, 255, 0.16);
-  --line: rgba(255, 255, 255, 0.1);
-  --text-1: #ffffff;
-  --text-2: rgba(255, 255, 255, 0.7);
-  --text-3: rgba(255, 255, 255, 0.5);
-  --accent: #ff0033;
-  --danger: #ff6b6b;
+  --c-bg: #030303;
+  --c-surface: #0f0f0f;
+  --c-surface-2: #1d1d1d;
+  --c-surface-3: #282828;
+  --c-text: #ffffff;
+  --c-text-muted: rgba(255, 255, 255, 0.7);
+  --c-text-subtle: rgba(255, 255, 255, 0.5);
+  --c-accent: #ff0033;
+  --c-on-accent: #ffffff;
+  --c-accent-2: #3ea6ff;
+  --c-outline: rgba(255, 255, 255, 0.1);
+  --c-hover: rgba(255, 255, 255, 0.1);
+  --c-active: rgba(255, 255, 255, 0.16);
+  --c-on-hover: #ffffff;
+  --c-error: #ff6b6b;
+  /* Filled pill buttons (Play, Subscribe, Sign in) and the player's play button. */
+  --c-button: #ffffff;
+  --c-on-button: #000000;
+  --c-chip: rgba(255, 255, 255, 0.1);
+  --c-chip-hover: rgba(255, 255, 255, 0.2);
+  --c-scrollbar: rgba(255, 255, 255, 0.18);
+  --c-scrollbar-hover: rgba(255, 255, 255, 0.32);
+  --c-slider-track: rgba(255, 255, 255, 0.2);
+  --c-slider-fill: var(--c-accent);
+  --c-skeleton: var(--c-surface-2);
+  /* Dialog backdrops and the tint over Now Playing's ambient light. */
+  --c-overlay: rgba(0, 0, 0, 0.6);
+  /* Darkening over artwork (hover play overlays, video letterbox); used with an opacity modifier. */
+  --c-scrim: #000000;
+  --c-on-scrim: #ffffff;
+  --c-focus: var(--c-text-muted);
   --radius: 8px;
   --font: "Inter", "Roboto", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Token colors as Tailwind colors, so opacity modifiers work: bg-fg/10, bg-scrim/60, text-on-button/60 … */
+@theme inline {
+  --color-fg: var(--c-text);
+  --color-scrim: var(--c-scrim);
+  --color-on-scrim: var(--c-on-scrim);
+  --color-button: var(--c-button);
+  --color-on-button: var(--c-on-button);
+  --color-on-accent: var(--c-on-accent);
 }
 
 html, body, #root { height: 100%; }
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text-1);
+  background: var(--c-bg);
+  color: var(--c-text);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
 button { cursor: pointer; }
 button:disabled { cursor: default; }
-:focus-visible { outline: 2px solid var(--text-2); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
 
 /* Thin scrollbars whose thumb only shows while hovering the scroll area; gutters stay reserved so content never jumps. */
 ::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
 ::-webkit-scrollbar-thumb { background: transparent; border-radius: 8px; }
-:hover::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.32); }
+:hover::-webkit-scrollbar-thumb { background: var(--c-scrollbar); }
+::-webkit-scrollbar-thumb:hover { background: var(--c-scrollbar-hover); }
 .scroll-y { overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -48,11 +80,11 @@ button:disabled { cursor: default; }
     align-items: center;
     justify-content: center;
     border-radius: 9999px;
-    color: var(--text-2);
+    color: var(--c-text-muted);
   }
-  .icon-btn:hover { background: var(--hover); color: var(--text-1); }
-  .icon-btn:active { background: var(--active); transform: scale(0.94); }
-  .icon-btn[aria-pressed="true"] { color: var(--text-1); }
+  .icon-btn:hover { background: var(--c-hover); color: var(--c-text); }
+  .icon-btn:active { background: var(--c-active); transform: scale(0.94); }
+  .icon-btn[aria-pressed="true"] { color: var(--c-text); }
   .icon-btn:disabled { opacity: 0.4; background: transparent; transform: none; }
 
   .chip {
@@ -62,15 +94,15 @@ button:disabled { cursor: default; }
     border-radius: 8px;
     font-size: 14px;
     white-space: nowrap;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-1);
+    background: var(--c-chip);
+    color: var(--c-text);
   }
-  .chip:hover { background: rgba(255, 255, 255, 0.2); }
-  .chip[aria-pressed="true"] { background: var(--text-1); color: #0f0f0f; }
+  .chip:hover { background: var(--c-chip-hover); }
+  .chip[aria-pressed="true"] { background: var(--c-text); color: var(--c-surface); }
 
   /* Static placeholder: an infinite shimmer repaints the whole area every frame (software-rendered on WebKitGTK). */
   .skeleton {
-    background: var(--surface-2);
+    background: var(--c-skeleton);
     border-radius: var(--radius);
   }
 }

@@ -31,10 +31,10 @@ function SortChip({ chip, active, onPick }: { chip: ShowChip; active: string | n
         {current.label} <ChevronDown size={16} aria-hidden />
       </button>
       {open && (
-        <div role="menu" className="absolute left-0 top-10 z-30 w-48 rounded-lg border border-[var(--line)] bg-[var(--surface-3)] py-2 shadow-2xl">
+        <div role="menu" className="absolute left-0 top-10 z-30 w-48 rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] py-2 shadow-2xl">
           {chip.options!.map((o) => (
             <button key={o.token} role="menuitemradio" aria-checked={o === current} onClick={() => { setOpen(false); onPick(o.token); }}
-              className={`w-full px-4 py-2 text-left text-sm hover:bg-[var(--hover)] ${o === current ? "font-medium" : "text-[var(--text-2)]"}`}>
+              className={`w-full px-4 py-2 text-left text-sm hover:bg-[var(--c-hover)] ${o === current ? "font-medium" : "text-[var(--c-text-muted)]"}`}>
               {o.label}
             </button>
           ))}
@@ -78,19 +78,19 @@ export default function PodcastView({ id }: { id: string }) {
       <aside className="sticky top-0 flex w-[320px] shrink-0 flex-col items-center self-start text-center">
         {s.channel && (
           <button onClick={() => useNav.getState().go({ name: "channel", id: s.channel!.id })}
-            className="mb-4 flex max-w-full items-center gap-2 text-sm text-[var(--text-2)] hover:text-[var(--text-1)] hover:underline">
+            className="mb-4 flex max-w-full items-center gap-2 text-sm text-[var(--c-text-muted)] hover:text-[var(--c-text)] hover:underline">
             {s.channel.thumbnail && <Thumb src={s.channel.thumbnail} round className="h-5 w-5 shrink-0" />}
             <span className="truncate">{s.channel.name}</span>
           </button>
         )}
         <Thumb src={s.thumbnail} className="aspect-square w-[272px] shadow-2xl" />
         <h1 className="mt-6 text-3xl font-bold tracking-tight">{s.title}</h1>
-        {s.description && <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm text-[var(--text-2)]">{s.description}</p>}
+        {s.description && <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm text-[var(--c-text-muted)]">{s.description}</p>}
         <div className="mt-5 flex items-center gap-3">
-          <button className="icon-btn h-10 w-10 bg-[var(--hover)]" onClick={() => void share()} aria-label="Share"><Share2 size={20} /></button>
+          <button className="icon-btn h-10 w-10 bg-[var(--c-hover)]" onClick={() => void share()} aria-label="Share"><Share2 size={20} /></button>
           {s.playlistId && (
             <button onClick={toggleSave} aria-pressed={isSaved}
-              className="flex h-10 items-center gap-2 rounded-full bg-[var(--hover)] px-4 text-sm font-medium hover:bg-[var(--active)]">
+              className="flex h-10 items-center gap-2 rounded-full bg-[var(--c-hover)] px-4 text-sm font-medium hover:bg-[var(--c-active)]">
               {isSaved ? <BookmarkCheck size={20} aria-hidden /> : <Bookmark size={20} aria-hidden />}
               {isSaved ? "Saved to library" : "Save to library"}
             </button>

@@ -26,18 +26,18 @@ export default function PodcastSpeed() {
   }, [open]);
   return (
     <div ref={ref} className="relative">
-      <button className={`icon-btn h-10 gap-1 px-2 ${speed !== 1 ? "!text-[var(--text-1)]" : ""}`} onClick={() => setOpen((o) => !o)}
+      <button className={`icon-btn h-10 gap-1 px-2 ${speed !== 1 ? "!text-[var(--c-text)]" : ""}`} onClick={() => setOpen((o) => !o)}
         aria-label={`Playback speed ${fmtSpeed(speed)}`} aria-haspopup="menu" aria-expanded={open}>
         <Gauge size={20} aria-hidden />
         {speed !== 1 && <span className="text-xs tabular-nums">{fmtSpeed(speed)}</span>}
       </button>
       {open && (
-        <div role="menu" className="absolute bottom-12 right-0 z-40 w-40 rounded-lg border border-[var(--line)] bg-[var(--surface-3)] py-2 shadow-2xl">
-          <p className="px-4 pb-1 text-xs text-[var(--text-3)]">Playback speed</p>
+        <div role="menu" className="absolute bottom-12 right-0 z-40 w-40 rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] py-2 shadow-2xl">
+          <p className="px-4 pb-1 text-xs text-[var(--c-text-subtle)]">Playback speed</p>
           {SPEEDS.map((s) => (
             <button key={s} role="menuitemradio" aria-checked={s === speed}
               onClick={() => { useSettings.getState().set({ podcastSpeed: s }); setOpen(false); }}
-              className="flex w-full items-center justify-between px-4 py-1.5 text-left text-sm tabular-nums hover:bg-[var(--hover)]">
+              className="flex w-full items-center justify-between px-4 py-1.5 text-left text-sm tabular-nums hover:bg-[var(--c-hover)]">
               {s === 1 ? "Normal" : fmtSpeed(s)}
               {s === speed && <Check size={16} aria-hidden />}
             </button>

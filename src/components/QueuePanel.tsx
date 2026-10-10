@@ -27,7 +27,7 @@ export function QueueChips() {
 
 export default function QueuePanel() {
   return (
-    <aside aria-label="Queue" className="flex w-[360px] shrink-0 flex-col border-l border-[var(--line)] bg-[var(--surface-1)] py-4 pl-2 pr-1">
+    <aside aria-label="Queue" className="flex w-[360px] shrink-0 flex-col border-l border-[var(--c-outline)] bg-[var(--c-surface)] py-4 pl-2 pr-1">
       <div className="mb-4 flex items-center justify-between px-2">
         <h2 className="text-base font-semibold">Up next</h2>
         <AutoplayToggle />

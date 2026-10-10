@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEFAULT_APPEARANCE, normalizeAppearance, type Appearance } from "../theme/appearance";
 
 interface Settings {
   autoplay: boolean;
@@ -14,14 +15,18 @@ interface Settings {
   discordPodcasts: boolean;
   /** Look for a newer GitHub release on startup. */
   updateCheck: boolean;
+  /** Colors, Now Playing ambient and other visual options (Settings → Appearance). */
+  appearance: Appearance;
 }
 
 const KEY = "settings";
-const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true };
+const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE };
 
 function read(): Settings {
   try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
+    const stored = JSON.parse(localStorage.getItem(KEY) ?? "{}");
+    // Settings saved before 1.2 have no `appearance`; normalizing also drops malformed values.
+    return { ...DEFAULTS, ...stored, appearance: normalizeAppearance(stored.appearance) };
   } catch {
     return DEFAULTS;
   }
@@ -32,10 +37,14 @@ export const useSettings = create<Settings & { set: (patch: Partial<Settings>) =
   set: (patch) => {
     set(patch);
     try {
-      const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck } = get();
-      localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck }));
+      const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance } = get();
+      localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance }));
     } catch {
       /* storage unavailable */
     }
   },
 }));
+
+/** Merges a change into the Appearance settings. */
+export const setAppearance = (patch: Partial<Appearance>) =>
+  useSettings.getState().set({ appearance: { ...useSettings.getState().appearance, ...patch } });

@@ -46,11 +46,11 @@ function NowPlaying() {
           <>
             <button onClick={openNowPlaying} className="block max-w-full truncate text-left text-sm font-medium hover:underline" title={track.title}>{track.title}</button>
             {error ? <PlaybackError error={error} /> : (
-              <p className="truncate text-sm text-[var(--text-2)]" title={byline(track)}>{status === "loading" ? "Loading…" : byline(track)}</p>
+              <p className="truncate text-sm text-[var(--c-text-muted)]" title={byline(track)}>{status === "loading" ? "Loading…" : byline(track)}</p>
             )}
           </>
         ) : (
-          <p className="text-sm text-[var(--text-3)]">Nothing playing</p>
+          <p className="text-sm text-[var(--c-text-subtle)]">Nothing playing</p>
         )}
       </div>
       {track && (
@@ -81,7 +81,7 @@ function Controls() {
   const playing = status === "playing";
   const playButton = (
     <button
-      className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-button text-on-button hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
       onClick={togglePlay}
       disabled={!hasTrack}
       aria-label={playing ? "Pause" : "Play"}
@@ -100,7 +100,7 @@ function Controls() {
     );
   return (
     <div className="flex items-center gap-2">
-      <button className={`icon-btn h-10 w-10 ${shuffle ? "!text-[var(--text-1)]" : ""}`} onClick={toggleShuffle} aria-label="Shuffle" aria-pressed={shuffle}>
+      <button className={`icon-btn h-10 w-10 ${shuffle ? "!text-[var(--c-text)]" : ""}`} onClick={toggleShuffle} aria-label="Shuffle" aria-pressed={shuffle}>
         <Shuffle size={20} />
       </button>
       <button className="icon-btn h-10 w-10" onClick={prev} disabled={!hasTrack} aria-label="Previous">
@@ -110,7 +110,7 @@ function Controls() {
       <button className="icon-btn h-10 w-10" onClick={next} disabled={!hasTrack} aria-label="Next">
         <SkipForward size={24} fill="currentColor" />
       </button>
-      <button className={`icon-btn h-10 w-10 ${repeat !== "off" ? "!text-[var(--text-1)]" : ""}`} onClick={cycleRepeat} aria-label={repeatLabel[repeat]} aria-pressed={repeat !== "off"}>
+      <button className={`icon-btn h-10 w-10 ${repeat !== "off" ? "!text-[var(--c-text)]" : ""}`} onClick={cycleRepeat} aria-label={repeatLabel[repeat]} aria-pressed={repeat !== "off"}>
         {repeat === "one" ? <Repeat1 size={20} /> : <Repeat size={20} />}
       </button>
     </div>
@@ -123,7 +123,7 @@ function Progress() {
   const duration = useProgress((s) => s.duration);
   const seek = usePlayer((s) => s.seek);
   return (
-    <div className="flex w-full max-w-[600px] items-center gap-2 text-xs tabular-nums text-[var(--text-2)]">
+    <div className="flex w-full max-w-[600px] items-center gap-2 text-xs tabular-nums text-[var(--c-text-muted)]">
       <span className="w-10 text-right">{fmtTime(position)}</span>
       <Slider className="flex-1" value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} />
       <span className="w-10">{fmtTime(duration)}</span>
@@ -175,7 +175,7 @@ export function byline(t: Track): string {
 
 export default function PlayerBar({ queueOpen, onToggleQueue }: { queueOpen: boolean; onToggleQueue: () => void }) {
   return (
-    <footer className="flex h-[72px] shrink-0 items-center gap-6 border-t border-[var(--line)] bg-[var(--surface-1)] px-4">
+    <footer className="flex h-[72px] shrink-0 items-center gap-6 border-t border-[var(--c-outline)] bg-[var(--c-surface)] px-4">
       <NowPlaying />
       <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5">
         <Controls />
@@ -184,7 +184,7 @@ export default function PlayerBar({ queueOpen, onToggleQueue }: { queueOpen: boo
       <div className="flex w-[30%] items-center justify-end gap-2">
         <PodcastSpeedSlot />
         <VolumeControl />
-        <button className={`icon-btn h-10 w-10 ${queueOpen ? "!text-[var(--text-1)] bg-[var(--hover)]" : ""}`} onClick={onToggleQueue} aria-label="Queue" aria-pressed={queueOpen}>
+        <button className={`icon-btn h-10 w-10 ${queueOpen ? "!text-[var(--c-text)] bg-[var(--c-hover)]" : ""}`} onClick={onToggleQueue} aria-label="Queue" aria-pressed={queueOpen}>
           <ListMusic size={20} />
         </button>
         <NowPlayingToggle />

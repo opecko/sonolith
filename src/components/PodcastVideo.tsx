@@ -66,10 +66,10 @@ export default function PodcastVideo({ videoId }: { videoId: string }) {
   };
 
   return (
-    <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-[var(--radius)] bg-black">
+    <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-[var(--radius)] bg-scrim">
       {src && <video ref={ref} src={src} muted playsInline preload="auto" onError={onError} className="h-full w-full object-contain" />}
-      {!src && !error && <Loader2 size={32} className="animate-spin text-[var(--text-2)]" aria-label="Loading video" />}
-      {error && <p className="px-6 text-center text-sm text-[var(--text-2)]">{error}</p>}
+      {!src && !error && <Loader2 size={32} className="animate-spin text-[var(--c-text-muted)]" aria-label="Loading video" />}
+      {error && <p className="px-6 text-center text-sm text-[var(--c-text-muted)]">{error}</p>}
     </div>
   );
 }

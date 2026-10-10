@@ -47,7 +47,7 @@ export default function SearchBox() {
       }}
       className="relative w-full max-w-[480px]"
     >
-      <Search size={20} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-2)]" aria-hidden />
+      <Search size={20} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--c-text-muted)]" aria-hidden />
       <input
         ref={inputRef}
         value={input}
@@ -62,7 +62,7 @@ export default function SearchBox() {
         placeholder="Search songs, albums, artists, podcasts"
         aria-label="Search"
         aria-autocomplete="list"
-        className="h-10 w-full select-text rounded-lg border border-[var(--line)] bg-[var(--surface-2)] pl-12 pr-10 text-sm text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] focus:border-[var(--text-3)] focus:bg-[var(--surface-3)]"
+        className="h-10 w-full select-text rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-2)] pl-12 pr-10 text-sm text-[var(--c-text)] outline-none placeholder:text-[var(--c-text-subtle)] focus:border-[var(--c-text-subtle)] focus:bg-[var(--c-surface-3)]"
       />
       {input && (
         <button type="button" aria-label="Clear search" onMouseDown={(e) => e.preventDefault()} onClick={() => { setInput(""); inputRef.current?.focus(); }}
@@ -71,19 +71,19 @@ export default function SearchBox() {
         </button>
       )}
       {open && input.trim() && (rows.length > 0 || error) && (
-        <ul role="listbox" className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface-3)] py-2 shadow-2xl">
-          {error && <li className="px-4 py-2 text-xs text-[var(--danger)]">Suggestions failed: {error}</li>}
+        <ul role="listbox" className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] py-2 shadow-2xl">
+          {error && <li className="px-4 py-2 text-xs text-[var(--c-error)]">Suggestions failed: {error}</li>}
           {rows.map((row, i) => (
             <li key={row.q ?? `${row.item!.type}:${row.item!.id}`} role="option" aria-selected={i === active}>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => choose(row)}
-                className={`flex w-full items-center gap-4 px-4 py-2 text-left text-sm ${i === active ? "bg-[var(--hover)]" : "hover:bg-[var(--hover)]"}`}
+                className={`flex w-full items-center gap-4 px-4 py-2 text-left text-sm ${i === active ? "bg-[var(--c-hover)]" : "hover:bg-[var(--c-hover)]"}`}
               >
                 {row.q ? (
                   <>
-                    <History size={18} className="shrink-0 text-[var(--text-2)]" aria-hidden />
+                    <History size={18} className="shrink-0 text-[var(--c-text-muted)]" aria-hidden />
                     <span className="truncate">{row.q}</span>
                   </>
                 ) : (
@@ -91,7 +91,7 @@ export default function SearchBox() {
                     <Thumb src={row.item!.thumbnail} round={row.item!.art === "round"} className="h-8 w-8 shrink-0" />
                     <span className="min-w-0">
                       <span className="block truncate">{row.item!.title}</span>
-                      <span className="block truncate text-xs text-[var(--text-2)]">{row.item!.subtitle}</span>
+                      <span className="block truncate text-xs text-[var(--c-text-muted)]">{row.item!.subtitle}</span>
                     </span>
                   </>
                 )}
