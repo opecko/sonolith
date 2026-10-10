@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { ytdlpInstall, ytdlpSetPath, ytdlpStatus, ytdlpUpdate } from "../api/ytdlp";
 import { invoke } from "@tauri-apps/api/core";
+import AppearanceSettings from "../components/appearance/AppearanceSettings";
 import AutoplayToggle from "../components/AutoplayToggle";
 import Switch from "../components/Switch";
 import { ErrorBox, Loading } from "../components/Status";
@@ -221,6 +222,7 @@ export default function SettingsView() {
   return (
     <div className="max-w-2xl">
       <h1 className="mb-6 text-2xl font-bold">Settings</h1>
+      <AppearanceSettings />
       <section className="mb-6 rounded-lg bg-[var(--c-surface)] p-6">
         <h2 className="mb-1 text-lg font-semibold">Playback</h2>
         <div className="flex items-center justify-between gap-4">

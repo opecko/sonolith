@@ -13,3 +13,14 @@ export const getPalette = (id: string | null | undefined): Palette => (id && byI
 
 /** Whether the palette has the given variant (the built-in look is dark only). */
 export const hasMode = (p: Palette, mode: "dark" | "light") => (p.source === "builtin" ? mode === "dark" : !!p[mode]);
+
+/** Colors for a palette card: background, card, accent, text… (built-in look = index.css defaults). */
+export function previewOf(p: Palette, mode: "dark" | "light") {
+  const c = p[mode] ?? p.dark ?? p.light;
+  if (!c) {
+    return { bg: "#030303", card: "#1d1d1d", accent: "#ff0033", onAccent: "#ffffff", text: "#ffffff", muted: "#ffffffb3",
+      strip: ["#030303", "#1d1d1d", "#ff0033", "#3ea6ff", "#ffffffb3", "#ffffff"] };
+  }
+  return { bg: c.surface, card: c.surfaceVariant, accent: c.primary, onAccent: c.onPrimary, text: c.onSurface, muted: c.onSurfaceVariant,
+    strip: [c.surface, c.surfaceVariant, c.primary, c.secondary, c.tertiary, c.onSurface] };
+}
