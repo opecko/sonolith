@@ -79,7 +79,7 @@ export default function Slider({ value, max, onCommit, onChange, live = false, s
         style={{ left: `${pct}%` }}
       />
       {(hover !== null || drag !== null) && format && max > 0 && (
-        <div className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded bg-[var(--surface-3)] px-2 py-1 text-xs tabular-nums shadow"
+        <div className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded bg-[var(--surface-3)] px-2 py-1 text-xs tabular-nums shadow whitespace-nowrap"
           style={{ left: `${((hover ?? shown) / max) * 100}%` }}>
           {format(tooltip === "value" ? shown : hover ?? shown)}
         </div>
