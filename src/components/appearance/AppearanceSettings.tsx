@@ -7,11 +7,61 @@ import { effectiveTokens } from "../../theme/index";
 import { getPalette, hasMode, PALETTES } from "../../theme/palettes";
 import { searchPalettes } from "../../theme/search";
 import type { Mode } from "../../theme/types";
+import Slider from "../Slider";
+import Switch from "../Switch";
 import ColorEditor, { ContrastWarnings } from "./ColorEditor";
 import PaletteGallery, { ModeToggle, PaletteGrid, SearchField } from "./PaletteGallery";
 import ThemeTransfer from "./ThemeTransfer";
 
 const FEATURED_PALETTES = FEATURED.map((id) => PALETTES.find((p) => p.id === id)).filter((p) => !!p);
+
+function OptionRow({ title, detail, children }: { title: string; detail?: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2">
+      <div className="min-w-0">
+        <p className="text-sm">{title}</p>
+        {detail && <p className="text-sm text-[var(--c-text-muted)]">{detail}</p>}
+      </div>
+      <div className="flex shrink-0 items-center gap-3">{children}</div>
+    </div>
+  );
+}
+
+const pct = (v: number) => `${Math.round(v * 100)} %`;
+
+/** Now Playing ambient, artwork accent, corners, density and UI size. */
+function DisplayOptions() {
+  const a = useSettings((s) => s.appearance);
+  const seg = (on: boolean) => `rounded-full px-3 py-1 text-sm ${on ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`;
+  return (
+    <div className="mt-6 border-t border-[var(--c-outline)] pt-4">
+      <OptionRow title="Ambient light in Now Playing" detail="Soft glow from the artwork behind Now Playing.">
+        <Switch on={a.ambient} onChange={(ambient) => setAppearance({ ambient })} label="Ambient light in Now Playing" />
+      </OptionRow>
+      {a.ambient && (
+        <OptionRow title="Ambient intensity">
+          <Slider className="w-40" value={a.ambientIntensity} max={1} step={0.05} live onCommit={(ambientIntensity) => setAppearance({ ambientIntensity })} label="Ambient intensity" tooltip="value" format={pct} />
+        </OptionRow>
+      )}
+      <OptionRow title="Accent from artwork" detail="Takes the accent color from the playing track's cover.">
+        <Switch on={a.coverAccent} onChange={(coverAccent) => setAppearance({ coverAccent })} label="Accent from artwork" />
+      </OptionRow>
+      <OptionRow title="Corner radius">
+        <Slider className="w-40" value={a.radius} max={24} step={1} live onCommit={(radius) => setAppearance({ radius: Math.round(radius) })} label="Corner radius" tooltip="value" format={(v) => `${Math.round(v)} px`} />
+      </OptionRow>
+      <OptionRow title="Density">
+        <div className="flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Density">
+          <button type="button" aria-pressed={a.density === "normal"} className={seg(a.density === "normal")} onClick={() => setAppearance({ density: "normal" })}>Normal</button>
+          <button type="button" aria-pressed={a.density === "compact"} className={seg(a.density === "compact")} onClick={() => setAppearance({ density: "compact" })}>Compact</button>
+        </div>
+      </OptionRow>
+      <OptionRow title="Interface size">
+        {/* Slider covers 90–125 %; it works on the offset so the track starts at 90. */}
+        <Slider className="w-40" value={a.zoom - 0.9} max={0.35} step={0.05} onCommit={(v) => setAppearance({ zoom: Math.round((0.9 + v) * 20) / 20 })} label="Interface size" tooltip="value" format={(v) => pct(0.9 + v)} />
+      </OptionRow>
+    </div>
+  );
+}
 
 const outlineBtn = "flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]";
 
@@ -75,6 +125,8 @@ export default function AppearanceSettings() {
           </>
         )}
       </div>
+
+      <DisplayOptions />
 
       <div className="mt-6 flex flex-wrap gap-2 border-t border-[var(--c-outline)] pt-4">
         <button className={outlineBtn} onClick={() => setTransfer("import")}><Upload size={16} aria-hidden /> Import theme</button>

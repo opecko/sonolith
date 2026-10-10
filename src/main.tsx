@@ -3,14 +3,24 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { openMenuAt } from "./components/Menu";
 import "./index.css";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { coverTokens, initCoverAccent } from "./stores/coverAccent";
 import { useSettings } from "./stores/settings";
-import { applyTheme } from "./theme";
+import { applyLayout, applyTheme } from "./theme";
 
-// Theme goes on synchronously before the first render, so startup never flashes the default colors.
-applyTheme(useSettings.getState().appearance);
+// Appearance goes on synchronously before the first render, so startup never flashes the default colors.
+const applyColors = () => applyTheme(useSettings.getState().appearance, coverTokens());
+const applyZoom = (z: number) => void getCurrentWebview().setZoom(z).catch(() => {});
+applyColors();
+applyLayout(useSettings.getState().appearance);
+if (useSettings.getState().appearance.zoom !== 1) applyZoom(useSettings.getState().appearance.zoom);
 useSettings.subscribe((s, prev) => {
-  if (s.appearance !== prev.appearance) applyTheme(s.appearance);
+  if (s.appearance === prev.appearance) return;
+  applyColors();
+  applyLayout(s.appearance);
+  if (s.appearance.zoom !== prev.appearance.zoom) applyZoom(s.appearance.zoom);
 });
+initCoverAccent(applyColors);
 
 // The browser context menu (Back, Forward, Reload, Inspect Element…) never shows. Right-click on anything with a ⋮
 // menu (track rows, cards, the player bar) opens that menu at the pointer instead.

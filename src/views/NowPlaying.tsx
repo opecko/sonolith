@@ -12,6 +12,7 @@ import { EmptyState, ErrorBox, Loading } from "../components/Status";
 import { useAsync } from "../hooks/useData";
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
+import { useSettings } from "../stores/settings";
 import { useUi } from "../stores/ui";
 
 type Tab = "upnext" | "related" | "lyrics";
@@ -20,7 +21,7 @@ type Tab = "upnext" | "related" | "lyrics";
  * Ambient light: the art is drawn once into a 12×12 canvas and stretched by the browser, which gives a soft blur
  * with no CSS filter. A static layer costs nothing to recomposite while the user hovers or scrolls above it.
  */
-const AmbientLayer = memo(function AmbientLayer({ src }: { src: string }) {
+const AmbientLayer = memo(function AmbientLayer({ src, opacity }: { src: string; opacity: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const img = new Image();
@@ -39,17 +40,17 @@ const AmbientLayer = memo(function AmbientLayer({ src }: { src: string }) {
       img.onload = null;
     };
   }, [src]);
-  return <canvas ref={ref} width={12} height={12} className="fade-in absolute inset-0 h-full w-full opacity-80" />;
+  return <canvas ref={ref} width={12} height={12} className="fade-in absolute inset-0 h-full w-full" style={{ opacity }} />;
 });
 
-const Backdrop = memo(function Backdrop({ src }: { src?: string }) {
+const Backdrop = memo(function Backdrop({ src, intensity }: { src?: string; intensity: number }) {
   const [layers, setLayers] = useState<string[]>(src ? [src] : []);
   useEffect(() => {
     if (src) setLayers((l) => (l.at(-1) === src ? l : [...l.slice(-1), src]));
   }, [src]);
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden will-change-transform" aria-hidden>
-      {layers.map((l) => <AmbientLayer key={l} src={l} />)}
+      {layers.map((l) => <AmbientLayer key={l} src={l} opacity={intensity} />)}
       <div className="absolute inset-0 bg-[var(--c-overlay)]" />
     </div>
   );
@@ -172,6 +173,9 @@ export default function NowPlaying() {
   const open = useUi((s) => s.nowPlaying);
   const close = () => useUi.getState().setNowPlaying(false);
   const thumb = usePlayer((s) => s.queue[s.index]?.thumbnail);
+  // Ambient light (Settings → Appearance); when off it is neither computed nor drawn, the overlay shows --c-bg.
+  const ambientOn = useSettings((s) => s.appearance.ambient);
+  const ambientIntensity = useSettings((s) => s.appearance.ambientIntensity);
   const route = useNav((s) => s.route);
 
   useEffect(() => {
@@ -189,7 +193,7 @@ export default function NowPlaying() {
   return (
     <div role="dialog" aria-label="Now playing" className="slide-up fixed inset-x-0 bottom-[72px] top-0 z-30 flex bg-[var(--c-bg)]"
       onAnimationEnd={(e) => e.target === e.currentTarget && useUi.getState().setNowPlayingCovering(true)}>
-      <Backdrop src={thumb} />
+      {ambientOn && <Backdrop src={thumb} intensity={ambientIntensity} />}
       <button onClick={close} aria-label="Close now playing" className="icon-btn absolute left-4 top-4 z-10 h-10 w-10">
         <ChevronDown size={24} />
       </button>

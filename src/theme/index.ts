@@ -37,9 +37,12 @@ export function effectiveTokens(t: ThemeChoice): TokenMap {
   return m;
 }
 
-/** Writes the theme onto <html> as inline custom properties (only what differs from index.css). */
-export function applyTheme(t: ThemeChoice, root: HTMLElement = document.documentElement) {
-  const set = { ...(paletteValues(t) ?? {}), ...validOverrides(t.overrides) } as Partial<TokenMap>;
+/**
+ * Writes the theme onto <html> as inline custom properties (only what differs from index.css). `extra` (the
+ * artwork accent) sits between the palette and the user's own overrides.
+ */
+export function applyTheme(t: ThemeChoice, extra: Partial<TokenMap> = {}, root: HTMLElement = document.documentElement) {
+  const set = { ...(paletteValues(t) ?? {}), ...extra, ...validOverrides(t.overrides) } as Partial<TokenMap>;
   for (const k of TOKENS) {
     const v = set[k];
     if (v) root.style.setProperty(`--c-${k}`, v);
@@ -47,4 +50,10 @@ export function applyTheme(t: ThemeChoice, root: HTMLElement = document.document
   }
   // Native widgets (scrollbars, form controls, <input type=color>) follow the background's lightness.
   root.style.colorScheme = isLight(effectiveTokens(t).bg) ? "light" : "dark";
+}
+
+/** Corner radius and density (zoom is the webview's own, see main.tsx). */
+export function applyLayout(a: { radius: number; density: "normal" | "compact" }, root: HTMLElement = document.documentElement) {
+  root.style.setProperty("--radius", `${a.radius}px`);
+  root.dataset.density = a.density;
 }
