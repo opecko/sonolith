@@ -99,7 +99,7 @@ it's used only when the keyring is empty.
 ### Build installers
 
 - On any OS: `npm run tauri build` builds the installer for that OS in `src-tauri/target/release/bundle/`.
-- All packages at once (Linux host: Windows `.exe` via cross-compile, `.deb`, Arch package in Docker):
+- All packages at once (Arch-based Linux host: Windows `.exe` via cross-compile, `.deb`, Arch package via makepkg):
   `scripts/release.sh`. Packages land in `release/<version>/` with `SHA256SUMS`.
   Bump the version in `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `package.json` and
   `packaging/arch*/PKGBUILD` first.

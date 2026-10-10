@@ -11,7 +11,7 @@
 #
 # Targets:
 #   deb   Debian/Ubuntu package (native tauri build)
-#   arch  Arch ytdesk-bin package, repackaged from the deb and smoke-tested in a clean archlinux container (Docker)
+#   arch  Arch ytdesk-bin package, repackaged from the deb with makepkg on this machine and smoke-tested (ldd)
 #   win   Windows NSIS installer, cross-compiled with cargo-xwin
 # Bump the version first in: src-tauri/tauri.conf.json, src-tauri/Cargo.toml, package.json, packaging/arch*/PKGBUILD.
 set -euo pipefail
@@ -73,7 +73,7 @@ step() {
 
 on_exit() {
   local code=$?
-  # docker-build.sh's make-src.sh fills sha256sums into the PKGBUILDs; put them back.
+  # make-src.sh (run by native-build.sh) fills sha256sums into the PKGBUILDs; put them back.
   [ "$restore_pkgbuilds" = 1 ] && git -C "$ROOT" checkout -- packaging/arch/PKGBUILD packaging/arch-bin/PKGBUILD 2>/dev/null
   finish_step "$([ "$code" = 0 ] && echo ok || echo FAILED)"
   printf '\n\033[1mSummary\033[0m (total %s)\n' "$(fmt_dur $(($(date +%s) - started)))"
@@ -112,12 +112,9 @@ if [ "$publish" = 1 ]; then
   gh auth status >/dev/null 2>&1 || die "not signed in to gh (gh auth login)"
 fi
 
-docker_cmd=""
 if want arch; then
-  need docker "sudo apt install docker.io"
-  if docker info >/dev/null 2>&1; then docker_cmd="direct"
-  elif sg docker -c "docker info" >/dev/null 2>&1; then docker_cmd="sg"
-  else die "no access to Docker (add yourself to the docker group: sudo usermod -aG docker \$USER)"; fi
+  need makepkg "build on Arch or an Arch-based distro"
+  need bsdtar "pacman -S libarchive"
 fi
 if want win; then
   need makensis "sudo apt install nsis"
@@ -170,11 +167,10 @@ fi
 
 # ---------- arch ----------
 if want arch; then
-  step "Arch package (ytdesk-bin, built + smoke-tested in Docker)"
+  step "Arch package (ytdesk-bin, makepkg + smoke test)"
   rm -f packaging/out/ytdesk-bin-*.pkg.tar.zst
   restore_pkgbuilds=1 # on_exit restores the sha256sums make-src.sh writes
-  if [ "$docker_cmd" = sg ]; then sg docker -c "packaging/arch/docker-build.sh bin"
-  else packaging/arch/docker-build.sh bin; fi
+  packaging/arch/native-build.sh bin
   cp packaging/out/ytdesk-bin-"$ver"-*-x86_64.pkg.tar.zst "$out/"
   git checkout -- packaging/arch/PKGBUILD packaging/arch-bin/PKGBUILD # clean tree again, e.g. for --publish
   restore_pkgbuilds=0
