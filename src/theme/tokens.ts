@@ -37,6 +37,9 @@ export type Token = keyof typeof DEFAULT_TOKENS;
 export type TokenMap = Record<Token, string>;
 export const TOKENS = Object.keys(DEFAULT_TOKENS) as Token[];
 
+/** The main colors the Simple editor shows; the rest follow them or keep the palette's shades (Advanced shows all). */
+export const SIMPLE_TOKENS: Token[] = ["bg", "surface-2", "text", "text-muted", "accent", "on-accent"];
+
 export const TOKEN_LABELS: Record<Token, string> = {
   bg: "Background",
   surface: "Surface",

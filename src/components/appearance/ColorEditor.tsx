@@ -1,7 +1,7 @@
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { contrast, isHex, parseHex, toHex } from "../../theme/color";
-import { TOKEN_LABELS, TOKENS, type Token, type TokenMap } from "../../theme/tokens";
+import { SIMPLE_TOKENS, TOKEN_LABELS, TOKENS, type Token, type TokenMap } from "../../theme/tokens";
 
 /** WCAG AA for normal text. */
 const MIN_CONTRAST = 4.5;
@@ -77,8 +77,14 @@ const TokenRow = memo(function TokenRow({ token, value, overridden, onSet, onRes
   );
 });
 
-/** Every token with a picker, a hex field (#rgb, #rrggbb, #rrggbbaa) and a per-token reset. */
-export default function ColorEditor({ tokens, overrides, onChange }: {
+export type EditorView = "simple" | "advanced";
+
+/**
+ * Tokens with a picker, a hex field (#rgb, #rrggbb, #rrggbbaa) and a per-token reset: the main colors in the
+ * Simple view, every token in Advanced.
+ */
+export default function ColorEditor({ view, tokens, overrides, onChange }: {
+  view: EditorView;
   tokens: TokenMap;
   overrides: Partial<Record<Token, string>>;
   onChange: (overrides: Partial<Record<Token, string>>) => void;
@@ -88,9 +94,18 @@ export default function ColorEditor({ tokens, overrides, onChange }: {
     const { [t]: _, ...rest } = overrides;
     onChange(rest);
   };
+  const shown = view === "simple" ? SIMPLE_TOKENS : TOKENS;
+  const hidden = view === "simple" ? Object.keys(overrides).filter((t) => !SIMPLE_TOKENS.includes(t as Token)).length : 0;
   return (
-    <div className="grid gap-x-8 md:grid-cols-2">
-      {TOKENS.map((t) => <TokenRow key={t} token={t} value={tokens[t]} overridden={!!overrides[t]} onSet={set} onReset={reset} />)}
-    </div>
+    <>
+      <div className="grid gap-x-8 md:grid-cols-2">
+        {shown.map((t) => <TokenRow key={t} token={t} value={tokens[t]} overridden={!!overrides[t]} onSet={set} onReset={reset} />)}
+      </div>
+      {hidden > 0 && (
+        <p className="mt-2 text-sm text-[var(--c-text-muted)]">
+          {hidden} more custom {hidden === 1 ? "color is" : "colors are"} set in the Advanced view.
+        </p>
+      )}
+    </>
   );
 }

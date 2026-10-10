@@ -9,7 +9,7 @@ import { searchPalettes } from "../../theme/search";
 import type { Mode } from "../../theme/types";
 import Slider from "../Slider";
 import Switch from "../Switch";
-import ColorEditor, { ContrastWarnings } from "./ColorEditor";
+import ColorEditor, { ContrastWarnings, type EditorView } from "./ColorEditor";
 import PaletteGallery, { ModeToggle, PaletteGrid, SearchField } from "./PaletteGallery";
 import ThemeTransfer from "./ThemeTransfer";
 
@@ -63,6 +63,15 @@ function DisplayOptions() {
   );
 }
 
+const VIEW_KEY = "colorEditorView";
+function readView(): EditorView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === "advanced" ? "advanced" : "simple";
+  } catch {
+    return "simple";
+  }
+}
+
 const outlineBtn = "flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]";
 
 export default function AppearanceSettings() {
@@ -71,6 +80,15 @@ export default function AppearanceSettings() {
   const [query, setQuery] = useState("");
   const [gallery, setGallery] = useState(false);
   const [editor, setEditor] = useState(false);
+  const [view, setViewState] = useState<EditorView>(readView);
+  const setView = (v: EditorView) => {
+    setViewState(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* storage unavailable */
+    }
+  };
   const [transfer, setTransfer] = useState<"import" | "export" | null>(null);
 
   const selected = getPalette(palette);
@@ -118,7 +136,20 @@ export default function AppearanceSettings() {
         </div>
         {editor && (
           <>
-            <ColorEditor tokens={tokens} overrides={overrides} onChange={(o) => setAppearance({ overrides: o })} />
+            <div className="mb-2 flex items-center justify-between gap-4">
+              <p className="text-sm text-[var(--c-text-muted)]">
+                {view === "simple" ? "The main colors; related shades follow them." : "Every color the app uses."}
+              </p>
+              <div className="flex shrink-0 rounded-full bg-fg/5 p-0.5" role="group" aria-label="Editor view">
+                {(["simple", "advanced"] as const).map((v) => (
+                  <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}
+                    className={`rounded-full px-3 py-1 text-sm capitalize ${view === v ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <ColorEditor view={view} tokens={tokens} overrides={overrides} onChange={(o) => setAppearance({ overrides: o })} />
             <button className={`${outlineBtn} mt-4`} disabled={!customCount} onClick={() => setAppearance({ overrides: {} })}>
               <RotateCcw size={16} aria-hidden /> Discard all custom colors
             </button>

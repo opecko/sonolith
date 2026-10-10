@@ -25,6 +25,17 @@ describe("tokens", () => {
     }
   });
 
+  it("a custom main color carries over to the tokens that follow it", () => {
+    const nord = effectiveTokens({ palette: "nord", mode: "dark", overrides: { accent: "#00ff00", "on-accent": "#111111" } });
+    expect(nord["slider-fill"]).toBe("#00ff00");
+    expect(nord.button).toBe("#00ff00");
+    expect(nord["on-button"]).toBe("#111111");
+    const own = effectiveTokens({ palette: "nord", mode: "dark", overrides: { accent: "#00ff00", "slider-fill": "#0000ff" } });
+    expect(own["slider-fill"]).toBe("#0000ff");
+    // The built-in look keeps its white buttons.
+    expect(effectiveTokens({ palette: "ytm", mode: "dark", overrides: { accent: "#00ff00" } }).button).toBe(DEFAULT_TOKENS.button);
+  });
+
   it("built-in look resolves var() chains through overrides", () => {
     const t = effectiveTokens({ palette: "ytm", mode: "dark", overrides: { accent: "#00ff00" } });
     expect(t["slider-fill"]).toBe("#00ff00");
