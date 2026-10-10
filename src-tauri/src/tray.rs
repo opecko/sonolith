@@ -28,6 +28,10 @@ fn set_window_visible<R: Runtime>(app: &AppHandle<R>, visible: bool) {
     }
 }
 
+pub fn show_window<R: Runtime>(app: &AppHandle<R>) {
+    set_window_visible(app, true);
+}
+
 pub fn toggle_window<R: Runtime>(app: &AppHandle<R>) {
     let visible = main_window(app).and_then(|w| w.is_visible().ok()).unwrap_or(false);
     set_window_visible(app, !visible);

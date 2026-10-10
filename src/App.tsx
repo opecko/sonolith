@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "./stores/auth";
 import { initDiscord } from "./stores/discord";
+import { initMpris } from "./stores/mpris";
 import { initHistory } from "./stores/history";
 import { initMediaKeys, initTray } from "./stores/mediaKeys";
 import Sidebar from "./components/Sidebar";
@@ -24,6 +25,7 @@ export default function App() {
     initMediaKeys();
     void initTray();
     initDiscord();
+    void initMpris();
     initHistory();
     initUpdates();
   }, []);

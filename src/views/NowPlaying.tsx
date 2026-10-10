@@ -100,15 +100,17 @@ function UpNextTab() {
   const title = contextTitle || header?.subtitle;
   return (
     <>
-      <div className="mb-4 flex items-start justify-between gap-4 px-2">
+      <div className="mb-4 flex shrink-0 items-start justify-between gap-4 px-2">
         <div className="min-w-0">
           <p className="text-xs text-[var(--text-2)]">{caption}</p>
           {title && <p className="truncate text-base font-semibold">{title}</p>}
         </div>
         <AutoplayToggle />
       </div>
-      <QueueChips />
-      <QueueList autoScroll />
+      <div className="shrink-0"><QueueChips /></div>
+      <div className="scroll-y min-h-0 flex-1 pr-1">
+        <QueueList autoScroll />
+      </div>
     </>
   );
 }
@@ -156,7 +158,7 @@ function SidePanel() {
           </button>
         ))}
       </div>
-      <div role="tabpanel" className="scroll-y min-h-0 flex-1 pr-1 will-change-transform">
+      <div role="tabpanel" className={`min-h-0 flex-1 will-change-transform ${active === "upnext" ? "flex flex-col" : "scroll-y pr-1"}`}>
         {active === "upnext" && <UpNextTab />}
         {active === "related" && videoId && related && <RelatedTab key={videoId} videoId={videoId} target={related} />}
         {active === "lyrics" && videoId && lyrics && <LyricsTab key={videoId} videoId={videoId} target={lyrics} />}

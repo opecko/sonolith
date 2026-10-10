@@ -9,6 +9,7 @@ import { autoplayTrigger, dedupeAutoplay, pushHistory } from "./autoplay";
 import { useProgress } from "./progress";
 import { reorder } from "./queueOps";
 import { makeSnapshot, readSnapshot, SNAPSHOT_KEY } from "./queueSnapshot";
+import { nativeMpris } from "./platform";
 import { useSettings } from "./settings";
 import { useToast } from "./toast";
 
@@ -625,7 +626,7 @@ usePlayer.subscribe((s, prev) => {
 });
 
 function updateMediaSession(track: Track) {
-  if (!("mediaSession" in navigator)) return;
+  if (nativeMpris || !("mediaSession" in navigator)) return;
   const set = (maxres: boolean) => {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
@@ -647,7 +648,7 @@ function updateMediaSession(track: Track) {
   }
 }
 
-if ("mediaSession" in navigator) {
+if (!nativeMpris && "mediaSession" in navigator) {
   const s = () => usePlayer.getState();
   navigator.mediaSession.setActionHandler("play", () => s().togglePlay());
   navigator.mediaSession.setActionHandler("pause", () => s().togglePlay());

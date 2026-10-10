@@ -1,5 +1,7 @@
 mod auth;
 mod discord;
+#[cfg(target_os = "linux")]
+mod mpris;
 mod proxy;
 mod render;
 mod tray;
@@ -24,14 +26,27 @@ fn log_playback(app: tauri::AppHandle, line: String) -> Result<String, String> {
     Ok(path.to_string_lossy().into_owned())
 }
 
+#[cfg(target_os = "linux")]
+use mpris::mpris_update;
+
+/// Other platforms use the webview's Media Session (SMTC / Now Playing); nothing to export.
+#[cfg(not(target_os = "linux"))]
+#[tauri::command]
+fn mpris_update(_snapshot: serde_json::Value) {}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Must be the first plugin: a second launch (e.g. from the app launcher while hidden in the tray) hands over
+        // to the running instance and just shows its window.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| tray::show_window(app)))
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
             ytdlp::ensure_fresh(app.handle().clone());
+            #[cfg(target_os = "linux")]
+            mpris::init(app.handle());
             if let Err(e) = tray::init(app.handle()) {
                 eprintln!("tray unavailable: {e}");
             }
@@ -56,6 +71,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             log_playback,
+            mpris_update,
             discord::discord_set,
             discord::discord_disconnect,
             render::render_get_gpu,
