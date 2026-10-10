@@ -10,9 +10,13 @@ const REPEAT: Record<string, Repeat> = { None: "off", Playlist: "all", Track: "o
 /** A position further than this from where playback should be counts as a seek. */
 const SEEK_JUMP_S = 1.5;
 
+let started = false;
+
 /** Mirrors the player to the Rust MPRIS service (state snapshots out, D-Bus controls in). Linux only. */
 export async function initMpris() {
-  if (!nativeMpris) return;
+  // StrictMode runs effects twice; a second listener would apply every relative seek twice.
+  if (!nativeMpris || started) return;
+  started = true;
   const p = () => usePlayer.getState();
 
   await listen<{ action: string; value: unknown }>("mpris", ({ payload: { action, value } }) => {
