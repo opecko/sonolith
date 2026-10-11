@@ -1,7 +1,7 @@
 {
   "name": "ytdesk",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Lightweight YouTube Music desktop client",
   "license": "MIT",
   "repository": "github:opecko/ytdesk",
