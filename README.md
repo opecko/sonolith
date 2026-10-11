@@ -30,7 +30,8 @@ Get the latest version from the [**Releases**](../../releases/latest) page:
 | --- | --- | --- |
 | **Windows 10 / 11** | `ytdesk_…_x64-setup.exe` | Double-click and follow the installer |
 | **Ubuntu / Debian** (24.04+) | `ytdesk_…_amd64.deb` | Double-click, or `sudo apt install ./ytdesk_…_amd64.deb` |
-| **Arch Linux** | `ytdesk-bin-…-x86_64.pkg.tar.zst` | `sudo pacman -U ytdesk-bin-…-x86_64.pkg.tar.zst` |
+| **Arch Linux** | from the [AUR](https://aur.archlinux.org/packages/ytdesk-bin) | `yay -S ytdesk-bin` (prebuilt) or `yay -S ytdesk` (built from source) |
+| | or `ytdesk-bin-…-x86_64.pkg.tar.zst` | `sudo pacman -U ytdesk-bin-…-x86_64.pkg.tar.zst` |
 
 macOS isn't supported yet.
 
@@ -103,6 +104,7 @@ it's used only when the keyring is empty.
   `scripts/release.sh`. Packages land in `release/<version>/` with `SHA256SUMS`.
   Bump the version in `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `package.json` and
   `packaging/arch*/PKGBUILD` first.
+- After publishing a release, `scripts/aur.sh <version> --push` updates the AUR packages (`packaging/aur/`).
 - **Actions → Release → Run workflow** builds everything on GitHub for an existing tag and attaches it to the
   release.
 
