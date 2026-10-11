@@ -129,7 +129,7 @@ export default function AppearanceSettings() {
               {customCount ? `${customCount} custom ${customCount === 1 ? "color" : "colors"}, kept when you switch palettes.` : "Fine-tune any color on top of the palette."}
             </span>
           </span>
-          <ChevronDown size={20} className={`shrink-0 transition-transform ${editor ? "rotate-180" : ""}`} aria-hidden />
+          <ChevronDown size={20} className={`shrink-0 ${editor ? "rotate-180" : ""}`} aria-hidden />
         </button>
         <div className="mt-3">
           <ContrastWarnings tokens={tokens} />
