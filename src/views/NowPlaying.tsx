@@ -177,6 +177,9 @@ export default function NowPlaying() {
   const ambientOn = useSettings((s) => s.appearance.ambient);
   const ambientIntensity = useSettings((s) => s.appearance.ambientIntensity);
   const route = useNav((s) => s.route);
+  // Stays mounted after closing until the slide-down animation ends (set during render, so no frame is lost).
+  const [mounted, setMounted] = useState(open);
+  if (open && !mounted) setMounted(true);
 
   useEffect(() => {
     if (!open) return;
@@ -189,10 +192,15 @@ export default function NowPlaying() {
     close();
   }, [route]);
 
-  if (!open) return null;
+  if (!mounted) return null;
   return (
-    <div role="dialog" aria-label="Now playing" className="slide-up fixed inset-x-0 bottom-[72px] top-0 z-30 flex bg-[var(--c-bg)]"
-      onAnimationEnd={(e) => e.target === e.currentTarget && useUi.getState().setNowPlayingCovering(true)}>
+    <div role="dialog" aria-label="Now playing" aria-hidden={!open}
+      className={`${open ? "slide-up" : "slide-down pointer-events-none"} fixed inset-x-0 bottom-[72px] top-0 z-30 flex bg-[var(--c-bg)]`}
+      onAnimationEnd={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (open) useUi.getState().setNowPlayingCovering(true);
+        else setMounted(false);
+      }}>
       {ambientOn && <Backdrop src={thumb} intensity={ambientIntensity} />}
       <button onClick={close} aria-label="Close now playing" className="icon-btn absolute left-4 top-4 z-10 h-10 w-10">
         <ChevronDown size={24} />

@@ -175,7 +175,7 @@ export function byline(t: Track): string {
 
 export default function PlayerBar({ queueOpen, onToggleQueue }: { queueOpen: boolean; onToggleQueue: () => void }) {
   return (
-    <footer className="flex h-[72px] shrink-0 items-center gap-6 border-t border-[var(--c-outline)] bg-[var(--c-surface)] px-4">
+    <footer className="relative z-40 flex h-[72px] shrink-0 items-center gap-6 border-t border-[var(--c-outline)] bg-[var(--c-surface)] px-4">
       <NowPlaying />
       <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5">
         <Controls />

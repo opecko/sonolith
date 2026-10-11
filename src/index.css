@@ -117,11 +117,18 @@ button:disabled { cursor: default; }
 }
 
 
+/* Now Playing slides out from behind the player bar and back. `both` keeps the start position from the very first
+   frame, so the overlay never flashes in place before it moves. */
 @keyframes slide-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-.slide-up { animation: slide-up 200ms cubic-bezier(0.2, 0, 0, 1); }
+.slide-up { animation: slide-up 200ms cubic-bezier(0.2, 0, 0, 1) both; will-change: transform; }
+@keyframes slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+.slide-down { animation: slide-down 160ms cubic-bezier(0.4, 0, 1, 1) both; will-change: transform; }
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
