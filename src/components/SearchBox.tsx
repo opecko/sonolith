@@ -88,7 +88,7 @@ export default function SearchBox() {
                   </>
                 ) : (
                   <>
-                    <Thumb src={row.item!.thumbnail} round={row.item!.art === "round"} className="h-8 w-8 shrink-0" />
+                    <Thumb src={row.item!.thumbnail} round={row.item!.art === "round"} px={32} className="h-8 w-8 shrink-0" />
                     <span className="min-w-0">
                       <span className="block truncate">{row.item!.title}</span>
                       <span className="block truncate text-xs text-[var(--c-text-muted)]">{row.item!.subtitle}</span>

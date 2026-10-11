@@ -16,8 +16,10 @@ applyLayout(useSettings.getState().appearance);
 if (useSettings.getState().appearance.zoom !== 1) applyZoom(useSettings.getState().appearance.zoom);
 useSettings.subscribe((s, prev) => {
   if (s.appearance === prev.appearance) return;
-  applyColors();
-  applyLayout(s.appearance);
+  const a = s.appearance, p = prev.appearance;
+  // Only what the change affects: a radius or intensity drag shouldn't recompute every color token.
+  if (a.palette !== p.palette || a.mode !== p.mode || a.overrides !== p.overrides || a.coverAccent !== p.coverAccent) applyColors();
+  if (a.radius !== p.radius || a.density !== p.density) applyLayout(a);
   if (s.appearance.zoom !== prev.appearance.zoom) applyZoom(s.appearance.zoom);
 });
 initCoverAccent(applyColors);

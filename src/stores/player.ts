@@ -82,6 +82,15 @@ const DECODE_HINT = /Linux/.test(navigator.userAgent)
   : "This song couldn't be played. Try again in a moment.";
 
 const audio = new Audio();
+
+/** Where playback really is, in seconds; unlike useProgress it keeps moving while the window is hidden. */
+export const playbackTime = () => audio.currentTime;
+const tickListeners = new Set<() => void>();
+/** Runs on every timeupdate (a few times a second), hidden window included, for bookkeeping like history. */
+export function onPlaybackTick(fn: () => void): () => void {
+  tickListeners.add(fn);
+  return () => tickListeners.delete(fn);
+}
 audio.preload = "auto";
 
 /** Original (unshuffled) sequence, used to restore order when shuffle is turned off. */
@@ -363,6 +372,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
   });
   audio.addEventListener("timeupdate", () => {
     if (!document.hidden) pushClock();
+    for (const fn of tickListeners) fn();
     const { index } = get();
     if (prefetchedFor !== index && audio.currentTime > Math.min(30, audio.duration / 2 || 30)) {
       prefetchedFor = index;

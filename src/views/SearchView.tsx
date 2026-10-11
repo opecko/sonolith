@@ -81,7 +81,7 @@ function TopResult({ items, actions }: { items: Item[]; actions: CardAction[] })
             <li key={`${r.type}:${r.id}`} className="group flex items-center rounded-[var(--radius)] pr-1 hover:bg-fg/10">
               <button onClick={() => activate(r)} className="flex min-w-0 flex-1 items-center gap-4 p-2 text-left">
                 <span className="relative shrink-0">
-                  <Thumb src={r.thumbnail} round={r.type === "artist"} className="h-14 w-14" />
+                  <Thumb src={r.thumbnail} round={r.type === "artist"} px={56} className="h-14 w-14" />
                   {isTrack(r) && (
                     <span className="absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/60 opacity-0 group-hover:opacity-100" aria-hidden>
                       <Play size={20} fill="currentColor" />

@@ -1,5 +1,5 @@
 import { recordHistory } from "../api/ytm";
-import { usePlayer } from "./player";
+import { onPlaybackTick, playbackTime, usePlayer } from "./player";
 import { useProgress } from "./progress";
 import { useSettings } from "./settings";
 
@@ -19,7 +19,9 @@ export function initHistory() {
       recorded = false;
     }
     if (!id || recorded || status !== "playing" || !useSettings.getState().saveHistory) return;
-    const { position, duration } = useProgress.getState();
+    // The real playback time: the displayed position stands still while the window is hidden (tray).
+    const position = playbackTime();
+    const { duration } = useProgress.getState();
     // Short tracks count once half of them has played.
     if (position < Math.min(RECORD_AFTER_S, duration > 0 ? duration / 2 : RECORD_AFTER_S)) return;
     recorded = true;
@@ -27,5 +29,5 @@ export function initHistory() {
   };
 
   usePlayer.subscribe(check);
-  useProgress.subscribe(check);
+  onPlaybackTick(check);
 }

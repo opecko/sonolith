@@ -35,6 +35,11 @@ export default function PodcastVideo({ videoId }: { videoId: string }) {
     const a = getAudio();
     if (!v || !src) return;
     const sync = (force = false) => {
+      // Nobody sees the (muted) video while the window is hidden: stop decoding (and seeking) it until it's back.
+      if (document.hidden) {
+        if (!v.paused) v.pause();
+        return;
+      }
       if (v.playbackRate !== a.playbackRate) v.playbackRate = a.playbackRate;
       if (force || Math.abs(v.currentTime - a.currentTime) > MAX_DRIFT_S) v.currentTime = a.currentTime;
       if (a.paused && !v.paused) v.pause();
@@ -48,7 +53,10 @@ export default function PodcastVideo({ videoId }: { videoId: string }) {
     a.addEventListener("ratechange", onTick);
     a.addEventListener("timeupdate", onTick);
     v.addEventListener("loadedmetadata", onSeek);
+    const onVisibility = () => sync(!document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
       a.removeEventListener("play", onTick);
       a.removeEventListener("pause", onTick);
       a.removeEventListener("seeked", onSeek);

@@ -34,7 +34,7 @@ function QuickPickRow({ track }: { track: Track & Item }) {
   return (
     <div className="group flex w-[360px] items-center gap-3 rounded-[var(--radius)] pr-1 hover:bg-[var(--c-hover)]">
       <button onClick={() => void playItem(track)} className="relative shrink-0" aria-label={`Play ${track.title}`}>
-        <Thumb src={track.thumbnail} className="h-12 w-12" />
+        <Thumb src={track.thumbnail} px={48} className="h-12 w-12" />
         <span className="absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/50 opacity-0 group-hover:opacity-100">
           <Play size={20} fill="currentColor" />
         </span>

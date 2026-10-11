@@ -39,7 +39,7 @@ function NowPlaying() {
   return (
     <div className="flex w-[30%] min-w-0 items-center gap-4">
       <button onClick={openNowPlaying} disabled={!track} aria-label="Open now playing" className="shrink-0 hover:opacity-80">
-        <Thumb src={track?.thumbnail} className="h-12 w-12" />
+        <Thumb src={track?.thumbnail} px={48} className="h-12 w-12" />
       </button>
       <div className="min-w-0 flex-1">
         {track ? (

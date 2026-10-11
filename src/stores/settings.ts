@@ -32,16 +32,33 @@ function read(): Settings {
   }
 }
 
-export const useSettings = create<Settings & { set: (patch: Partial<Settings>) => void }>((set, get) => ({
+function write() {
+  try {
+    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance } = useSettings.getState();
+    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance }));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+// Live sliders (corner radius, ambient intensity) change settings on every pointer move; storage gets the result
+// once things settle, and right away when the window hides or the page goes away.
+let pending: ReturnType<typeof setTimeout> | undefined;
+function flush() {
+  if (pending === undefined) return;
+  clearTimeout(pending);
+  pending = undefined;
+  write();
+}
+window.addEventListener("pagehide", flush);
+document.addEventListener("visibilitychange", () => document.hidden && flush());
+
+export const useSettings = create<Settings & { set: (patch: Partial<Settings>) => void }>((set) => ({
   ...read(),
   set: (patch) => {
     set(patch);
-    try {
-      const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance } = get();
-      localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance }));
-    } catch {
-      /* storage unavailable */
-    }
+    clearTimeout(pending);
+    pending = setTimeout(flush, 300);
   },
 }));
 
