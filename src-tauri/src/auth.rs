@@ -42,7 +42,7 @@ fn entry() -> Result<keyring::Entry, String> {
     keyring::Entry::new(SERVICE, ACCOUNT).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn auth_get_cookie() -> Result<Option<String>, String> {
     // Stored as UTF-8 bytes (see auth_set_cookie); on Linux this matches entries written with set_password.
     match entry()?.get_secret().map(|b| String::from_utf8_lossy(&b).into_owned()) {
@@ -53,7 +53,7 @@ pub fn auth_get_cookie() -> Result<Option<String>, String> {
     Ok(std::env::var("YTM_COOKIE").ok().filter(|c| has_auth_cookie(c)))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn auth_set_cookie(cookie: String) -> Result<(), String> {
     // set_password would store UTF-16 on Windows (2 bytes/char), and the ~1.6 KB cookie header would then exceed
     // the Credential Manager's 2560-byte blob limit. Raw UTF-8 fits on every platform.

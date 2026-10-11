@@ -47,7 +47,11 @@ async fn start() -> Result<u16, String> {
     tauri::async_runtime::spawn(async move {
         let client = reqwest::Client::builder().user_agent(UA).build().expect("http client");
         loop {
-            let Ok((sock, _)) = listener.accept().await else { continue };
+            let Ok((sock, _)) = listener.accept().await else {
+                // A persistent error (e.g. out of file descriptors) would otherwise spin a core.
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                continue;
+            };
             let client = client.clone();
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = serve(sock, client).await {

@@ -36,12 +36,12 @@ pub fn close_to_tray(app: &AppHandle) -> bool {
     flag(app, "close_to_tray", true)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn render_get_close_to_tray(app: AppHandle) -> bool {
     close_to_tray(&app)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn render_set_close_to_tray(app: AppHandle, enabled: bool) -> Result<(), String> {
     write_flag(&app, "close_to_tray", enabled)
 }
@@ -67,12 +67,12 @@ pub fn apply(app: &AppHandle, gpu: bool) {
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn render_get_gpu(app: AppHandle) -> bool {
     gpu_enabled(&app)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn render_set_gpu(app: AppHandle, enabled: bool) -> Result<(), String> {
     write_flag(&app, KEY, enabled)?;
     apply(&app, enabled);

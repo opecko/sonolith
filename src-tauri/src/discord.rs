@@ -46,6 +46,9 @@ fn candidates() -> Vec<std::path::PathBuf> {
         .filter_map(|k| std::env::var_os(k).map(Into::into))
         .collect();
     bases.push("/tmp".into());
+    // TMPDIR is often /tmp itself.
+    let mut seen = std::collections::HashSet::new();
+    bases.retain(|b| seen.insert(b.clone()));
     // Native, Flatpak, Snap and Vesktop (Flatpak) locations of discord-ipc-N.
     let subs = [
         "",
@@ -60,8 +63,14 @@ fn candidates() -> Vec<std::path::PathBuf> {
     let mut out = Vec::new();
     for b in &bases {
         for s in subs {
+            // One stat instead of ten failed connects for every location Discord doesn't use (retried every 5 s
+            // while Discord isn't running).
+            let dir = b.join(s);
+            if !dir.is_dir() {
+                continue;
+            }
             for i in 0..10 {
-                out.push(b.join(s).join(format!("discord-ipc-{i}")));
+                out.push(dir.join(format!("discord-ipc-{i}")));
             }
         }
     }
@@ -185,7 +194,9 @@ fn worker(rx: Receiver<Msg>) {
     // Latest activity not yet delivered (Discord not running yet); retried every RETRY.
     let mut pending: Option<Option<Value>> = None;
     loop {
-        match rx.recv_timeout(RETRY) {
+        // Nothing to retry: sleep until a message comes instead of waking every RETRY.
+        let next = if pending.is_some() { rx.recv_timeout(RETRY) } else { rx.recv().map_err(|_| RecvTimeoutError::Disconnected) };
+        match next {
             Ok(Msg::Set(a)) => pending = Some(a),
             Ok(Msg::Disconnect) => {
                 if let Some(mut c) = conn.take() {

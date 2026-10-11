@@ -200,9 +200,10 @@ pub async fn ytdlp_stream_url(app: AppHandle, video_id: String, codecs: Vec<Stri
         return Err("invalid video id".into());
     }
     let selector = format_selector(&codecs)?;
-    let bin = resolve_bin(&app);
-    let cookie = crate::auth::auth_get_cookie().ok().flatten();
     tauri::async_runtime::spawn_blocking(move || {
+        // Config read and keyring (D-Bus) call block: keep them off the async runtime too.
+        let bin = resolve_bin(&app);
+        let cookie = crate::auth::auth_get_cookie().ok().flatten();
         let rt = find_js_runtime();
         let cookies = cookie.as_deref().map(TempCookies::create).transpose()?;
         let mut cmd = command(&bin);

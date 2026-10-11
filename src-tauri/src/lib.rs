@@ -12,7 +12,7 @@ use std::io::Write;
 use tauri::Manager;
 
 /// Appends one line to debug/playback.log (repo root in dev builds, app log dir in release).
-#[tauri::command]
+#[tauri::command(async)]
 fn log_playback(app: tauri::AppHandle, line: String) -> Result<String, String> {
     let path = if cfg!(debug_assertions) {
         std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../debug/playback.log"))
