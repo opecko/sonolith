@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { hiResArt } from "../api/art";
 import type { BrowseRef } from "../api/types";
 import { getLyrics, getRelated } from "../api/ytm";
@@ -23,7 +23,19 @@ type Tab = "upnext" | "related" | "lyrics";
  */
 const AmbientLayer = memo(function AmbientLayer({ src, opacity }: { src: string; opacity: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const target = useRef(opacity);
+  // Fade-in progress 0–1. Driven from JS like the overlay's slide: a CSS animation's last frame on WebKitGTK
+  // flashes the layer's pre-animation opacity (the ambient light blinking off).
+  const shown = useRef(0);
+  const paint = () => {
+    if (ref.current) ref.current.style.opacity = String(target.current * shown.current);
+  };
+  useLayoutEffect(() => {
+    target.current = opacity;
+    paint();
+  }, [opacity]);
   useEffect(() => {
+    let raf = 0;
     const img = new Image();
     img.referrerPolicy = "no-referrer";
     img.onload = () => {
@@ -34,13 +46,22 @@ const AmbientLayer = memo(function AmbientLayer({ src, opacity }: { src: string;
       mid.width = mid.height = 48;
       mid.getContext("2d")?.drawImage(img, 0, 0, 48, 48);
       ctx.drawImage(mid, 0, 0, 12, 12);
+      let start = 0;
+      raf = requestAnimationFrame(function frame(now) {
+        start ||= now;
+        const t = Math.min(1, (now - start) / 300);
+        shown.current = 1 - (1 - t) ** 3;
+        paint();
+        if (t < 1) raf = requestAnimationFrame(frame);
+      });
     };
     img.src = src;
     return () => {
       img.onload = null;
+      cancelAnimationFrame(raf);
     };
   }, [src]);
-  return <canvas ref={ref} width={12} height={12} className="fade-in absolute inset-0 h-full w-full" style={{ opacity }} />;
+  return <canvas ref={ref} width={12} height={12} className="absolute inset-0 h-full w-full" />;
 });
 
 const Backdrop = memo(function Backdrop({ src, intensity }: { src?: string; intensity: number }) {
@@ -168,6 +189,37 @@ function SidePanel() {
   );
 }
 
+/**
+ * Slides the overlay out from behind the player bar and back, driven from JS one frame at a time. WebKitGTK runs CSS
+ * animations on the compositor and, when one ends, paints a frame with the layer's pre-animation transform: the
+ * closed overlay right after opening, the open one right after closing. Setting the transform every frame from the
+ * main thread leaves nothing stale to show. Position is in % of the overlay's height (100 = hidden).
+ */
+function useSlide(ref: RefObject<HTMLDivElement | null>, open: boolean, onOpened: () => void, onClosed: () => void) {
+  const pos = useRef(100);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const from = pos.current;
+    const [to, ms, ease] = open
+      ? [0, 200, (t: number) => 1 - (1 - t) ** 4] // like cubic-bezier(0.2, 0, 0, 1)
+      : [100, 160, (t: number) => t * t];
+    // Before the first paint, so the overlay never shows at its final place first.
+    el.style.transform = `translateY(${from}%)`;
+    let start = 0;
+    let raf = requestAnimationFrame(function frame(now) {
+      start ||= now;
+      const t = Math.min(1, (now - start) / ms);
+      pos.current = from + (to - from) * ease(t);
+      el.style.transform = `translateY(${pos.current}%)`;
+      if (t < 1) raf = requestAnimationFrame(frame);
+      else (open ? onOpened : onClosed)();
+    });
+    return () => cancelAnimationFrame(raf);
+    // The callbacks only run at the end; re-running for new ones would restart the slide.
+  }, [open]);
+}
+
 /** Full-window overlay above the content but below the player bar; playback state is untouched. */
 export default function NowPlaying() {
   const open = useUi((s) => s.nowPlaying);
@@ -177,9 +229,11 @@ export default function NowPlaying() {
   const ambientOn = useSettings((s) => s.appearance.ambient);
   const ambientIntensity = useSettings((s) => s.appearance.ambientIntensity);
   const route = useNav((s) => s.route);
-  // Stays mounted after closing until the slide-down animation ends (set during render, so no frame is lost).
+  // Stays mounted after closing until it has slid away (set during render, so no frame is lost).
   const [mounted, setMounted] = useState(open);
   if (open && !mounted) setMounted(true);
+  const panel = useRef<HTMLDivElement>(null);
+  useSlide(panel, open, () => useUi.getState().setNowPlayingCovering(true), () => setMounted(false));
 
   useEffect(() => {
     if (!open) return;
@@ -194,13 +248,8 @@ export default function NowPlaying() {
 
   if (!mounted) return null;
   return (
-    <div role="dialog" aria-label="Now playing" aria-hidden={!open}
-      className={`${open ? "slide-up" : "slide-down pointer-events-none"} fixed inset-x-0 bottom-[72px] top-0 z-30 flex bg-[var(--c-bg)]`}
-      onAnimationEnd={(e) => {
-        if (e.target !== e.currentTarget) return;
-        if (open) useUi.getState().setNowPlayingCovering(true);
-        else setMounted(false);
-      }}>
+    <div ref={panel} role="dialog" aria-label="Now playing" aria-hidden={!open}
+      className={`${open ? "" : "pointer-events-none"} fixed inset-x-0 bottom-[72px] top-0 z-30 flex bg-[var(--c-bg)] will-change-transform`}>
       {ambientOn && <Backdrop src={thumb} intensity={ambientIntensity} />}
       <button onClick={close} aria-label="Close now playing" className="icon-btn absolute left-4 top-4 z-10 h-10 w-10">
         <ChevronDown size={24} />
