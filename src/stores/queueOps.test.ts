@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Track } from "../api/types";
-import { reorder } from "./queueOps";
+import { append, dedupe, insertNext, reorder } from "./queueOps";
 
 const q = (ids: string, auto = ""): Track[] =>
   ids.split("").map((id) => ({ type: "track", id, title: id, subtitle: "", artists: [], ...(auto.includes(id) ? { source: "autoplay" as const } : {}) }));
@@ -25,5 +25,24 @@ describe("reorder", () => {
     expect(reorder(q("abc"), 0, 1, 1)).toBeNull();
     expect(reorder(q("abc"), 0, 5, 1)).toBeNull();
     expect(reorder(q("abc"), 0, 1, 9)).toBeNull();
+  });
+});
+
+describe("insertNext / append", () => {
+  it("plays a whole album next, moving up songs already queued later", () => {
+    const r = insertNext(q("abcde"), 1, q("dxyx"));
+    expect(ids(r)).toBe("abdxyce");
+    expect(r.added.map((t) => t.id).join("")).toBe("dxy");
+  });
+  it("never moves the playing track", () => {
+    expect(ids(insertNext(q("abc"), 1, q("bx")))).toBe("abxc");
+  });
+  it("appends only songs not still to come", () => {
+    const r = append(q("abcd"), 2, q("aceef"));
+    expect(ids(r)).toBe("abcdaef"); // "a" was already played, so it comes again; "c" is playing, "e" listed twice
+    expect(append(q("ab"), 0, q("b")).added).toHaveLength(0);
+  });
+  it("dedupes in order", () => {
+    expect(dedupe(q("abab c")).map((t) => t.id).join("")).toBe("ab c");
   });
 });

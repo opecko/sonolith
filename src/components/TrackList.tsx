@@ -18,9 +18,11 @@ interface RowProps {
   variant: "list" | "table";
   compact: boolean;
   onPlay: (index: number) => void;
+  /** Set on a playlist's page: the menu offers "Remove from playlist" there. */
+  playlistId?: string;
 }
 
-const Row = memo(function Row({ track: t, index, current, variant, compact, onPlay }: RowProps) {
+const Row = memo(function Row({ track: t, index, current, variant, compact, onPlay, playlistId }: RowProps) {
   const albumId = t.album?.id;
   return (
     <li className="group flex items-center gap-2 rounded-[var(--radius)] border-b border-[var(--c-outline)] pr-2 last:border-0 hover:bg-[var(--c-hover)]">
@@ -58,7 +60,7 @@ const Row = memo(function Row({ track: t, index, current, variant, compact, onPl
         </span>
       )}
       <RatingButtons track={t} size={18} className="opacity-0 focus-within:opacity-100 group-hover:opacity-100" />
-      <ItemMenu item={t} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
+      <ItemMenu item={t} playlistId={playlistId} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
       <span className="w-12 shrink-0 text-right text-sm tabular-nums text-[var(--c-text-muted)]">{t.durationSec !== undefined ? fmtTime(t.durationSec) : ""}</span>
     </li>
   );
@@ -79,7 +81,7 @@ export default function TrackList({ tracks, radio = false, compact = false, cont
   return (
     <ol>
       {tracks.map((t, i) => (
-        <Row key={`${t.id}:${i}`} track={t} index={i} current={t.id === currentId} variant={variant} compact={compact} onPlay={onPlay} />
+        <Row key={`${t.id}:${i}`} track={t} index={i} current={t.id === currentId} variant={variant} compact={compact} onPlay={onPlay} playlistId={context?.playlistId} />
       ))}
     </ol>
   );

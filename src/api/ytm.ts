@@ -98,6 +98,11 @@ export async function addToPlaylist(playlistId: string, videoId: string): Promis
   await (await getClient()).playlist.addVideos(playlistId, [videoId]);
 }
 
+/** Fails with "This playlist cannot be edited." for playlists the user doesn't own. */
+export async function removeFromPlaylist(playlistId: string, videoId: string): Promise<void> {
+  await (await getClient()).playlist.removeVideos(playlistId, [videoId]);
+}
+
 /** Raw /next for a video and/or queue (chips, header, related/lyrics tabs, automix seed). */
 export function getWatch(args: WatchArgs | { continuation: string }): Promise<NextResult> {
   return fetchNext(exec, args);

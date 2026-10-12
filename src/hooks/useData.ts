@@ -9,6 +9,14 @@ export const clearDataCache = () => {
   pending.clear();
 };
 
+/** Views showing a key, so `invalidate` can make them refetch. */
+const watchers = new Map<string, Set<() => void>>();
+/** Drops a cached page after the data changed (e.g. a song added to a playlist); an open view reloads it. */
+export function invalidate(key: string) {
+  cache.delete(key);
+  watchers.get(key)?.forEach((fn) => fn());
+}
+
 function fetchShared<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const p = (pending.get(key) as Promise<T> | undefined) ?? fn();
   if (!pending.has(key)) {
@@ -26,7 +34,7 @@ export function prefetch<T>(key: string, fn: () => Promise<T>) {
 const toError = (e: unknown) => (e instanceof Error ? e : new Error(String(e)));
 
 export function useAsync<T>(key: string, fn: () => Promise<T>) {
-  const [state, setState] = useState<{ data?: T; error?: Error; loading: boolean }>({ loading: true });
+  const [state, setState] = useState<{ key?: string; data?: T; error?: Error; loading: boolean }>({ loading: true });
   const [nonce, setNonce] = useState(0);
   const fnRef = useRef(fn);
   fnRef.current = fn;
@@ -34,17 +42,18 @@ export function useAsync<T>(key: string, fn: () => Promise<T>) {
   useEffect(() => {
     const hit = cache.get(key) as T | undefined;
     if (hit !== undefined) {
-      setState({ data: hit, loading: false });
+      setState({ key, data: hit, loading: false });
       return;
     }
     let live = true;
-    setState({ loading: true });
+    // A refetch of the same key keeps showing the old data until the new one arrives.
+    setState((s) => (s.key === key && s.data !== undefined ? { ...s, loading: true } : { key, loading: true }));
     fetchShared(key, fnRef.current).then(
       (data) => {
         if (!live) return;
-        setState({ data, loading: false });
+        setState({ key, data, loading: false });
       },
-      (e) => live && setState({ error: toError(e), loading: false }),
+      (e) => live && setState({ key, error: toError(e), loading: false }),
     );
     return () => {
       live = false;
@@ -54,6 +63,17 @@ export function useAsync<T>(key: string, fn: () => Promise<T>) {
   const reload = useCallback(() => {
     cache.delete(key);
     setNonce((n) => n + 1);
+  }, [key]);
+  useEffect(() => {
+    // Refetch in place (the old data stays on screen until the new one arrives).
+    const fn = () => setNonce((n) => n + 1);
+    const set = watchers.get(key) ?? new Set();
+    set.add(fn);
+    watchers.set(key, set);
+    return () => {
+      set.delete(fn);
+      if (!set.size) watchers.delete(key);
+    };
   }, [key]);
   return { ...state, reload };
 }
@@ -72,6 +92,18 @@ export function usePaged<T>(key: string | null, first: () => Promise<Page<T>>) {
   const firstRef = useRef(first);
   firstRef.current = first;
   const busy = useRef(false);
+  const shownKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (key === null) return;
+    const fn = () => setNonce((n) => n + 1);
+    const set = watchers.get(key) ?? new Set();
+    set.add(fn);
+    watchers.set(key, set);
+    return () => {
+      set.delete(fn);
+      if (!set.size) watchers.delete(key);
+    };
+  }, [key]);
 
   useEffect(() => {
     setError(undefined);
@@ -79,7 +111,9 @@ export function usePaged<T>(key: string | null, first: () => Promise<Page<T>>) {
     const hit = cache.get(key) as PagedSnapshot<T> | undefined;
     if (hit) return setSnap(hit);
     let live = true;
-    setSnap(null);
+    // A refetch of the same key (invalidate) keeps the old items on screen until the new ones arrive.
+    if (shownKey.current !== key) setSnap(null);
+    shownKey.current = key;
     firstRef.current().then(
       (p) => {
         if (!live) return;

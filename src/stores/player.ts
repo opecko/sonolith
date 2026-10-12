@@ -7,7 +7,7 @@ import type { RadioSource } from "../api/queue";
 import { getChipTracks, getWatch, rate, startRadio } from "../api/ytm";
 import { autoplayTrigger, dedupeAutoplay, pushHistory } from "./autoplay";
 import { useProgress } from "./progress";
-import { reorder } from "./queueOps";
+import { append, dedupe, insertNext, reorder } from "./queueOps";
 import { makeSnapshot, readSnapshot, SNAPSHOT_KEY } from "./queueSnapshot";
 import { nativeMpris } from "./platform";
 import { useSettings } from "./settings";
@@ -48,8 +48,10 @@ interface PlayerState {
   /** Replaces the queue with a radio once it is ready; the current track keeps playing until then. */
   startRadio: (source: RadioSource, label?: string) => Promise<void>;
   radioPending: string | null;
-  playNext: (track: Track) => void;
-  addToQueue: (track: Track) => void;
+  /** One track or a whole album/playlist, right after the current one. */
+  playNext: (tracks: Track | Track[]) => void;
+  /** One track or a whole album/playlist, at the end of the queue. */
+  addToQueue: (tracks: Track | Track[]) => void;
   removeAt: (index: number) => void;
   /** Drag & drop reorder; playback is untouched, `index` follows the playing track. */
   moveTrack: (from: number, to: number) => void;
@@ -463,20 +465,25 @@ export const usePlayer = create<PlayerState>((set, get) => {
         useToast.getState().show(`Could not start radio${label ? ` for "${label}"` : ""}: ${message(e)}`);
       }
     },
-    playNext: (track) => {
+    playNext: (tracks) => {
       const { queue, index } = get();
-      if (index < 0) return get().playQueue([track]);
-      if (queue[index]?.id === track.id) return;
-      const rest = queue.slice(index + 1).filter((t) => t.id !== track.id);
-      set({ queue: [...queue.slice(0, index + 1), track, ...rest] });
-      if (!unshuffled.some((t) => t.id === track.id)) unshuffled = [...unshuffled, track];
+      const list = Array.isArray(tracks) ? tracks : [tracks];
+      if (!list.length) return;
+      if (index < 0) return get().playQueue(dedupe(list));
+      const r = insertNext(queue, index, list);
+      set({ queue: r.queue });
+      const known = new Set(unshuffled.map((t) => t.id));
+      unshuffled = [...unshuffled, ...r.added.filter((t) => !known.has(t.id))];
     },
-    addToQueue: (track) => {
+    addToQueue: (tracks) => {
       const { queue, index } = get();
-      if (index < 0) return get().playQueue([track]);
-      if (queue.slice(index).some((t) => t.id === track.id)) return;
-      set({ queue: [...queue, track] });
-      unshuffled = [...unshuffled, track];
+      const list = Array.isArray(tracks) ? tracks : [tracks];
+      if (!list.length) return;
+      if (index < 0) return get().playQueue(dedupe(list));
+      const r = append(queue, index, list);
+      if (!r.added.length) return;
+      set({ queue: r.queue });
+      unshuffled = [...unshuffled, ...r.added];
     },
     setAutoplay: (on) => {
       useSettings.getState().set({ autoplay: on });

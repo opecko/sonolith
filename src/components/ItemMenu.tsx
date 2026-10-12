@@ -1,9 +1,12 @@
 import {
-  Bookmark, BookmarkMinus, Disc3, History, ListEnd, ListPlus, ListStart, Loader2, Pin, PinOff, Radio, Share2, Trash2, User, Users,
+  Bookmark, BookmarkMinus, Disc3, History, ListEnd, ListMinus, ListPlus, ListStart, Loader2, Pin, PinOff, Play, Radio, Share2, Shuffle,
+  Trash2, User, Users,
 } from "lucide-react";
 import { useState } from "react";
 import type { Item, MenuToggle, Track, TrackMenu } from "../api/types";
-import { addToPlaylist, getCredits, getTrackMenu, sendFeedback } from "../api/ytm";
+import { addToPlaylist, getCredits, getTrackMenu, removeFromPlaylist, sendFeedback } from "../api/ytm";
+import { invalidate } from "../hooks/useData";
+import { playItem, queueCollection } from "../stores/actions";
 import { useLibrary } from "../stores/library";
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
@@ -23,16 +26,44 @@ export function radioSource(item: Item) {
   return { type: isMix(item) ? ("mix" as const) : ("playlist" as const), id: item.id };
 }
 
+/** A playlist's songs changed: its open page refetches and the sidebar's track count catches up. */
+function playlistChanged(id: string) {
+  invalidate(`playlist:${id}`);
+  useLibrary.getState().changed();
+}
+
+/** Playlists whose songs the user can't remove here: Liked Music (that's unliking), mixes, episodes for later. */
+const editable = (id: string) => id !== "LM" && !id.startsWith("RD") && !id.startsWith("SE");
+
+function removeEntry(track: Track, playlistId: string): MenuEntry {
+  const title = useLibrary.getState().playlists?.find((p) => p.id === playlistId)?.title ?? "this playlist";
+  return {
+    label: "Remove from playlist",
+    icon: <ListMinus size={S} />,
+    onSelect: () =>
+      removeFromPlaylist(playlistId, track.id).then(
+        () => {
+          useToast.getState().show(`Removed from "${title}"`, "info");
+          playlistChanged(playlistId);
+        },
+        (e) => useToast.getState().show(`Could not remove from "${title}": ${errMsg(e)}`),
+      ),
+  };
+}
+
 export function playlistEntries(track: Track): MenuEntry[] {
   const lib = useLibrary.getState();
   if (!lib.playlists) void lib.load();
   return (lib.playlists ?? [])
-    .filter((p) => p.id !== "LM" && !p.id.startsWith("RD") && !p.id.startsWith("SE"))
+    .filter((p) => editable(p.id))
     .map((p) => ({
       label: p.title,
       onSelect: () =>
         addToPlaylist(p.id, track.id).then(
-          () => useToast.getState().show(`Saved to "${p.title}"`, "info"),
+          () => {
+            useToast.getState().show(`Saved to "${p.title}"`, "info");
+            playlistChanged(p.id);
+          },
           (e) => useToast.getState().show(`Could not save to "${p.title}": ${errMsg(e)}`),
         ),
     }));
@@ -77,7 +108,7 @@ function openCredits(id: string) {
  * Track menu in YouTube Music's order. `menu` = tokens/ids from the list item or fetched via /next on open;
  * `loading` while that fetch runs.
  */
-function trackEntries(track: Track, menu: TrackMenu | undefined, loading: boolean, queueIndex?: number): MenuEntry[] {
+function trackEntries(track: Track, menu: TrackMenu | undefined, loading: boolean, queueIndex?: number, playlistId?: string): MenuEntry[] {
   const p = usePlayer.getState();
   const go = useNav.getState().go;
   const out: MenuEntry[] = [
@@ -87,6 +118,8 @@ function trackEntries(track: Track, menu: TrackMenu | undefined, loading: boolea
     { label: "Add to queue", icon: <ListEnd size={S} />, onSelect: () => p.addToQueue(track) },
     ...(menu?.toggles ?? []).map(toggleEntry),
     { label: "Save to playlist", icon: <ListPlus size={S} />, submenu: () => playlistEntries(track) },
+    // Only on the user's own playlists (saved ones by others are in the library too, but can't be edited).
+    ...(playlistId && editable(playlistId) && useLibrary.getState().playlists?.some((p) => p.id === playlistId) ? [removeEntry(track, playlistId)] : []),
   ];
   if (queueIndex !== undefined)
     out.push({ label: "Remove from queue", icon: <Trash2 size={S} />, onSelect: () => p.removeAt(queueIndex), disabled: queueIndex === p.index });
@@ -119,10 +152,19 @@ function trackEntries(track: Track, menu: TrackMenu | undefined, loading: boolea
   return out;
 }
 
-export function itemEntries(item: Item, opts: { queueIndex?: number; menu?: TrackMenu; loading?: boolean } = {}): MenuEntry[] {
-  if (item.type === "track") return trackEntries(item as Track, opts.menu ?? (item as Track).menu, !!opts.loading, opts.queueIndex);
+export function itemEntries(item: Item, opts: { queueIndex?: number; menu?: TrackMenu; loading?: boolean; playlistId?: string } = {}): MenuEntry[] {
+  if (item.type === "track") return trackEntries(item as Track, opts.menu ?? (item as Track).menu, !!opts.loading, opts.queueIndex, opts.playlistId);
   const p = usePlayer.getState();
-  const out: MenuEntry[] = [{ label: "Start radio", icon: <Radio size={S} />, onSelect: () => void p.startRadio(radioSource(item), item.title) }];
+  const out: MenuEntry[] = [];
+  if (item.type === "album" || item.type === "playlist") {
+    out.push(
+      { label: "Play", icon: <Play size={S} />, onSelect: () => void playItem(item) },
+      { label: "Shuffle play", icon: <Shuffle size={S} />, onSelect: () => void queueCollection(item, "shuffle") },
+      { label: "Play next", icon: <ListStart size={S} />, onSelect: () => void queueCollection(item, "next") },
+      { label: "Add to queue", icon: <ListEnd size={S} />, onSelect: () => void queueCollection(item, "end") },
+    );
+  }
+  out.push({ label: "Start radio", icon: <Radio size={S} />, onSelect: () => void p.startRadio(radioSource(item), item.title) });
   if (item.type === "artist") {
     out.push({ label: "Go to artist", icon: <User size={S} />, onSelect: () => useNav.getState().go({ name: "artist", id: item.id }) });
   }
@@ -143,11 +185,11 @@ export function useTrackMenu(item: Item) {
   return { ...state, load };
 }
 
-export default function ItemMenu({ item, queueIndex, className }: { item: Item; queueIndex?: number; className?: string }) {
+export default function ItemMenu({ item, queueIndex, playlistId, className }: { item: Item; queueIndex?: number; playlistId?: string; className?: string }) {
   const { menu, loading, load } = useTrackMenu(item);
   return (
     <Menu
-      entries={() => itemEntries(item, { queueIndex, menu, loading })}
+      entries={() => itemEntries(item, { queueIndex, menu, loading, playlistId })}
       onOpen={load}
       label={`More actions for ${item.title}`}
       className={className}

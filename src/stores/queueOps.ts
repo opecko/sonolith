@@ -15,3 +15,27 @@ export function reorder(queue: Track[], index: number, from: number, to: number)
     from === index ? to : from < index && to >= index ? index - 1 : from > index && to <= index ? index + 1 : index;
   return { queue: next, index: newIndex };
 }
+
+/** Each track once (an album or playlist can list a song twice), in order. */
+export function dedupe(tracks: Track[]): Track[] {
+  const seen = new Set<string>();
+  return tracks.filter((t) => !seen.has(t.id) && seen.add(t.id));
+}
+
+/**
+ * Play next: `tracks` right after the playing one. Ones already later in the queue move up; the playing track
+ * stays where it is. Returns the new queue and what was actually added.
+ */
+export function insertNext(queue: Track[], index: number, tracks: Track[]): { queue: Track[]; added: Track[] } {
+  const added = dedupe(tracks).filter((t) => t.id !== queue[index]?.id);
+  const ids = new Set(added.map((t) => t.id));
+  const rest = queue.slice(index + 1).filter((t) => !ids.has(t.id));
+  return { queue: [...queue.slice(0, index + 1), ...added, ...rest], added };
+}
+
+/** Add to queue: `tracks` at the end, skipping ones still to come (or playing). */
+export function append(queue: Track[], index: number, tracks: Track[]): { queue: Track[]; added: Track[] } {
+  const upcoming = new Set(queue.slice(index).map((t) => t.id));
+  const added = dedupe(tracks).filter((t) => !upcoming.has(t.id));
+  return { queue: added.length ? [...queue, ...added] : queue, added };
+}

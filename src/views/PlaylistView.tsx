@@ -9,6 +9,7 @@ import { useAsync } from "../hooks/useData";
 
 interface Extra {
   id: string;
+  base: Playlist;
   tracks: Track[];
   next: Playlist["loadMore"];
 }
@@ -21,7 +22,8 @@ export default function PlaylistView({ id }: { id: string }) {
   if (head.error) return <ErrorBox error={head.error} onRetry={head.reload} />;
   if (!head.data) return <Loading variant="list" />;
   const p = head.data;
-  const state: Extra = extra?.id === id ? extra : { id, tracks: [], next: p.loadMore };
+  // Tied to the first page it continues: a refetch (song added/removed) starts the paging over.
+  const state: Extra = extra?.id === id && extra.base === p ? extra : { id, base: p, tracks: [], next: p.loadMore };
   const tracks = [...p.tracks, ...state.tracks];
 
   const loadMore = async () => {
@@ -29,7 +31,7 @@ export default function PlaylistView({ id }: { id: string }) {
     setMore({ loading: true });
     try {
       const page = await state.next();
-      setExtra({ id, tracks: [...state.tracks, ...page.tracks], next: page.loadMore });
+      setExtra({ id, base: p, tracks: [...state.tracks, ...page.tracks], next: page.loadMore });
       setMore({ loading: false });
     } catch (e) {
       setMore({ loading: false, error: e instanceof Error ? e : new Error(String(e)) });

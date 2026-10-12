@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { prefetchItem } from "../stores/actions";
 import { useAuth } from "../stores/auth";
 import { useLibrary } from "../stores/library";
+import ItemMenu from "./ItemMenu";
 import { useNav, type Route } from "../stores/nav";
 import { useToast } from "../stores/toast";
 
@@ -71,12 +72,14 @@ function PlaylistList() {
       {playlists.map((p) => {
         const active = route.name === "playlist" && route.id === p.id;
         return (
-          <li key={p.id}>
+          <li key={p.id} className="group relative">
             <button onClick={() => go({ name: "playlist", id: p.id })} onPointerEnter={() => prefetchItem(p)} onPointerLeave={() => prefetchItem(null)}
-              className={`w-full rounded-[var(--radius)] px-4 py-2 text-left hover:bg-[var(--c-hover)] ${active ? "bg-[var(--c-hover)]" : ""}`}>
+              className={`w-full rounded-[var(--radius)] py-2 pl-4 pr-10 text-left hover:bg-[var(--c-hover)] ${active ? "bg-[var(--c-hover)]" : ""}`}>
               <span className="block truncate text-sm font-medium">{p.title}</span>
               {p.subtitle && <span className="block truncate text-xs text-[var(--c-text-muted)]">{p.subtitle}</span>}
             </button>
+            {/* Shown on hover; right-click on the row opens it too. */}
+            <ItemMenu item={p} className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 aria-expanded:opacity-100" />
           </li>
         );
       })}
