@@ -63,7 +63,8 @@ for p in ytdesk ytdesk-bin; do
     echo "$p: already up to date on AUR"
     continue
   fi
-  git -C "$tmp/$p" commit -q -m "Update to $ver"
+  # The temporary clone has no identity of its own: commit as this repo's author.
+  git -C "$tmp/$p" -c user.name="$(git config user.name)" -c user.email="$(git config user.email)" commit -q -m "Update to $ver"
   git -C "$tmp/$p" push -q origin HEAD:master
   echo "$p: pushed $ver to https://aur.archlinux.org/packages/$p"
 done
