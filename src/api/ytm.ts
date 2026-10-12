@@ -98,9 +98,12 @@ export async function addToPlaylist(playlistId: string, videoId: string): Promis
   await (await getClient()).playlist.addVideos(playlistId, [videoId]);
 }
 
-/** Deletes the user's playlist from their account (no undo). */
+/**
+ * Deletes the user's playlist from their account (no undo). Called directly: youtubei.js's playlist.delete builds an
+ * endpoint it can't send ("Expected an api_url").
+ */
 export async function deletePlaylist(playlistId: string): Promise<void> {
-  await (await getClient()).playlist.delete(playlistId);
+  await exec("/playlist/delete", { playlistId });
 }
 
 /** Fails with "This playlist cannot be edited." for playlists the user doesn't own. */
