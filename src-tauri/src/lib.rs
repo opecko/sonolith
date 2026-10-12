@@ -92,6 +92,7 @@ pub fn run() {
             auth::auth_login,
             ytdlp::ytdlp_stream_url,
             update::update_check,
+            update::update_changelog,
             update::update_open_page,
             update::open_credit,
             fonts::fonts_list,

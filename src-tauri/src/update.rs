@@ -26,6 +26,8 @@ struct GhRelease {
     prerelease: bool,
     #[serde(default)]
     assets: Vec<GhAsset>,
+    #[serde(default)]
+    published_at: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -82,6 +84,39 @@ async fn release(app: &AppHandle, which: &str) -> Result<GhRelease, String> {
     }
     let text = res.text().await.map_err(|e| e.to_string())?;
     serde_json::from_str(&text).map_err(|e| format!("unexpected GitHub response: {e}"))
+}
+
+#[derive(Serialize)]
+pub struct ChangelogEntry {
+    version: String,
+    /// ISO 8601 publish time.
+    date: String,
+    notes: String,
+}
+
+/// Published releases, newest first, for the changelog in Settings → About.
+#[tauri::command]
+pub async fn update_changelog(app: AppHandle) -> Result<Vec<ChangelogEntry>, String> {
+    let res = client(&app)?
+        .get(format!("https://api.github.com/repos/{REPO}/releases?per_page=50"))
+        .header("Accept", "application/vnd.github+json")
+        .send()
+        .await
+        .map_err(|e| format!("couldn't load the changelog: {e}"))?;
+    if !res.status().is_success() {
+        return Err(format!("couldn't load the changelog: HTTP {}", res.status()));
+    }
+    let text = res.text().await.map_err(|e| e.to_string())?;
+    let releases: Vec<GhRelease> = serde_json::from_str(&text).map_err(|e| format!("unexpected GitHub response: {e}"))?;
+    Ok(releases
+        .into_iter()
+        .filter(|r| !r.draft && !r.prerelease)
+        .map(|r| ChangelogEntry {
+            version: r.tag_name.trim_start_matches('v').to_owned(),
+            date: r.published_at.unwrap_or_default(),
+            notes: r.body.unwrap_or_default(),
+        })
+        .collect())
 }
 
 #[tauri::command]

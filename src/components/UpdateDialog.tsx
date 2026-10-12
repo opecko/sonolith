@@ -1,34 +1,8 @@
 import { Download, ExternalLink, Loader2, X } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useUpdate } from "../stores/update";
-
-/** Release notes as plain blocks: "## " headings and "- " bullets. The download table and diff link are dropped. */
-function Notes({ markdown }: { markdown: string }) {
-  const lines = markdown.replace(/\r/g, "").split("\n");
-  const end = lines.findIndex((l) => /^##\s+Downloads/i.test(l));
-  const plain = (s: string) => s.replace(/\*\*|`/g, "").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
-  const blocks: ReactNode[] = [];
-  let items: string[] = [];
-  const flush = () => {
-    if (items.length) blocks.push(<ul key={blocks.length} className="mb-3 list-disc space-y-1 pl-5">{items.map((t, i) => <li key={i}>{t}</li>)}</ul>);
-    items = [];
-  };
-  for (const line of lines.slice(0, end < 0 ? undefined : end)) {
-    const t = line.trim();
-    if (!t || /^\*\*Full diff/i.test(t)) continue;
-    if (/^[-*]\s+/.test(t)) {
-      items.push(plain(t.replace(/^[-*]\s+/, "")));
-      continue;
-    }
-    flush();
-    if (/^#+\s+/.test(t)) blocks.push(<h3 key={blocks.length} className="mb-2 mt-1 text-sm font-semibold text-[var(--c-text)]">{plain(t.replace(/^#+\s+/, ""))}</h3>);
-    else blocks.push(<p key={blocks.length} className="mb-3">{plain(t)}</p>);
-  }
-  flush();
-  if (!blocks.length) return <p>No release notes.</p>;
-  return <>{blocks}</>;
-}
+import ReleaseNotes from "./ReleaseNotes";
 
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
 
@@ -58,7 +32,7 @@ export default function UpdateDialog() {
           <button className="icon-btn h-10 w-10 shrink-0" onClick={close} disabled={busy} aria-label="Close"><X size={20} /></button>
         </header>
         <div className="scroll-y min-h-0 select-text px-6 py-2 text-sm text-[var(--c-text-muted)]">
-          <Notes markdown={info.notes} />
+          <ReleaseNotes markdown={info.notes} />
         </div>
         <footer className="border-t border-[var(--c-outline)] px-6 py-4">
           {install.status === "error" && <p className="mb-3 select-text text-sm text-[var(--c-error)]">{install.message}</p>}

@@ -1,10 +1,11 @@
-import { ChevronDown, Download, ExternalLink, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronDown, Download, ExternalLink, RefreshCw, ScrollText } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { ytdlpInstall, ytdlpSetPath, ytdlpStatus, ytdlpUpdate } from "../api/ytdlp";
 import { invoke } from "@tauri-apps/api/core";
 import AppearanceSettings from "../components/appearance/AppearanceSettings";
 import AutoplayToggle from "../components/AutoplayToggle";
+import ChangelogDialog from "../components/ChangelogDialog";
 import Switch from "../components/Switch";
 import { ErrorBox, Loading } from "../components/Status";
 import { useAsync } from "../hooks/useData";
@@ -205,15 +206,23 @@ function CreditLink({ name, children }: { name: string; children: React.ReactNod
 
 function About() {
   const [version, setVersion] = useState("");
+  const [changelog, setChangelog] = useState(false);
+  const closeChangelog = useCallback(() => setChangelog(false), []);
   useEffect(() => {
     getVersion().then(setVersion, () => {});
   }, []);
   return (
     <section className="mt-6 rounded-lg bg-[var(--c-surface)] p-6">
       <h2 className="mb-1 text-lg font-semibold">About</h2>
-      <p className="text-sm text-[var(--c-text-muted)]">
-        <CreditLink name="ytdesk">ytdesk</CreditLink> {version}, MIT license.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-[var(--c-text-muted)]">
+          <CreditLink name="ytdesk">ytdesk</CreditLink> {version}, MIT license.
+        </p>
+        <button className="chip inline-flex items-center gap-2" onClick={() => setChangelog(true)}>
+          <ScrollText size={16} aria-hidden /> Changelog
+        </button>
+      </div>
+      {changelog && <ChangelogDialog current={version} onClose={closeChangelog} />}
     </section>
   );
 }
