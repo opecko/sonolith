@@ -1,5 +1,6 @@
 mod auth;
 mod discord;
+mod fonts;
 #[cfg(target_os = "linux")]
 mod mpris;
 mod proxy;
@@ -93,6 +94,7 @@ pub fn run() {
             update::update_check,
             update::update_open_page,
             update::open_credit,
+            fonts::fonts_list,
             update::update_install,
         ])
         .run(tauri::generate_context!())

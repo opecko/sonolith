@@ -63,8 +63,34 @@ export function applyTheme(t: ThemeChoice, extra: Partial<TokenMap> = {}, root: 
   root.style.colorScheme = isLight(all.bg) ? "light" : "dark";
 }
 
-/** Corner radius and density (zoom is the webview's own, see main.tsx). */
-export function applyLayout(a: { radius: number; density: "normal" | "compact" }, root: HTMLElement = document.documentElement) {
+/** CSS font-family for the font setting; null keeps index.css's own stack. */
+export function fontStack(font: string, family: string): string | null {
+  switch (font) {
+    case "system":
+      return "system-ui, sans-serif";
+    case "mono":
+      // Not plain `monospace`: WebKit shrinks text whose only family is the generic monospace.
+      return "ui-monospace, monospace";
+    case "custom": {
+      const name = family.trim();
+      // The app's stack stays behind it for glyphs the font lacks (or if it was uninstalled).
+      return name ? `"${name.replace(/["\\]/g, "\\$&")}", ${APP_FONT}` : null;
+    }
+    default:
+      return null;
+  }
+}
+/** index.css --font; keep in sync. */
+export const APP_FONT = `"Inter", "Roboto", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif`;
+
+/** Corner radius, density and font (zoom is the webview's own, see main.tsx). */
+export function applyLayout(
+  a: { radius: number; density: "normal" | "compact"; font: string; fontFamily: string },
+  root: HTMLElement = document.documentElement,
+) {
   root.style.setProperty("--radius", `${a.radius}px`);
   root.dataset.density = a.density;
+  const stack = fontStack(a.font, a.fontFamily);
+  if (stack) root.style.setProperty("--font", stack);
+  else root.style.removeProperty("--font");
 }

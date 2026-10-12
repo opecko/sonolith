@@ -16,7 +16,14 @@ export interface Appearance extends ThemeChoice {
   density: "normal" | "compact";
   /** UI scale, 0.9–1.25. */
   zoom: number;
+  /** "app" = ytdesk's own font stack, "system"/"mono" = the system's UI/monospace font, "custom" = `fontFamily`. */
+  font: FontKind;
+  /** An installed font family, used when `font` is "custom". */
+  fontFamily: string;
 }
+
+export const FONT_KINDS = ["app", "system", "mono", "custom"] as const;
+export type FontKind = (typeof FONT_KINDS)[number];
 
 export const DEFAULT_APPEARANCE: Appearance = {
   palette: BUILTIN_ID,
@@ -28,6 +35,8 @@ export const DEFAULT_APPEARANCE: Appearance = {
   radius: 8,
   density: "normal",
   zoom: 1,
+  font: "app",
+  fontFamily: "",
 };
 
 const num = (v: unknown, lo: number, hi: number, d: number) =>
@@ -53,5 +62,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
     radius: num(r.radius, 0, 24, d.radius),
     density: r.density === "compact" ? "compact" : "normal",
     zoom: num(r.zoom, 0.9, 1.25, d.zoom),
+    font: FONT_KINDS.includes(r.font as FontKind) ? (r.font as FontKind) : d.font,
+    fontFamily: typeof r.fontFamily === "string" ? r.fontFamily.slice(0, 200) : d.fontFamily,
   };
 }

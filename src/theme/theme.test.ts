@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_APPEARANCE, normalizeAppearance } from "./appearance";
 import { contrast, isHex, mix, over, parseHex, toHex, withAlpha } from "./color";
-import { effectiveTokens } from "./index";
+import { APP_FONT, effectiveTokens, fontStack } from "./index";
 import { DEFAULT_TOKENS, TOKENS } from "./tokens";
 
 const css = readFileSync(new URL("../index.css", import.meta.url), "utf8");
@@ -74,5 +74,25 @@ describe("normalizeAppearance", () => {
     expect(a.overrides).toEqual({ bg: "#abc" });
     expect(a.zoom).toBe(1.25);
     expect(a.radius).toBe(DEFAULT_APPEARANCE.radius);
+  });
+});
+
+describe("font", () => {
+  it("app font matches index.css and keeps its own stack", () => {
+    expect(css).toContain(`--font: ${APP_FONT};`);
+    expect(fontStack("app", "")).toBeNull();
+  });
+
+  it("builds stacks for system, monospace and installed fonts", () => {
+    expect(fontStack("system", "")).toBe("system-ui, sans-serif");
+    expect(fontStack("mono", "")).toBe("ui-monospace, monospace");
+    expect(fontStack("custom", ' My "Font" ')).toBe(`"My \\"Font\\"", ${APP_FONT}`);
+    expect(fontStack("custom", "  ")).toBeNull();
+  });
+
+  it("migrates and validates the setting", () => {
+    expect(normalizeAppearance({}).font).toBe("app");
+    expect(normalizeAppearance({ font: "comic", fontFamily: 3 })).toMatchObject({ font: "app", fontFamily: "" });
+    expect(normalizeAppearance({ font: "custom", fontFamily: "Fira Sans" })).toMatchObject({ font: "custom", fontFamily: "Fira Sans" });
   });
 });

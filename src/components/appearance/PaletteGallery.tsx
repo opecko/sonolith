@@ -29,7 +29,13 @@ export function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode)
   );
 }
 
-export function SearchField({ value, onChange, autoFocus, onEscape }: { value: string; onChange: (v: string) => void; autoFocus?: boolean; onEscape?: () => void }) {
+export function SearchField({ value, onChange, autoFocus, onEscape, placeholder = "Search palettes" }: {
+  value: string;
+  onChange: (v: string) => void;
+  autoFocus?: boolean;
+  onEscape?: () => void;
+  placeholder?: string;
+}) {
   return (
     <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--c-outline)] bg-[var(--c-bg)] px-3 focus-within:border-[var(--c-text-subtle)]">
       <Search size={16} className="shrink-0 text-[var(--c-text-subtle)]" aria-hidden />
@@ -44,8 +50,8 @@ export function SearchField({ value, onChange, autoFocus, onEscape }: { value: s
           if (value) onChange("");
           else onEscape?.();
         }}
-        placeholder="Search palettes"
-        aria-label="Search palettes"
+        placeholder={placeholder}
+        aria-label={placeholder}
         className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--c-text-subtle)]"
       />
     </label>

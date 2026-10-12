@@ -1,7 +1,7 @@
 import { ChevronDown, Download, LayoutGrid, RotateCcw, Upload } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { setAppearance, useSettings } from "../../stores/settings";
-import { DEFAULT_APPEARANCE } from "../../theme/appearance";
+import { DEFAULT_APPEARANCE, type FontKind } from "../../theme/appearance";
 import { FEATURED } from "../../theme/featured";
 import { effectiveTokens } from "../../theme/index";
 import { getPalette, hasMode, PALETTES } from "../../theme/palettes";
@@ -10,6 +10,7 @@ import type { Mode } from "../../theme/types";
 import Slider from "../Slider";
 import Switch from "../Switch";
 import ColorEditor, { ContrastWarnings, type EditorView } from "./ColorEditor";
+import FontPicker from "./FontPicker";
 import PaletteGallery, { ModeToggle, PaletteGrid, SearchField } from "./PaletteGallery";
 import ThemeTransfer from "./ThemeTransfer";
 
@@ -26,6 +27,8 @@ function OptionRow({ title, detail, children }: { title: string; detail?: string
     </div>
   );
 }
+
+const FONT_OPTIONS: [FontKind, string][] = [["app", "ytdesk"], ["system", "System"], ["mono", "Monospace"], ["custom", "Installed"]];
 
 const pct = (v: number) => `${Math.round(v * 100)} %`;
 
@@ -59,6 +62,14 @@ function DisplayOptions() {
         {/* Slider covers 90–125 %; it works on the offset so the track starts at 90. */}
         <Slider className="w-40" value={a.zoom - 0.9} max={0.35} step={0.05} onCommit={(v) => setAppearance({ zoom: Math.round((0.9 + v) * 20) / 20 })} label="Interface size" tooltip="value" format={(v) => pct(0.9 + v)} />
       </OptionRow>
+      <OptionRow title="Font" detail={a.font === "custom" && !a.fontFamily ? "Pick one of your installed fonts below." : undefined}>
+        <div className="flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Font">
+          {FONT_OPTIONS.map(([kind, label]) => (
+            <button key={kind} type="button" aria-pressed={a.font === kind} className={seg(a.font === kind)} onClick={() => setAppearance({ font: kind })}>{label}</button>
+          ))}
+        </div>
+      </OptionRow>
+      {a.font === "custom" && <FontPicker value={a.fontFamily} onChange={(fontFamily) => setAppearance({ fontFamily })} />}
     </div>
   );
 }
