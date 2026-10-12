@@ -1,8 +1,35 @@
-import { Download, ExternalLink, Loader2, X } from "lucide-react";
-import { useEffect } from "react";
+import { Check, Copy, Download, ExternalLink, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useUpdate } from "../stores/update";
 import ReleaseNotes from "./ReleaseNotes";
+
+/** One copyable command, e.g. "yay -S ytdesk-bin". */
+function Command({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="flex items-center gap-2 rounded-[var(--radius)] border border-[var(--c-outline)] bg-[var(--c-bg)] py-1 pl-3 pr-1">
+      <code className="min-w-0 flex-1 select-text truncate font-mono text-sm text-[var(--c-text)]">{text}</code>
+      <button className="icon-btn h-8 w-8 shrink-0" aria-label={`Copy "${text}"`} title="Copy"
+        onClick={() => void navigator.clipboard.writeText(text).then(() => setCopied(true), () => {})}>
+        {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
+      </button>
+    </div>
+  );
+}
+
+/** Installed from the AUR: the update comes through the AUR helper, like the rest of the system. */
+function AurUpdate({ aur }: { aur: { package: string; helpers: string[] } }) {
+  const helpers = aur.helpers.length ? aur.helpers : ["yay", "paru"];
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm text-[var(--c-text-muted)]">
+        You installed ytdesk from the AUR ({aur.package}). Update it with your AUR helper, or with your usual system update:
+      </p>
+      {helpers.map((h) => <Command key={h} text={`${h} -S ${aur.package}`} />)}
+    </div>
+  );
+}
 
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
 
@@ -47,9 +74,10 @@ export default function UpdateDialog() {
             </div>
           )}
           {install.status === "starting" && <p className="mb-3 text-sm text-[var(--c-text-muted)]">Starting the installer. ytdesk will close now.</p>}
+          {info.aur && <div className="mb-4"><AurUpdate aur={info.aur} /></div>}
           <div className="flex items-center justify-between gap-4">
             <p className="text-xs text-[var(--c-text-subtle)]">You can turn off update checks in Settings.</p>
-            {info.installer ? (
+            {info.aur ? null : info.installer ? (
               <button onClick={() => void installNow()} disabled={busy}
                 className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button hover:scale-105 disabled:opacity-60 disabled:hover:scale-100">
                 {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Download size={18} aria-hidden />}

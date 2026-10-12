@@ -12,6 +12,8 @@ export interface UpdateInfo {
   url: string;
   /** Windows build with an installer attached to the release. */
   installer: boolean;
+  /** Installed from the AUR ("ytdesk" or "ytdesk-bin"), with the AUR helpers found (yay, paru). */
+  aur: { package: string; helpers: string[] } | null;
 }
 
 type Install =

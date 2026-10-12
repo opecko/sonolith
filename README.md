@@ -24,14 +24,25 @@ own. It's not a wrapped browser tab, so it starts quickly and uses little memory
 
 ## Download
 
+### Arch Linux and Arch-based distros (CachyOS, EndeavourOS, Manjaro…)
+
+Install from the AUR with your AUR helper. Updates then come with your normal system upgrade (`yay` / `paru`).
+
+```
+yay -S ytdesk-bin
+```
+
+or `paru -S ytdesk-bin`. [`ytdesk-bin`](https://aur.archlinux.org/packages/ytdesk-bin) is the ready-built app;
+[`ytdesk`](https://aur.archlinux.org/packages/ytdesk) builds it from source instead (takes a while).
+
+### Windows and Ubuntu / Debian
+
 Get the latest version from the [**Releases**](../../releases/latest) page:
 
 | System | File | How to install |
 | --- | --- | --- |
 | **Windows 10 / 11** | `ytdesk_…_x64-setup.exe` | Double-click and follow the installer |
 | **Ubuntu / Debian** (24.04+) | `ytdesk_…_amd64.deb` | Double-click, or `sudo apt install ./ytdesk_…_amd64.deb` |
-| **Arch Linux** | from the [AUR](https://aur.archlinux.org/packages/ytdesk-bin) | `yay -S ytdesk-bin` (prebuilt) or `yay -S ytdesk` (built from source) |
-| | or `ytdesk-bin-…-x86_64.pkg.tar.zst` | `sudo pacman -U ytdesk-bin-…-x86_64.pkg.tar.zst` |
 
 macOS isn't supported yet.
 

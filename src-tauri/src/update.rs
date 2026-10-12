@@ -39,6 +39,42 @@ pub struct UpdateInfo {
     url: String,
     /// A Windows installer is attached and this build can run it.
     installer: bool,
+    /// Installed from the AUR: update with the AUR helper instead of downloading from GitHub.
+    aur: Option<AurInstall>,
+}
+
+#[derive(Serialize)]
+pub struct AurInstall {
+    /// "ytdesk" (built from source) or "ytdesk-bin".
+    package: String,
+    /// AUR helpers found on PATH, in order of preference (may be empty).
+    helpers: Vec<String>,
+}
+
+/// The AUR package that owns the running binary, if any (Arch-based distros only; dev builds aren't owned).
+#[cfg(target_os = "linux")]
+fn aur_install() -> Option<AurInstall> {
+    let exe = std::env::current_exe().ok()?;
+    let out = std::process::Command::new("pacman").arg("-Qqo").arg(&exe).output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let package = String::from_utf8_lossy(&out.stdout).trim().to_owned();
+    if package != "ytdesk" && package != "ytdesk-bin" {
+        return None;
+    }
+    let path = std::env::var_os("PATH").unwrap_or_default();
+    let helpers = ["yay", "paru"]
+        .into_iter()
+        .filter(|h| std::env::split_paths(&path).any(|dir| dir.join(h).is_file()))
+        .map(String::from)
+        .collect();
+    Some(AurInstall { package, helpers })
+}
+
+#[cfg(not(target_os = "linux"))]
+fn aur_install() -> Option<AurInstall> {
+    None
 }
 
 #[derive(Clone, Serialize)]
@@ -132,6 +168,8 @@ pub async fn update_check(app: AppHandle) -> Result<UpdateInfo, String> {
         notes: rel.body.unwrap_or_default(),
         url: rel.html_url,
         installer,
+        // pacman is a quick local query, but still keep it off the async runtime.
+        aur: tauri::async_runtime::spawn_blocking(aur_install).await.ok().flatten(),
     })
 }
 
