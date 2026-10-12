@@ -51,14 +51,19 @@ function removeEntry(track: Track, playlistId: string): MenuEntry {
   return {
     label: "Remove from playlist",
     icon: <ListMinus size={S} />,
-    onSelect: () =>
+    onSelect: () => {
+      useLibrary.getState().adjustCount(playlistId, -1);
       removeFromPlaylist(playlistId, track.id).then(
         () => {
           useToast.getState().show(`Removed from "${title}"`, "info");
           playlistChanged(playlistId);
         },
-        (e) => useToast.getState().show(`Could not remove from "${title}": ${errMsg(e)}`),
-      ),
+        (e) => {
+          void useLibrary.getState().load(); // undo the count
+          useToast.getState().show(`Could not remove from "${title}": ${errMsg(e)}`);
+        },
+      );
+    },
   };
 }
 
@@ -97,14 +102,19 @@ export function playlistEntries(track: Track): MenuEntry[] {
     .filter((p) => editable(p.id))
     .map((p) => ({
       label: p.title,
-      onSelect: () =>
+      onSelect: () => {
+        useLibrary.getState().adjustCount(p.id, 1);
         addToPlaylist(p.id, track.id).then(
           () => {
             useToast.getState().show(`Saved to "${p.title}"`, "info");
             playlistChanged(p.id);
           },
-          (e) => useToast.getState().show(`Could not save to "${p.title}": ${errMsg(e)}`),
-        ),
+          (e) => {
+            void useLibrary.getState().load(); // undo the count
+            useToast.getState().show(`Could not save to "${p.title}": ${errMsg(e)}`);
+          },
+        );
+      },
     }));
 }
 

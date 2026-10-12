@@ -12,6 +12,8 @@ interface LibraryState {
   changed: () => void;
   /** Deletes the playlist on YouTube Music and drops it from the list right away. */
   remove: (id: string) => Promise<void>;
+  /** Shows a song added (+1) or removed (-1) in the playlist's track count before YouTube confirms it. */
+  adjustCount: (id: string, delta: number) => void;
 }
 
 let inflight: Promise<void> | null = null;
@@ -36,6 +38,15 @@ function reloadLater() {
       invalidate("library:playlists"); // the Library page's Playlists tab
     }, ms),
   );
+}
+
+/** "7 tracks" → "8 tracks"; a just-created playlist ("Playlist") starts at 0. Other subtitles stay as they are. */
+export function countedSubtitle(subtitle: string, delta: number): string {
+  const m = /^(\d[\d,]*) tracks?$/.exec(subtitle);
+  const before = m ? Number(m[1].replace(/,/g, "")) : subtitle === "Playlist" ? 0 : null;
+  if (before === null) return subtitle;
+  const n = Math.max(0, before + delta);
+  return `${n.toLocaleString("en-US")} ${n === 1 ? "track" : "tracks"}`;
 }
 
 /** Sidebar playlist list (all pages of the Library "Playlists" tab). */
@@ -73,6 +84,8 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     return id;
   },
   changed: () => reloadLater(),
+  adjustCount: (id, delta) =>
+    set((s) => ({ playlists: s.playlists?.map((p) => (p.id === id ? { ...p, subtitle: countedSubtitle(p.subtitle, delta) } : p)) ?? null })),
   remove: async (id) => {
     await deletePlaylist(id);
     fresh.delete(id);
