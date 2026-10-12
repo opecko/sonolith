@@ -12,6 +12,7 @@ import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
 import { useToast } from "../stores/toast";
 import { useUi } from "../stores/ui";
+import { confirmAction } from "./ConfirmDialog";
 import Menu, { type MenuEntry } from "./Menu";
 
 const S = 18;
@@ -35,6 +36,16 @@ function playlistChanged(id: string) {
 /** Playlists whose songs the user can't remove here: Liked Music (that's unliking), mixes, episodes for later. */
 const editable = (id: string) => id !== "LM" && !id.startsWith("RD") && !id.startsWith("SE");
 
+/**
+ * The user's own playlist: listed in their library with a subtitle that's only a track count ("7 tracks").
+ * Playlists saved from others show their author ("Someone • 12 tracks"), auto playlists a label instead.
+ */
+export function ownPlaylist(id: string): Item | undefined {
+  if (!editable(id)) return undefined;
+  const p = useLibrary.getState().playlists?.find((x) => x.id === id);
+  return p && !p.subtitle?.includes("•") && !/^(auto playlist|youtube music)/i.test(p.subtitle ?? "") ? p : undefined;
+}
+
 function removeEntry(track: Track, playlistId: string): MenuEntry {
   const title = useLibrary.getState().playlists?.find((p) => p.id === playlistId)?.title ?? "this playlist";
   return {
@@ -49,6 +60,34 @@ function removeEntry(track: Track, playlistId: string): MenuEntry {
         (e) => useToast.getState().show(`Could not remove from "${title}": ${errMsg(e)}`),
       ),
   };
+}
+
+/** Asks, then deletes the user's playlist; leaves its page if that's where the user is. */
+async function deletePlaylistAsked(item: Item) {
+  const ok = await confirmAction({
+    title: "Delete playlist?",
+    message: (
+      <>
+        <p>
+          <strong className="font-semibold text-[var(--c-text)]">"{item.title}"</strong>
+          {item.subtitle ? ` (${item.subtitle})` : ""} will be permanently deleted from your YouTube Music account, on
+          every device.
+        </p>
+        <p className="mt-2">The songs themselves stay on YouTube Music. This can't be undone.</p>
+      </>
+    ),
+    confirmLabel: "Delete playlist",
+    danger: true,
+  });
+  if (!ok) return;
+  try {
+    await useLibrary.getState().remove(item.id);
+    const nav = useNav.getState();
+    if (nav.route.name === "playlist" && nav.route.id === item.id) nav.go({ name: "library" });
+    useToast.getState().show(`Deleted "${item.title}"`, "info");
+  } catch (e) {
+    useToast.getState().show(`Could not delete "${item.title}": ${errMsg(e)}`);
+  }
 }
 
 export function playlistEntries(track: Track): MenuEntry[] {
@@ -119,7 +158,7 @@ function trackEntries(track: Track, menu: TrackMenu | undefined, loading: boolea
     ...(menu?.toggles ?? []).map(toggleEntry),
     { label: "Save to playlist", icon: <ListPlus size={S} />, submenu: () => playlistEntries(track) },
     // Only on the user's own playlists (saved ones by others are in the library too, but can't be edited).
-    ...(playlistId && editable(playlistId) && useLibrary.getState().playlists?.some((p) => p.id === playlistId) ? [removeEntry(track, playlistId)] : []),
+    ...(playlistId && ownPlaylist(playlistId) ? [removeEntry(track, playlistId)] : []),
   ];
   if (queueIndex !== undefined)
     out.push({ label: "Remove from queue", icon: <Trash2 size={S} />, onSelect: () => p.removeAt(queueIndex), disabled: queueIndex === p.index });
@@ -165,6 +204,8 @@ export function itemEntries(item: Item, opts: { queueIndex?: number; menu?: Trac
     );
   }
   out.push({ label: "Start radio", icon: <Radio size={S} />, onSelect: () => void p.startRadio(radioSource(item), item.title) });
+  if (item.type === "playlist" && ownPlaylist(item.id))
+    out.push({ label: "Delete playlist", icon: <Trash2 size={S} />, onSelect: () => void deletePlaylistAsked(item) });
   if (item.type === "artist") {
     out.push({ label: "Go to artist", icon: <User size={S} />, onSelect: () => useNav.getState().go({ name: "artist", id: item.id }) });
   }

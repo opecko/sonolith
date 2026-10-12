@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Item } from "../api/types";
-import { createPlaylist, getLibrary } from "../api/ytm";
+import { createPlaylist, deletePlaylist, getLibrary } from "../api/ytm";
 import { invalidate } from "../hooks/useData";
 
 interface LibraryState {
@@ -10,6 +10,8 @@ interface LibraryState {
   create: (title: string) => Promise<string | undefined>;
   /** A playlist's contents changed (song added or removed): its track count in the list is stale. */
   changed: () => void;
+  /** Deletes the playlist on YouTube Music and drops it from the list right away. */
+  remove: (id: string) => Promise<void>;
 }
 
 let inflight: Promise<void> | null = null;
@@ -20,6 +22,8 @@ let inflight: Promise<void> | null = null;
  */
 const fresh = new Map<string, { item: Item; until: number }>();
 const FRESH_MS = 2 * 60_000;
+/** Deleted here but possibly still in the lagging listing for a while: hidden until it's gone there. */
+const deleted = new Map<string, number>();
 
 /** YouTube's library listing lags behind edits; reload again a bit later until it has caught up. */
 const LAGGED_RELOADS_MS = [2_500, 10_000];
@@ -49,7 +53,9 @@ export const useLibrary = create<LibraryState>((set, get) => ({
         }
         const now = Date.now();
         for (const [id, f] of fresh) if (f.until < now || all.some((p) => p.id === id)) fresh.delete(id);
-        set({ playlists: [...[...fresh.values()].map((f) => f.item), ...all], error: null });
+        for (const [id, until] of deleted) if (until < now || !all.some((p) => p.id === id)) deleted.delete(id);
+        const listed = all.filter((p) => !deleted.has(p.id));
+        set({ playlists: [...[...fresh.values()].map((f) => f.item), ...listed], error: null });
       } catch (e) {
         set({ error: e instanceof Error ? e.message : String(e) });
       } finally {
@@ -67,4 +73,12 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     return id;
   },
   changed: () => reloadLater(),
+  remove: async (id) => {
+    await deletePlaylist(id);
+    fresh.delete(id);
+    deleted.set(id, Date.now() + FRESH_MS);
+    set({ playlists: (get().playlists ?? []).filter((p) => p.id !== id) });
+    invalidate(`playlist:${id}`);
+    reloadLater();
+  },
 }));

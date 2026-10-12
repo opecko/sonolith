@@ -98,6 +98,11 @@ export async function addToPlaylist(playlistId: string, videoId: string): Promis
   await (await getClient()).playlist.addVideos(playlistId, [videoId]);
 }
 
+/** Deletes the user's playlist from their account (no undo). */
+export async function deletePlaylist(playlistId: string): Promise<void> {
+  await (await getClient()).playlist.delete(playlistId);
+}
+
 /** Fails with "This playlist cannot be edited." for playlists the user doesn't own. */
 export async function removeFromPlaylist(playlistId: string, videoId: string): Promise<void> {
   await (await getClient()).playlist.removeVideos(playlistId, [videoId]);

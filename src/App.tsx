@@ -12,6 +12,7 @@ import NowPlaying from "./views/NowPlaying";
 import { useUi } from "./stores/ui";
 import QueuePanel from "./components/QueuePanel";
 import Toast from "./components/Toast";
+import ConfirmDialog from "./components/ConfirmDialog";
 import CreditsDialog from "./components/CreditsDialog";
 import UpdateDialog from "./components/UpdateDialog";
 import { initUpdates } from "./stores/update";
@@ -43,6 +44,7 @@ export default function App() {
       <PlayerBar queueOpen={queueOpen} onToggleQueue={() => setQueueOpen((o) => !o)} />
       <CreditsDialog />
       <UpdateDialog />
+      <ConfirmDialog />
       <Toast />
     </div>
   );
