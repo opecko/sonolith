@@ -121,4 +121,5 @@ it's used only when the keyring is empty.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). The Material 3 style uses [Google Sans Flex](https://github.com/googlefonts/googlesans-flex) by
+Google, bundled under the [SIL Open Font License 1.1](src/assets/fonts/GoogleSansFlex-OFL.txt).

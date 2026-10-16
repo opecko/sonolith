@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { contrast, isHex } from "./color";
 import { effectiveTokens, M3_CORNERS, m3Corner } from "./index";
@@ -74,6 +74,16 @@ describe("M3 component shapes", () => {
   });
   it("shape state variables are registered lengths (the morph engine reads them as px)", () => {
     for (const p of ["--r-rest", "--r-sel", "--r-press", "--r-now"]) expect(comp).toMatch(new RegExp(`@property ${p} \\{ syntax: "<length>"`));
+  });
+});
+
+describe("M3 font", () => {
+  it("the bundled font and its license are there (no CDN)", () => {
+    const url = /src: url\("\/(src\/assets\/fonts\/[^"]+\.woff2)"\)/.exec(css)?.[1];
+    expect(url).toBeTruthy();
+    expect(existsSync(new URL(`../../${url}`, import.meta.url))).toBe(true);
+    expect(readFileSync(new URL("../assets/fonts/GoogleSansFlex-OFL.txt", import.meta.url), "utf8")).toContain("SIL Open Font License");
+    expect(css).not.toMatch(/fonts\.googleapis|fonts\.gstatic/);
   });
 });
 

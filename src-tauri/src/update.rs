@@ -186,6 +186,8 @@ pub fn update_open_page(app: AppHandle) -> Result<(), String> {
 pub fn open_credit(app: AppHandle, name: String) -> Result<(), String> {
     let url = match name.as_str() {
         "ytdesk" => format!("https://github.com/{REPO}"),
+        "google-sans-flex" => "https://github.com/googlefonts/googlesans-flex".to_owned(),
+        "ofl" => "https://openfontlicense.org".to_owned(),
         _ => return Err(format!("unknown link {name}")),
     };
     app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())

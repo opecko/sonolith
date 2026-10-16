@@ -99,6 +99,8 @@ export function applyLayout(
   for (const step of Object.keys(M3_CORNERS) as (keyof typeof M3_CORNERS)[])
     root.style.setProperty(`--m3-corner-${step}`, `${m3Corner(step, a.radius)}px`);
   root.dataset.density = a.density;
+  // "app" = the style's own font (CSS picks it by data-ui-style); anything else is the user's pick, inline.
+  root.dataset.font = a.font === "custom" && !a.fontFamily.trim() ? "app" : a.font;
   const stack = fontStack(a.font, a.fontFamily);
   if (stack) root.style.setProperty("--font", stack);
   else root.style.removeProperty("--font");

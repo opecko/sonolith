@@ -49,6 +49,26 @@
   --m3-corner-full: 9999px;
 }
 
+/* Google Sans Flex (SIL OFL 1.1, src/assets/fonts/GoogleSansFlex-OFL.txt), bundled: works offline. Variable weight
+   100–900 and optical size; the other axes are fixed at their defaults to keep the file small. */
+@font-face {
+  font-family: "Google Sans Flex";
+  src: url("/src/assets/fonts/GoogleSansFlex.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* The M3 style's own font when the font setting is "ytdesk" (a font picked in Settings sets --font inline and wins).
+   Google Sans Flex reads light at 400, so its regular is Medium (500) and medium steps up to 600. */
+:root[data-ui-style="m3"][data-font="app"] {
+  --font: "Google Sans Flex", "Google Sans", "Inter", "Roboto", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --w-regular: 500;
+  --w-medium: 600;
+  --font-weight-medium: 600;
+}
+:root[data-ui-style="m3"][data-font="app"] body { font-weight: var(--w-regular); }
+
 /* Roles and corners as Tailwind colors and radii: bg-m3-primary-container, text-m3-on-surface-variant, rounded-m3-lg … */
 @theme inline {
   --color-m3-primary: var(--m3-primary);
@@ -90,33 +110,33 @@
 }
 
 /* Type scale in the user's font (body's --font); *-em = the emphasized set. Sizes in px: zoom scales the UI. */
-@utility type-display-large { font-size: 57px; line-height: 64px; letter-spacing: -0.25px; font-weight: 400; }
-@utility type-display-large-em { font-size: 57px; line-height: 64px; letter-spacing: -0.25px; font-weight: 500; }
-@utility type-display-medium { font-size: 45px; line-height: 52px; letter-spacing: 0px; font-weight: 400; }
-@utility type-display-medium-em { font-size: 45px; line-height: 52px; letter-spacing: 0px; font-weight: 500; }
-@utility type-display-small { font-size: 36px; line-height: 44px; letter-spacing: 0px; font-weight: 400; }
-@utility type-display-small-em { font-size: 36px; line-height: 44px; letter-spacing: 0px; font-weight: 500; }
-@utility type-headline-large { font-size: 32px; line-height: 40px; letter-spacing: 0px; font-weight: 400; }
-@utility type-headline-large-em { font-size: 32px; line-height: 40px; letter-spacing: 0px; font-weight: 500; }
-@utility type-headline-medium { font-size: 28px; line-height: 36px; letter-spacing: 0px; font-weight: 400; }
-@utility type-headline-medium-em { font-size: 28px; line-height: 36px; letter-spacing: 0px; font-weight: 500; }
-@utility type-headline-small { font-size: 24px; line-height: 32px; letter-spacing: 0px; font-weight: 400; }
-@utility type-headline-small-em { font-size: 24px; line-height: 32px; letter-spacing: 0px; font-weight: 500; }
-@utility type-title-large { font-size: 22px; line-height: 28px; letter-spacing: 0px; font-weight: 400; }
-@utility type-title-large-em { font-size: 22px; line-height: 28px; letter-spacing: 0px; font-weight: 500; }
-@utility type-title-medium { font-size: 16px; line-height: 24px; letter-spacing: 0.15px; font-weight: 500; }
+@utility type-display-large { font-size: 57px; line-height: 64px; letter-spacing: -0.25px; font-weight: var(--w-regular, 400); }
+@utility type-display-large-em { font-size: 57px; line-height: 64px; letter-spacing: -0.25px; font-weight: var(--w-medium, 500); }
+@utility type-display-medium { font-size: 45px; line-height: 52px; letter-spacing: 0px; font-weight: var(--w-regular, 400); }
+@utility type-display-medium-em { font-size: 45px; line-height: 52px; letter-spacing: 0px; font-weight: var(--w-medium, 500); }
+@utility type-display-small { font-size: 36px; line-height: 44px; letter-spacing: 0px; font-weight: var(--w-regular, 400); }
+@utility type-display-small-em { font-size: 36px; line-height: 44px; letter-spacing: 0px; font-weight: var(--w-medium, 500); }
+@utility type-headline-large { font-size: 32px; line-height: 40px; letter-spacing: 0px; font-weight: var(--w-regular, 400); }
+@utility type-headline-large-em { font-size: 32px; line-height: 40px; letter-spacing: 0px; font-weight: var(--w-medium, 500); }
+@utility type-headline-medium { font-size: 28px; line-height: 36px; letter-spacing: 0px; font-weight: var(--w-regular, 400); }
+@utility type-headline-medium-em { font-size: 28px; line-height: 36px; letter-spacing: 0px; font-weight: var(--w-medium, 500); }
+@utility type-headline-small { font-size: 24px; line-height: 32px; letter-spacing: 0px; font-weight: var(--w-regular, 400); }
+@utility type-headline-small-em { font-size: 24px; line-height: 32px; letter-spacing: 0px; font-weight: var(--w-medium, 500); }
+@utility type-title-large { font-size: 22px; line-height: 28px; letter-spacing: 0px; font-weight: var(--w-regular, 400); }
+@utility type-title-large-em { font-size: 22px; line-height: 28px; letter-spacing: 0px; font-weight: var(--w-medium, 500); }
+@utility type-title-medium { font-size: 16px; line-height: 24px; letter-spacing: 0.15px; font-weight: var(--w-medium, 500); }
 @utility type-title-medium-em { font-size: 16px; line-height: 24px; letter-spacing: 0.15px; font-weight: 700; }
-@utility type-title-small { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; font-weight: 500; }
+@utility type-title-small { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; font-weight: var(--w-medium, 500); }
 @utility type-title-small-em { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; font-weight: 700; }
-@utility type-body-large { font-size: 16px; line-height: 24px; letter-spacing: 0.5px; font-weight: 400; }
-@utility type-body-large-em { font-size: 16px; line-height: 24px; letter-spacing: 0.5px; font-weight: 500; }
-@utility type-body-medium { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; font-weight: 400; }
-@utility type-body-medium-em { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; font-weight: 500; }
-@utility type-body-small { font-size: 12px; line-height: 16px; letter-spacing: 0.4px; font-weight: 400; }
-@utility type-body-small-em { font-size: 12px; line-height: 16px; letter-spacing: 0.4px; font-weight: 500; }
-@utility type-label-large { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; font-weight: 500; }
+@utility type-body-large { font-size: 16px; line-height: 24px; letter-spacing: 0.5px; font-weight: var(--w-regular, 400); }
+@utility type-body-large-em { font-size: 16px; line-height: 24px; letter-spacing: 0.5px; font-weight: var(--w-medium, 500); }
+@utility type-body-medium { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; font-weight: var(--w-regular, 400); }
+@utility type-body-medium-em { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; font-weight: var(--w-medium, 500); }
+@utility type-body-small { font-size: 12px; line-height: 16px; letter-spacing: 0.4px; font-weight: var(--w-regular, 400); }
+@utility type-body-small-em { font-size: 12px; line-height: 16px; letter-spacing: 0.4px; font-weight: var(--w-medium, 500); }
+@utility type-label-large { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; font-weight: var(--w-medium, 500); }
 @utility type-label-large-em { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; font-weight: 700; }
-@utility type-label-medium { font-size: 12px; line-height: 16px; letter-spacing: 0.5px; font-weight: 500; }
+@utility type-label-medium { font-size: 12px; line-height: 16px; letter-spacing: 0.5px; font-weight: var(--w-medium, 500); }
 @utility type-label-medium-em { font-size: 12px; line-height: 16px; letter-spacing: 0.5px; font-weight: 700; }
-@utility type-label-small { font-size: 11px; line-height: 16px; letter-spacing: 0.5px; font-weight: 500; }
+@utility type-label-small { font-size: 11px; line-height: 16px; letter-spacing: 0.5px; font-weight: var(--w-medium, 500); }
 @utility type-label-small-em { font-size: 11px; line-height: 16px; letter-spacing: 0.5px; font-weight: 700; }

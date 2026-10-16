@@ -11,6 +11,8 @@ import { ErrorBox, Loading } from "../components/Status";
 import { useAsync } from "../hooks/useData";
 import { useSettings } from "../stores/settings";
 import { useUpdate } from "../stores/update";
+// Shipped with the font, as the OFL asks.
+import fontLicense from "../assets/fonts/GoogleSansFlex-OFL.txt?raw";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -217,11 +219,18 @@ function About() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-[var(--c-text-muted)]">
           <CreditLink name="ytdesk">ytdesk</CreditLink> {version}, MIT license.
+          <br />
+          Font (Material 3 style): <CreditLink name="google-sans-flex">Google Sans Flex</CreditLink> by Google,{" "}
+          <CreditLink name="ofl">SIL Open Font License 1.1</CreditLink>.
         </p>
         <button className="chip inline-flex items-center gap-2" onClick={() => setChangelog(true)}>
           <ScrollText size={16} aria-hidden /> Changelog
         </button>
       </div>
+      <details className="mt-3 text-sm text-[var(--c-text-muted)]">
+        <summary className="cursor-pointer select-none">Google Sans Flex license</summary>
+        <pre className="mt-2 max-h-64 select-text overflow-auto whitespace-pre-wrap font-[ui-monospace,monospace] text-xs">{fontLicense}</pre>
+      </details>
       {changelog && <ChangelogDialog current={version} onClose={closeChangelog} />}
     </section>
   );
