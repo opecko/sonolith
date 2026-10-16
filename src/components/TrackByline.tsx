@@ -76,3 +76,16 @@ export const browseLinks = {
     if (e.key === "Enter") follow(e);
   },
 };
+
+/**
+ * A long list's one click handler for all its rows (`li[data-index]`): the index of the row to play, or -1 when the
+ * click landed on one of the row's own controls (rating, ⋮, drag handle, a link). The row's title button
+ * (`data-play`) is its keyboard target and counts as the row. Rows need no handlers or positioned overlays.
+ */
+export function rowPlayClick(e: MouseEvent): number {
+  const target = e.target as Element;
+  const control = target.closest("button, a, input, [role], [data-no-play]");
+  if (control && !control.hasAttribute("data-play") && e.currentTarget.contains(control)) return -1;
+  const row = target.closest<HTMLElement>("li[data-index]");
+  return row && e.currentTarget.contains(row) ? Number(row.dataset.index) : -1;
+}

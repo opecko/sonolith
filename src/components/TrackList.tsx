@@ -1,12 +1,12 @@
 import { AudioLines, Play } from "lucide-react";
-import { memo, useCallback } from "react";
+import { memo, useCallback, type MouseEvent } from "react";
 import type { Track } from "../api/types";
 import { usePlayer, type QueueContext } from "../stores/player";
 import ItemMenu from "./ItemMenu";
 import { fmtTime } from "./PlayerBar";
 import RatingButtons from "./RatingButtons";
 import Thumb from "./Thumb";
-import { Byline } from "./TrackByline";
+import { Byline, rowPlayClick } from "./TrackByline";
 
 const Explicit = () => <span className="shrink-0 rounded-sm bg-[var(--c-text-subtle)] px-1 text-[10px] font-bold text-[var(--c-bg)]" aria-label="Explicit">E</span>;
 
@@ -17,19 +17,19 @@ interface RowProps {
   /** "list": number + two-line title; "table": title | artist | album columns (history). */
   variant: "list" | "table";
   compact: boolean;
-  onPlay: (index: number) => void;
   /** Set on a playlist's page: the menu offers "Remove from playlist" there. */
   playlistId?: string;
 }
 
-const Row = memo(function Row({ track: t, index, current, variant, compact, onPlay, playlistId }: RowProps) {
-  // The title button covers the row (row-hit), so a click anywhere plays; the byline links sit above it.
+const Row = memo(function Row({ track: t, index, current, variant, compact, playlistId }: RowProps) {
+  // The list plays a row clicked anywhere but on its controls (one handler for all rows, see rowPlayClick); the
+  // title is the row's keyboard target.
   const title = (
-    <button onClick={() => onPlay(index)} aria-current={current ? "true" : undefined}
-      className={`row-hit block max-w-full truncate text-left text-sm font-medium ${current ? "text-[var(--c-accent)]" : ""}`}>{t.title}</button>
+    <button data-play="" aria-current={current ? "true" : undefined}
+      className={`block max-w-full truncate text-left text-sm font-medium ${current ? "text-[var(--c-accent)]" : ""}`}>{t.title}</button>
   );
   return (
-    <li data-current={current ? "" : undefined} className="m3-row group relative flex items-center gap-2 rounded-[var(--radius)] border-b border-[var(--c-outline)] pr-2 last:border-0 hover:bg-[var(--c-hover)]">
+    <li data-index={index} data-current={current ? "" : undefined} className="m3-row group flex items-center gap-2 rounded-[var(--radius)] border-b border-[var(--c-outline)] pr-2 last:border-0 hover:bg-[var(--c-hover)]">
       <div className="flex min-w-0 flex-1 items-center gap-4 px-2 py-2">
         {variant === "list" && !compact && <span className="w-6 text-right text-sm tabular-nums text-[var(--c-text-subtle)]">{index + 1}</span>}
         <span className="relative shrink-0">
@@ -61,8 +61,8 @@ const Row = memo(function Row({ track: t, index, current, variant, compact, onPl
           {t.album?.title && <Byline track={t} text={t.album.title} />}
         </span>
       )}
-      <RatingButtons track={t} size={18} className="relative opacity-0 focus-within:opacity-100 group-hover:opacity-100" />
-      <ItemMenu item={t} playlistId={playlistId} className="relative opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
+      <RatingButtons track={t} size={18} className="opacity-0 focus-within:opacity-100 group-hover:opacity-100" />
+      <ItemMenu item={t} playlistId={playlistId} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
       <span className="w-12 shrink-0 text-right text-sm tabular-nums text-[var(--c-text-muted)]">{t.durationSec !== undefined ? fmtTime(t.durationSec) : ""}</span>
     </li>
   );
@@ -72,8 +72,10 @@ export default function TrackList({ tracks, radio = false, compact = false, cont
   tracks: Track[]; radio?: boolean; compact?: boolean; context?: QueueContext; variant?: "list" | "table";
 }) {
   const currentId = usePlayer((s) => s.queue[s.index]?.id);
-  const onPlay = useCallback(
-    (i: number) => {
+  const onClick = useCallback(
+    (e: MouseEvent) => {
+      const i = rowPlayClick(e);
+      if (i < 0) return;
       const p = usePlayer.getState();
       if (radio) p.playRadio(tracks[i]);
       else p.playQueue(tracks, i, context);
@@ -81,9 +83,9 @@ export default function TrackList({ tracks, radio = false, compact = false, cont
     [tracks, radio, context],
   );
   return (
-    <ol>
+    <ol onClick={onClick}>
       {tracks.map((t, i) => (
-        <Row key={`${t.id}:${i}`} track={t} index={i} current={t.id === currentId} variant={variant} compact={compact} onPlay={onPlay} playlistId={context?.playlistId} />
+        <Row key={`${t.id}:${i}`} track={t} index={i} current={t.id === currentId} variant={variant} compact={compact} playlistId={context?.playlistId} />
       ))}
     </ol>
   );

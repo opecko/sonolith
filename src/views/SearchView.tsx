@@ -92,7 +92,7 @@ function TopResult({ items, actions }: { items: Item[]; actions: CardAction[] })
                 <span className="min-w-0 flex-1">
                   {/* Covers the row (row-hit); a track's artist and album names are links above it. */}
                   <button onClick={() => activate(r)} className="row-hit block max-w-full truncate text-left text-base font-medium">{r.title}</button>
-                  <span className="block truncate text-sm text-[var(--c-text-muted)]">{isTrack(r) ? <Byline track={r} /> : r.subtitle}</span>
+                  <span className="row-above block truncate text-sm text-[var(--c-text-muted)]">{isTrack(r) ? <Byline track={r} /> : r.subtitle}</span>
                 </span>
               </div>
               <ItemMenu item={r} className="relative opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />

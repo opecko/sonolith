@@ -1,11 +1,11 @@
 import { AudioLines, GripVertical, Pause, Play } from "lucide-react";
-import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { Track } from "../api/types";
 import { usePlayer } from "../stores/player";
 import ItemMenu from "./ItemMenu";
 import { fmtTime } from "./PlayerBar";
 import Thumb from "./Thumb";
-import { Byline } from "./TrackByline";
+import { Byline, rowPlayClick } from "./TrackByline";
 
 /** Pointer distance from the scroll box edge where dragging starts to auto-scroll, and the top speed (px/frame). */
 const EDGE = 48;
@@ -26,7 +26,6 @@ interface RowProps {
 }
 
 const Row = memo(function Row({ track, i, current, played, playing, drop, dragging, onHandleDown }: RowProps) {
-  const { playIndex, togglePlay } = usePlayer.getState();
   return (
     <li
       data-index={i}
@@ -38,7 +37,8 @@ const Row = memo(function Row({ track, i, current, played, playing, drop, draggi
         aria-label={`Drag to reorder ${track.title}`}
         title="Drag to reorder"
         onPointerDown={(e) => onHandleDown(i, e)}
-        className={`relative z-[1] flex h-10 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center text-[var(--c-text-subtle)] hover:text-[var(--c-text)] active:cursor-grabbing group-hover:opacity-100 ${dragging ? "opacity-100" : "opacity-0"}`}
+        data-no-play=""
+        className={`flex h-10 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center text-[var(--c-text-subtle)] hover:text-[var(--c-text)] active:cursor-grabbing group-hover:opacity-100 ${dragging ? "opacity-100" : "opacity-0"}`}
       >
         <GripVertical size={16} aria-hidden />
       </span>
@@ -50,15 +50,14 @@ const Row = memo(function Row({ track, i, current, played, playing, drop, draggi
           </span>
         </span>
         <span className="min-w-0 flex-1">
-          {/* Covers the row (row-hit): a click anywhere plays; the byline links sit above it. */}
-          <button onClick={() => (current ? togglePlay() : playIndex(i))} aria-current={current ? "true" : undefined}
-            className="row-hit block max-w-full truncate text-left text-sm font-medium">{track.title}</button>
+          {/* The list plays (or pauses) a row clicked anywhere but on its controls; the title is its keyboard target. */}
+          <button data-play="" aria-current={current ? "true" : undefined} className="block max-w-full truncate text-left text-sm font-medium">{track.title}</button>
           <span className="block truncate text-xs text-[var(--c-text-muted)]"><Byline track={track} text={track.artists.join(", ") || track.subtitle} /></span>
         </span>
         {track.explicit && <span className="rounded-sm bg-[var(--c-text-subtle)] px-1 text-[10px] font-bold text-[var(--c-bg)]" aria-label="Explicit">E</span>}
         {track.durationSec !== undefined && <span className="text-xs tabular-nums text-[var(--c-text-muted)]">{fmtTime(track.durationSec)}</span>}
       </div>
-      <ItemMenu item={track} queueIndex={i} className="relative opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
+      <ItemMenu item={track} queueIndex={i} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
     </li>
   );
 });
@@ -80,6 +79,13 @@ export default function QueueList({ autoScroll = false }: { autoScroll?: boolean
 
   const indexRef = useRef(index);
   indexRef.current = index;
+  const onRowClick = useCallback((e: ReactMouseEvent) => {
+    const i = rowPlayClick(e);
+    if (i < 0) return;
+    const p = usePlayer.getState();
+    if (i === indexRef.current) p.togglePlay();
+    else p.playIndex(i);
+  }, []);
   // When the playing track changes (not on reorders), scroll so the previous track sits at the top: the current one
   // is the second visible row. The browser clamps at the end of the list.
   useLayoutEffect(() => {
@@ -166,7 +172,7 @@ export default function QueueList({ autoScroll = false }: { autoScroll?: boolean
   if (!queue.length) return <p className="px-2 text-sm text-[var(--c-text-subtle)]">Queue is empty. Play something to fill it.</p>;
   const firstAutoplay = queue.findIndex((t) => t.source === "autoplay");
   return (
-    <ol ref={ref} className={`${dragFrom >= 0 ? "select-none" : ""} ${loading ? "pointer-events-none opacity-40" : ""}`} aria-busy={loading}>
+    <ol ref={ref} onClick={onRowClick} className={`${dragFrom >= 0 ? "select-none" : ""} ${loading ? "pointer-events-none opacity-40" : ""}`} aria-busy={loading}>
       {queue.map((track, i) => (
         <QueueRowWithDivider key={`${track.id}:${i}`} divider={i === firstAutoplay}>
           <Row

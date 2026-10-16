@@ -117,7 +117,7 @@ function QueuePreview() {
           <span className="min-w-0 flex-1">
             {/* Covers the row (row-hit); the artist and album names are links above it. */}
             <button className="row-hit type-body-large block max-w-full truncate text-left" onClick={() => usePlayer.getState().playIndex(index + 1 + i)}>{t.title}</button>
-            <span className="type-body-medium block truncate text-[var(--m3-on-surface-variant)]"><Byline track={t} text={t.artists.join(", ") || t.subtitle} /></span>
+            <span className="row-above type-body-medium block truncate text-[var(--m3-on-surface-variant)]"><Byline track={t} text={t.artists.join(", ") || t.subtitle} /></span>
           </span>
         </li>
       ))}

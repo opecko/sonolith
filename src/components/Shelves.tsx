@@ -43,7 +43,7 @@ function QuickPickRow({ track }: { track: Track & Item }) {
       {/* The title button covers the row (row-hit); the play thumbnail, links and ⋮ sit above it. */}
       <span className="min-w-0 flex-1">
         <button onClick={() => activateItem(track)} className="row-hit block max-w-full truncate text-left text-sm font-medium">{track.title}</button>
-        <span className="block truncate text-sm text-[var(--c-text-muted)]"><Byline track={track} /></span>
+        <span className="row-above block truncate text-sm text-[var(--c-text-muted)]"><Byline track={track} /></span>
       </span>
       <ItemMenu item={track} className="relative opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
     </div>

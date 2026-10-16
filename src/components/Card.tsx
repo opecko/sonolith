@@ -42,7 +42,7 @@ function CardImpl({ item, fluid = false }: { item: Item; fluid?: boolean }) {
           <button onClick={() => activateItem(item)} className="row-hit block w-full [text-align:inherit]" title={item.title}>
             <span className="line-clamp-2 text-sm font-medium leading-5 [.row-hit:hover_&]:underline">{item.title}</span>
           </button>
-          <span className="mt-0.5 line-clamp-2 text-sm leading-5 text-[var(--c-text-muted)]" title={item.subtitle}>
+          <span className="row-above mt-0.5 line-clamp-2 text-sm leading-5 text-[var(--c-text-muted)]" title={item.subtitle}>
             {item.type === "track" ? <Byline track={item} /> : item.subtitle}
           </span>
         </div>
