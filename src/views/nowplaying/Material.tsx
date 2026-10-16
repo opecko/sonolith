@@ -1,71 +1,38 @@
 import { ListMusic, MicVocal, Sparkles } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { flushSync } from "react-dom";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { UiStyleScope } from "../../components/UiStyle";
-import { Spring } from "../../motion";
 import PodcastSpeed from "../../components/PodcastSpeed";
 import VolumeControl from "../../components/VolumeControl";
 import { usePlayer } from "../../stores/player";
 import { CloseNowPlaying, CoverArt, PlaybackStatus, PodcastMode, SeekBar, TrackActions, TrackLinks, Transport, useCurrentTrack } from "./parts";
+import { PushPanel, type PanelView } from "./pushPanel";
 import { LyricsTab, RelatedTab, UpNextTab, useTrackExtras, type Tab } from "./shared";
 
 const TITLES: Record<Tab, string> = { upnext: "Up next", lyrics: "Lyrics", related: "Related" };
-/** Critically damped: the pushed content must not swing past where it ends up. */
-const PUSH = { damping: 1, stiffness: 380 };
 
-/**
- * Side panel that slides in from the right edge and pushes the content left. Cheap by construction: while it
- * moves, only `transform: translateX` changes on two elements (composited, no layout); when it arrives the final
- * layout (panel in the flex row, content narrower) is committed in one synchronous render inside that frame and
- * the transforms are cleared in the same frame. Closing runs the other way round; switching tabs while open only
- * swaps the panel's content.
- */
-/** The side panel's width: even, so the centered content moves by whole pixels (last frame = committed layout). */
+/** The side panel's width: even, so the centered content moves by whole pixels when it is fully open. */
 const panelWidth = () => 2 * Math.round(Math.min(420, window.innerWidth * 0.34) / 2);
 
-function usePushPanel(open: boolean, width: number) {
-  const content = useRef<HTMLDivElement>(null);
-  const panel = useRef<HTMLElement>(null);
-  const spring = useRef<Spring | null>(null);
-  const [mounted, setMounted] = useState(open);
-  const [dockedState, setDocked] = useState(false);
-  // Closing leaves the docked arrangement in the same render, so the first frame of the slide-out is drawn from it.
-  const docked = dockedState && open;
-  if (open && !mounted) setMounted(true);
-  useLayoutEffect(() => {
-    if (!mounted) return;
-    const c = content.current, p = panel.current;
-    if (!c || !p) return;
-    if (docked) return;
-    // The art + info group is sized from the viewport and the panel width (np-cover / np-info), so it fits beside
-    // the docked panel without changing: docking only re-centers it, which moves it left by exactly width / 2.
-    const dx = width / 2;
-    const paint = (t: number) => {
-      // Whole pixels: no subpixel offset for the commit to snap away.
-      p.style.transform = `translateX(${Math.round((1 - t) * width)}px)`;
-      c.style.transform = t ? `translateX(${-Math.round(t * dx)}px)` : "";
-    };
-    spring.current ??= new Spring(open ? 0 : 1, PUSH, paint, { precision: 0.001 });
-    paint(spring.current.value);
-    let inEffect = true;
-    spring.current.to(open ? 1 : 0, () => {
-      if (open) {
-        // Arrived: the real layout now, transforms gone, in this same frame. From the frame loop that takes a
-        // synchronous render; when it lands right away (animations off) the effect's own update is just as early.
-        if (inEffect) setDocked(true);
-        else flushSync(() => setDocked(true));
-        c.style.transform = p.style.transform = "";
-      } else {
-        c.style.transform = "";
-        spring.current = null;
-        setDocked(false);
-        setMounted(false);
-      }
-    });
-    inEffect = false;
-  }, [open, mounted]);
-  useEffect(() => () => spring.current?.stop(), []);
-  return { content, panel, mounted, docked };
+/**
+ * Side panel sliding in from the right edge, pushing the content left. The panel's own width in the flex row
+ * springs (PushPanel), its content stays at full width inside, anchored left, so it slides in; everything beside it
+ * (cover, info, the bottom strip with volume and close) is laid out normally on every frame. The last frame is
+ * therefore the final layout itself: nothing to commit, nothing to snap.
+ */
+function usePushPanel(target: Tab | null, width: number) {
+  const panel = useRef<HTMLElement | null>(null);
+  const ctl = useRef<PushPanel | null>(null);
+  const [view, setView] = useState<PanelView>({ mounted: target !== null, tab: target ?? "upnext" });
+  ctl.current ??= new PushPanel(width, (px) => panel.current && (panel.current.style.width = `${px}px`), setView, target);
+  useLayoutEffect(() => ctl.current!.setTarget(target), [target]);
+  useLayoutEffect(() => ctl.current!.setWidth(width), [width]);
+  useEffect(() => () => ctl.current?.dispose(), []);
+  // The element mounts at the spring's current width (0 when it starts opening).
+  const ref = useCallback((el: HTMLElement | null) => {
+    panel.current = el;
+    if (el) el.style.width = `${ctl.current!.px}px`;
+  }, []);
+  return { ref, ...view };
 }
 
 /**
@@ -79,16 +46,14 @@ export default function MaterialLayout() {
   const [panel, setPanel] = useState<Tab | null>(null);
   // A panel the next track doesn't have (no lyrics) closes.
   const shown = panel === "lyrics" && !lyrics ? null : panel === "related" && !related ? null : panel;
-  const [last, setLast] = useState<Tab>("upnext");
-  if (shown && shown !== last) setLast(shown);
-  const tab = shown ?? last;
   const [width, setWidth] = useState(panelWidth);
   useEffect(() => {
     const onResize = () => setWidth(panelWidth());
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-  const push = usePushPanel(!!shown, width);
+  const push = usePushPanel(shown, width);
+  const tab = push.tab;
   const toggle = (t: Tab) => setPanel((p) => (p === t ? null : t));
   const tabs: { id: Tab; label: string; icon: typeof ListMusic; show: boolean }[] = [
     { id: "upnext", label: "Queue", icon: ListMusic, show: true },
@@ -105,7 +70,7 @@ export default function MaterialLayout() {
           </button>
         ))}
       </div>
-      <div ref={push.content} className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 items-center justify-center gap-12 px-12 pb-2 pt-20 max-lg:flex-col max-lg:gap-6 max-lg:px-8">
           <div className="flex shrink-0 flex-col items-center gap-4">
             <PodcastMode />
@@ -133,17 +98,18 @@ export default function MaterialLayout() {
         </div>
       </div>
       {push.mounted && (
-        <section ref={push.panel} aria-label={TITLES[tab]} aria-hidden={!shown}
-          className={`flex shrink-0 flex-col overflow-hidden rounded-l-[var(--m3-corner-xl)] bg-[var(--m3-surface-container)] ${push.docked ? "relative" : "absolute inset-y-0 right-0 z-20"} ${shown ? "" : "pointer-events-none"}`}
-          style={{ width }}>
-          {/* The toggles sit over the header's right end (they also close the panel), so it keeps that room. */}
-          <header className="flex h-20 shrink-0 items-center gap-2 pl-5" style={{ paddingRight: tabs.filter((t) => t.show).length * 56 + 24 }}>
-            <h2 className="type-title-large-em truncate">{TITLES[tab]}</h2>
-          </header>
-          <div className="flex min-h-0 flex-1 flex-col px-3 pb-3">
-            {tab === "upnext" && <div className="flex min-h-0 flex-1 flex-col pt-2"><UpNextTab /></div>}
-            {tab === "lyrics" && videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} videoId={videoId} target={lyrics} /></div>}
-            {tab === "related" && videoId && related && <div className="scroll-y min-h-0 flex-1 pr-1"><RelatedTab key={videoId} videoId={videoId} target={related} /></div>}
+        // Width written per frame by the spring; the content inside keeps the full width (anchored left).
+        <section ref={push.ref} aria-label={TITLES[tab]} aria-hidden={!shown} className={`relative shrink-0 overflow-hidden ${shown ? "" : "pointer-events-none"}`}>
+          <div className="absolute inset-y-0 left-0 flex flex-col overflow-hidden rounded-l-[var(--m3-corner-xl)] bg-[var(--m3-surface-container)]" style={{ width }}>
+            {/* The toggles sit over the header's right end (they also close the panel), so it keeps that room. */}
+            <header className="flex h-20 shrink-0 items-center gap-2 pl-5" style={{ paddingRight: tabs.filter((t) => t.show).length * 56 + 24 }}>
+              <h2 className="type-title-large-em truncate">{TITLES[tab]}</h2>
+            </header>
+            <div className="flex min-h-0 flex-1 flex-col px-3 pb-3">
+              {tab === "upnext" && <div className="flex min-h-0 flex-1 flex-col pt-2"><UpNextTab /></div>}
+              {tab === "lyrics" && videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} videoId={videoId} target={lyrics} /></div>}
+              {tab === "related" && videoId && related && <div className="scroll-y min-h-0 flex-1 pr-1"><RelatedTab key={videoId} videoId={videoId} target={related} /></div>}
+            </div>
           </div>
         </section>
       )}
