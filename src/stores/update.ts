@@ -14,6 +14,8 @@ export interface UpdateInfo {
   installer: boolean;
   /** Installed from the AUR ("ytdesk" or "ytdesk-bin"), with the AUR helpers found (yay, paru). */
   aur: { package: string; helpers: string[] } | null;
+  /** Made up by the dev toolkit to exercise this UI: nothing is downloaded, installed or opened. */
+  simulated?: boolean;
 }
 
 type Install =
@@ -48,6 +50,10 @@ export const useUpdate = create<UpdateState>((set, get) => ({
   installNow: async () => {
     const info = get().available;
     if (!info || get().install.status === "downloading" || get().install.status === "starting") return;
+    if (info.simulated) {
+      set({ install: { status: "error", message: "Simulated update: nothing was downloaded." } });
+      return;
+    }
     set({ install: { status: "downloading", downloaded: 0, total: null } });
     const unlisten = await listen<{ downloaded: number; total: number | null }>("update-progress", (e) =>
       set({ install: { status: "downloading", ...e.payload } }),

@@ -1,6 +1,7 @@
 import { Check, Copy, Download, ExternalLink, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useToast } from "../stores/toast";
 import { useUpdate } from "../stores/update";
 import ReleaseNotes from "./ReleaseNotes";
 
@@ -84,7 +85,7 @@ export default function UpdateDialog() {
                 {install.status === "error" ? "Try again" : "Download installer"}
               </button>
             ) : (
-              <button onClick={() => void invoke("update_open_page").catch(() => {})}
+              <button onClick={() => (info.simulated ? useToast.getState().show("Simulated update: GitHub wasn't opened.", "info") : void invoke("update_open_page").catch(() => {}))}
                 className="m3-btn m3-filled flex h-10 shrink-0 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button hover:scale-105">
                 <ExternalLink size={18} aria-hidden /> Open GitHub
               </button>

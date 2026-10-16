@@ -58,6 +58,10 @@ window.addEventListener(
   true,
 );
 
+// Dev toolkit (`npm run tauri dev` only): a dynamic import behind import.meta.env.DEV, which Vite turns into
+// `false` for release builds, so src/dev never ships. Nothing else may import from src/dev.
+if (import.meta.env.DEV) void import("./dev").then((m) => m.mountDevTools());
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
