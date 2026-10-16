@@ -41,6 +41,14 @@
   --r-now: var(--r-sel);
 }
 [data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph])[data-pressed] { --r-now: var(--r-press); }
+/*
+ * Repaint margin for shapes that morph. A rounded corner is antialiased, and at fractional positions (flex-1
+ * widths, HiDPI scaling) its edge pixels fall just outside the pixel-snapped border box. WebKit invalidates only
+ * that box when border-radius changes, so the previous frame's edge pixels stayed in the gap between buttons. A
+ * transparent outline is part of the visual overflow: WebKit repaints the box plus 1px, which covers those pixels,
+ * and draws nothing. (The focus ring replaces it while :focus-visible.)
+ */
+[data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph], .m3-seg):not(:focus-visible) { outline: 1px solid transparent; outline-offset: 0; }
 
 [data-ui-style="m3"] :is(.m3-btn, .icon-btn, .chip, .m3-sl) {
   --ct: transparent;
