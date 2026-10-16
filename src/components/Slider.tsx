@@ -145,10 +145,12 @@ function M3Slider(props: SliderProps) {
       className={`m3-slider group relative flex cursor-pointer touch-none items-center ${disabled ? "pointer-events-none opacity-40" : ""} ${className}`}
       style={{ height: handle }}
     >
-      {/* Inactive track, from the handle's right gap to the end, with the stop indicator at its end. */}
+      {/* Inactive track, from the handle's right gap to the end, with the stop indicator at its end. The indicator is
+          inside it, so the same clip hides it once the handle (and its gap) reaches it, at 100 %. */}
       <div className="absolute inset-x-0 bg-[var(--m3-secondary-container)]"
-        style={{ height: track, clipPath: `inset(0 0 0 calc(${pct}% + ${edge}px) round ${inner}px ${corner}px ${corner}px ${inner}px)` }} />
-      {size !== "seek" && <div className="absolute rounded-full bg-[var(--m3-primary)]" style={{ width: 4, height: 4, right: (track - 4) / 2 }} />}
+        style={{ height: track, clipPath: `inset(0 0 0 calc(${pct}% + ${edge}px) round ${inner}px ${corner}px ${corner}px ${inner}px)` }}>
+        {size !== "seek" && <div className="absolute rounded-full bg-[var(--m3-primary)]" style={{ width: 4, height: 4, right: (track - 4) / 2, top: (track - 4) / 2 }} />}
+      </div>
       {wavy !== undefined && size === "seek" ? (
         <Wave pct={pct} edge={edge} on={wavy} />
       ) : (
