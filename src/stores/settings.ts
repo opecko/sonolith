@@ -36,9 +36,14 @@ export function parseSettings(stored: unknown): Settings {
   };
 }
 
+/** No settings were stored when the app started: a fresh install (What's new stays quiet). */
+export let freshInstall = true;
+
 function read(): Settings {
   try {
-    return parseSettings(JSON.parse(localStorage.getItem(KEY) ?? "{}"));
+    const raw = localStorage.getItem(KEY);
+    freshInstall = raw === null;
+    return parseSettings(JSON.parse(raw ?? "{}"));
   } catch {
     return DEFAULTS;
   }

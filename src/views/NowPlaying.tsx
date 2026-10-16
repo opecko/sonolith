@@ -2,9 +2,10 @@ import { ChevronDown } from "lucide-react";
 import { memo, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
-import { useSettings } from "../stores/settings";
+import { setAppearance, useSettings } from "../stores/settings";
+import type { NowPlayingLayout } from "../theme/appearance";
 import { Spring, tween } from "../motion";
-import { useUiStyle } from "../components/UiStyle";
+import { UiStyleScope, useUiStyle } from "../components/UiStyle";
 import { useUi } from "../stores/ui";
 import BentoLayout from "./nowplaying/Bento";
 import ClassicLayout from "./nowplaying/Classic";
@@ -106,6 +107,29 @@ function useSlide(ref: RefObject<HTMLDivElement | null>, open: boolean, onOpened
   }, [open]);
 }
 
+const LAYOUTS: { id: NowPlayingLayout; label: string }[] = [{ id: "material", label: "Material" }, { id: "bento", label: "Bento" }, { id: "classic", label: "Classic" }];
+
+/** "Try out the new looks" (from What's new): switch layouts in place, then dismiss. Always M3. */
+function TryLooksCard() {
+  const on = useUi((s) => s.tryLooks);
+  const layout = useSettings((s) => s.appearance.nowPlayingLayout);
+  if (!on) return null;
+  return (
+    <UiStyleScope value="m3" className="pointer-events-none absolute inset-x-0 top-4 z-40 flex justify-center px-20">
+      <div role="region" aria-label="Try out the new looks"
+        className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-5 gap-y-3 rounded-[var(--m3-corner-xl)] bg-[var(--m3-surface-container-high)] px-5 py-3 text-[var(--m3-on-surface)] shadow-[0_4px_16px_color-mix(in_srgb,var(--m3-scrim)_30%,transparent)]">
+        <p className="type-title-medium-em">Try out the new looks</p>
+        <div className="m3-segmented flex" role="group" aria-label="Now Playing layout">
+          {LAYOUTS.map((l) => (
+            <button key={l.id} className="m3-seg" aria-pressed={layout === l.id} onClick={() => setAppearance({ nowPlayingLayout: l.id })}>{l.label}</button>
+          ))}
+        </div>
+        <button className="m3-btn m3-filled h-10" onClick={() => useUi.getState().setTryLooks(false)}>I tried it</button>
+      </div>
+    </UiStyleScope>
+  );
+}
+
 /** Full-window overlay above the content but below the player bar; playback state is untouched. */
 export default function NowPlaying() {
   const open = useUi((s) => s.nowPlaying);
@@ -121,7 +145,10 @@ export default function NowPlaying() {
   const panel = useRef<HTMLDivElement>(null);
   const m3 = useUiStyle() === "m3";
   const layout = useSettings((s) => s.appearance.nowPlayingLayout);
-  useSlide(panel, open, () => useUi.getState().setNowPlayingCovering(true), () => setMounted(false), m3);
+  useSlide(panel, open, () => useUi.getState().setNowPlayingCovering(true), () => {
+    setMounted(false);
+    useUi.getState().setTryLooks(false);
+  }, m3);
 
   useEffect(() => {
     if (!open) return;
@@ -143,6 +170,7 @@ export default function NowPlaying() {
         <ChevronDown size={24} />
       </button>
       {layout === "material" ? <MaterialLayout /> : layout === "bento" ? <BentoLayout /> : <ClassicLayout />}
+      <TryLooksCard />
     </div>
   );
 }

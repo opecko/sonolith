@@ -16,6 +16,8 @@ import ConfirmDialog from "./components/ConfirmDialog";
 import CreditsDialog from "./components/CreditsDialog";
 import UpdateDialog from "./components/UpdateDialog";
 import { initUpdates } from "./stores/update";
+import WhatsNewDialog from "./whatsNew/WhatsNewDialog";
+import { initWhatsNew } from "./whatsNew/store";
 
 export default function App() {
   const [queueOpen, setQueueOpen] = useState(false);
@@ -29,6 +31,7 @@ export default function App() {
     void initMpris();
     initHistory();
     initUpdates();
+    initWhatsNew();
   }, []);
   return (
     <div className="flex h-full flex-col">
@@ -44,6 +47,7 @@ export default function App() {
       <PlayerBar queueOpen={queueOpen} onToggleQueue={() => setQueueOpen((o) => !o)} />
       <CreditsDialog />
       <UpdateDialog />
+      <WhatsNewDialog />
       <ConfirmDialog />
       <Toast />
     </div>

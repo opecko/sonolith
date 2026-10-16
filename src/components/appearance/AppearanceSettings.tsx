@@ -116,7 +116,7 @@ export default function AppearanceSettings() {
   const customCount = Object.keys(overrides).length;
 
   return (
-    <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
+    <section id="settings-appearance" className="m3-section mb-6 scroll-mt-4 rounded-lg bg-[var(--c-surface)] p-6">
       <h2 className="mb-1 text-lg font-semibold">Appearance</h2>
       <p className="mb-4 text-sm text-[var(--c-text-muted)]">Style, Now Playing layout, color palette, custom colors and other visual options.</p>
       <StyleOptions />

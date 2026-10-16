@@ -430,3 +430,8 @@
 [data-ui-style="m3"] .m3-choice:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, var(--m3-surface-container)); }
 [data-ui-style="m3"] .m3-choice[aria-checked="true"] { border-color: var(--m3-primary); box-shadow: inset 0 0 0 1px var(--m3-primary); background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
 [data-ui-style="m3"] .m3-choice > span:first-child { background: var(--m3-surface); }
+
+/* ---------- What's new ---------- */
+
+.m3-whats-icon { color: var(--c-text); }
+[data-ui-style="m3"] .m3-whats-icon { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }

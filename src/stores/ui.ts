@@ -15,6 +15,9 @@ interface UiState {
   /** "View song credits" dialog. */
   credits: CreditsState | null;
   setCredits: (c: CreditsState | null) => void;
+  /** "Try out the new looks" card at the top of Now Playing (from What's new). */
+  tryLooks: boolean;
+  setTryLooks: (on: boolean) => void;
   /** History rows removed this session (by their removal token), hidden until the page reloads. */
   removedHistory: Set<string>;
   markRemovedHistory: (token: string) => void;
@@ -29,6 +32,8 @@ export const useUi = create<UiState>((set) => ({
   setPodcastVideo: (podcastVideo) => set({ podcastVideo }),
   credits: null,
   setCredits: (credits) => set({ credits }),
+  tryLooks: false,
+  setTryLooks: (tryLooks) => set({ tryLooks }),
   removedHistory: new Set(),
   markRemovedHistory: (token) => set((s) => ({ removedHistory: new Set(s.removedHistory).add(token) })),
 }));

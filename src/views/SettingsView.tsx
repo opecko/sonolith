@@ -212,7 +212,7 @@ function About() {
     getVersion().then(setVersion, () => {});
   }, []);
   return (
-    <section className="m3-section mt-6 rounded-lg bg-[var(--c-surface)] p-6">
+    <section id="settings-about" className="m3-section mt-6 scroll-mt-4 rounded-lg bg-[var(--c-surface)] p-6">
       <h2 className="mb-1 text-lg font-semibold">About</h2>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-[var(--c-text-muted)]">

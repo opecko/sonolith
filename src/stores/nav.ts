@@ -36,6 +36,13 @@ export const useNav = create<NavState>((set) => ({
     }),
 }));
 
+/** Settings, scrolled to one of its sections once it has rendered. */
+export function openSettings(section?: "appearance" | "about") {
+  useNav.getState().go({ name: "settings" });
+  if (section)
+    requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(`settings-${section}`)?.scrollIntoView({ block: "start" })));
+}
+
 export const openSearch = (query: string) => {
   const q = query.trim();
   if (q) useNav.getState().go({ name: "search", query: q });
