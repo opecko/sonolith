@@ -37,8 +37,12 @@ function finishAll() {
   for (const a of all) a.finish();
 }
 
+/** Timestamp of the last frame the loop ran (a retarget mid-flight continues from it). */
+let lastFrame = 0;
+
 function frame(now: number) {
   raf = 0;
+  lastFrame = now;
   for (const a of [...running]) if (a.step(now)) running.delete(a);
   if (running.size) raf = requestAnimationFrame(frame);
 }
@@ -135,8 +139,9 @@ export class Spring {
       this.anim.finish();
       return;
     }
-    // New segment from where the value is now, with its current velocity.
-    this.seg = { t0: -1, from: this.value, v0: this.velocity };
+    // New segment from where the value is now, with its current velocity. In flight, value and velocity are those
+    // of the last frame, so the segment starts there (the next frame moves on instead of repeating this one).
+    this.seg = { t0: this.animating ? lastFrame : -1, from: this.value, v0: this.velocity };
     if (this.value === target && this.velocity === 0) {
       running.delete(this.anim);
       this.anim.finish();

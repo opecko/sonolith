@@ -271,6 +271,11 @@ mod tests {
         assert!(!is_newer("v1.1.2", "1.1.2"));
         assert!(!is_newer("1.1.1", "1.1.2"));
         assert!(!is_newer("garbage", "1.0.0"));
+        // Major bumps compare as numbers, not text.
+        assert!(is_newer("2.0.0", "1.3.0"));
+        assert!(is_newer("v2.0.0", "1.99.99"));
+        assert!(!is_newer("1.3.0", "2.0.0"));
+        assert!(is_newer("10.0.0", "9.9.9"));
     }
 
     #[test]
