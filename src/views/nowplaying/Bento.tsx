@@ -125,14 +125,14 @@ function QueuePreview() {
   );
 }
 
-/** First lines of the lyrics, fading out; the full text opens in the big tile. */
+/** The first lines of the lyrics, as many as the tile has room for, fading out; the full text opens in the big tile. */
 function LyricsPreview({ videoId, target }: { videoId: string; target: BrowseRef }) {
   const { data } = useAsync(`lyrics:${videoId}`, () => getLyrics(target));
   if (data === undefined) return <p className="type-body-medium text-[var(--m3-on-surface-variant)]">Loading lyrics…</p>;
   if (!data) return <p className="type-body-medium text-[var(--m3-on-surface-variant)]">Lyrics aren't available for this song.</p>;
   return (
-    <p className="type-body-large whitespace-pre-line" style={{ maskImage: "linear-gradient(180deg, #000 40%, transparent)" }}>
-      {data.text.split("\n").slice(0, 4).join("\n")}
+    <p className="bento-lyrics-text type-body-large min-h-0 flex-1 overflow-hidden whitespace-pre-line" style={{ maskImage: "linear-gradient(180deg, #000 55%, transparent)" }}>
+      {data.text.split("\n").slice(0, 40).join("\n")}
     </p>
   );
 }
@@ -186,12 +186,13 @@ function Expanded({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * Bento layout: M3 surface-container tiles. Left: the cover, track info (title, artist · album, like/dislike/⋮,
- * playback errors) and the controls tile (volume, podcast speed, the five transport buttons, the wavy seek
- * bar). Right column: Up next | Related in one tile (springs open to the full column: the whole queue with
- * reordering, chips and autoplay), Autoplay and Lyrics. Bento replaces the bottom player bar, so everything the
- * bar offers is in here; the bottom strip keeps the close button clear of the tiles. Tiles reflow into fewer
- * columns on small windows.
+ * Bento layout: M3 surface-container tiles. The cover, square and as tall as the view; beside it a column with the
+ * track info (big title, artist · album, like/dislike/⋮, playback errors) and the controls (seek bar, the five
+ * transport buttons, volume, podcast speed), both only as tall as their content, and Up next | Related taking the
+ * rest (springs open to the whole queue with reordering, chips and autoplay). Autoplay and the lyrics preview get a
+ * third column on wide windows and sit under Up next on medium ones (Lyrics then opens from the info tile). Bento
+ * replaces the bottom player bar, so everything the bar offers is in here; the bottom strip keeps the close button
+ * clear of the tiles. Tiles reflow into fewer columns on small windows.
  */
 export default function BentoLayout() {
   const track = useCurrentTrack();
@@ -215,36 +216,41 @@ export default function BentoLayout() {
   return (
     <UiStyleScope value="m3" className="np-bento relative flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="scroll-y min-h-0 flex-1 px-6 pt-6">
-        <div className="bento-grid" data-expanded={expanded ? "" : undefined}>
+        <div className="bento-grid" data-expanded={expanded ? "" : undefined} data-lyrics={lyrics && videoId ? "" : undefined}>
           <Tile area="cover" label="Artwork" className="relative overflow-hidden !p-0">
             <CoverArt className="h-full w-full" />
             <div className="absolute left-4 top-4"><PodcastMode /></div>
           </Tile>
-          {track && (
-            <Tile area="info" label="Track" className="@container flex flex-col justify-between gap-4">
-              <p className="type-label-large truncate text-[var(--m3-on-surface-variant)]">{contextTitle ? `Playing from ${contextTitle}` : "Now playing"}</p>
-              <div className="min-w-0">
-                <h1 className="type-headline-medium-em line-clamp-3 @sm:type-display-small-em" title={track.title}>{track.title}</h1>
-                <TrackLinks track={track} className="type-title-medium mt-2 text-[var(--m3-on-surface-variant)] @sm:type-title-large" />
-              </div>
-              <div className="flex min-h-10 items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  {error ? <PlaybackError error={error} /> : status === "loading" && <p className="type-body-medium text-[var(--m3-on-surface-variant)]">Loading…</p>}
+          {/* Middle column: info and controls take only what they need, Up next | Related the rest of the height. */}
+          {!expanded && (
+            <div className="bento-col">
+              {track && (
+                <Tile area="info" label="Track" className="flex flex-col gap-2">
+                  <p className="type-label-large truncate text-[var(--m3-on-surface-variant)]">{contextTitle ? `Playing from ${contextTitle}` : "Now playing"}</p>
+                  {/* Title, artist · album and the actions read as one block. */}
+                  <div className="min-w-0">
+                    <h1 className="bento-title line-clamp-2" title={track.title}>{track.title}</h1>
+                    <TrackLinks track={track} className="type-title-medium mt-1 text-[var(--m3-on-surface-variant)]" />
+                    <div className="-ml-2 mt-2 flex min-h-10 flex-wrap items-center gap-x-3 gap-y-1">
+                      <TrackActions track={track} />
+                      {lyrics && (
+                        <button className="bento-lyrics-btn m3-btn m3-tonal h-10" onClick={() => setBig(true)}><MicVocal size={18} aria-hidden /> Lyrics</button>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        {error ? <PlaybackError error={error} /> : status === "loading" && <p className="type-body-medium text-[var(--m3-on-surface-variant)]">Loading…</p>}
+                      </div>
+                    </div>
+                  </div>
+                </Tile>
+              )}
+              <Tile area="controls" label="Playback" className="bento-controls flex flex-col gap-3">
+                <SeekBar times="split" />
+                <BentoTransport />
+                <div className="flex items-center justify-center gap-3">
+                  <VolumeControl sliderClassName="w-36" />
+                  {podcast && <PodcastSpeed />}
                 </div>
-                <TrackActions track={track} />
-              </div>
-            </Tile>
-          )}
-          <Tile area="controls" label="Playback" className="bento-controls flex flex-col justify-between gap-4">
-            <div className="flex items-center justify-between gap-3">
-              <VolumeControl />
-              {podcast && <PodcastSpeed />}
-            </div>
-            <BentoTransport />
-            <SeekBar times="split" />
-          </Tile>
-          {expanded ? <Expanded onClose={() => setBig(false)} /> : (
-            <div className="bento-side">
+              </Tile>
               <section ref={queueTile.ref} aria-label={view === "related" ? "Related" : "Up next"} className={`bento-tile np-glass bento-queue flex min-h-0 flex-col overflow-hidden ${queueOpen ? "bento-queue-open" : ""}`}>
                 <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
                   <div className="m3-segmented flex" role="tablist" aria-label="Up next or related">
@@ -263,25 +269,27 @@ export default function BentoLayout() {
                   ) : queueOpen ? <div className="flex min-h-0 flex-1 flex-col"><UpNextTab /></div> : <div className="min-h-0 flex-1 overflow-hidden"><QueuePreview /></div>}
                 </div>
               </section>
-              {!queueOpen && (
-                <>
-                  <Tile area="context" label="Autoplay and mixes" className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="type-title-medium-em">Autoplay</p>
-                        <p className="type-body-medium text-[var(--m3-on-surface-variant)]">Keeps similar music playing when the queue ends.</p>
-                      </div>
-                      <AutoplayToggle withLabel={false} />
-                    </div>
-                    <div className="-mx-2 -mb-4"><QueueChips /></div>
-                  </Tile>
-                  {lyrics && videoId && (
-                    <Tile area="lyrics" label="Lyrics" className="flex flex-col gap-3">
-                      <LyricsPreview videoId={videoId} target={lyrics} />
-                      <button className="m3-btn m3-tonal h-10 self-start" onClick={() => setBig(true)}><MicVocal size={18} aria-hidden /> Lyrics</button>
-                    </Tile>
-                  )}
-                </>
+            </div>
+          )}
+          {expanded && <Expanded onClose={() => setBig(false)} />}
+          {/* Autoplay and the lyrics preview: their own column on wide windows, under Up next on medium ones. */}
+          {!expanded && !queueOpen && (
+            <div className="bento-aside">
+              <Tile area="context" label="Autoplay and mixes" className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="type-title-medium-em">Autoplay</p>
+                    <p className="type-body-medium text-[var(--m3-on-surface-variant)]">Keeps similar music playing when the queue ends.</p>
+                  </div>
+                  <AutoplayToggle withLabel={false} />
+                </div>
+                <div className="-mx-2 -mb-3"><QueueChips /></div>
+              </Tile>
+              {lyrics && videoId && (
+                <Tile area="lyrics" label="Lyrics" className="flex min-h-0 flex-col gap-3">
+                  <LyricsPreview videoId={videoId} target={lyrics} />
+                  <button className="m3-btn m3-tonal h-10 shrink-0 self-start" onClick={() => setBig(true)}><MicVocal size={18} aria-hidden /> Lyrics</button>
+                </Tile>
               )}
             </div>
           )}

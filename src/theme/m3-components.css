@@ -369,7 +369,7 @@
 
 .bento-tile {
   min-width: 0;
-  padding: 24px;
+  padding: 20px;
   border-radius: var(--m3-corner-xl);
   background: var(--m3-surface-container);
   color: var(--m3-on-surface);
@@ -381,60 +381,89 @@
 [data-ambient] .np-glass.bento-controls { background-color: color-mix(in srgb, var(--m3-surface-container-high) 78%, transparent); }
 [data-ambient] .np-glass.bento-lyrics { background-color: color-mix(in srgb, var(--m3-tertiary-container) 82%, transparent); }
 
+/* Display, emphasized, scaled with the window: 28px on small windows up to display-medium's 45px; two lines at most. */
+.bento-title { font-size: clamp(28px, 14px + 1.9vw, 45px); line-height: 1.15; letter-spacing: 0; font-weight: var(--w-medium, 500); }
+
 /* Controls tile: five equally tall rounded squares, the play pill twice as wide. */
-.bento-transport { height: clamp(56px, 9vh, 72px); }
+.bento-transport { height: clamp(56px, 8vh, 72px); }
 [data-ui-style="m3"] .bento-sq { --r-rest: var(--m3-corner-lg); --r-press: var(--m3-corner-md); --r-sel: var(--m3-corner-full); }
 [data-ui-style="m3"] .bento-sq[aria-pressed="true"] { --ct: var(--m3-secondary); color: var(--m3-on-secondary); }
 [data-ui-style="m3"] .bento-play { --r-press: var(--m3-corner-md); }
 
-/* Right column: Up next fills what Autoplay and Lyrics / Related leave; open, it takes the whole column. */
-.bento-side { grid-area: side; display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden; }
-.bento-queue { flex: 1 1 0; min-height: 240px; }
 .bento-queue.bento-queue-open { min-height: 0; }
+/* The lyrics preview fills its tile when the tile is given height (wide windows); elsewhere it shows a few lines. */
+.bento-lyrics-text { max-height: 7.5em; }
 
-/* One column (narrow windows): info, cover, controls, the right column's tiles. */
+/* One column (narrow windows): every tile in turn. The column wrappers don't take part in the grid here. */
+.bento-col, .bento-aside { display: contents; }
 .bento-grid {
   display: grid;
   gap: 12px;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "info" "cover" "controls" "side" "main";
+  grid-template-areas: "info" "cover" "controls" "queue" "context" "lyrics" "main";
 }
 .bento-info { grid-area: info; }
 .bento-cover { grid-area: cover; justify-self: center; width: min(100%, 56vh); aspect-ratio: 1; }
 .bento-controls { grid-area: controls; }
+.bento-queue { grid-area: queue; min-height: 240px; max-height: 70vh; }
+.bento-context { grid-area: context; }
+.bento-lyrics { grid-area: lyrics; }
 .bento-main { grid-area: main; min-height: 60vh; }
-.bento-side { overflow: visible; }
-.bento-queue { max-height: 70vh; }
-.bento-grid[data-expanded] { grid-template-areas: "info" "controls" "main"; }
+.bento-lyrics-btn { display: none; }
 .bento-grid[data-expanded] .bento-cover { display: none; }
 
-/* Two columns: cover beside info and controls; the right column's tiles underneath. */
+/* Two columns: cover beside info and controls; the rest underneath. */
 @media (min-width: 640px) {
   .bento-grid {
     grid-template-columns: minmax(0, min(40vw, 380px)) minmax(0, 1fr);
-    grid-template-areas: "cover info" "cover controls" "side side" "main main";
+    grid-template-areas: "cover info" "cover controls" "queue queue" "context context" "lyrics lyrics" "main main";
+    grid-template-rows: auto auto;
   }
-  .bento-cover { width: 100%; }
-  .bento-grid[data-expanded] { grid-template-areas: "cover info" "cover controls" "main main"; }
+  .bento-cover { width: 100%; align-self: start; }
   .bento-grid[data-expanded] .bento-cover { display: block; }
 }
 
-/* Three columns filling the view: a square cover the full height, info over controls, the right column. */
+/* Filling the view: the cover square and full height; the middle column stacks info and controls (as tall as their
+   content) over Up next, which takes the rest. Medium width: Autoplay under the column, lyrics from the info tile. */
 @media (min-width: 1024px) {
   /* Height left for the grid: window − top padding (24) − the close button's strip (64); the player bar is hidden. */
   .np-bento { --bento-h: max(440px, calc(100vh - 24px - 64px)); }
   .bento-grid {
     height: var(--bento-h);
-    grid-template-columns: minmax(0, min(var(--bento-h), 38vw)) minmax(0, 1fr) minmax(300px, 0.8fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "cover info side" "cover controls side";
+    grid-template-columns: minmax(0, var(--bento-h)) minmax(380px, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas: "cover col" "cover aside";
   }
-  .bento-cover { width: auto; aspect-ratio: auto; justify-self: stretch; }
-  .bento-side { overflow: hidden; }
-  .bento-queue { max-height: none; }
+  .bento-cover { width: auto; aspect-ratio: auto; align-self: stretch; justify-self: stretch; }
+  .bento-col, .bento-aside { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .bento-col { grid-area: col; }
+  .bento-aside { grid-area: aside; }
+  .bento-col { overflow: hidden; }
+  .bento-queue { flex: 1 1 0; min-height: 120px; max-height: none; }
+  .bento-lyrics { display: none; }
+  .bento-lyrics-btn { display: inline-flex; }
   .bento-main { min-height: 0; }
-  .bento-grid[data-expanded] { grid-template-areas: "cover main main" "cover main main"; }
-  .bento-grid[data-expanded] > :is(.bento-info, .bento-controls) { display: none; }
+  .bento-grid[data-expanded] { grid-template-areas: "cover main" "cover main"; }
+}
+/* Medium width and not tall enough for Up next to keep a useful height under the Autoplay tile: Autoplay (and its
+   chips) stay in the opened queue only. */
+@media (min-width: 1024px) and (max-height: 820px) {
+  .bento-aside { display: none; }
+  .bento-grid { grid-template-rows: minmax(0, 1fr) 0; row-gap: 0; }
+}
+/* Wide, with lyrics: Autoplay and the lyrics preview get a third column, the lyrics filling it (without lyrics the
+   column would be mostly empty, so the medium arrangement stays). */
+@media (min-width: 1440px) {
+  .bento-grid[data-lyrics] {
+    grid-template-columns: minmax(0, var(--bento-h)) minmax(380px, 1fr) minmax(280px, 0.7fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "cover col aside";
+  }
+  .bento-grid[data-lyrics] .bento-aside { display: flex; }
+  [data-lyrics] .bento-lyrics { display: flex; flex: 1 1 0; }
+  [data-lyrics] .bento-lyrics-text { max-height: none; }
+  [data-lyrics] .bento-lyrics-btn { display: none; }
+  .bento-grid[data-lyrics][data-expanded] { grid-template-areas: "cover main main"; }
 }
 
 /* ---------- Choice cards (Now Playing layout picker) ---------- */
