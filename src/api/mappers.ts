@@ -30,14 +30,18 @@ function likeStatus(menu: N): Rating | undefined {
   return status === "LIKE" || status === "DISLIKE" || status === "INDIFFERENT" ? status : undefined;
 }
 
-export function mapTrack(n: N, fallback: { thumbnail?: string; artists?: string[] } = {}): Track | null {
+interface TrackFallback { thumbnail?: string; artists?: string[]; artistIds?: (string | undefined)[]; album?: { id?: string; title: string } }
+
+export function mapTrack(n: N, fallback: TrackFallback = {}): Track | null {
   const id = n?.id ?? n?.video_id;
   const title = n?.title ? text(n.title) : "";
   if (!id || !title) return null;
   const people: N[] = names(n.artists).length ? arr(n.artists) : names(n.authors).length ? arr(n.authors) : [];
   const artists = people.length ? names(people) : fallback.artists ?? [];
-  const ids = people.filter((a) => a?.name).map((a): string | undefined => a.channel_id ?? a.endpoint?.payload?.browseId);
-  const album = n.album?.name ? { id: n.album.id, title: n.album.name } : undefined;
+  const ids = people.length
+    ? people.filter((a) => a?.name).map((a): string | undefined => a.channel_id ?? a.endpoint?.payload?.browseId)
+    : fallback.artistIds ?? [];
+  const album = n.album?.name ? { id: n.album.id, title: n.album.name } : fallback.album;
   return {
     type: "track",
     id,
@@ -158,21 +162,37 @@ export function mapHeader(h: N): Header {
   };
 }
 
-export function mapTracks(list: N, fallback?: { thumbnail?: string; artists?: string[] }): Track[] {
+export function mapTracks(list: N, fallback?: TrackFallback): Track[] {
   return arr(list)
     .filter((n) => n?.type === "MusicResponsiveListItem")
     .map((n) => mapTrack(n, fallback))
     .filter((x): x is Track => x !== null);
 }
 
+/**
+ * An album's artists, for its tracks (album rows carry none): the header's strapline ("Artist A & Artist B", each a
+ * link with its browse id). Older headers put the artist in the subtitle ("Album • Artist • 2020"); the year or the
+ * type there is never taken for one.
+ */
+export function albumArtists(header: N): { artists: string[]; artistIds: (string | undefined)[] } {
+  const node = header?.header ?? header;
+  const runs = arr(node?.strapline_text_one?.runs).filter((r) => typeof r?.text === "string" && !/^[\s,&•·]*$/.test(r.text));
+  const linked = runs.filter((r) => r.endpoint?.payload?.browseId);
+  if (linked.length) return { artists: linked.map((r) => r.text.trim()), artistIds: linked.map((r) => r.endpoint.payload.browseId) };
+  const strap = text(node?.strapline_text_one).trim();
+  if (strap) return { artists: [strap], artistIds: [] };
+  const fromSubtitle = text(node?.subtitle).split(" • ").slice(1).find((p) => p && !/^\d{4}$/.test(p.trim()));
+  return { artists: fromSubtitle ? [fromSubtitle.trim()] : [], artistIds: [] };
+}
+
 export function mapAlbum(id: string, page: N): Album {
   const h = mapHeader(page?.header);
-  const artist = h.subtitle.split(" • ")[1];
+  const { artists, artistIds } = albumArtists(page?.header);
   return {
     type: "album",
     id,
     ...h,
-    tracks: mapTracks(page?.contents, { thumbnail: h.thumbnail, artists: artist ? [artist] : [] }),
+    tracks: mapTracks(page?.contents, { thumbnail: h.thumbnail, artists, artistIds, album: h.title ? { id, title: h.title } : undefined }),
     related: mapShelves(page?.sections),
   };
 }

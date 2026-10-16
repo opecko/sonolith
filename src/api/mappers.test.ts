@@ -111,6 +111,35 @@ describe("pages", () => {
     ]);
   });
 
+  it("takes an album's artists from the strapline, with their ids, never the year", () => {
+    const album = mapAlbum("MPREb_2", {
+      header: {
+        title: { text: "Album Y" },
+        subtitle: { text: "Album • 2019" },
+        strapline_text_one: { text: "Artist A & Artist B", runs: [
+          { text: "Artist A", endpoint: { payload: { browseId: "UCa" } } },
+          { text: " & " },
+          { text: "Artist B", endpoint: { payload: { browseId: "UCb" } } },
+        ] },
+        thumbnails: thumbs,
+      },
+      contents: [{ type: "MusicResponsiveListItem", item_type: "song", id: "v3", title: "Track 3" }],
+      sections: [],
+    });
+    expect(album.tracks[0]).toMatchObject({
+      artists: ["Artist A", "Artist B"], artistIds: ["UCa", "UCb"], album: { id: "MPREb_2", title: "Album Y" }, subtitle: "Artist A, Artist B • Album Y",
+    });
+  });
+
+  it("never takes the year for the artist of an old-style header without a strapline", () => {
+    const album = mapAlbum("MPREb_3", {
+      header: { title: { text: "Album Z" }, subtitle: { text: "Album • 2019" }, thumbnails: thumbs },
+      contents: [{ type: "MusicResponsiveListItem", item_type: "song", id: "v4", title: "Track 4" }],
+      sections: [],
+    });
+    expect(album.tracks[0].artists).toEqual([]);
+  });
+
   it("maps artist with immersive header", () => {
     const artist = mapArtist("UC1", {
       header: { title: { text: "Artist A" }, thumbnail: { contents: thumbs } },
