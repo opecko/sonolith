@@ -55,14 +55,16 @@ export function TrackLinks({ track, className = "" }: { track: Track; className?
   const artistId = track.menu?.artistId ?? menu?.artistId;
   const go = useNav((s) => s.go);
   const artists = track.artists.join(", ") || track.subtitle;
-  const link = "max-w-full truncate text-left hover:underline";
+  // Plain text flow with inline links: long names wrap like a sentence (two lines at most) instead of breaking
+  // into one fragment per line.
+  const link = "inline text-left hover:underline";
   return (
-    <p className={`flex min-w-0 flex-wrap items-baseline gap-x-2 ${className}`}>
-      {artistId ? <button className={link} onClick={() => go({ name: "artist", id: artistId })}>{artists}</button> : <span className="truncate">{artists}</span>}
-      {track.album?.title && <span aria-hidden className="opacity-60">•</span>}
+    <p className={`line-clamp-2 min-w-0 ${className}`}>
+      {artistId ? <button className={link} onClick={() => go({ name: "artist", id: artistId })}>{artists}</button> : <span>{artists}</span>}
+      {track.album?.title && <span aria-hidden className="opacity-60"> • </span>}
       {track.album?.title && (track.album.id
         ? <button className={link} onClick={() => go({ name: "album", id: track.album!.id! })}>{track.album.title}</button>
-        : <span className="truncate">{track.album.title}</span>)}
+        : <span>{track.album.title}</span>)}
     </p>
   );
 }

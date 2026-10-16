@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 import { useSettings } from "../stores/settings";
 import type { UiStyle } from "../theme/appearance";
 
@@ -17,10 +17,10 @@ export function useUiStyle(): UiStyle {
  * Renders its children in a given style: React components read it from context, and the element carries
  * data-ui-style so the M3 stylesheet (scoped to [data-ui-style="m3"]) applies inside it.
  */
-export function UiStyleScope({ value, className = "", children }: { value: UiStyle; className?: string; children: ReactNode }) {
+export function UiStyleScope({ value, className = "", style, children }: { value: UiStyle; className?: string; style?: CSSProperties; children: ReactNode }) {
   return (
     <Scope.Provider value={value}>
-      <div data-ui-style={value} className={className}>{children}</div>
+      <div data-ui-style={value} className={className} style={style}>{children}</div>
     </Scope.Provider>
   );
 }

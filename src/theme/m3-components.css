@@ -351,9 +351,17 @@
 
 /* ---------- Now Playing: Material and Bento layouts (always M3, also inside the Classic app) ---------- */
 
-/* Relative to the content beside a docked side panel (Material's content is a size container). */
-.np-cover { width: min(58vh, 40cqw, 640px); }
-@media (max-width: 1023px) { .np-cover { width: min(34vh, 60cqw); } }
+/* Material sizes the cover and the info column from the viewport and the side panel's width (--np-panel), so
+   the group fits beside the docked panel unchanged: docking only re-centers it (a pure translation, no re-wrap). */
+.np-material { --np-cover: min(58vh, 30vw, 560px); }
+.np-cover { width: var(--np-cover); }
+/* At least 340px: where that doesn't fit beside the docked panel, the group overhangs into the row's padding (still
+   no re-wrap). */
+.np-info { width: clamp(340px, calc(100vw - var(--np-panel, 0px) - 96px - var(--np-cover) - 48px), 640px); }
+@media (max-width: 1023px) {
+  .np-material { --np-cover: min(34vh, calc(100vw - var(--np-panel, 0px) - 64px)); }
+  .np-info { width: min(640px, calc(100vw - var(--np-panel, 0px) - 64px)); }
+}
 
 .bento-tile {
   min-width: 0;
