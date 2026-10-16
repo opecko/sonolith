@@ -64,7 +64,7 @@ export function ErrorBox({ error, onRetry }: { error: Error; onRetry?: () => voi
   const login = useAuth((s) => s.login);
   const isAuth = error instanceof AuthError;
   return (
-    <div role="alert" className="my-6 flex max-w-2xl gap-4 rounded-lg border border-[var(--c-error)]/30 bg-[var(--c-error)]/10 p-4">
+    <div role="alert" className="m3-error-box my-6 flex max-w-2xl gap-4 rounded-lg border border-[var(--c-error)]/30 bg-[var(--c-error)]/10 p-4">
       <AlertCircle size={24} className="shrink-0 text-[var(--c-error)]" aria-hidden />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{isAuth ? "Please sign in" : "Something went wrong"}</p>

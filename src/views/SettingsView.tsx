@@ -93,7 +93,7 @@ function YtdlpSettings() {
           onChange={(e) => setPath(e.target.value)}
           placeholder="Custom yt-dlp path (empty = managed copy)"
           aria-label="Custom yt-dlp path"
-          className="h-10 min-w-0 flex-1 select-text rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-2)] px-4 text-sm outline-none focus:border-[var(--c-text-subtle)]"
+          className="m3-field h-10 min-w-0 flex-1 select-text rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-2)] px-4 text-sm outline-none focus:border-[var(--c-text-subtle)]"
         />
         <button className="chip h-10" disabled={!!busy}>Save</button>
       </form>
@@ -115,7 +115,7 @@ function HistorySetting() {
 function DiscordSettings() {
   const { discordRpc, discordButton, discordPodcasts, set } = useSettings();
   return (
-    <section className="mb-6 rounded-lg bg-[var(--c-surface)] p-6">
+    <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
       <h2 className="mb-1 text-lg font-semibold">Discord</h2>
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -158,7 +158,7 @@ function UpdateSettings() {
     }
   };
   return (
-    <section className="mb-6 rounded-lg bg-[var(--c-surface)] p-6">
+    <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
       <h2 className="mb-1 text-lg font-semibold">Updates</h2>
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -169,7 +169,7 @@ function UpdateSettings() {
       </div>
       <div className="mt-4 flex items-center gap-4">
         <button onClick={() => void checkNow()} disabled={state.busy}
-          className="flex h-9 shrink-0 items-center gap-2 rounded-full bg-[var(--c-hover)] px-4 text-sm font-medium hover:bg-[var(--c-active)] disabled:opacity-60">
+          className="m3-btn m3-tonal flex h-9 shrink-0 items-center gap-2 rounded-full bg-[var(--c-hover)] px-4 text-sm font-medium hover:bg-[var(--c-active)] disabled:opacity-60">
           <RefreshCw size={16} className={state.busy ? "animate-spin" : ""} aria-hidden /> Check now
         </button>
         {state.text && <p className={`select-text text-sm ${state.error ? "text-[var(--c-error)]" : "text-[var(--c-text-muted)]"}`}>{state.text}</p>}
@@ -181,9 +181,9 @@ function UpdateSettings() {
 function Advanced() {
   const [open, setOpen] = useState(false);
   return (
-    <section className="rounded-lg bg-[var(--c-surface)]">
+    <section className="m3-section rounded-lg bg-[var(--c-surface)]">
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open}
-        className="flex w-full items-center justify-between rounded-lg p-6 text-left hover:bg-[var(--c-hover)]">
+        className="m3-section-toggle flex w-full items-center justify-between rounded-lg p-6 text-left hover:bg-[var(--c-hover)]">
         <span>
           <span className="block text-lg font-semibold">Advanced</span>
           <span className="block text-sm text-[var(--c-text-muted)]">Playback fallback (yt-dlp)</span>
@@ -212,7 +212,7 @@ function About() {
     getVersion().then(setVersion, () => {});
   }, []);
   return (
-    <section className="mt-6 rounded-lg bg-[var(--c-surface)] p-6">
+    <section className="m3-section mt-6 rounded-lg bg-[var(--c-surface)] p-6">
       <h2 className="mb-1 text-lg font-semibold">About</h2>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-[var(--c-text-muted)]">
@@ -232,7 +232,7 @@ export default function SettingsView() {
     <div className="max-w-2xl">
       <h1 className="mb-6 text-2xl font-bold">Settings</h1>
       <AppearanceSettings />
-      <section className="mb-6 rounded-lg bg-[var(--c-surface)] p-6">
+      <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
         <h2 className="mb-1 text-lg font-semibold">Playback</h2>
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-[var(--c-text-muted)]">Autoplay similar music when a song, playlist or album ends.</p>
@@ -240,7 +240,7 @@ export default function SettingsView() {
         </div>
         <HistorySetting />
       </section>
-      <section className="mb-6 rounded-lg bg-[var(--c-surface)] p-6">
+      <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
         <h2 className="mb-1 text-lg font-semibold">Performance</h2>
         <FlagSetting
           id="render-gpu"

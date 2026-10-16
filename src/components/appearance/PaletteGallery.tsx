@@ -17,12 +17,12 @@ export function PaletteGrid({ palettes, mode, selected, onSelect }: { palettes: 
 export function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
   const opt = (m: Mode, Icon: typeof Sun, label: string) => (
     <button type="button" aria-pressed={mode === m} onClick={() => onChange(m)}
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm ${mode === m ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
+      className={`m3-seg flex items-center gap-1.5 rounded-full px-3 py-1 text-sm ${mode === m ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
       <Icon size={14} aria-hidden /> {label}
     </button>
   );
   return (
-    <div className="flex shrink-0 rounded-full bg-fg/5 p-0.5" role="group" aria-label="Color mode">
+    <div className="m3-segmented flex shrink-0 rounded-full bg-fg/5 p-0.5" role="group" aria-label="Color mode">
       {opt("dark", Moon, "Dark")}
       {opt("light", Sun, "Light")}
     </div>

@@ -35,7 +35,7 @@ const pct = (v: number) => `${Math.round(v * 100)} %`;
 /** Now Playing ambient, artwork accent, corners, density and UI size. */
 function DisplayOptions() {
   const a = useSettings((s) => s.appearance);
-  const seg = (on: boolean) => `rounded-full px-3 py-1 text-sm ${on ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`;
+  const seg = (on: boolean) => `m3-seg rounded-full px-3 py-1 text-sm ${on ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`;
   return (
     <div className="mt-6 border-t border-[var(--c-outline)] pt-4">
       <OptionRow title="Ambient light in Now Playing" detail="Soft glow from the artwork behind Now Playing.">
@@ -53,7 +53,7 @@ function DisplayOptions() {
         <Slider className="w-40" value={a.radius} max={24} step={1} live onCommit={(radius) => setAppearance({ radius: Math.round(radius) })} label="Corner radius" tooltip="value" format={(v) => `${Math.round(v)} px`} />
       </OptionRow>
       <OptionRow title="Density">
-        <div className="flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Density">
+        <div className="m3-segmented flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Density">
           <button type="button" aria-pressed={a.density === "normal"} className={seg(a.density === "normal")} onClick={() => setAppearance({ density: "normal" })}>Normal</button>
           <button type="button" aria-pressed={a.density === "compact"} className={seg(a.density === "compact")} onClick={() => setAppearance({ density: "compact" })}>Compact</button>
         </div>
@@ -63,7 +63,7 @@ function DisplayOptions() {
         <Slider className="w-40" value={a.zoom - 0.9} max={0.35} step={0.05} onCommit={(v) => setAppearance({ zoom: Math.round((0.9 + v) * 20) / 20 })} label="Interface size" tooltip="value" format={(v) => pct(0.9 + v)} />
       </OptionRow>
       <OptionRow title="Font" detail={a.font === "custom" && !a.fontFamily ? "Pick one of your installed fonts below." : undefined}>
-        <div className="flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Font">
+        <div className="m3-segmented flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Font">
           {FONT_OPTIONS.map(([kind, label]) => (
             <button key={kind} type="button" aria-pressed={a.font === kind} className={seg(a.font === kind)} onClick={() => setAppearance({ font: kind })}>{label}</button>
           ))}
@@ -115,7 +115,7 @@ export default function AppearanceSettings() {
   const customCount = Object.keys(overrides).length;
 
   return (
-    <section className="mb-6 rounded-lg bg-[var(--c-surface)] p-6">
+    <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
       <h2 className="mb-1 text-lg font-semibold">Appearance</h2>
       <p className="mb-4 text-sm text-[var(--c-text-muted)]">Color palette, custom colors and other visual options.</p>
 
@@ -151,10 +151,10 @@ export default function AppearanceSettings() {
               <p className="text-sm text-[var(--c-text-muted)]">
                 {view === "simple" ? "The main colors; related shades follow them." : "Every color the app uses."}
               </p>
-              <div className="flex shrink-0 rounded-full bg-fg/5 p-0.5" role="group" aria-label="Editor view">
+              <div className="m3-segmented flex shrink-0 rounded-full bg-fg/5 p-0.5" role="group" aria-label="Editor view">
                 {(["simple", "advanced"] as const).map((v) => (
                   <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}
-                    className={`rounded-full px-3 py-1 text-sm capitalize ${view === v ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
+                    className={`m3-seg rounded-full px-3 py-1 text-sm capitalize ${view === v ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
                     {v}
                   </button>
                 ))}

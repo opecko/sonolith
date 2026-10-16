@@ -85,12 +85,12 @@ function Artwork() {
     <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-6 p-8">
       {/* Audio / Video only exists for podcast episodes, like YouTube Music. */}
       {podcast && (
-        <div className="flex rounded-full bg-fg/10 p-1 text-sm" role="group" aria-label="Playback mode">
+        <div className="m3-segmented flex rounded-full bg-fg/10 p-1 text-sm" role="group" aria-label="Playback mode">
           {(["Audio", "Video"] as const).map((m) => {
             const on = (m === "Video") === video;
             return (
               <button key={m} aria-pressed={on} onClick={() => useUi.getState().setPodcastVideo(m === "Video")}
-                className={`rounded-full px-4 py-1 ${on ? "bg-fg/20 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
+                className={`m3-seg rounded-full px-4 py-1 ${on ? "bg-fg/20 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
                 {m}
               </button>
             );

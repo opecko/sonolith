@@ -12,7 +12,7 @@ import { motionOn, Spring } from "./engine";
  * shapes (connected groups) use `--r` for their outer corners only. Classic CSS declares no --r-rest, so nothing
  * happens there.
  */
-const MORPH = "[data-morph], .m3-btn, .icon-btn";
+const MORPH = "[data-morph], .m3-btn, .icon-btn, .m3-seg";
 const springs = new WeakMap<HTMLElement, Spring>();
 
 const isSelected = (el: HTMLElement, attr?: string, old?: string | null) => {
