@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useSpring } from "../motion";
-import { useUiStyle } from "../stores/settings";
+import { useUiStyle } from "./UiStyle";
 
 interface SwitchProps { on: boolean; onChange: (on: boolean) => void; label: string; disabled?: boolean }
 

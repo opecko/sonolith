@@ -1,7 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { ticker } from "../motion";
-import { useUiStyle } from "../stores/settings";
+import { useUiStyle } from "./UiStyle";
 
 const N = 72;
 const TAU = Math.PI * 2;

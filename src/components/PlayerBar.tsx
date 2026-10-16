@@ -5,7 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { usePlayer, type Repeat as RepeatMode } from "../stores/player";
 import { useProgress } from "../stores/progress";
 import { useUi } from "../stores/ui";
-import { useUiStyle } from "../stores/settings";
+import { useUiStyle } from "./UiStyle";
 import type { Track } from "../api/types";
 import { itemEntries, useTrackMenu } from "./ItemMenu";
 import Menu from "./Menu";

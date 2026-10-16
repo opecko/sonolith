@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { ticker, useSpring } from "../motion";
-import { useUiStyle } from "../stores/settings";
+import { useUiStyle } from "./UiStyle";
 
 interface SliderProps {
   value: number;

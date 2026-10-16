@@ -2,7 +2,7 @@ import { AlertCircle, RotateCw } from "lucide-react";
 import { Component, type ReactNode } from "react";
 import { AuthError } from "../api/client";
 import { useAuth } from "../stores/auth";
-import { useUiStyle } from "../stores/settings";
+import { useUiStyle } from "./UiStyle";
 import { LoadingIndicator } from "./LoadingIndicator";
 
 export function Loading({ variant = "shelves", label = "Loading" }: { variant?: "shelves" | "list" | "grid"; label?: string }) {
