@@ -1,10 +1,8 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { ticker, useSpring } from "../motion";
+import { useUiStyle } from "../stores/settings";
 
-/**
- * Thin track with a thumb that appears on hover/drag. `onChange` fires live while dragging
- * when `live` is set, otherwise only `onCommit` fires on release.
- */
-export default function Slider({ value, max, onCommit, onChange, live = false, step, label, format, tooltip = "hover", disabled, className = "" }: {
+interface SliderProps {
   value: number;
   max: number;
   onCommit: (v: number) => void;
@@ -17,7 +15,17 @@ export default function Slider({ value, max, onCommit, onChange, live = false, s
   tooltip?: "hover" | "value";
   disabled?: boolean;
   className?: string;
-}) {
+  /**
+   * M3 look: "xs" = the expressive slider (16 px track, bar handle), "sm" = a smaller one for the player bar,
+   * "seek" = a thin progress-style track. Classic ignores it.
+   */
+  size?: "xs" | "sm" | "seek";
+  /** M3 "seek" only: the active track waves (playing); the wave flattens out when this turns false. */
+  wavy?: boolean;
+}
+
+/** Pointer, keyboard and hover handling shared by both looks. */
+function useSliderInput({ value, max, onCommit, onChange, live = false, step, disabled }: SliderProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -38,7 +46,39 @@ export default function Slider({ value, max, onCommit, onChange, live = false, s
     e.preventDefault();
     onCommit(Math.min(max, Math.max(0, value + d)));
   };
+  const handlers = {
+    onKeyDown: key,
+    onPointerDown: (e: PointerEvent) => {
+      if (disabled) return;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      move(at(e));
+    },
+    onPointerMove: (e: PointerEvent) => {
+      if (disabled) return;
+      setHover(at(e));
+      if (drag !== null) move(at(e));
+    },
+    onPointerUp: (e: PointerEvent) => {
+      if (drag === null) return;
+      onCommit(at(e));
+      setDrag(null);
+    },
+    onPointerLeave: () => setHover(null),
+  };
+  return { ref, drag, hover, shown, pct, handlers };
+}
 
+/**
+ * Thin track with a thumb that appears on hover/drag (Classic), or the M3 Expressive slider. `onChange` fires live
+ * while dragging when `live` is set, otherwise only `onCommit` fires on release.
+ */
+export default function Slider(props: SliderProps) {
+  return useUiStyle() === "m3" ? <M3Slider {...props} /> : <ClassicSlider {...props} />;
+}
+
+function ClassicSlider(props: SliderProps) {
+  const { max, label, format, tooltip = "hover", disabled, className = "" } = props;
+  const { ref, drag, hover, shown, pct, handlers } = useSliderInput(props);
   return (
     <div
       ref={ref}
@@ -50,23 +90,7 @@ export default function Slider({ value, max, onCommit, onChange, live = false, s
       aria-valuenow={Math.round(shown)}
       aria-valuetext={format?.(shown)}
       aria-disabled={disabled}
-      onKeyDown={key}
-      onPointerDown={(e) => {
-        if (disabled) return;
-        e.currentTarget.setPointerCapture(e.pointerId);
-        move(at(e));
-      }}
-      onPointerMove={(e) => {
-        if (disabled) return;
-        setHover(at(e));
-        if (drag !== null) move(at(e));
-      }}
-      onPointerUp={(e) => {
-        if (drag === null) return;
-        onCommit(at(e));
-        setDrag(null);
-      }}
-      onPointerLeave={() => setHover(null)}
+      {...handlers}
       className={`group relative flex h-4 cursor-pointer touch-none items-center ${disabled ? "pointer-events-none opacity-40" : ""} ${className}`}
     >
       <div className="relative h-1 w-full overflow-hidden rounded-full bg-[var(--c-slider-track)] group-hover:h-1.5">
@@ -86,4 +110,135 @@ export default function Slider({ value, max, onCommit, onChange, live = false, s
       )}
     </div>
   );
+}
+
+/** Track height, handle height, track corner and the gap around the handle, in px (docs/m3-expressive.md). */
+const M3_SIZES = { xs: [16, 44, 8, 6], sm: [12, 32, 6, 4], seek: [4, 16, 2, 4] } as const;
+
+/**
+ * M3 Expressive slider: active and inactive tracks with a gap around a vertical bar handle. The tracks are
+ * full-width layers cut with clip-path, so a clock tick only repaints; nothing is laid out again.
+ */
+function M3Slider(props: SliderProps) {
+  const { max, label, format, tooltip = "hover", disabled, className = "", size = "xs", wavy } = props;
+  const { ref, drag, hover, shown, pct, handlers } = useSliderInput(props);
+  const [track, handle, corner, gap] = M3_SIZES[size];
+  const dragging = drag !== null;
+  // The handle narrows while held (M3 pressed state); the gap follows its edges.
+  const hw = dragging ? 2 : 4;
+  const edge = gap + hw / 2;
+  const inner = Math.min(2, corner);
+  const showTip = (hover !== null || dragging) && format && max > 0;
+  return (
+    <div
+      ref={ref}
+      role="slider"
+      tabIndex={disabled ? -1 : 0}
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={Math.round(shown)}
+      aria-valuetext={format?.(shown)}
+      aria-disabled={disabled}
+      {...handlers}
+      className={`m3-slider group relative flex cursor-pointer touch-none items-center ${disabled ? "pointer-events-none opacity-40" : ""} ${className}`}
+      style={{ height: handle }}
+    >
+      {/* Inactive track, from the handle's right gap to the end, with the stop indicator at its end. */}
+      <div className="absolute inset-x-0 bg-[var(--m3-secondary-container)]"
+        style={{ height: track, clipPath: `inset(0 0 0 calc(${pct}% + ${edge}px) round ${inner}px ${corner}px ${corner}px ${inner}px)` }} />
+      {size !== "seek" && <div className="absolute rounded-full bg-[var(--m3-primary)]" style={{ width: 4, height: 4, right: (track - 4) / 2 }} />}
+      {wavy !== undefined && size === "seek" ? (
+        <Wave pct={pct} edge={edge} on={wavy} />
+      ) : (
+        <div className="absolute inset-x-0 bg-[var(--m3-primary)]"
+          style={{ height: track, clipPath: `inset(0 calc(${100 - pct}% + ${edge}px) 0 0 round ${corner}px ${inner}px ${inner}px ${corner}px)` }} />
+      )}
+      <div className="absolute rounded-full bg-[var(--m3-primary)]" style={{ left: `calc(${pct}% - ${hw / 2}px)`, width: hw, height: handle }} />
+      {showTip && (
+        <div className="m3-tooltip pointer-events-none absolute -translate-x-1/2 whitespace-nowrap tabular-nums"
+          style={{ left: `${((tooltip === "value" ? shown : hover ?? shown) / max) * 100}%`, bottom: handle + 4 }}>
+          {format(tooltip === "value" ? shown : hover ?? shown)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const WAVELENGTH = 40;
+const AMPLITUDE = 3;
+/** Wavelengths per second the wave travels. */
+const SPEED = 0.6;
+
+/**
+ * Wavy active track (M3 Expressive progress): a stroked sine on a canvas, drawn only on value changes and, while
+ * playing and visible, at ~30 fps as the wave travels. The amplitude springs to 0 when playback pauses.
+ */
+function Wave({ pct, edge, on }: { pct: number; edge: number; on: boolean }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const st = useRef({ phase: 0, amp: on ? 1 : 0, pct, edge, color: "", w: 0, h: 0, acc: 0 });
+  st.current.pct = pct;
+  st.current.edge = edge;
+
+  const draw = () => {
+    const c = ref.current, s = st.current;
+    const ctx = c?.getContext("2d");
+    if (!c || !ctx || !s.w) return;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, s.w, s.h);
+    const end = (s.w * s.pct) / 100 - s.edge - 2;
+    if (end <= 2) return;
+    const mid = s.h / 2;
+    ctx.beginPath();
+    for (let x = 2; x <= end; x += 1.5) {
+      // The wave grows in over the first half wavelength so the start stays on the track's line.
+      const ramp = Math.min(1, (x - 2) / (WAVELENGTH / 2));
+      ctx.lineTo(x, mid + AMPLITUDE * s.amp * ramp * Math.sin((2 * Math.PI * x) / WAVELENGTH - s.phase));
+    }
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = s.color;
+    ctx.stroke();
+  };
+
+  // Canvas size follows the element; the color is re-read on value changes (cover accent, palette switch).
+  useLayoutEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    const fit = () => {
+      const dpr = window.devicePixelRatio || 1;
+      st.current.w = c.clientWidth;
+      st.current.h = c.clientHeight;
+      c.width = Math.round(c.clientWidth * dpr);
+      c.height = Math.round(c.clientHeight * dpr);
+      draw();
+    };
+    const ro = new ResizeObserver(fit);
+    ro.observe(c);
+    fit();
+    return () => ro.disconnect();
+  }, []);
+  useLayoutEffect(() => {
+    if (ref.current) st.current.color = getComputedStyle(ref.current).color;
+    draw();
+  }, [pct, edge]);
+  useSpring(on ? 1 : 0, "defaultSpatial", (a) => {
+    st.current.amp = Math.max(0, a);
+    draw();
+  });
+  useEffect(() => {
+    if (!on) return;
+    return ticker((dt) => {
+      const s = st.current;
+      s.phase = (s.phase + dt * SPEED * 2 * Math.PI) % (2 * Math.PI);
+      // ~30 fps is plenty for a slow wave and halves the repaints.
+      s.acc += dt;
+      if (s.acc < 1 / 30) return;
+      s.acc = 0;
+      draw();
+    });
+  }, [on]);
+  return <canvas ref={ref} className="pointer-events-none absolute inset-x-0 text-[var(--m3-primary)]" style={{ height: AMPLITUDE * 2 + 6 }} aria-hidden />;
 }

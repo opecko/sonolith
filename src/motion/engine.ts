@@ -26,6 +26,7 @@ export const motionOn = () => enabled && hasDom && !hidden();
 export function setMotionEnabled(on: boolean) {
   enabled = on;
   if (!on) finishAll();
+  else resumeTickers();
 }
 
 function finishAll() {
@@ -48,7 +49,39 @@ function start(a: Running) {
 }
 
 // Hidden windows don't paint; finishing there means nothing runs (or burns CPU) until the user looks again.
-if (hasDom) document.addEventListener("visibilitychange", () => hidden() && finishAll());
+if (hasDom) document.addEventListener("visibilitychange", () => (hidden() ? finishAll() : resumeTickers()));
+
+/** Continuous loops (the wavy seek bar); they stop with everything else and come back when motion does. */
+const tickers = new Set<Running>();
+function resumeTickers() {
+  if (motionOn()) for (const t of tickers) start(t);
+}
+
+/**
+ * Calls `fn(dtSeconds)` every frame while animations run, until the returned stop function is called. While the
+ * window is hidden or animations are off it doesn't run at all; it resumes on its own afterwards.
+ */
+export function ticker(fn: (dt: number) => void): () => void {
+  let last = -1;
+  const t: Running = {
+    step(now) {
+      const dt = last < 0 ? 0 : Math.min(0.1, (now - last) / 1000);
+      last = now;
+      fn(dt);
+      return false;
+    },
+    // Stopped by the switch: the next frame after resuming must not see the whole pause as one step.
+    finish() {
+      last = -1;
+    },
+  };
+  tickers.add(t);
+  if (motionOn()) start(t);
+  return () => {
+    tickers.delete(t);
+    running.delete(t);
+  };
+}
 
 /** A number animated by a spring. `to()` retargets mid-flight keeping velocity; `set()` jumps. */
 export class Spring {

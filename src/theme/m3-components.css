@@ -135,3 +135,44 @@
   justify-content: flex-start;
   font-size: 16px;
 }
+
+/* ---------- Connected button group (player transport) ---------- */
+
+:root[data-ui-style="m3"] .m3-connected { gap: 2px; }
+/* Outer corners morph (--r), inner corners stay small: the group reads as one piece. */
+:root[data-ui-style="m3"] .m3-cg-start {
+  --r-press: var(--m3-corner-md);
+  border-radius: var(--r, var(--r-now)) var(--m3-corner-sm) var(--m3-corner-sm) var(--r, var(--r-now));
+}
+:root[data-ui-style="m3"] .m3-cg-end {
+  --r-press: var(--m3-corner-md);
+  border-radius: var(--m3-corner-sm) var(--r, var(--r-now)) var(--r, var(--r-now)) var(--m3-corner-sm);
+}
+/* Play/pause: a pill while paused, a rounded square while playing. */
+:root[data-ui-style="m3"] .m3-play { --r-sel: var(--m3-corner-lg); --r-press: var(--m3-corner-sm); }
+
+/* ---------- Player bar, slider value indicator ---------- */
+
+:root[data-ui-style="m3"] .m3-playerbar { background: var(--m3-surface-container); border-top-color: transparent; }
+:root[data-ui-style="m3"] .m3-tooltip {
+  padding: 6px 12px;
+  border-radius: var(--m3-corner-full);
+  background: var(--m3-inverse-surface);
+  color: var(--m3-inverse-on-surface);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+/* ---------- Switch (markup in Switch.tsx; handle size/position on a spring) ---------- */
+
+:root[data-ui-style="m3"] .m3-switch {
+  background: var(--m3-surface-container-highest);
+  box-shadow: inset 0 0 0 2px var(--m3-outline);
+  transition: background-color 200ms var(--m3-ease-effects), box-shadow 200ms var(--m3-ease-effects);
+}
+:root[data-ui-style="m3"] .m3-switch .m3-switch-handle { background: var(--m3-outline); transition: background-color 200ms var(--m3-ease-effects); }
+:root[data-ui-style="m3"] .m3-switch:hover .m3-switch-handle { background: var(--m3-on-surface-variant); }
+:root[data-ui-style="m3"] .m3-switch.m3-switch-on { background: var(--m3-primary); box-shadow: none; }
+:root[data-ui-style="m3"] .m3-switch.m3-switch-on .m3-switch-handle { background: var(--m3-on-primary); }
+:root[data-ui-style="m3"] .m3-switch.m3-switch-on:hover .m3-switch-handle { background: var(--m3-primary-container); }

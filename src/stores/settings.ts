@@ -80,3 +80,6 @@ export const useSettings = create<Settings & { set: (patch: Partial<Settings>) =
 /** Merges a change into the Appearance settings. */
 export const setAppearance = (patch: Partial<Appearance>) =>
   useSettings.getState().set({ appearance: { ...useSettings.getState().appearance, ...patch } });
+
+/** "m3" or "classic", for the few components whose markup differs between the styles. */
+export const useUiStyle = () => useSettings((s) => s.appearance.uiStyle);

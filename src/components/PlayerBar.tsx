@@ -5,6 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { usePlayer, type Repeat as RepeatMode } from "../stores/player";
 import { useProgress } from "../stores/progress";
 import { useUi } from "../stores/ui";
+import { useUiStyle } from "../stores/settings";
 import type { Track } from "../api/types";
 import { itemEntries, useTrackMenu } from "./ItemMenu";
 import Menu from "./Menu";
@@ -79,6 +80,8 @@ function Controls() {
   );
   const { togglePlay, next, prev, toggleShuffle, cycleRepeat, skipBy } = usePlayer.getState();
   const playing = status === "playing";
+  const m3 = useUiStyle() === "m3";
+  if (m3) return <M3Controls status={status} shuffle={shuffle} repeat={repeat} hasTrack={hasTrack} podcast={podcast} />;
   const playButton = (
     <button
       className="flex h-10 w-10 items-center justify-center rounded-full bg-button text-on-button hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
@@ -117,6 +120,55 @@ function Controls() {
   );
 }
 
+export const PlayIcon = ({ status, size }: { status: string; size: number }) =>
+  status === "loading" ? <Loader2 size={size} className="animate-spin" /> : status === "playing" ? <Pause size={size} fill="currentColor" /> : <Play size={size} fill="currentColor" className="ml-0.5" />;
+
+/**
+ * M3 transport: toggle icon buttons for shuffle/repeat around a connected group (previous | play | next). The play
+ * button is a pill while paused and morphs to a rounded square while playing (data-selected → --r-sel).
+ */
+export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = "sm" }: {
+  status: string; shuffle: boolean; repeat: RepeatMode; hasTrack: boolean; podcast: boolean;
+  /** "sm" = player bar, "lg" = Now Playing. */
+  size?: "sm" | "lg";
+}) {
+  const { togglePlay, next, prev, toggleShuffle, cycleRepeat, skipBy } = usePlayer.getState();
+  const playing = status === "playing";
+  const lg = size === "lg";
+  const side = lg ? "h-14 w-16" : "h-10 w-12";
+  const icon = lg ? 28 : 22;
+  return (
+    <div className={`flex items-center ${lg ? "gap-3" : "gap-2"}`}>
+      {podcast ? <SkipSeconds sec={-10} onClick={() => skipBy(-10)} /> : (
+        <button className={`icon-btn m3-icon-toggle ${lg ? "h-12 w-12" : "h-10 w-10"}`} onClick={toggleShuffle} aria-label="Shuffle" aria-pressed={shuffle}>
+          <Shuffle size={lg ? 24 : 20} />
+        </button>
+      )}
+      <div className="m3-connected flex items-center" role="group" aria-label="Playback">
+        {!podcast && (
+          <button className={`m3-btn m3-tonal m3-cg-start ${side} !px-0`} onClick={prev} disabled={!hasTrack} aria-label="Previous">
+            <SkipBack size={icon} fill="currentColor" />
+          </button>
+        )}
+        <button className={`m3-btn m3-filled m3-play ${lg ? "h-14 w-24" : "h-10 w-16"} !px-0`} onClick={togglePlay} disabled={!hasTrack}
+          data-selected={playing ? "" : undefined} aria-label={playing ? "Pause" : "Play"}>
+          <PlayIcon status={status} size={lg ? 30 : 22} />
+        </button>
+        {!podcast && (
+          <button className={`m3-btn m3-tonal m3-cg-end ${side} !px-0`} onClick={next} disabled={!hasTrack} aria-label="Next">
+            <SkipForward size={icon} fill="currentColor" />
+          </button>
+        )}
+      </div>
+      {podcast ? <SkipSeconds sec={30} onClick={() => skipBy(30)} /> : (
+        <button className={`icon-btn m3-icon-toggle ${lg ? "h-12 w-12" : "h-10 w-10"}`} onClick={cycleRepeat} aria-label={repeatLabel[repeat]} aria-pressed={repeat !== "off"}>
+          {repeat === "one" ? <Repeat1 size={lg ? 24 : 20} /> : <Repeat size={lg ? 24 : 20} />}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** The only component subscribed to the playback clock. */
 function Progress() {
   const position = useProgress((s) => s.position);
@@ -125,7 +177,7 @@ function Progress() {
   return (
     <div className="flex w-full max-w-[600px] items-center gap-2 text-xs tabular-nums text-[var(--c-text-muted)]">
       <span className="w-10 text-right">{fmtTime(position)}</span>
-      <Slider className="flex-1" value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} />
+      <Slider className="flex-1" value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" />
       <span className="w-10">{fmtTime(duration)}</span>
     </div>
   );
@@ -145,7 +197,7 @@ function VolumeControl() {
       <button className="icon-btn h-10 w-10" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted}>
         <Icon size={20} />
       </button>
-      <Slider className="w-24" value={muted ? 0 : volume} max={1} step={0.05} live onCommit={setVolume} label="Volume" tooltip="value" format={(v) => `${Math.round(v * 100)} %`} />
+      <Slider className="w-24" value={muted ? 0 : volume} max={1} step={0.05} live onCommit={setVolume} label="Volume" tooltip="value" size="sm" format={(v) => `${Math.round(v * 100)} %`} />
     </div>
   );
 }
@@ -175,7 +227,7 @@ export function byline(t: Track): string {
 
 export default function PlayerBar({ queueOpen, onToggleQueue }: { queueOpen: boolean; onToggleQueue: () => void }) {
   return (
-    <footer className="relative z-40 flex h-[72px] shrink-0 items-center gap-6 border-t border-[var(--c-outline)] bg-[var(--c-surface)] px-4">
+    <footer className="m3-playerbar relative z-40 flex h-[72px] shrink-0 items-center gap-6 border-t border-[var(--c-outline)] bg-[var(--c-surface)] px-4">
       <NowPlaying />
       <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5">
         <Controls />
@@ -184,7 +236,7 @@ export default function PlayerBar({ queueOpen, onToggleQueue }: { queueOpen: boo
       <div className="flex w-[30%] items-center justify-end gap-2">
         <PodcastSpeedSlot />
         <VolumeControl />
-        <button className={`icon-btn h-10 w-10 ${queueOpen ? "!text-[var(--c-text)] bg-[var(--c-hover)]" : ""}`} onClick={onToggleQueue} aria-label="Queue" aria-pressed={queueOpen}>
+        <button className={`icon-btn m3-icon-toggle h-10 w-10 ${queueOpen ? "!text-[var(--c-text)] bg-[var(--c-hover)]" : ""}`} onClick={onToggleQueue} aria-label="Queue" aria-pressed={queueOpen}>
           <ListMusic size={20} />
         </button>
         <NowPlayingToggle />
