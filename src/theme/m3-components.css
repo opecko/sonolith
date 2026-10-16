@@ -363,11 +363,11 @@
   color: var(--m3-on-surface);
 }
 .bento-controls { background: var(--m3-surface-container-high); }
-.bento-related { background: var(--m3-tertiary-container); color: var(--m3-on-tertiary-container); }
+.bento-lyrics { background: var(--m3-tertiary-container); color: var(--m3-on-tertiary-container); }
 /* With the ambient light on, tiles and panels let a little of it through (no blur: WebKitGTK). */
 [data-ambient] .np-glass { background-color: color-mix(in srgb, var(--m3-surface-container) 74%, transparent); }
 [data-ambient] .np-glass.bento-controls { background-color: color-mix(in srgb, var(--m3-surface-container-high) 78%, transparent); }
-[data-ambient] .np-glass.bento-related { background-color: color-mix(in srgb, var(--m3-tertiary-container) 82%, transparent); }
+[data-ambient] .np-glass.bento-lyrics { background-color: color-mix(in srgb, var(--m3-tertiary-container) 82%, transparent); }
 
 /* Controls tile: five equally tall rounded squares, the play pill twice as wide. */
 .bento-transport { height: clamp(56px, 9vh, 72px); }

@@ -1,4 +1,4 @@
-import { ChevronRight, Minimize2, MicVocal, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Sparkles } from "lucide-react";
+import { Maximize2, Minimize2, MicVocal, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward } from "lucide-react";
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { getLyrics } from "../../api/ytm";
@@ -38,6 +38,34 @@ function usePop() {
     });
     return () => s.stop();
   }, []);
+  return ref;
+}
+
+/**
+ * Content swap inside a tile (Up next ↔ Related): the new content slides in from the side it lives on and fades
+ * up, on a spring written per frame (instant with animations off). The first render doesn't animate.
+ */
+function useSwap(key: string, dir: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const first = useRef(true);
+  useLayoutEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const s = new Spring(0, "defaultSpatial", (p) => {
+      el.style.opacity = String(Math.min(1, Math.max(0, p)));
+      el.style.transform = `translateX(${Math.round((1 - p) * 24 * dir * 10) / 10}px)`;
+    }, { precision: 0.002 });
+    s.set(0);
+    s.to(1, () => {
+      el.style.opacity = "";
+      el.style.transform = "";
+    });
+    return () => s.stop();
+  }, [key]);
   return ref;
 }
 
@@ -142,18 +170,17 @@ function BentoTransport() {
   );
 }
 
-function Expanded({ tab, onClose }: { tab: "lyrics" | "related"; onClose: () => void }) {
+function Expanded({ onClose }: { onClose: () => void }) {
   const ref = usePop();
-  const { videoId, related, lyrics } = useTrackExtras();
-  const title = tab === "lyrics" ? "Lyrics" : "Related";
+  const { videoId, lyrics } = useTrackExtras();
+  const title = "Lyrics";
   return (
     <section ref={ref} aria-label={title} className="bento-tile np-glass bento-main flex min-h-0 flex-col">
       <header className="mb-3 flex shrink-0 items-center justify-between gap-2">
         <h2 className="type-title-large-em">{title}</h2>
         <button className="m3-btn m3-tonal h-10" onClick={onClose}><Minimize2 size={18} aria-hidden /> Collapse</button>
       </header>
-      {tab === "lyrics" && videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} videoId={videoId} target={lyrics} /></div>}
-      {tab === "related" && videoId && related && <div className="scroll-y min-h-0 flex-1 pr-1"><RelatedTab key={videoId} videoId={videoId} target={related} /></div>}
+      {videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} videoId={videoId} target={lyrics} /></div>}
     </section>
   );
 }
@@ -161,9 +188,10 @@ function Expanded({ tab, onClose }: { tab: "lyrics" | "related"; onClose: () => 
 /**
  * Bento layout: M3 surface-container tiles. Left: the cover, track info (title, artist · album, like/dislike/⋮,
  * playback errors) and the controls tile (volume ring, podcast speed, the five transport buttons, the wavy seek
- * bar). Right column: Up next (springs open to the full queue with reordering, chips and autoplay), Autoplay and
- * Lyrics / Related. Bento replaces the bottom player bar, so everything the bar offers is in here. The top strip
- * is kept free for Now Playing's close button. Tiles reflow into fewer columns on small windows.
+ * bar). Right column: Up next | Related in one tile (springs open to the full column: the whole queue with
+ * reordering, chips and autoplay), Autoplay and Lyrics. Bento replaces the bottom player bar, so everything the
+ * bar offers is in here; the bottom strip keeps the close button clear of the tiles. Tiles reflow into fewer
+ * columns on small windows.
  */
 export default function BentoLayout() {
   const track = useCurrentTrack();
@@ -171,8 +199,12 @@ export default function BentoLayout() {
   const { contextTitle, status, error, podcast } = usePlayer(
     useShallow((s) => ({ contextTitle: s.context.title || s.watch?.header?.subtitle, status: s.status, error: s.error, podcast: !!s.queue[s.index]?.podcast })),
   );
-  const [big, setBig] = useState<"lyrics" | "related" | null>(null);
-  const expanded = big === "lyrics" && !lyrics ? null : big === "related" && !related ? null : big;
+  // Full lyrics in the big tile; Up next and Related share the right column's first tile.
+  const [big, setBig] = useState(false);
+  const expanded = big && !!lyrics;
+  const [tab, setView] = useState<"upnext" | "related">("upnext");
+  const view = tab === "related" && !related ? "upnext" : tab;
+  const swap = useSwap(view, view === "related" ? 1 : -1);
   const [queueOpen, setQueueOpen] = useState(false);
   const queueTile = useHeightSpring<HTMLElement>(queueOpen);
   const queueLeft = usePlayer((s) => Math.max(0, s.queue.length - s.index - 1));
@@ -211,16 +243,25 @@ export default function BentoLayout() {
             <BentoTransport />
             <SeekBar times="split" />
           </Tile>
-          {expanded ? <Expanded tab={expanded} onClose={() => setBig(null)} /> : (
+          {expanded ? <Expanded onClose={() => setBig(false)} /> : (
             <div className="bento-side">
-              <section ref={queueTile.ref} aria-label="Up next" className={`bento-tile np-glass bento-queue flex min-h-0 flex-col overflow-hidden ${queueOpen ? "bento-queue-open" : ""}`}>
-                <header className="mb-2 flex shrink-0 items-center justify-between gap-2">
-                  <h2 className="type-title-large-em">Up next <span className="type-title-medium text-[var(--m3-on-surface-variant)]">{queueLeft || ""}</span></h2>
-                  <button className="m3-btn m3-tonal h-10" onClick={toggleQueue} aria-expanded={queueOpen}>
-                    {queueOpen ? <><Minimize2 size={18} aria-hidden /> Collapse</> : <>Show all <ChevronRight size={18} aria-hidden /></>}
+              <section ref={queueTile.ref} aria-label={view === "related" ? "Related" : "Up next"} className={`bento-tile np-glass bento-queue flex min-h-0 flex-col overflow-hidden ${queueOpen ? "bento-queue-open" : ""}`}>
+                <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
+                  <div className="m3-segmented flex" role="tablist" aria-label="Up next or related">
+                    <button role="tab" className="m3-seg" aria-pressed={view === "upnext"} aria-selected={view === "upnext"} onClick={() => setView("upnext")}>
+                      Up next{queueLeft ? <span className="opacity-70">{queueLeft}</span> : null}
+                    </button>
+                    {related && <button role="tab" className="m3-seg" aria-pressed={view === "related"} aria-selected={view === "related"} onClick={() => setView("related")}>Related</button>}
+                  </div>
+                  <button className="icon-btn m3-icon-tonal h-10 w-10" onClick={toggleQueue} aria-expanded={queueOpen} aria-label={queueOpen ? "Collapse" : "Show all"} title={queueOpen ? "Collapse" : "Show all"}>
+                    {queueOpen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                   </button>
                 </header>
-                {queueOpen ? <div className="flex min-h-0 flex-1 flex-col"><UpNextTab /></div> : <div className="min-h-0 flex-1 overflow-hidden"><QueuePreview /></div>}
+                <div ref={swap} role="tabpanel" className="flex min-h-0 flex-1 flex-col">
+                  {view === "related" && videoId && related ? (
+                    <div className="scroll-y min-h-0 flex-1 pr-1"><RelatedTab key={videoId} videoId={videoId} target={related} /></div>
+                  ) : queueOpen ? <div className="flex min-h-0 flex-1 flex-col"><UpNextTab /></div> : <div className="min-h-0 flex-1 overflow-hidden"><QueuePreview /></div>}
+                </div>
               </section>
               {!queueOpen && (
                 <>
@@ -234,13 +275,10 @@ export default function BentoLayout() {
                     </div>
                     <div className="-mx-2 -mb-4"><QueueChips /></div>
                   </Tile>
-                  {(related || (lyrics && videoId)) && (
-                    <Tile area="related" label="Lyrics and related" className="bento-related flex flex-col gap-3">
-                      {lyrics && videoId && <LyricsPreview videoId={videoId} target={lyrics} />}
-                      <div className="flex flex-wrap gap-2">
-                        {lyrics && <button className="m3-btn m3-tonal h-10" onClick={() => setBig("lyrics")}><MicVocal size={18} aria-hidden /> Lyrics</button>}
-                        {related && <button className="m3-btn m3-filled h-10" onClick={() => setBig("related")}><Sparkles size={18} aria-hidden /> Related</button>}
-                      </div>
+                  {lyrics && videoId && (
+                    <Tile area="lyrics" label="Lyrics" className="flex flex-col gap-3">
+                      <LyricsPreview videoId={videoId} target={lyrics} />
+                      <button className="m3-btn m3-tonal h-10 self-start" onClick={() => setBig(true)}><MicVocal size={18} aria-hidden /> Lyrics</button>
                     </Tile>
                   )}
                 </>
