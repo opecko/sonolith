@@ -418,3 +418,15 @@
   .bento-grid[data-expanded] { grid-template-areas: "cover main main" "cover main main" "cover main main"; }
   .bento-grid[data-expanded] > :is(.bento-info, .bento-controls) { display: none; }
 }
+
+/* ---------- Choice cards (Now Playing layout picker) ---------- */
+
+[data-ui-style="m3"] .m3-choice {
+  border-radius: var(--m3-corner-lg);
+  border-color: var(--m3-outline-variant);
+  background: var(--m3-surface-container);
+  transition: background-color 200ms var(--m3-ease-effects), border-color 200ms var(--m3-ease-effects);
+}
+[data-ui-style="m3"] .m3-choice:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, var(--m3-surface-container)); }
+[data-ui-style="m3"] .m3-choice[aria-checked="true"] { border-color: var(--m3-primary); box-shadow: inset 0 0 0 1px var(--m3-primary); background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+[data-ui-style="m3"] .m3-choice > span:first-child { background: var(--m3-surface); }

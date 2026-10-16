@@ -12,6 +12,7 @@ import Switch from "../Switch";
 import ColorEditor, { ContrastWarnings, type EditorView } from "./ColorEditor";
 import FontPicker from "./FontPicker";
 import PaletteGallery, { ModeToggle, PaletteGrid, SearchField } from "./PaletteGallery";
+import StyleOptions from "./StyleOptions";
 import ThemeTransfer from "./ThemeTransfer";
 
 const FEATURED_PALETTES = FEATURED.map((id) => PALETTES.find((p) => p.id === id)).filter((p) => !!p);
@@ -117,7 +118,8 @@ export default function AppearanceSettings() {
   return (
     <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
       <h2 className="mb-1 text-lg font-semibold">Appearance</h2>
-      <p className="mb-4 text-sm text-[var(--c-text-muted)]">Color palette, custom colors and other visual options.</p>
+      <p className="mb-4 text-sm text-[var(--c-text-muted)]">Style, Now Playing layout, color palette, custom colors and other visual options.</p>
+      <StyleOptions />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <SearchField value={query} onChange={setQuery} />
@@ -180,7 +182,7 @@ export default function AppearanceSettings() {
 
       {gallery && <PaletteGallery mode={mode} selected={selected.id} onSelect={select} onMode={setMode} onClose={closeGallery} />}
       {transfer && (
-        <ThemeTransfer kind={transfer} current={appearance} onImport={(a) => useSettings.getState().set({ appearance: a })} onClose={() => setTransfer(null)} />
+        <ThemeTransfer kind={transfer} current={appearance} onImport={(a) => useSettings.getState().set({ appearance: { ...a, animations: appearance.animations } })} onClose={() => setTransfer(null)} />
       )}
     </section>
   );
