@@ -30,9 +30,9 @@ function MoreMenu() {
   return track ? <TrackMoreMenu key={track.id} track={track} /> : null;
 }
 
-function TrackMoreMenu({ track }: { track: Track }) {
+export function TrackMoreMenu({ track, className = "h-10 w-10" }: { track: Track; className?: string }) {
   const { menu, loading, load } = useTrackMenu(track);
-  return <Menu label="More actions" className="h-10 w-10" onOpen={load} entries={() => itemEntries(track, { menu, loading })} />;
+  return <Menu label="More actions" className={className} onOpen={load} entries={() => itemEntries(track, { menu, loading })} />;
 }
 
 function NowPlaying() {
@@ -127,23 +127,30 @@ export const PlayIcon = ({ status, size }: { status: string; size: number }) =>
  * M3 transport: toggle icon buttons for shuffle/repeat around a connected group (previous | play | next). The play
  * button is a pill while paused and morphs to a rounded square while playing (data-selected → --r-sel).
  */
-export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = "sm" }: {
+export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = "sm", split = false }: {
   status: string; shuffle: boolean; repeat: RepeatMode; hasTrack: boolean; podcast: boolean;
   /** "sm" = player bar, "lg" = Now Playing. */
   size?: "sm" | "lg";
+  /** Transport group on the left, shuffle and repeat on the opposite side (Now Playing). */
+  split?: boolean;
 }) {
   const { togglePlay, next, prev, toggleShuffle, cycleRepeat, skipBy } = usePlayer.getState();
   const playing = status === "playing";
   const lg = size === "lg";
   const side = lg ? "h-14 w-16" : "h-10 w-12";
   const icon = lg ? 28 : 22;
-  return (
-    <div className={`flex items-center ${lg ? "gap-3" : "gap-2"}`}>
-      {podcast ? <SkipSeconds sec={-10} onClick={() => skipBy(-10)} /> : (
-        <button className={`icon-btn m3-icon-toggle ${lg ? "h-12 w-12" : "h-10 w-10"}`} onClick={toggleShuffle} aria-label="Shuffle" aria-pressed={shuffle}>
-          <Shuffle size={lg ? 24 : 20} />
-        </button>
-      )}
+  const toggle = `icon-btn m3-icon-toggle ${lg ? "h-12 w-12" : "h-10 w-10"}`;
+  const shuffleBtn = podcast ? <SkipSeconds sec={-10} onClick={() => skipBy(-10)} /> : (
+    <button className={toggle} onClick={toggleShuffle} aria-label="Shuffle" aria-pressed={shuffle}>
+      <Shuffle size={lg ? 24 : 20} />
+    </button>
+  );
+  const repeatBtn = podcast ? <SkipSeconds sec={30} onClick={() => skipBy(30)} /> : (
+    <button className={toggle} onClick={cycleRepeat} aria-label={repeatLabel[repeat]} aria-pressed={repeat !== "off"}>
+      {repeat === "one" ? <Repeat1 size={lg ? 24 : 20} /> : <Repeat size={lg ? 24 : 20} />}
+    </button>
+  );
+  const group = (
       <div className="m3-connected flex items-center" role="group" aria-label="Playback">
         {!podcast && (
           <button className={`m3-btn m3-tonal m3-cg-start ${side} !px-0`} onClick={prev} disabled={!hasTrack} aria-label="Previous">
@@ -160,11 +167,20 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
           </button>
         )}
       </div>
-      {podcast ? <SkipSeconds sec={30} onClick={() => skipBy(30)} /> : (
-        <button className={`icon-btn m3-icon-toggle ${lg ? "h-12 w-12" : "h-10 w-10"}`} onClick={cycleRepeat} aria-label={repeatLabel[repeat]} aria-pressed={repeat !== "off"}>
-          {repeat === "one" ? <Repeat1 size={lg ? 24 : 20} /> : <Repeat size={lg ? 24 : 20} />}
-        </button>
-      )}
+  );
+  // Podcasts: −10 s / +30 s sit around play in both arrangements.
+  if (split && !podcast)
+    return (
+      <div className="flex w-full items-center justify-between gap-3">
+        {group}
+        <div className="flex items-center gap-2">{shuffleBtn}{repeatBtn}</div>
+      </div>
+    );
+  return (
+    <div className={`flex items-center ${lg ? "gap-3" : "gap-2"}`}>
+      {shuffleBtn}
+      {group}
+      {repeatBtn}
     </div>
   );
 }

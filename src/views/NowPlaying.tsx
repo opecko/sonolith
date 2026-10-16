@@ -3,9 +3,12 @@ import { memo, useEffect, useLayoutEffect, useRef, useState, type RefObject } fr
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
 import { useSettings } from "../stores/settings";
-import { tween } from "../motion";
+import { Spring, tween } from "../motion";
+import { useUiStyle } from "../components/UiStyle";
 import { useUi } from "../stores/ui";
+import BentoLayout from "./nowplaying/Bento";
 import ClassicLayout from "./nowplaying/Classic";
+import MaterialLayout from "./nowplaying/Material";
 
 /**
  * Ambient light: the art is drawn once into a 12×12 canvas and stretched by the browser, which gives a soft blur
@@ -69,11 +72,26 @@ const Backdrop = memo(function Backdrop({ src, intensity }: { src?: string; inte
  * closed overlay right after opening, the open one right after closing. Setting the transform every frame from the
  * main thread leaves nothing stale to show. Position is in % of the overlay's height (100 = hidden).
  */
-function useSlide(ref: RefObject<HTMLDivElement | null>, open: boolean, onOpened: () => void, onClosed: () => void) {
+function useSlide(ref: RefObject<HTMLDivElement | null>, open: boolean, onOpened: () => void, onClosed: () => void, m3: boolean) {
   const pos = useRef(100);
+  const spring = useRef<Spring | null>(null);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (m3) {
+      // M3: a critically damped slow spatial spring (no overshoot: the overlay must not lift off the player bar).
+      el.style.transform = `translateY(${pos.current}%)`;
+      spring.current ??= new Spring(pos.current, { damping: 1, stiffness: 240 }, (y) => {
+        pos.current = y;
+        el.style.transform = `translateY(${y}%)`;
+      }, { precision: 0.05 });
+      spring.current.to(open ? 0 : 100, () => {
+        if (open) return onOpened();
+        spring.current = null;
+        onClosed();
+      });
+      return;
+    }
     const from = pos.current;
     const [to, ms, ease] = open
       ? [0, 200, (t: number) => 1 - (1 - t) ** 4] // like cubic-bezier(0.2, 0, 0, 1)
@@ -101,7 +119,9 @@ export default function NowPlaying() {
   const [mounted, setMounted] = useState(open);
   if (open && !mounted) setMounted(true);
   const panel = useRef<HTMLDivElement>(null);
-  useSlide(panel, open, () => useUi.getState().setNowPlayingCovering(true), () => setMounted(false));
+  const m3 = useUiStyle() === "m3";
+  const layout = useSettings((s) => s.appearance.nowPlayingLayout);
+  useSlide(panel, open, () => useUi.getState().setNowPlayingCovering(true), () => setMounted(false), m3);
 
   useEffect(() => {
     if (!open) return;
@@ -116,13 +136,13 @@ export default function NowPlaying() {
 
   if (!mounted) return null;
   return (
-    <div ref={panel} role="dialog" aria-label="Now playing" aria-hidden={!open}
+    <div ref={panel} role="dialog" aria-label="Now playing" aria-hidden={!open} data-ambient={ambientOn ? "" : undefined}
       className={`${open ? "" : "pointer-events-none"} fixed inset-x-0 bottom-[72px] top-0 z-30 flex bg-[var(--c-bg)] will-change-transform`}>
       {ambientOn && <Backdrop src={thumb} intensity={ambientIntensity} />}
       <button onClick={close} aria-label="Close now playing" className="icon-btn absolute left-4 top-4 z-10 h-10 w-10">
         <ChevronDown size={24} />
       </button>
-      <ClassicLayout />
+      {layout === "material" ? <MaterialLayout /> : layout === "bento" ? <BentoLayout /> : <ClassicLayout />}
     </div>
   );
 }
