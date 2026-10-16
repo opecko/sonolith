@@ -4,9 +4,9 @@ import { flushSync } from "react-dom";
 import { UiStyleScope } from "../../components/UiStyle";
 import { Spring } from "../../motion";
 import PodcastSpeed from "../../components/PodcastSpeed";
+import VolumeControl from "../../components/VolumeControl";
 import { usePlayer } from "../../stores/player";
 import { CloseNowPlaying, CoverArt, PlaybackStatus, PodcastMode, SeekBar, TrackActions, TrackLinks, Transport, useCurrentTrack } from "./parts";
-import VolumeRing from "./VolumeRing";
 import { LyricsTab, RelatedTab, UpNextTab, useTrackExtras, type Tab } from "./shared";
 
 const TITLES: Record<Tab, string> = { upnext: "Up next", lyrics: "Lyrics", related: "Related" };
@@ -128,7 +128,7 @@ export default function MaterialLayout() {
         <div className="flex h-16 shrink-0 items-center gap-3 pl-12 pr-4 max-lg:pl-8">
           <div className="min-w-0 flex-1"><PlaybackStatus /></div>
           {podcast && <PodcastSpeed />}
-          <VolumeRing />
+          <VolumeControl />
           <CloseNowPlaying />
         </div>
       </div>

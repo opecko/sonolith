@@ -7,6 +7,7 @@ import AutoplayToggle from "../../components/AutoplayToggle";
 import PlaybackError from "../../components/PlaybackError";
 import { PlayIcon, SkipSeconds } from "../../components/PlayerBar";
 import PodcastSpeed from "../../components/PodcastSpeed";
+import VolumeControl from "../../components/VolumeControl";
 import { QueueChips } from "../../components/QueueChips";
 import Thumb from "../../components/Thumb";
 import { UiStyleScope } from "../../components/UiStyle";
@@ -15,7 +16,6 @@ import { Spring } from "../../motion";
 import { usePlayer, type Repeat as RepeatMode } from "../../stores/player";
 import { CloseNowPlaying, CoverArt, PodcastMode, SeekBar, TrackActions, TrackLinks, useCurrentTrack } from "./parts";
 import { LyricsTab, RelatedTab, UpNextTab, useTrackExtras } from "./shared";
-import VolumeRing from "./VolumeRing";
 
 function Tile({ area, className = "", children, label }: { area: string; className?: string; children: ReactNode; label?: string }) {
   return <section aria-label={label} className={`bento-tile np-glass bento-${area} ${className}`}>{children}</section>;
@@ -187,7 +187,7 @@ function Expanded({ onClose }: { onClose: () => void }) {
 
 /**
  * Bento layout: M3 surface-container tiles. Left: the cover, track info (title, artist · album, like/dislike/⋮,
- * playback errors) and the controls tile (volume ring, podcast speed, the five transport buttons, the wavy seek
+ * playback errors) and the controls tile (volume, podcast speed, the five transport buttons, the wavy seek
  * bar). Right column: Up next | Related in one tile (springs open to the full column: the whole queue with
  * reordering, chips and autoplay), Autoplay and Lyrics. Bento replaces the bottom player bar, so everything the
  * bar offers is in here; the bottom strip keeps the close button clear of the tiles. Tiles reflow into fewer
@@ -237,7 +237,7 @@ export default function BentoLayout() {
           )}
           <Tile area="controls" label="Playback" className="bento-controls flex flex-col justify-between gap-4">
             <div className="flex items-center justify-between gap-3">
-              <VolumeRing />
+              <VolumeControl />
               {podcast && <PodcastSpeed />}
             </div>
             <BentoTransport />

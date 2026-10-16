@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import {
-  ChevronDown, ChevronUp, RotateCcw, RotateCw, Loader2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume1, Volume2, VolumeX,
+  ChevronDown, ChevronUp, RotateCcw, RotateCw, Loader2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward,
 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { usePlayer, type Repeat as RepeatMode } from "../stores/player";
@@ -16,6 +16,7 @@ import PodcastSpeed from "./PodcastSpeed";
 import RatingButtons from "./RatingButtons";
 import Slider from "./Slider";
 import Thumb from "./Thumb";
+import VolumeControl from "./VolumeControl";
 
 export const fmtTime = (s: number) => {
   if (!Number.isFinite(s) || s < 0) return "0:00";
@@ -204,29 +205,6 @@ function Progress() {
       <span className="w-10 text-right">{fmtTime(position)}</span>
       <Slider className="flex-1" value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" wavy={m3 ? playing : undefined} />
       <span className="w-10">{fmtTime(duration)}</span>
-    </div>
-  );
-}
-
-/** Mouse wheel over a volume control: ±5 %, snapped to whole steps. */
-export function wheelVolume(deltaY: number) {
-  if (!deltaY) return;
-  const { volume, muted, setVolume } = usePlayer.getState();
-  const base = muted ? 0 : volume;
-  setVolume(Math.min(1, Math.max(0, Math.round((base + (deltaY < 0 ? 0.05 : -0.05)) * 20) / 20)));
-}
-
-function VolumeControl() {
-  const { volume, muted } = usePlayer(useShallow((s) => ({ volume: s.volume, muted: s.muted })));
-  const { setVolume, toggleMute } = usePlayer.getState();
-  const Icon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
-  return (
-    // Mouse wheel over the icon or slider: ±5 %, snapped to whole steps.
-    <div className="flex items-center gap-1" onWheel={(e) => wheelVolume(e.deltaY)}>
-      <button className="icon-btn h-10 w-10" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted}>
-        <Icon size={20} />
-      </button>
-      <Slider className="w-24" value={muted ? 0 : volume} max={1} step={0.05} live onCommit={setVolume} label="Volume" tooltip="value" size="sm" format={(v) => `${Math.round(v * 100)} %`} />
     </div>
   );
 }
