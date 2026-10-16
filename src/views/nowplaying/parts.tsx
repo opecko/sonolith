@@ -68,7 +68,7 @@ export function TrackLinks({ track, className = "" }: { track: Track; className?
 }
 
 /** Seek bar with "0:11 / 3:43"; the only part of a layout that re-renders on the clock (once a second). */
-export function SeekBar({ className = "" }: { className?: string }) {
+export function SeekBar({ className = "", times = "inline" }: { className?: string; times?: "inline" | "split" }) {
   const position = useProgress((s) => s.position);
   const duration = useProgress((s) => s.duration);
   const seek = usePlayer((s) => s.seek);
@@ -76,7 +76,11 @@ export function SeekBar({ className = "" }: { className?: string }) {
   return (
     <div className={className}>
       <Slider value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" wavy={playing} />
-      <p className="type-label-large mt-1 tabular-nums text-[var(--m3-on-surface-variant)]">{fmtTime(position)} / {fmtTime(duration)}</p>
+      {times === "split" ? (
+        <p className="type-label-large mt-1 flex justify-between tabular-nums text-[var(--m3-on-surface-variant)]"><span>{fmtTime(position)}</span><span>{fmtTime(duration)}</span></p>
+      ) : (
+        <p className="type-label-large mt-1 tabular-nums text-[var(--m3-on-surface-variant)]">{fmtTime(position)} / {fmtTime(duration)}</p>
+      )}
     </div>
   );
 }

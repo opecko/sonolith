@@ -354,67 +354,71 @@
 
 .bento-tile {
   min-width: 0;
-  padding: 20px;
+  padding: 24px;
   border-radius: var(--m3-corner-xl);
   background: var(--m3-surface-container);
   color: var(--m3-on-surface);
 }
 .bento-controls { background: var(--m3-surface-container-high); }
 .bento-related { background: var(--m3-tertiary-container); color: var(--m3-on-tertiary-container); }
-.bento-related p { color: inherit !important; opacity: 0.8; }
 /* With the ambient light on, tiles and panels let a little of it through (no blur: WebKitGTK). */
 [data-ambient] .np-glass { background-color: color-mix(in srgb, var(--m3-surface-container) 74%, transparent); }
 [data-ambient] .np-glass.bento-controls { background-color: color-mix(in srgb, var(--m3-surface-container-high) 78%, transparent); }
 [data-ambient] .np-glass.bento-related { background-color: color-mix(in srgb, var(--m3-tertiary-container) 82%, transparent); }
 
-/* One column: info, cover, controls, then everything else. */
+/* Controls tile: five equally tall rounded squares, the play pill twice as wide. */
+.bento-transport { height: clamp(56px, 9vh, 72px); }
+[data-ui-style="m3"] .bento-sq { --r-rest: var(--m3-corner-lg); --r-press: var(--m3-corner-md); --r-sel: var(--m3-corner-full); }
+[data-ui-style="m3"] .bento-sq[aria-pressed="true"] { --ct: var(--m3-secondary); color: var(--m3-on-secondary); }
+[data-ui-style="m3"] .bento-play { --r-press: var(--m3-corner-md); }
+
+/* Right column: Up next fills what Autoplay and Lyrics / Related leave; open, it takes the whole column. */
+.bento-side { grid-area: side; display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden; }
+.bento-queue { flex: 1 1 0; min-height: 240px; }
+.bento-queue.bento-queue-open { min-height: 0; }
+
+/* One column (narrow windows): info, cover, controls, the right column's tiles. */
 .bento-grid {
   display: grid;
   gap: 12px;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "info" "cover" "controls" "queue" "main";
-  grid-auto-flow: row dense;
+  grid-template-areas: "info" "cover" "controls" "side" "main";
 }
 .bento-info { grid-area: info; }
 .bento-cover { grid-area: cover; justify-self: center; width: min(100%, 56vh); aspect-ratio: 1; }
 .bento-controls { grid-area: controls; }
-.bento-queue { grid-area: queue; }
 .bento-main { grid-area: main; min-height: 60vh; }
-.bento-extras { display: contents; }
+.bento-side { overflow: visible; }
+.bento-queue { max-height: 70vh; }
 .bento-grid[data-expanded] { grid-template-areas: "info" "controls" "main"; }
 .bento-grid[data-expanded] .bento-cover { display: none; }
 
-/* Two columns: cover beside info and controls; queue full width; small tiles pair up below. */
+/* Two columns: cover beside info and controls; the right column's tiles underneath. */
 @media (min-width: 640px) {
   .bento-grid {
-    grid-template-columns: minmax(0, min(42vw, 360px)) minmax(0, 1fr);
-    grid-template-areas: "cover info" "cover controls" "queue queue" "main main";
+    grid-template-columns: minmax(0, min(40vw, 380px)) minmax(0, 1fr);
+    grid-template-areas: "cover info" "cover controls" "side side" "main main";
   }
   .bento-cover { width: 100%; }
   .bento-grid[data-expanded] { grid-template-areas: "cover info" "cover controls" "main main"; }
   .bento-grid[data-expanded] .bento-cover { display: block; }
 }
 
-/* Three columns filling the view: cover beside info and controls, small tiles below them, the queue on the right. */
+/* Three columns filling the view: a square cover the full height, info over controls, the right column. */
 @media (min-width: 1024px) {
-  .np-bento { --bento-h: calc(100vh - 72px - 64px - 24px); }
+  /* Height left for the grid: window − overlay gutter (64) − bottom padding (24); the player bar is hidden. */
+  .np-bento { --bento-h: max(440px, calc(100vh - 64px - 24px)); }
   .bento-grid {
-    height: max(100%, 520px);
-    grid-template-columns: minmax(0, min(var(--bento-h), 36vw)) minmax(0, 1fr) minmax(280px, 0.8fr);
-    /* Info and controls share the height beside a roughly square cover; small tiles run below both. */
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) auto;
-    grid-template-areas: "cover info queue" "cover controls queue" "extras extras queue";
+    height: var(--bento-h);
+    grid-template-columns: minmax(0, min(var(--bento-h), 38vw)) minmax(0, 1fr) minmax(300px, 0.8fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "cover info side" "cover controls side";
   }
   .bento-cover { width: auto; aspect-ratio: auto; justify-self: stretch; }
+  .bento-side { overflow: hidden; }
+  .bento-queue { max-height: none; }
   .bento-main { min-height: 0; }
-  .bento-extras {
-    grid-area: extras;
-    display: grid;
-    gap: 12px;
-    min-height: 0;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  }
-  .bento-grid[data-expanded] { grid-template-areas: "cover main main" "cover main main" "cover main main"; }
+  .bento-grid[data-expanded] { grid-template-areas: "cover main main" "cover main main"; }
   .bento-grid[data-expanded] > :is(.bento-info, .bento-controls) { display: none; }
 }
 
