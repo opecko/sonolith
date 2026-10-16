@@ -2,15 +2,15 @@ import { motionOn, Spring } from "./engine";
 
 /**
  * Shape morph for M3 buttons, delegated from the document: `.m3-btn`, `.icon-btn` and anything with `data-morph`.
- * CSS owns the shapes: an element declares its corner radius per state as custom properties (plain px, from the
- * corner scale)
+ * CSS owns the shapes: an element declares its corner radius per state as registered <length> custom properties
+ * (so they read back as computed px)
  *   --r-rest   resting radius
  *   --r-sel    when selected (aria-pressed / aria-checked / aria-selected = "true", or data-selected)
  *   --r-press  while pressed (data-pressed, set here on pointerdown)
- * and picks one per state for `border-radius: var(--r, …)`, so with animations off the shape simply switches. With
- * animations on, the radius springs between states through an inline `--r` (removed once it rests); asymmetric
- * shapes (connected groups) use `--r` for their outer corners only. Classic CSS declares no --r-rest, so nothing
- * happens there.
+ * and its state rules pick one as `--r-now`, which `border-radius` uses; with animations off the shape simply
+ * switches. With animations on, `--r-now` springs between states as an inline value (removed once it rests, when
+ * the stylesheet's own value for the state is the same number); asymmetric shapes (connected groups) use it for
+ * their outer corners only. Only inside [data-ui-style="m3"]: Classic shapes never morph.
  */
 const MORPH = "[data-morph], .m3-btn, .icon-btn, .m3-seg";
 const springs = new WeakMap<HTMLElement, Spring>();
@@ -29,7 +29,7 @@ function radiusFor(el: HTMLElement, pressed: boolean, selected: boolean): number
     return s ? parseFloat(s) : NaN;
   };
   const rest = v("--r-rest");
-  if (Number.isNaN(rest)) return null;
+  if (Number.isNaN(rest) || !el.closest('[data-ui-style="m3"]')) return null;
   const sel = v("--r-sel"), press = v("--r-press");
   const r = pressed && !Number.isNaN(press) ? press : selected && !Number.isNaN(sel) ? sel : rest;
   return Math.min(r, el.offsetHeight / 2, el.offsetWidth / 2);
@@ -42,13 +42,13 @@ function morph(el: HTMLElement, from: { pressed: boolean; selected: boolean }) {
   if (to === null) return;
   let s = springs.get(el);
   if (!s) {
-    s = new Spring(to, "fastSpatial", (r) => el.style.setProperty("--r", `${r}px`), { precision: 0.05 });
+    s = new Spring(to, "fastSpatial", (r) => el.style.setProperty("--r-now", `${r}px`), { precision: 0.05 });
     springs.set(el, s);
   }
   // At rest, start from the previous state's shape (size or corner setting may have changed since).
   if (!s.animating) s.value = radiusFor(el, from.pressed, from.selected) ?? to;
   // At rest the stylesheet takes over again (hover/selected rules stay authoritative).
-  s.to(to, () => el.style.removeProperty("--r"));
+  s.to(to, () => el.style.removeProperty("--r-now"));
 }
 
 let started = false;

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import {
   ChevronDown, ChevronUp, ListMusic, RotateCcw, RotateCw, Loader2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume1, Volume2, VolumeX,
 } from "lucide-react";
@@ -138,6 +139,8 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
   const playing = status === "playing";
   const lg = size === "lg", md = size === "md";
   const side = lg ? "h-14 w-16" : md ? "h-12 w-14" : "h-10 w-12";
+  // Half the height: the outer corners' full radius, clamped so the inner corners keep theirs (m3-components.css).
+  const pill = { "--pill": `${lg ? 28 : md ? 24 : 20}px` } as CSSProperties;
   const icon = lg ? 28 : md ? 24 : 22;
   const toggle = `icon-btn m3-icon-toggle ${lg ? "h-12 w-12" : "h-10 w-10"}`;
   const play = lg ? "h-14 w-24" : md ? "h-12 w-20" : "h-10 w-16";
@@ -154,7 +157,7 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
   const group = (
       <div className="m3-connected flex items-center" role="group" aria-label="Playback">
         {!podcast && (
-          <button className={`m3-btn m3-tonal m3-cg-start ${side} !px-0`} onClick={prev} disabled={!hasTrack} aria-label="Previous">
+          <button className={`m3-btn m3-tonal m3-cg-start ${side} !px-0`} style={pill} onClick={prev} disabled={!hasTrack} aria-label="Previous">
             <SkipBack size={icon} fill="currentColor" />
           </button>
         )}
@@ -163,7 +166,7 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
           <PlayIcon status={status} size={lg ? 30 : md ? 26 : 22} />
         </button>
         {!podcast && (
-          <button className={`m3-btn m3-tonal m3-cg-end ${side} !px-0`} onClick={next} disabled={!hasTrack} aria-label="Next">
+          <button className={`m3-btn m3-tonal m3-cg-end ${side} !px-0`} style={pill} onClick={next} disabled={!hasTrack} aria-label="Next">
             <SkipForward size={icon} fill="currentColor" />
           </button>
         )}

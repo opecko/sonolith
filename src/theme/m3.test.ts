@@ -64,6 +64,19 @@ describe("M3 color roles", () => {
   });
 });
 
+describe("M3 component shapes", () => {
+  const comp = readFileSync(new URL("./m3-components.css", import.meta.url), "utf8");
+  it("asymmetric corners never put an unclamped full radius next to small ones", () => {
+    // 9999px beside 8px makes the browser scale every corner of the side down: the small ones turn square.
+    const multi = [...comp.matchAll(/border-radius:\s*([^;]+);/g)].map((m) => m[1]).filter((v) => v.trim().split(/\s+(?![^(]*\))/).length > 1);
+    expect(multi.length).toBeGreaterThan(0);
+    for (const v of multi) expect(v.replace(/min\([^)]*\)/g, ""), v).not.toContain("--m3-corner-full");
+  });
+  it("shape state variables are registered lengths (the morph engine reads them as px)", () => {
+    for (const p of ["--r-rest", "--r-sel", "--r-press", "--r-now"]) expect(comp).toMatch(new RegExp(`@property ${p} \\{ syntax: "<length>"`));
+  });
+});
+
 describe("M3 corner scale", () => {
   it("is M3's own at 8px and scales with the corner setting", () => {
     expect(m3Corner("md", 8)).toBe(12);

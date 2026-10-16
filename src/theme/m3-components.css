@@ -5,15 +5,16 @@
  * as before). Components opt in with m3-* marker classes; .icon-btn and .chip are restyled as they are.
  *
  * State layers are color-mixes of the content color over the container (--ct), never opacity animations.
- * Shapes: --r-rest / --r-sel / --r-press per state, morphed by src/motion/morph.ts through --r.
+ * Shapes: --r-rest / --r-sel / --r-press per state pick --r-now, which src/motion/morph.ts springs (inline) between
+ * states. They are registered <length>s, so min(full, half the height) computes to px: full corners next to small
+ * ones must be clamped like that, or the browser scales every corner of the side down (inner corners turn square).
  */
 
 /* Per-element, never inherited: a nested button must not pick up its parent's shape mid-morph. */
-@property --r { syntax: "*"; inherits: false; }
-@property --r-rest { syntax: "*"; inherits: false; }
-@property --r-sel { syntax: "*"; inherits: false; }
-@property --r-press { syntax: "*"; inherits: false; }
-@property --r-now { syntax: "*"; inherits: false; }
+@property --r-rest { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --r-sel { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --r-press { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --r-now { syntax: "<length>"; inherits: false; initial-value: 0px; }
 @property --ct { syntax: "*"; inherits: false; }
 @property --sl { syntax: "*"; inherits: false; }
 
@@ -31,13 +32,15 @@
 /* ---------- Shared: shape states and the state layer ---------- */
 
 [data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph]) {
+  --r-sel: var(--r-rest);
+  --r-press: var(--r-rest);
   --r-now: var(--r-rest);
-  border-radius: var(--r, var(--r-now));
+  border-radius: var(--r-now);
 }
 [data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph]):is([aria-pressed="true"], [aria-checked="true"], [aria-selected="true"], [data-selected]) {
-  --r-now: var(--r-sel, var(--r-rest));
+  --r-now: var(--r-sel);
 }
-[data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph])[data-pressed] { --r-now: var(--r-press, var(--r-rest)); }
+[data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph])[data-pressed] { --r-now: var(--r-press); }
 
 [data-ui-style="m3"] :is(.m3-btn, .icon-btn, .chip, .m3-sl) {
   --ct: transparent;
@@ -140,14 +143,18 @@
 /* ---------- Connected button group (player transport) ---------- */
 
 [data-ui-style="m3"] .m3-connected { gap: 2px; }
-/* Outer corners morph (--r), inner corners stay small: the group reads as one piece. */
-[data-ui-style="m3"] .m3-cg-start {
+/* Outer corners morph (--r-now), inner corners stay at the connected-group inner radius (8, docs/m3-expressive.md):
+   the group reads as one piece. --pill (half the button height, set by the component) clamps the full corner. */
+[data-ui-style="m3"] :is(.m3-cg-start, .m3-cg-end) {
+  --r-rest: min(var(--m3-corner-full), var(--pill, 20px));
   --r-press: var(--m3-corner-md);
-  border-radius: var(--r, var(--r-now)) var(--m3-corner-sm) var(--m3-corner-sm) var(--r, var(--r-now));
+  --r-sel: var(--r-rest);
+}
+[data-ui-style="m3"] .m3-cg-start {
+  border-radius: var(--r-now) var(--m3-corner-sm) var(--m3-corner-sm) var(--r-now);
 }
 [data-ui-style="m3"] .m3-cg-end {
-  --r-press: var(--m3-corner-md);
-  border-radius: var(--m3-corner-sm) var(--r, var(--r-now)) var(--r, var(--r-now)) var(--m3-corner-sm);
+  border-radius: var(--m3-corner-sm) var(--r-now) var(--r-now) var(--m3-corner-sm);
 }
 /* Play/pause: a pill while paused, a rounded square while playing. */
 [data-ui-style="m3"] .m3-play { --r-sel: var(--m3-corner-lg); --r-press: var(--m3-corner-sm); }
@@ -315,7 +322,8 @@
   --ct: var(--m3-surface-container-highest);
   --sl: 0%;
   --r-rest: var(--m3-corner-sm);
-  --r-sel: var(--m3-corner-full);
+  /* 40px high: a full corner is 20px (clamped so the outer corners next to it keep their shape). */
+  --r-sel: min(var(--m3-corner-full), 20px);
   --r-press: var(--m3-corner-xs);
   --r-now: var(--r-rest);
   display: inline-flex;
@@ -324,7 +332,7 @@
   gap: 6px;
   height: 40px;
   padding-inline: 16px;
-  border-radius: var(--r, var(--r-now));
+  border-radius: var(--r-now);
   color: var(--m3-on-surface-variant);
   font-weight: 500;
   letter-spacing: 0.1px;
@@ -335,8 +343,9 @@
 [data-ui-style="m3"] .m3-seg[data-pressed] { --sl: var(--m3-sl-press); --r-now: var(--r-press); }
 [data-ui-style="m3"] .m3-seg[aria-pressed="true"] { --ct: var(--m3-primary); --r-now: var(--r-sel); color: var(--m3-on-primary); }
 /* Outer corners of the group stay round; the inner ones morph. */
-[data-ui-style="m3"] .m3-seg:first-child { border-radius: var(--m3-corner-full) var(--r, var(--r-now)) var(--r, var(--r-now)) var(--m3-corner-full); }
-[data-ui-style="m3"] .m3-seg:last-child { border-radius: var(--r, var(--r-now)) var(--m3-corner-full) var(--m3-corner-full) var(--r, var(--r-now)); }
+[data-ui-style="m3"] .m3-seg:first-child { border-radius: min(var(--m3-corner-full), 20px) var(--r-now) var(--r-now) min(var(--m3-corner-full), 20px); }
+[data-ui-style="m3"] .m3-seg:last-child { border-radius: var(--r-now) min(var(--m3-corner-full), 20px) min(var(--m3-corner-full), 20px) var(--r-now); }
+[data-ui-style="m3"] .m3-seg:first-child:last-child { border-radius: var(--r-now); }
 
 /* ---------- Side queue panel, error box ---------- */
 
