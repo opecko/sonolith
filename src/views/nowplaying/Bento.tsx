@@ -181,7 +181,7 @@ export default function BentoLayout() {
     setQueueOpen((o) => !o);
   };
   return (
-    <UiStyleScope value="m3" className="np-bento flex min-h-0 flex-1 flex-col">
+    <UiStyleScope value="m3" className="np-bento relative flex min-h-0 min-w-0 flex-1 flex-col">
       {/* Gutter for the close button (Now Playing's only one in this layout): no tile ever sits under it. */}
       <div className="h-16 shrink-0" aria-hidden />
       <div className="scroll-y min-h-0 flex-1 px-6 pb-6">
@@ -194,8 +194,8 @@ export default function BentoLayout() {
             <Tile area="info" label="Track" className="@container flex flex-col justify-between gap-4">
               <p className="type-label-large truncate text-[var(--m3-on-surface-variant)]">{contextTitle ? `Playing from ${contextTitle}` : "Now playing"}</p>
               <div className="min-w-0">
-                <h1 className="type-headline-medium-em line-clamp-3 @md:type-display-small-em" title={track.title}>{track.title}</h1>
-                <TrackLinks track={track} className="type-title-medium mt-2 text-[var(--m3-on-surface-variant)] @md:type-title-large" />
+                <h1 className="type-headline-medium-em line-clamp-3 @sm:type-display-small-em" title={track.title}>{track.title}</h1>
+                <TrackLinks track={track} className="type-title-medium mt-2 text-[var(--m3-on-surface-variant)] @sm:type-title-large" />
               </div>
               <div className="flex min-h-10 items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">

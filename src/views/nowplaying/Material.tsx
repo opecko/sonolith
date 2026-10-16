@@ -31,7 +31,7 @@ function usePushPanel(open: boolean) {
   const [width, setWidth] = useState(0);
   if (open && !mounted) {
     setMounted(true);
-    setWidth(Math.round(Math.min(440, window.innerWidth * 0.4)));
+    setWidth(Math.round(Math.min(420, window.innerWidth * 0.34)));
   }
   useLayoutEffect(() => {
     if (!mounted) return;
@@ -92,7 +92,8 @@ export default function MaterialLayout() {
   ];
   return (
     <UiStyleScope value="m3" className="np-material relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
-      <div ref={push.content} className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+      {/* A size container: the cover scales with the space left beside the docked panel (np-cover, cqw). */}
+      <div ref={push.content} className="@container relative flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="absolute right-6 top-4 z-30 flex items-center gap-2" role="toolbar" aria-label="Now playing panels">
           {tabs.filter((t) => t.show).map(({ id, label, icon: Icon }) => (
             <button key={id} className="icon-btn m3-icon-tonal h-12 w-12" aria-label={label} title={label} aria-pressed={shown === id} onClick={() => toggle(id)}>

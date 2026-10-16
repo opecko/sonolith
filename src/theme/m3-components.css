@@ -343,8 +343,9 @@
 
 /* ---------- Now Playing: Material and Bento layouts (always M3, also inside the Classic app) ---------- */
 
-.np-cover { width: min(58vh, 40vw, 640px); }
-@media (max-width: 1023px) { .np-cover { width: min(34vh, 60vw); } }
+/* Relative to the content beside a docked side panel (Material's content is a size container). */
+.np-cover { width: min(58vh, 40cqw, 640px); }
+@media (max-width: 1023px) { .np-cover { width: min(34vh, 60cqw); } }
 
 .bento-tile {
   min-width: 0;
