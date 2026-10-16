@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { DEFAULT_APPEARANCE, normalizeAppearance, type Appearance } from "../theme/appearance";
 
-interface Settings {
+export interface Settings {
   autoplay: boolean;
   /** Discord Rich Presence ("Listening to ytdesk"). */
   discordRpc: boolean;
@@ -17,16 +17,28 @@ interface Settings {
   updateCheck: boolean;
   /** Colors, Now Playing ambient and other visual options (Settings → Appearance). */
   appearance: Appearance;
+  /** App version whose "What's new" was handled (shown, or skipped on a fresh install); null before 2.0. */
+  lastSeenVersion: string | null;
 }
 
 const KEY = "settings";
-const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE };
+const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null };
+
+/** Stored JSON → Settings. Missing keys (older versions) get the defaults; normalizing drops malformed values. */
+export function parseSettings(stored: unknown): Settings {
+  const s = (stored && typeof stored === "object" ? stored : {}) as Partial<Record<keyof Settings, unknown>>;
+  return {
+    ...DEFAULTS,
+    ...(s as Partial<Settings>),
+    // Settings saved before 1.2 have no `appearance`, before 2.0 no style, Now Playing layout or animations.
+    appearance: normalizeAppearance(s.appearance),
+    lastSeenVersion: typeof s.lastSeenVersion === "string" ? s.lastSeenVersion : null,
+  };
+}
 
 function read(): Settings {
   try {
-    const stored = JSON.parse(localStorage.getItem(KEY) ?? "{}");
-    // Settings saved before 1.2 have no `appearance`; normalizing also drops malformed values.
-    return { ...DEFAULTS, ...stored, appearance: normalizeAppearance(stored.appearance) };
+    return parseSettings(JSON.parse(localStorage.getItem(KEY) ?? "{}"));
   } catch {
     return DEFAULTS;
   }
@@ -34,8 +46,8 @@ function read(): Settings {
 
 function write() {
   try {
-    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance } = useSettings.getState();
-    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance }));
+    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion } = useSettings.getState();
+    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion }));
   } catch {
     /* storage unavailable */
   }
@@ -50,11 +62,14 @@ function flush() {
   pending = undefined;
   write();
 }
-window.addEventListener("pagehide", flush);
-document.addEventListener("visibilitychange", () => document.hidden && flush());
+// Not in unit tests, which only use parseSettings.
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", flush);
+  document.addEventListener("visibilitychange", () => document.hidden && flush());
+}
 
 export const useSettings = create<Settings & { set: (patch: Partial<Settings>) => void }>((set) => ({
-  ...read(),
+  ...(typeof localStorage === "undefined" ? DEFAULTS : read()),
   set: (patch) => {
     set(patch);
     clearTimeout(pending);

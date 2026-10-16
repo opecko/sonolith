@@ -20,6 +20,26 @@ export interface Appearance extends ThemeChoice {
   font: FontKind;
   /** An installed font family, used when `font` is "custom". */
   fontFamily: string;
+  /** "m3" = Material 3 Expressive, "classic" = the ytdesk look from before 2.0. */
+  uiStyle: UiStyle;
+  /** Now Playing layout; independent of `uiStyle`. */
+  nowPlayingLayout: NowPlayingLayout;
+  /** Springs, shape morphs and slides; off = everything jumps to its end state. */
+  animations: boolean;
+}
+
+export const UI_STYLES = ["m3", "classic"] as const;
+export type UiStyle = (typeof UI_STYLES)[number];
+export const NOW_PLAYING_LAYOUTS = ["material", "bento", "classic"] as const;
+export type NowPlayingLayout = (typeof NOW_PLAYING_LAYOUTS)[number];
+
+/** The OS asks for reduced motion (the default for `animations`); false where there's no matchMedia (tests). */
+export function systemReducedMotion(): boolean {
+  try {
+    return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
 }
 
 export const FONT_KINDS = ["app", "system", "mono", "custom"] as const;
@@ -37,6 +57,9 @@ export const DEFAULT_APPEARANCE: Appearance = {
   zoom: 1,
   font: "app",
   fontFamily: "",
+  uiStyle: "m3",
+  nowPlayingLayout: "material",
+  animations: true,
 };
 
 const num = (v: unknown, lo: number, hi: number, d: number) =>
@@ -64,5 +87,9 @@ export function normalizeAppearance(raw: unknown): Appearance {
     zoom: num(r.zoom, 0.9, 1.25, d.zoom),
     font: FONT_KINDS.includes(r.font as FontKind) ? (r.font as FontKind) : d.font,
     fontFamily: typeof r.fontFamily === "string" ? r.fontFamily.slice(0, 200) : d.fontFamily,
+    // Settings from before 2.0 have none of these: existing users get the new look, like a fresh install.
+    uiStyle: UI_STYLES.includes(r.uiStyle as UiStyle) ? (r.uiStyle as UiStyle) : d.uiStyle,
+    nowPlayingLayout: NOW_PLAYING_LAYOUTS.includes(r.nowPlayingLayout as NowPlayingLayout) ? (r.nowPlayingLayout as NowPlayingLayout) : d.nowPlayingLayout,
+    animations: typeof r.animations === "boolean" ? r.animations : !systemReducedMotion(),
   };
 }
