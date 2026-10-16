@@ -8,6 +8,8 @@ export default function Switch(props: SwitchProps) {
   return useUiStyle() === "m3" ? <M3Switch {...props} /> : <ClassicSwitch {...props} />;
 }
 
+// Sizes in px, not Tailwind spacing steps: compact density shrinks --spacing, which would shrink the track but not
+// the knob's travel (the knob ended up outside the track).
 function ClassicSwitch({ on, onChange, label, disabled }: SwitchProps) {
   return (
     <button
@@ -16,11 +18,11 @@ function ClassicSwitch({ on, onChange, label, disabled }: SwitchProps) {
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!on)}
-      className={`relative block h-5 w-9 shrink-0 rounded-full p-0 transition-colors duration-150 disabled:opacity-50 ${on ? "bg-[var(--c-accent)]" : "bg-fg/25"}`}
+      className={`relative block h-[20px] w-[36px] shrink-0 rounded-full p-0 transition-colors duration-150 disabled:opacity-50 ${on ? "bg-[var(--c-accent)]" : "bg-fg/25"}`}
     >
       {/* The knob moves with `left`, not a transform: WebKitGTK composites transform transitions and paints the old
           position for a frame when one ends. Layout-driven, it stays on the main thread. */}
-      <span className={`absolute top-0.5 block h-4 w-4 rounded-full shadow transition-[left,background-color] duration-150 ease-out ${on ? "left-[18px] bg-on-accent" : "left-0.5 bg-fg"}`} />
+      <span className={`absolute top-[2px] block h-[16px] w-[16px] rounded-full shadow transition-[left,background-color] duration-150 ease-out ${on ? "left-[18px] bg-on-accent" : "left-[2px] bg-fg"}`} />
     </button>
   );
 }
@@ -59,7 +61,7 @@ function M3Switch({ on, onChange, label, disabled }: SwitchProps) {
       onPointerDown={() => setPressed(true)}
       onPointerUp={() => setPressed(false)}
       onPointerLeave={() => setPressed(false)}
-      className={`m3-switch relative block h-8 w-[52px] shrink-0 rounded-full p-0 disabled:opacity-40 ${on ? "m3-switch-on" : ""}`}
+      className={`m3-switch relative block h-[32px] w-[52px] shrink-0 rounded-full p-0 disabled:opacity-40 ${on ? "m3-switch-on" : ""}`}
     >
       <span ref={knob} className="m3-switch-handle absolute block rounded-full" />
     </button>
