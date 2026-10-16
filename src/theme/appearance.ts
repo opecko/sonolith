@@ -9,8 +9,8 @@ export interface Appearance extends ThemeChoice {
   ambient: boolean;
   /** Ambient strength, 0–1. */
   ambientIntensity: number;
-  /** Accent taken from the current track's artwork (palette accent as fallback). */
-  coverAccent: boolean;
+  /** "Colors from album art": the whole scheme generated from the current cover (the palette as fallback). */
+  coverColors: boolean;
   /** Corner radius in px. */
   radius: number;
   density: "normal" | "compact";
@@ -51,7 +51,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   overrides: {},
   ambient: true,
   ambientIntensity: 0.8,
-  coverAccent: false,
+  coverColors: false,
   radius: 8,
   density: "normal",
   zoom: 1,
@@ -81,7 +81,8 @@ export function normalizeAppearance(raw: unknown): Appearance {
     overrides,
     ambient: typeof r.ambient === "boolean" ? r.ambient : d.ambient,
     ambientIntensity: num(r.ambientIntensity, 0, 1, d.ambientIntensity),
-    coverAccent: typeof r.coverAccent === "boolean" ? r.coverAccent : d.coverAccent,
+    // Before 2.0 this was "Accent from artwork" (coverAccent): on stays on.
+    coverColors: typeof r.coverColors === "boolean" ? r.coverColors : typeof r.coverAccent === "boolean" ? r.coverAccent : d.coverColors,
     radius: num(r.radius, 0, 24, d.radius),
     density: r.density === "compact" ? "compact" : "normal",
     zoom: num(r.zoom, 0.9, 1.25, d.zoom),

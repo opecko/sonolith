@@ -45,8 +45,8 @@ function resolve(t: ThemeChoice, extra: Partial<TokenMap> = {}): { inline: Parti
   return { inline, all };
 }
 
-/** What each token resolves to on screen (for the editor and the contrast checks). */
-export const effectiveTokens = (t: ThemeChoice): TokenMap => resolve(t).all;
+/** What each token resolves to on screen (for the editor and the contrast checks); `extra` as in applyTheme. */
+export const effectiveTokens = (t: ThemeChoice, extra: Partial<TokenMap> = {}): TokenMap => resolve(t, extra).all;
 
 /**
  * Writes the theme onto <html> as inline custom properties (only what differs from index.css). `extra` (the

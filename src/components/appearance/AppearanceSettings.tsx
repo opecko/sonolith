@@ -1,5 +1,6 @@
 import { ChevronDown, Download, LayoutGrid, RotateCcw, Upload } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { useCoverScheme } from "../../stores/coverColors";
 import { setAppearance, useSettings } from "../../stores/settings";
 import { DEFAULT_APPEARANCE, type FontKind } from "../../theme/appearance";
 import { FEATURED } from "../../theme/featured";
@@ -47,8 +48,8 @@ function DisplayOptions() {
           <Slider className="w-40" value={a.ambientIntensity} max={1} step={0.05} live onCommit={(ambientIntensity) => setAppearance({ ambientIntensity })} label="Ambient intensity" tooltip="value" format={pct} />
         </OptionRow>
       )}
-      <OptionRow title="Accent from artwork" detail="Takes the accent color from the playing track's cover.">
-        <Switch on={a.coverAccent} onChange={(coverAccent) => setAppearance({ coverAccent })} label="Accent from artwork" />
+      <OptionRow title="Colors from album art" detail="The whole color scheme comes from the playing track's cover. Your custom colors still apply on top; without a cover the palette is used.">
+        <Switch on={a.coverColors} onChange={(coverColors) => setAppearance({ coverColors })} label="Colors from album art" />
       </OptionRow>
       <OptionRow title="Corner radius">
         <Slider className="w-40" value={a.radius} max={24} step={1} live onCommit={(radius) => setAppearance({ radius: Math.round(radius) })} label="Corner radius" tooltip="value" format={(v) => `${Math.round(v)} px`} />
@@ -104,7 +105,9 @@ export default function AppearanceSettings() {
   const [transfer, setTransfer] = useState<"import" | "export" | null>(null);
 
   const selected = getPalette(palette);
-  const tokens = useMemo(() => effectiveTokens({ palette, mode, overrides }), [palette, mode, overrides]);
+  // With colors from album art, the contrast checks look at what's on screen: the cover's scheme plus overrides.
+  const cover = useCoverScheme((s) => (appearance.coverColors ? s.tokens : null));
+  const tokens = useMemo(() => effectiveTokens({ palette, mode, overrides }, cover ?? {}), [palette, mode, overrides, cover]);
   const shown = useMemo(() => {
     if (query.trim()) return searchPalettes(PALETTES, query);
     // The current palette always shows, even when it isn't a popular one.
