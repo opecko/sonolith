@@ -172,18 +172,7 @@
   font-weight: 500;
 }
 
-/* ---------- Switch (markup in Switch.tsx; handle size/position on a spring) ---------- */
-
-[data-ui-style="m3"] .m3-switch {
-  background: var(--m3-surface-container-highest);
-  box-shadow: inset 0 0 0 2px var(--m3-outline);
-  transition: background-color 200ms var(--m3-ease-effects), box-shadow 200ms var(--m3-ease-effects);
-}
-[data-ui-style="m3"] .m3-switch .m3-switch-handle { background: var(--m3-outline); transition: background-color 200ms var(--m3-ease-effects); }
-[data-ui-style="m3"] .m3-switch:hover .m3-switch-handle { background: var(--m3-on-surface-variant); }
-[data-ui-style="m3"] .m3-switch.m3-switch-on { background: var(--m3-primary); box-shadow: none; }
-[data-ui-style="m3"] .m3-switch.m3-switch-on .m3-switch-handle { background: var(--m3-on-primary); }
-[data-ui-style="m3"] .m3-switch.m3-switch-on:hover .m3-switch-handle { background: var(--m3-primary-container); }
+/* ---------- Switch: colors, handle size and position are painted per frame by Switch.tsx (one spring) ---------- */
 
 /* ---------- Navigation: drawer with active-indicator pills, top app bar, search bar ---------- */
 
