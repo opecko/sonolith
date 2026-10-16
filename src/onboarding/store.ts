@@ -16,8 +16,6 @@ export const useOnboarding = create<OnboardingState>(() => ({ open: false, previ
 
 function presentKeys(): string[] {
   try {
-    // Dev toolkit's "Simulate fresh install" (dev builds only; the whole branch is dropped from release builds).
-    if (import.meta.env.DEV && localStorage.getItem("dev:simulateFresh")) return [];
     return PRIOR_KEYS.filter((k) => localStorage.getItem(k) !== null);
   } catch {
     return [];
@@ -25,15 +23,26 @@ function presentKeys(): string[] {
 }
 
 async function nativeEvidence() {
-  if (import.meta.env.DEV && localStorage.getItem("dev:simulateFresh")) {
-    localStorage.removeItem("dev:simulateFresh");
-    return { cookie: false, nativeFiles: false };
-  }
   const [cookie, nativeFiles] = await Promise.all([
     getCookie().then((c) => !!c, () => false),
     invoke<boolean>("app_has_prior_data").catch(() => false),
   ]);
   return { cookie, nativeFiles };
+}
+
+/**
+ * Dev toolkit's "Simulate fresh install" (dev builds only; release builds drop this branch): once, the detection
+ * sees no prior data at all, while the stored settings themselves stay.
+ */
+function simulatingFresh(): boolean {
+  if (!import.meta.env.DEV) return false;
+  try {
+    if (!localStorage.getItem("dev:simulateFresh")) return false;
+    localStorage.removeItem("dev:simulateFresh");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -45,8 +54,9 @@ let started = false;
 export async function initOnboarding() {
   if (started) return;
   started = true;
-  let decision = decideLocal({ settings: storedSettings, keys: presentKeys() });
-  if (decision === "ask") decision = decideWithNative(await nativeEvidence());
+  const fresh = simulatingFresh();
+  let decision = decideLocal(fresh ? { settings: null, keys: [] } : { settings: storedSettings, keys: presentKeys() });
+  if (decision === "ask") decision = fresh ? "show" : decideWithNative(await nativeEvidence());
   const { set } = useSettings.getState();
   if (decision === "existing") {
     set({ onboardingCompleted: true });

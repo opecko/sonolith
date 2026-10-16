@@ -1,8 +1,10 @@
 import { getVersion } from "@tauri-apps/api/app";
-import { Download, RotateCcw, Sparkles, X } from "lucide-react";
+import { Download, Hand, RotateCcw, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { confirmAction } from "../components/ConfirmDialog";
 import Switch from "../components/Switch";
-import { setAppearance, useSettings } from "../stores/settings";
+import { previewOnboarding } from "../onboarding/store";
+import { flush, setAppearance, useSettings } from "../stores/settings";
 import { useUpdate, type UpdateInfo } from "../stores/update";
 import { NOW_PLAYING_LAYOUTS, UI_STYLES } from "../theme/appearance";
 import { WHATS_NEW } from "../whatsNew/entries";
@@ -27,6 +29,28 @@ function fakeUpdate(current: string, flavor: Flavor): UpdateInfo {
   };
 }
 
+/**
+ * Clears the onboarding and What's new flags, then reloads with a one-shot marker that makes the first-run check
+ * see no other prior data (settings, cookie and files stay), so the real detection path runs as on a fresh install.
+ */
+async function simulateFreshInstall() {
+  const ok = await confirmAction({
+    title: "Simulate a fresh install?",
+    message: "Clears onboardingCompleted and lastSeenVersion and reloads the app. The first-run check then ignores your stored data and sign-in once; your settings, queue and sign-in stay.",
+    confirmLabel: "Clear and reload",
+  });
+  if (!ok) return;
+  useSettings.getState().set({ onboardingCompleted: false, lastSeenVersion: null });
+  flush();
+  // Without the flag, as on a fresh install: the stored settings keep everything else.
+  const stored = JSON.parse(localStorage.getItem("settings") ?? "{}");
+  delete stored.onboardingCompleted;
+  delete stored.lastSeenVersion;
+  localStorage.setItem("settings", JSON.stringify(stored));
+  localStorage.setItem("dev:simulateFresh", "1");
+  location.reload();
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2 rounded-[var(--m3-corner-lg)] bg-[var(--m3-surface-container)] p-4">
@@ -36,7 +60,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-/** Dev panel: fake update, What's new for any entry, lastSeenVersion reset, look toggles, settings JSON. */
+/** Dev panel: fake update, What's new for any entry, lastSeenVersion reset, onboarding, look toggles, settings JSON. */
 export default function DevPanel({ onClose }: { onClose: () => void }) {
   const settings = useSettings();
   const { uiStyle, nowPlayingLayout, animations } = settings.appearance;
@@ -88,6 +112,14 @@ export default function DevPanel({ onClose }: { onClose: () => void }) {
             <p className="type-body-medium">lastSeenVersion: <code className="font-mono">{String(settings.lastSeenVersion)}</code></p>
             <button className="m3-btn m3-outlined h-10" onClick={() => settings.set({ lastSeenVersion: null })}><RotateCcw size={16} aria-hidden /> Reset</button>
           </div>
+        </Section>
+        <Section title="Onboarding">
+          <p className="type-body-medium">onboardingCompleted: <code className="font-mono">{String(settings.onboardingCompleted)}</code></p>
+          <div className="flex flex-wrap gap-2">
+            <button className="m3-btn m3-tonal h-10" onClick={() => { onClose(); previewOnboarding(); }}><Hand size={18} aria-hidden /> Show onboarding</button>
+            <button className="m3-btn m3-outlined h-10" onClick={() => void simulateFreshInstall()}><RotateCcw size={16} aria-hidden /> Simulate fresh install</button>
+          </div>
+          <p className="type-body-small text-[var(--m3-on-surface-variant)]">Show: a preview, no flags change and the look comes back when it closes. Simulate: the real first-run check on a reload.</p>
         </Section>
         <Section title="Look">
           <div className="m3-segmented flex" role="group" aria-label="Style">
