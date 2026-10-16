@@ -40,7 +40,7 @@ export default function MaterialLayout() {
           <PodcastMode />
           <CoverArt className="np-cover aspect-square rounded-[var(--m3-corner-2xl)]" />
           <SlidePanel open={!!shown} title={TITLES[shown ?? last]} onClose={() => setPanel(null)}
-            className="np-glass inset-0 max-lg:fixed max-lg:inset-x-4 max-lg:bottom-4 max-lg:top-20">
+            className="inset-0 max-lg:fixed max-lg:inset-x-4 max-lg:bottom-4 max-lg:top-20">
             {(shown ?? last) === "upnext" && <div className="flex min-h-0 flex-1 flex-col pt-2"><UpNextTab /></div>}
             {(shown ?? last) === "lyrics" && videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} videoId={videoId} target={lyrics} /></div>}
             {(shown ?? last) === "related" && videoId && related && <div className="scroll-y min-h-0 flex-1 pr-1"><RelatedTab key={videoId} videoId={videoId} target={related} /></div>}

@@ -1,5 +1,5 @@
 import { ChevronRight, Minimize2, Play } from "lucide-react";
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { getLyrics } from "../../api/ytm";
 import type { BrowseRef } from "../../api/types";
@@ -39,7 +39,10 @@ function usePop() {
 
 /** The next few tracks; a click plays one. */
 function QueuePreview() {
-  const { next, index } = usePlayer(useShallow((s) => ({ next: s.queue.slice(s.index + 1, s.index + 6), index: s.index })));
+  // The queue array itself (stable until it changes), sliced here: a selector returning a new slice every time
+  // would never compare equal.
+  const { queue, index } = usePlayer(useShallow((s) => ({ queue: s.queue, index: s.index })));
+  const next = useMemo(() => queue.slice(index + 1, index + 6), [queue, index]);
   if (!next.length) return <p className="type-body-medium px-1 text-[var(--m3-on-surface-variant)]">Nothing queued after this one.</p>;
   return (
     <ol className="flex flex-col gap-0.5">
@@ -115,7 +118,7 @@ export default function BentoLayout() {
           <Tile area="info" label="Track" className="flex flex-col justify-center gap-1">
             {contextTitle && <p className="type-label-large truncate text-[var(--m3-on-surface-variant)]">Playing from {contextTitle}</p>}
             <div className="flex items-start gap-2">
-              <h1 className="type-headline-large-em line-clamp-2 min-w-0 flex-1" title={track.title}>{track.title}</h1>
+              <h1 className="type-headline-medium-em line-clamp-2 min-w-0 flex-1" title={track.title}>{track.title}</h1>
               <TrackActions track={track} />
             </div>
             <TrackLinks track={track} className="type-title-medium text-[var(--m3-on-surface-variant)]" />
@@ -123,7 +126,7 @@ export default function BentoLayout() {
         )}
         <Tile area="controls" label="Playback" className="bento-controls flex flex-col justify-center gap-5">
           <SeekBar />
-          <div className="flex justify-center"><Transport /></div>
+          <div className="flex justify-center"><Transport size="md" /></div>
         </Tile>
         {expanded ? <Expanded tab={expanded} onClose={() => setOpen(null)} /> : (
           <>

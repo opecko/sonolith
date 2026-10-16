@@ -7,20 +7,20 @@
 :root {
   --m3-primary: var(--c-accent);
   --m3-on-primary: var(--c-on-accent);
-  --m3-primary-container: color-mix(in srgb, var(--c-accent) 30%, var(--c-bg));
-  --m3-on-primary-container: color-mix(in srgb, var(--c-accent) 30%, var(--c-text));
+  --m3-primary-container: color-mix(in srgb, var(--c-accent) 22%, var(--c-bg));
+  --m3-on-primary-container: color-mix(in srgb, var(--c-accent) 15%, var(--c-text));
   --m3-secondary: var(--c-accent-2);
   --m3-on-secondary: var(--c-bg);
-  --m3-secondary-container: color-mix(in srgb, var(--c-accent-2) 20%, var(--m3-surface-container-high));
-  --m3-on-secondary-container: color-mix(in srgb, var(--c-accent-2) 22%, var(--c-text));
+  --m3-secondary-container: color-mix(in srgb, var(--c-accent-2) 15%, var(--m3-surface-container-low));
+  --m3-on-secondary-container: color-mix(in srgb, var(--c-accent-2) 12%, var(--c-text));
   --m3-tertiary: color-mix(in oklch, var(--c-accent) 50%, var(--c-accent-2));
   --m3-on-tertiary: var(--c-bg);
-  --m3-tertiary-container: color-mix(in srgb, var(--m3-tertiary) 30%, var(--c-bg));
-  --m3-on-tertiary-container: color-mix(in srgb, var(--m3-tertiary) 30%, var(--c-text));
+  --m3-tertiary-container: color-mix(in srgb, var(--m3-tertiary) 22%, var(--c-bg));
+  --m3-on-tertiary-container: color-mix(in srgb, var(--m3-tertiary) 15%, var(--c-text));
   --m3-error: var(--c-error);
   --m3-on-error: var(--c-bg);
-  --m3-error-container: color-mix(in srgb, var(--c-error) 25%, var(--c-bg));
-  --m3-on-error-container: color-mix(in srgb, var(--c-error) 30%, var(--c-text));
+  --m3-error-container: color-mix(in srgb, var(--c-error) 22%, var(--c-bg));
+  --m3-on-error-container: color-mix(in srgb, var(--c-error) 15%, var(--c-text));
   --m3-surface: var(--c-bg);
   --m3-surface-tint: color-mix(in srgb, var(--c-accent) 4%, var(--c-bg));
   --m3-surface-container-lowest: var(--c-bg);

@@ -12,22 +12,23 @@ type Recipe = Ref | { mix: [Ref, number, Ref]; space?: "oklch" };
 export const M3_RECIPES = {
   primary: "c:accent",
   "on-primary": "c:on-accent",
-  "primary-container": { mix: ["c:accent", 30, "c:bg"] },
-  "on-primary-container": { mix: ["c:accent", 30, "c:text"] },
+  "primary-container": { mix: ["c:accent", 22, "c:bg"] },
+  "on-primary-container": { mix: ["c:accent", 15, "c:text"] },
   secondary: "c:accent-2",
   "on-secondary": "c:bg",
-  // Tonal buttons and active indicators: a quiet wash, not a second accent.
-  "secondary-container": { mix: ["c:accent-2", 20, "m3:surface-container-high"] },
-  "on-secondary-container": { mix: ["c:accent-2", 22, "c:text"] },
+  // Tonal buttons and active indicators: a quiet wash, not a second accent. Container / on-container ratios are
+  // tuned so text on them keeps 4.5:1 for every bundled palette whose own text has 7:1 (m3.test.ts).
+  "secondary-container": { mix: ["c:accent-2", 15, "m3:surface-container-low"] },
+  "on-secondary-container": { mix: ["c:accent-2", 12, "c:text"] },
   // A third hue between the two accents (OKLCH keeps it saturated where sRGB would turn grey).
   tertiary: { mix: ["c:accent", 50, "c:accent-2"], space: "oklch" },
   "on-tertiary": "c:bg",
-  "tertiary-container": { mix: ["m3:tertiary", 30, "c:bg"] },
-  "on-tertiary-container": { mix: ["m3:tertiary", 30, "c:text"] },
+  "tertiary-container": { mix: ["m3:tertiary", 22, "c:bg"] },
+  "on-tertiary-container": { mix: ["m3:tertiary", 15, "c:text"] },
   error: "c:error",
   "on-error": "c:bg",
-  "error-container": { mix: ["c:error", 25, "c:bg"] },
-  "on-error-container": { mix: ["c:error", 30, "c:text"] },
+  "error-container": { mix: ["c:error", 22, "c:bg"] },
+  "on-error-container": { mix: ["c:error", 15, "c:text"] },
   surface: "c:bg",
   // Surfaces carry a trace of the accent, like M3's tinted neutrals.
   "surface-tint": { mix: ["c:accent", 4, "c:bg"] },
@@ -75,3 +76,11 @@ export function m3Roles(tokens: TokenMap): Record<M3Role, string> {
   for (const role of M3_ROLES) resolve(role);
   return out;
 }
+
+/** Text-on-container pairs the M3 style relies on; Settings warns when a palette or custom color breaks one. */
+export const M3_CONTRAST_PAIRS: { fg: M3Role; bg: M3Role; label: string }[] = [
+  { fg: "on-primary-container", bg: "primary-container", label: "Text on primary containers (New playlist, card play buttons)" },
+  { fg: "on-secondary-container", bg: "secondary-container", label: "Text on tonal buttons and selected items" },
+  { fg: "on-tertiary-container", bg: "tertiary-container", label: "Text on tertiary containers" },
+  { fg: "on-surface", bg: "surface-container-high", label: "Text on cards and dialogs" },
+];

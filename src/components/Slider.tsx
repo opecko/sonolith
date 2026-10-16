@@ -240,5 +240,5 @@ function Wave({ pct, edge, on }: { pct: number; edge: number; on: boolean }) {
       draw();
     });
   }, [on]);
-  return <canvas ref={ref} className="pointer-events-none absolute inset-x-0 text-[var(--m3-primary)]" style={{ height: AMPLITUDE * 2 + 6 }} aria-hidden />;
+  return <canvas ref={ref} className="pointer-events-none absolute left-0 w-full text-[var(--m3-primary)]" style={{ height: AMPLITUDE * 2 + 6 }} aria-hidden />;
 }

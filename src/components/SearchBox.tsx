@@ -45,7 +45,7 @@ export default function SearchBox() {
         e.preventDefault();
         choose(active >= 0 ? rows[active] : { q: input });
       }}
-      className="relative w-full max-w-[480px]"
+      className="relative w-full min-w-0 max-w-[480px]"
     >
       <Search size={20} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--c-text-muted)]" aria-hidden />
       <input

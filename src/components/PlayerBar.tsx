@@ -129,17 +129,18 @@ export const PlayIcon = ({ status, size }: { status: string; size: number }) =>
  */
 export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = "sm", split = false }: {
   status: string; shuffle: boolean; repeat: RepeatMode; hasTrack: boolean; podcast: boolean;
-  /** "sm" = player bar, "lg" = Now Playing. */
-  size?: "sm" | "lg";
+  /** "sm" = player bar, "md" = Bento's controls tile, "lg" = Now Playing. */
+  size?: "sm" | "md" | "lg";
   /** Transport group on the left, shuffle and repeat on the opposite side (Now Playing). */
   split?: boolean;
 }) {
   const { togglePlay, next, prev, toggleShuffle, cycleRepeat, skipBy } = usePlayer.getState();
   const playing = status === "playing";
-  const lg = size === "lg";
-  const side = lg ? "h-14 w-16" : "h-10 w-12";
-  const icon = lg ? 28 : 22;
+  const lg = size === "lg", md = size === "md";
+  const side = lg ? "h-14 w-16" : md ? "h-12 w-14" : "h-10 w-12";
+  const icon = lg ? 28 : md ? 24 : 22;
   const toggle = `icon-btn m3-icon-toggle ${lg ? "h-12 w-12" : "h-10 w-10"}`;
+  const play = lg ? "h-14 w-24" : md ? "h-12 w-20" : "h-10 w-16";
   const shuffleBtn = podcast ? <SkipSeconds sec={-10} onClick={() => skipBy(-10)} /> : (
     <button className={toggle} onClick={toggleShuffle} aria-label="Shuffle" aria-pressed={shuffle}>
       <Shuffle size={lg ? 24 : 20} />
@@ -157,9 +158,9 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
             <SkipBack size={icon} fill="currentColor" />
           </button>
         )}
-        <button className={`m3-btn m3-filled m3-play ${lg ? "h-14 w-24" : "h-10 w-16"} !px-0`} onClick={togglePlay} disabled={!hasTrack}
+        <button className={`m3-btn m3-filled m3-play ${play} !px-0`} onClick={togglePlay} disabled={!hasTrack}
           data-selected={playing ? "" : undefined} aria-label={playing ? "Pause" : "Play"}>
-          <PlayIcon status={status} size={lg ? 30 : 22} />
+          <PlayIcon status={status} size={lg ? 30 : md ? 26 : 22} />
         </button>
         {!podcast && (
           <button className={`m3-btn m3-tonal m3-cg-end ${side} !px-0`} onClick={next} disabled={!hasTrack} aria-label="Next">
@@ -177,7 +178,7 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
       </div>
     );
   return (
-    <div className={`flex items-center ${lg ? "gap-3" : "gap-2"}`}>
+    <div className={`flex items-center justify-center ${lg ? "gap-3" : "gap-2"} ${size === "sm" ? "" : "flex-wrap"}`}>
       {shuffleBtn}
       {group}
       {repeatBtn}

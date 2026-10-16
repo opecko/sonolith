@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { contrast, isHex } from "./color";
 import { effectiveTokens, M3_CORNERS, m3Corner } from "./index";
-import { m3Declarations, m3Roles, M3_ROLES } from "./m3";
+import { m3Declarations, m3Roles, M3_ROLES, M3_CONTRAST_PAIRS } from "./m3";
+import { hasMode, PALETTES } from "./palettes";
 
 const css = readFileSync(new URL("./m3.css", import.meta.url), "utf8");
 const luma = (hex: string) => parseInt(hex.slice(1, 3), 16) + parseInt(hex.slice(3, 5), 16) + parseInt(hex.slice(5, 7), 16);
@@ -42,6 +43,18 @@ describe("M3 color roles", () => {
       expect(contrast(r["on-secondary-container"], r["secondary-container"])).toBeGreaterThan(4.5);
       expect(contrast(r["on-surface"], r["surface-container-high"])).toBeGreaterThan(4.5);
     }
+  });
+
+  it("text on containers keeps 4.5:1 for every bundled palette whose own text has 7:1", () => {
+    const low: string[] = [];
+    for (const p of PALETTES) for (const mode of ["dark", "light"] as const) {
+      if (p.source !== "builtin" && !hasMode(p, mode)) continue;
+      const t = effectiveTokens({ palette: p.id, mode, overrides: {} });
+      if (contrast(t.text, t.bg) < 7) continue;
+      const r = m3Roles(t);
+      for (const { fg, bg } of M3_CONTRAST_PAIRS) if (contrast(r[fg], r[bg]) < 4.5) low.push(`${p.id}/${mode}: ${fg} on ${bg}`);
+    }
+    expect(low).toEqual([]);
   });
 
   it("tertiary is a real hue between the accents, not grey", () => {

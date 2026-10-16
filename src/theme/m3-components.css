@@ -397,14 +397,15 @@
   .bento-grid[data-expanded] .bento-cover { display: block; }
 }
 
-/* Three columns filling the view: square cover the full height, info / controls / small tiles, the queue. */
+/* Three columns filling the view: cover beside info and controls, small tiles below them, the queue on the right. */
 @media (min-width: 1024px) {
   .np-bento { --bento-h: calc(100vh - 72px - 64px - 24px); }
   .bento-grid {
     height: max(100%, 520px);
-    grid-template-columns: minmax(0, min(var(--bento-h), 42vw)) minmax(0, 1fr) minmax(280px, 0.8fr);
-    grid-template-rows: auto auto minmax(0, 1fr);
-    grid-template-areas: "cover info queue" "cover controls queue" "cover extras queue";
+    grid-template-columns: minmax(0, min(var(--bento-h), 36vw)) minmax(0, 1fr) minmax(280px, 0.8fr);
+    /* Info and controls share the height beside a roughly square cover; small tiles run below both. */
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-areas: "cover info queue" "cover controls queue" "extras extras queue";
   }
   .bento-cover { width: auto; aspect-ratio: auto; justify-self: stretch; }
   .bento-main { min-height: 0; }
@@ -413,7 +414,7 @@
     display: grid;
     gap: 12px;
     min-height: 0;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
   .bento-grid[data-expanded] { grid-template-areas: "cover main main" "cover main main" "cover main main"; }
   .bento-grid[data-expanded] > :is(.bento-info, .bento-controls) { display: none; }

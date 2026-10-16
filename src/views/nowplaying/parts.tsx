@@ -82,9 +82,9 @@ export function SeekBar({ className = "" }: { className?: string }) {
 }
 
 /** Shuffle, previous, play/pause, next, repeat (or −10 s / +30 s for podcasts), Now Playing size. */
-export function Transport({ split = false }: { split?: boolean }) {
+export function Transport({ split = false, size = "lg" }: { split?: boolean; size?: "md" | "lg" }) {
   const s = usePlayer(useShallow((s) => ({ status: s.status, shuffle: s.shuffle, repeat: s.repeat, hasTrack: s.index >= 0, podcast: !!s.queue[s.index]?.podcast })));
-  return <M3Controls {...s} size="lg" split={split} />;
+  return <M3Controls {...s} size={size} split={split} />;
 }
 
 /** Like / dislike and the track's ⋮ menu. */
