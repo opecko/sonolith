@@ -336,14 +336,8 @@
 [data-ui-style="m3"] .m3-seg:last-child { border-radius: var(--r-now) min(var(--m3-corner-full), 20px) min(var(--m3-corner-full), 20px) var(--r-now); }
 [data-ui-style="m3"] .m3-seg:first-child:last-child { border-radius: var(--r-now); }
 
-/* ---------- Side queue panel, error box ---------- */
+/* ---------- Error box ---------- */
 
-[data-ui-style="m3"] .m3-side-panel {
-  margin: 0 8px 8px 0;
-  border: 0;
-  border-radius: var(--m3-corner-xl);
-  background: var(--m3-surface-container-low);
-}
 [data-ui-style="m3"] .m3-error-box { border: 0; border-radius: var(--m3-corner-lg); background: var(--m3-error-container); color: var(--m3-on-error-container); }
 [data-ui-style="m3"] .m3-error-box :is(p, svg) { color: inherit; }
 

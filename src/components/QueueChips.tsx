@@ -1,7 +1,6 @@
 import { usePlayer } from "../stores/player";
-import AutoplayToggle from "./AutoplayToggle";
-import QueueList from "./QueueList";
 
+/** Mix chips of a radio queue (All, Familiar, Discover, …); shown in every Now Playing layout. */
 export function QueueChips() {
   const chips = usePlayer((s) => s.chips);
   const active = usePlayer((s) => s.activeChipId);
@@ -22,20 +21,5 @@ export function QueueChips() {
         </button>
       ))}
     </div>
-  );
-}
-
-export default function QueuePanel() {
-  return (
-    <aside aria-label="Queue" className="m3-side-panel flex w-[360px] shrink-0 flex-col border-l border-[var(--c-outline)] bg-[var(--c-surface)] py-4 pl-2 pr-1">
-      <div className="mb-4 flex items-center justify-between px-2">
-        <h2 className="text-base font-semibold">Up next</h2>
-        <AutoplayToggle />
-      </div>
-      <QueueChips />
-      <div className="scroll-y min-h-0 flex-1">
-        <QueueList autoScroll />
-      </div>
-    </aside>
   );
 }

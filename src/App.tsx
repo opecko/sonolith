@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "./stores/auth";
 import { initDiscord } from "./stores/discord";
 import { initMpris } from "./stores/mpris";
@@ -10,7 +10,6 @@ import PlayerBar from "./components/PlayerBar";
 import MainView from "./views/MainView";
 import NowPlaying from "./views/NowPlaying";
 import { useUi } from "./stores/ui";
-import QueuePanel from "./components/QueuePanel";
 import Toast from "./components/Toast";
 import ConfirmDialog from "./components/ConfirmDialog";
 import CreditsDialog from "./components/CreditsDialog";
@@ -20,7 +19,6 @@ import WhatsNewDialog from "./whatsNew/WhatsNewDialog";
 import { initWhatsNew } from "./whatsNew/store";
 
 export default function App() {
-  const [queueOpen, setQueueOpen] = useState(false);
   // WebKit keeps painting content under an opaque overlay; hiding it makes Now Playing hover/scroll cheap.
   const covered = useUi((s) => s.nowPlayingCovering);
   useEffect(() => {
@@ -41,10 +39,9 @@ export default function App() {
           <TopBar />
           <MainView />
         </div>
-        {queueOpen && <QueuePanel />}
       </div>
       <NowPlaying />
-      <PlayerBar queueOpen={queueOpen} onToggleQueue={() => setQueueOpen((o) => !o)} />
+      <PlayerBar />
       <CreditsDialog />
       <UpdateDialog />
       <WhatsNewDialog />

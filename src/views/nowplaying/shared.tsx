@@ -1,7 +1,7 @@
 import type { BrowseRef } from "../../api/types";
 import { getLyrics, getRelated } from "../../api/ytm";
 import AutoplayToggle from "../../components/AutoplayToggle";
-import { QueueChips } from "../../components/QueuePanel";
+import { QueueChips } from "../../components/QueueChips";
 import QueueList from "../../components/QueueList";
 import { Shelves } from "../../components/Shelves";
 import { EmptyState, ErrorBox, Loading } from "../../components/Status";

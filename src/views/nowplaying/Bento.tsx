@@ -7,7 +7,7 @@ import AutoplayToggle from "../../components/AutoplayToggle";
 import PlaybackError from "../../components/PlaybackError";
 import { PlayIcon, SkipSeconds } from "../../components/PlayerBar";
 import PodcastSpeed from "../../components/PodcastSpeed";
-import { QueueChips } from "../../components/QueuePanel";
+import { QueueChips } from "../../components/QueueChips";
 import Thumb from "../../components/Thumb";
 import { UiStyleScope } from "../../components/UiStyle";
 import { useAsync } from "../../hooks/useData";

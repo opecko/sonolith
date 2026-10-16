@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import {
-  ChevronDown, ChevronUp, ListMusic, RotateCcw, RotateCw, Loader2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume1, Volume2, VolumeX,
+  ChevronDown, ChevronUp, RotateCcw, RotateCw, Loader2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume1, Volume2, VolumeX,
 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { usePlayer, type Repeat as RepeatMode } from "../stores/player";
@@ -251,7 +251,7 @@ export function byline(t: Track): string {
 }
 
 /** Hidden while Bento Now Playing is open (it has all of this): the bar keeps its space but renders nothing. */
-export default function PlayerBar({ queueOpen, onToggleQueue }: { queueOpen: boolean; onToggleQueue: () => void }) {
+export default function PlayerBar() {
   const npOpen = useUi((s) => s.nowPlaying);
   const bento = useSettings((s) => s.appearance.nowPlayingLayout) === "bento";
   const hidden = npOpen && bento;
@@ -267,9 +267,6 @@ export default function PlayerBar({ queueOpen, onToggleQueue }: { queueOpen: boo
       <div className="flex w-[30%] items-center justify-end gap-2">
         <PodcastSpeedSlot />
         <VolumeControl />
-        <button className={`icon-btn m3-icon-toggle h-10 w-10 ${queueOpen ? "!text-[var(--c-text)] bg-[var(--c-hover)]" : ""}`} onClick={onToggleQueue} aria-label="Queue" aria-pressed={queueOpen}>
-          <ListMusic size={20} />
-        </button>
         <NowPlayingToggle />
       </div>
     </footer>
