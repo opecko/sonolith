@@ -7,6 +7,7 @@ import Card from "./Card";
 import { EpisodeCard } from "./Episode";
 import ItemMenu from "./ItemMenu";
 import Thumb from "./Thumb";
+import { Byline } from "./TrackByline";
 
 function useScroller() {
   const ref = useRef<HTMLDivElement>(null);
@@ -32,18 +33,19 @@ function useScroller() {
 
 function QuickPickRow({ track }: { track: Track & Item }) {
   return (
-    <div className="group flex w-[360px] items-center gap-3 rounded-[var(--radius)] pr-1 hover:bg-[var(--c-hover)]">
-      <button onClick={() => void playItem(track)} className="relative shrink-0" aria-label={`Play ${track.title}`}>
+    <div className="group relative flex w-[360px] items-center gap-3 rounded-[var(--radius)] pr-1 hover:bg-[var(--c-hover)]">
+      <button onClick={() => void playItem(track)} className="relative z-[1] shrink-0" aria-label={`Play ${track.title}`}>
         <Thumb src={track.thumbnail} px={48} className="h-12 w-12" />
         <span className="absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/50 opacity-0 group-hover:opacity-100">
           <Play size={20} fill="currentColor" />
         </span>
       </button>
-      <button onClick={() => activateItem(track)} className="min-w-0 flex-1 text-left">
-        <span className="block truncate text-sm font-medium">{track.title}</span>
-        <span className="block truncate text-sm text-[var(--c-text-muted)]">{track.subtitle}</span>
-      </button>
-      <ItemMenu item={track} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
+      {/* The title button covers the row (row-hit); the play thumbnail, links and ⋮ sit above it. */}
+      <span className="min-w-0 flex-1">
+        <button onClick={() => activateItem(track)} className="row-hit block max-w-full truncate text-left text-sm font-medium">{track.title}</button>
+        <span className="block truncate text-sm text-[var(--c-text-muted)]"><Byline track={track} /></span>
+      </span>
+      <ItemMenu item={track} className="relative opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
     </div>
   );
 }

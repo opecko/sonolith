@@ -11,6 +11,7 @@ import MainView from "./views/MainView";
 import NowPlaying from "./views/NowPlaying";
 import { useUi } from "./stores/ui";
 import Toast from "./components/Toast";
+import { browseLinks } from "./components/TrackByline";
 import ConfirmDialog from "./components/ConfirmDialog";
 import CreditsDialog from "./components/CreditsDialog";
 import UpdateDialog from "./components/UpdateDialog";
@@ -31,8 +32,9 @@ export default function App() {
     initUpdates();
     initWhatsNew();
   }, []);
+  // One delegated handler for every artist / album link in the app (TrackByline): rows carry only data-* attributes.
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col" {...browseLinks}>
       <div className={`flex min-h-0 flex-1 ${covered ? "invisible" : ""}`}>
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">

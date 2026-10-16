@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import playlists from "./__fixtures__/library-playlists.json";
 import liked from "./__fixtures__/liked-songs.json";
-import { flattenPage, parseBrowse, parseDuration } from "./raw";
+import { flattenPage, parseBrowse, parseDuration, runInfo } from "./raw";
 
 describe("raw browse parser", () => {
   it("parses library grid, skips create button and unknown nodes", () => {
@@ -53,5 +53,23 @@ describe("home feed", () => {
     expect(artist).toMatchObject({ type: "artist", art: "round" });
     expect(video).toMatchObject({ type: "track", id: "vid000000LO", art: "wide", artists: ["Tame Impala"] });
     expect(mix).toMatchObject({ type: "playlist", id: "RDTMAK5uy_mix" });
+  });
+});
+
+describe("runInfo", () => {
+  const nav = (pageType: string, browseId: string) => ({
+    browseEndpoint: { browseId, browseEndpointContextSupportedConfigs: { browseEndpointContextMusicConfig: { pageType } } },
+  });
+  it("keeps each artist's browse id next to its name", () => {
+    const info = runInfo([
+      { text: "A", navigationEndpoint: nav("MUSIC_PAGE_TYPE_ARTIST", "UCa") },
+      { text: " & " },
+      { text: "B", navigationEndpoint: nav("MUSIC_PAGE_TYPE_ARTIST", "UCb") },
+      { text: " • " },
+      { text: "Alb", navigationEndpoint: nav("MUSIC_PAGE_TYPE_ALBUM", "MPREx") },
+    ]);
+    expect(info.artists).toEqual(["A", "B"]);
+    expect(info.artistIds).toEqual(["UCa", "UCb"]);
+    expect(info.album).toEqual({ id: "MPREx", title: "Alb" });
   });
 });

@@ -46,13 +46,15 @@ export function parseDuration(s: string): number | undefined {
   return s.trim().split(":").reduce((acc, p) => acc * 60 + Number(p), 0);
 }
 
-interface RunInfo { artists: string[]; album?: { id?: string; title: string }; label?: string }
+interface RunInfo { artists: string[]; artistIds: (string | undefined)[]; album?: { id?: string; title: string }; label?: string }
 export function runInfo(runs: R[]): RunInfo {
-  const info: RunInfo = { artists: [] };
+  const info: RunInfo = { artists: [], artistIds: [] };
   for (const r of runs) {
     const pt = pageType(r?.navigationEndpoint);
-    if (pt === "MUSIC_PAGE_TYPE_ARTIST" || pt === "MUSIC_PAGE_TYPE_USER_CHANNEL") info.artists.push(r.text);
-    else if (pt === "MUSIC_PAGE_TYPE_ALBUM") info.album = { id: r.navigationEndpoint.browseEndpoint.browseId, title: r.text };
+    if (pt === "MUSIC_PAGE_TYPE_ARTIST" || pt === "MUSIC_PAGE_TYPE_USER_CHANNEL") {
+      info.artists.push(r.text);
+      info.artistIds.push(r.navigationEndpoint?.browseEndpoint?.browseId);
+    } else if (pt === "MUSIC_PAGE_TYPE_ALBUM") info.album = { id: r.navigationEndpoint.browseEndpoint.browseId, title: r.text };
   }
   return info;
 }
@@ -102,7 +104,7 @@ function mapTwoRow(n: R): Item | null {
   const watch = nav?.watchEndpoint;
   if (watch?.videoId) {
     const info = runInfo(subRuns);
-    const t: Item = { type: "track", id: watch.videoId, title, subtitle, thumbnail, artists: info.artists, album: info.album, kind: subRuns[0]?.text };
+    const t: Item = { type: "track", id: watch.videoId, title, subtitle, thumbnail, artists: info.artists, artistIds: info.artistIds, album: info.album, kind: subRuns[0]?.text };
     if (wide) t.art = "wide";
     if (/PODCAST/.test(watch.watchEndpointMusicSupportedConfigs?.watchEndpointMusicConfig?.musicVideoType ?? "")) t.podcast = true;
     return t;
@@ -148,7 +150,7 @@ function mapCard(n: R): Item[] {
   const watch = nav?.watchEndpoint ?? watchOf(n);
   if (!top && watch?.videoId) {
     const info = runInfo(subRuns);
-    top = { type: "track", id: watch.videoId, title, subtitle, thumbnail, artists: info.artists, album: info.album, kind: subRuns[0]?.text };
+    top = { type: "track", id: watch.videoId, title, subtitle, thumbnail, artists: info.artists, artistIds: info.artistIds, album: info.album, kind: subRuns[0]?.text };
     const mvt = watch.watchEndpointMusicSupportedConfigs?.watchEndpointMusicConfig?.musicVideoType ?? "";
     if (mvt && !/ATV|OFFICIAL_SOURCE_MUSIC|PRIVATELY_OWNED/.test(mvt)) top.art = "wide";
     if (JSON.stringify(n.subtitleBadges ?? []).includes("EXPLICIT")) top.explicit = true;
@@ -193,6 +195,7 @@ function mapResponsive(n: R): Item | null {
     const durationSec = parseDuration(fixed) ?? parseDuration(restRuns[restRuns.length - 1]?.text ?? "");
     const artists = info.artists.length ? info.artists : [runsText({ runs: flexRuns(n, 1) }).split(SEP)[0]].filter(Boolean);
     const t: Track & Item = { type: "track", id: videoId, title, subtitle, thumbnail, artists, album: info.album, durationSec };
+    if (info.artists.length) t.artistIds = info.artistIds;
     const rating = likeStatusOf(n);
     if (rating) t.rating = rating;
     const menu = parseTrackMenu(n.menu?.menuRenderer);

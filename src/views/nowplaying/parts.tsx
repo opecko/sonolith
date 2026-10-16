@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { ChevronDown } from "lucide-react";
 import { hiResArt } from "../../api/art";
 import PlaybackError from "../../components/PlaybackError";
 import type { Track } from "../../api/types";
 import { useTrackMenu } from "../../components/ItemMenu";
-import { fmtTime, M3Controls, TrackMoreMenu } from "../../components/PlayerBar";
+import { byline, fmtTime, M3Controls, TrackMoreMenu } from "../../components/PlayerBar";
+import { Byline } from "../../components/TrackByline";
 import PodcastVideo from "../../components/PodcastVideo";
 import RatingButtons from "../../components/RatingButtons";
 import Slider from "../../components/Slider";
-import { useNav } from "../../stores/nav";
 import { usePlayer } from "../../stores/player";
 import { useProgress } from "../../stores/progress";
 import { useUi } from "../../stores/ui";
@@ -52,21 +52,14 @@ export function PodcastMode() {
 export function TrackLinks({ track, className = "" }: { track: Track; className?: string }) {
   const { menu, load } = useTrackMenu(track);
   useEffect(load, [track.id]);
-  const artistId = track.menu?.artistId ?? menu?.artistId;
-  const go = useNav((s) => s.go);
-  const artists = track.artists.join(", ") || track.subtitle;
-  // Plain text flow with inline links: long names wrap like a sentence (two lines at most) instead of breaking
-  // into one fragment per line.
-  const link = "inline text-left hover:underline";
-  return (
-    <p className={`line-clamp-2 min-w-0 ${className}`}>
-      {artistId ? <button className={link} onClick={() => go({ name: "artist", id: artistId })}>{artists}</button> : <span>{artists}</span>}
-      {track.album?.title && <span aria-hidden className="opacity-60"> • </span>}
-      {track.album?.title && (track.album.id
-        ? <button className={link} onClick={() => go({ name: "album", id: track.album!.id! })}>{track.album.title}</button>
-        : <span>{track.album.title}</span>)}
-    </p>
+  // Lists that don't give the artists' ids: the track menu's "Go to artist" (the first artist) still links.
+  const menuArtist = track.menu?.artistId ?? menu?.artistId;
+  const linked = useMemo(
+    () => (track.artistIds?.some(Boolean) || !menuArtist || !track.artists.length ? track : { ...track, artistIds: [menuArtist] }),
+    [track, menuArtist],
   );
+  // Plain text flow with inline links: long names wrap like a sentence (two lines at most).
+  return <p className={`line-clamp-2 min-w-0 ${className}`}><Byline track={linked} text={byline(track)} /></p>;
 }
 
 /** Seek bar with "0:11 / 3:43"; the only part of a layout that re-renders on the clock (once a second). */

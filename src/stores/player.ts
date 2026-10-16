@@ -269,6 +269,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       const patch: Partial<Track> = {};
       if (full) {
         if (!track.artists.length && full.artists.length) patch.artists = full.artists;
+        if (!track.artistIds?.some(Boolean) && full.artistIds?.some(Boolean) && (patch.artists ?? track.artists).join() === full.artists.join()) patch.artistIds = full.artistIds;
         if (!track.album && full.album) patch.album = full.album;
         if (full.podcast && !track.podcast) patch.podcast = true;
         if (full.explicit && !track.explicit) patch.explicit = true;

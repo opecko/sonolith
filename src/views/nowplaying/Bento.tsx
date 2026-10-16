@@ -10,6 +10,7 @@ import PodcastSpeed from "../../components/PodcastSpeed";
 import VolumeControl from "../../components/VolumeControl";
 import { QueueChips } from "../../components/QueueChips";
 import Thumb from "../../components/Thumb";
+import { Byline } from "../../components/TrackByline";
 import { UiStyleScope } from "../../components/UiStyle";
 import { useAsync } from "../../hooks/useData";
 import { Spring } from "../../motion";
@@ -108,17 +109,16 @@ function QueuePreview() {
   return (
     <ol className="flex flex-col gap-0.5">
       {next.map((t, i) => (
-        <li key={`${t.id}:${i}`}>
-          <button className="m3-row group flex w-full items-center gap-3 p-1.5 text-left" onClick={() => usePlayer.getState().playIndex(index + 1 + i)}>
-            <span className="relative shrink-0">
-              <Thumb src={t.thumbnail} px={40} className="h-10 w-10" />
-              <span className="m3-art absolute inset-0 hidden items-center justify-center bg-scrim/60 text-on-scrim group-hover:flex"><Play size={16} fill="currentColor" aria-hidden /></span>
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="type-body-large block truncate">{t.title}</span>
-              <span className="type-body-medium block truncate text-[var(--m3-on-surface-variant)]">{t.artists.join(", ") || t.subtitle}</span>
-            </span>
-          </button>
+        <li key={`${t.id}:${i}`} className="m3-row group relative flex items-center gap-3 p-1.5">
+          <span className="relative shrink-0">
+            <Thumb src={t.thumbnail} px={40} className="h-10 w-10" />
+            <span className="m3-art absolute inset-0 hidden items-center justify-center bg-scrim/60 text-on-scrim group-hover:flex"><Play size={16} fill="currentColor" aria-hidden /></span>
+          </span>
+          <span className="min-w-0 flex-1">
+            {/* Covers the row (row-hit); the artist and album names are links above it. */}
+            <button className="row-hit type-body-large block max-w-full truncate text-left" onClick={() => usePlayer.getState().playIndex(index + 1 + i)}>{t.title}</button>
+            <span className="type-body-medium block truncate text-[var(--m3-on-surface-variant)]"><Byline track={t} text={t.artists.join(", ") || t.subtitle} /></span>
+          </span>
         </li>
       ))}
     </ol>

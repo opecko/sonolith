@@ -34,7 +34,9 @@ export function mapTrack(n: N, fallback: { thumbnail?: string; artists?: string[
   const id = n?.id ?? n?.video_id;
   const title = n?.title ? text(n.title) : "";
   if (!id || !title) return null;
-  const artists = names(n.artists).length ? names(n.artists) : names(n.authors).length ? names(n.authors) : fallback.artists ?? [];
+  const people: N[] = names(n.artists).length ? arr(n.artists) : names(n.authors).length ? arr(n.authors) : [];
+  const artists = people.length ? names(people) : fallback.artists ?? [];
+  const ids = people.filter((a) => a?.name).map((a): string | undefined => a.channel_id ?? a.endpoint?.payload?.browseId);
   const album = n.album?.name ? { id: n.album.id, title: n.album.name } : undefined;
   return {
     type: "track",
@@ -43,6 +45,7 @@ export function mapTrack(n: N, fallback: { thumbnail?: string; artists?: string[
     subtitle: nonEmpty(artists.join(", ") || n.author?.name, album?.title),
     thumbnail: pickThumb(n.thumbnail) ?? fallback.thumbnail,
     artists,
+    ...(ids.some(Boolean) ? { artistIds: ids } : {}),
     album,
     durationSec: typeof n.duration?.seconds === "number" ? n.duration.seconds : undefined,
     rating: likeStatus(n.menu),

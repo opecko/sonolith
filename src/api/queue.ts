@@ -46,6 +46,7 @@ export function mapPanelVideo(n: R): Track | null {
     album: info.album,
     durationSec: parseDuration(runsText(n.lengthText)),
   };
+  if (info.artists.length) t.artistIds = info.artistIds;
   if (explicit) t.explicit = true;
   const mvt = n.navigationEndpoint?.watchEndpoint?.watchEndpointMusicSupportedConfigs?.watchEndpointMusicConfig?.musicVideoType;
   if (typeof mvt === "string" && mvt.includes("PODCAST")) t.podcast = true;

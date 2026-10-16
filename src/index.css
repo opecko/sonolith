@@ -87,6 +87,16 @@ button:disabled { cursor: default; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+/* A row that plays wherever it's clicked: its title button's ::after stretches over the whole row (the nearest
+   positioned ancestor) and draws the row's focus ring. Whatever must stay clickable on top of it (byline links,
+   rating, ⋮, drag handle) is positioned (`relative`) and comes after it in the row, or is lifted (`z-[1]`) when it comes first. */
+.row-hit::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
+.row-hit:focus-visible { outline: none; }
+.row-hit:focus-visible::after { outline: 2px solid var(--c-focus); outline-offset: -2px; }
+/* Artist / album names in a byline (TrackByline). */
+.track-link { position: relative; cursor: pointer; border-radius: 2px; }
+.track-link:hover { text-decoration: underline; }
+
 @layer components {
   .icon-btn {
     display: inline-flex;

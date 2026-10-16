@@ -16,6 +16,7 @@ import PodcastSpeed from "./PodcastSpeed";
 import RatingButtons from "./RatingButtons";
 import Slider from "./Slider";
 import Thumb from "./Thumb";
+import { Byline } from "./TrackByline";
 import VolumeControl from "./VolumeControl";
 
 export const fmtTime = (s: number) => {
@@ -50,7 +51,7 @@ function NowPlaying() {
           <>
             <button onClick={openNowPlaying} className="block max-w-full truncate text-left text-sm font-medium hover:underline" title={track.title}>{track.title}</button>
             {error ? <PlaybackError error={error} /> : (
-              <p className="truncate text-sm text-[var(--c-text-muted)]" title={byline(track)}>{status === "loading" ? "Loading…" : byline(track)}</p>
+              <p className="truncate text-sm text-[var(--c-text-muted)]" title={byline(track)}>{status === "loading" ? "Loading…" : <Byline track={track} text={byline(track)} />}</p>
             )}
           </>
         ) : (

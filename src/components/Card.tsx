@@ -4,6 +4,7 @@ import type { Item } from "../api/types";
 import { activateItem, playItem, prefetchItem } from "../stores/actions";
 import ItemMenu from "./ItemMenu";
 import Thumb from "./Thumb";
+import { Byline } from "./TrackByline";
 
 export const CARD_W = 180;
 const width = (item: Item) => (item.art === "wide" ? Math.round((CARD_W * 16) / 9) : CARD_W);
@@ -34,12 +35,18 @@ function CardImpl({ item, fluid = false }: { item: Item; fluid?: boolean }) {
           </button>
         )}
       </div>
-      <div className="mt-2 flex items-start gap-1">
-        <button onClick={() => activateItem(item)} className={`min-w-0 flex-1 text-left ${round ? "text-center" : ""}`}>
-          <span className="line-clamp-2 text-sm font-medium leading-5 hover:underline" title={item.title}>{item.title}</span>
-          <span className="mt-0.5 line-clamp-2 text-sm leading-5 text-[var(--c-text-muted)]" title={item.subtitle}>{item.subtitle}</span>
-        </button>
-        <ItemMenu item={item} className="-mr-2 opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
+      {/* The title button covers the text (row-hit), so the subtitle opens the item too; a track's artist and album
+          names are links above it. */}
+      <div className="relative mt-2 flex items-start gap-1">
+        <div className={`min-w-0 flex-1 text-left ${round ? "text-center" : ""}`}>
+          <button onClick={() => activateItem(item)} className="row-hit block w-full [text-align:inherit]" title={item.title}>
+            <span className="line-clamp-2 text-sm font-medium leading-5 [.row-hit:hover_&]:underline">{item.title}</span>
+          </button>
+          <span className="mt-0.5 line-clamp-2 text-sm leading-5 text-[var(--c-text-muted)]" title={item.subtitle}>
+            {item.type === "track" ? <Byline track={item} /> : item.subtitle}
+          </span>
+        </div>
+        <ItemMenu item={item} className="relative -mr-2 opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
       </div>
     </div>
   );

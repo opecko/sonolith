@@ -45,6 +45,8 @@ export interface Track {
   subtitle: string;
   thumbnail?: string;
   artists: string[];
+  /** Browse ids of `artists`, index for index; a name without one stays plain text. */
+  artistIds?: (string | undefined)[];
   album?: { id?: string; title: string };
   durationSec?: number;
   rating?: Rating;

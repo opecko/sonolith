@@ -9,6 +9,7 @@ import { ItemGrid, ShelfRow } from "../components/Shelves";
 import { EmptyState, ErrorBox, Loading } from "../components/Status";
 import Thumb from "../components/Thumb";
 import TrackList from "../components/TrackList";
+import { Byline } from "../components/TrackByline";
 import { useAsync, usePaged } from "../hooks/useData";
 import { openItem } from "../stores/nav";
 import { usePlayer } from "../stores/player";
@@ -69,7 +70,7 @@ function TopResult({ items, actions }: { items: Item[]; actions: CardAction[] })
           <button onClick={() => activate(top)} className="block max-w-full truncate text-left text-3xl font-bold tracking-tight hover:underline">{top.title}</button>
           <p className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-[var(--c-text-muted)]">
             {isTrack(top) && top.explicit && <span className="shrink-0 rounded-sm bg-[var(--c-text-subtle)] px-1 text-[10px] font-bold text-[var(--c-bg)]" aria-label="Explicit">E</span>}
-            <span className="truncate">{top.subtitle}</span>
+            <span className="truncate">{isTrack(top) ? <Byline track={top} /> : top.subtitle}</span>
           </p>
           {actions.length > 0 && <CardButtons top={top} actions={actions} />}
         </div>
@@ -78,8 +79,8 @@ function TopResult({ items, actions }: { items: Item[]; actions: CardAction[] })
       {rest.length > 0 && (
         <ul className="flex min-w-0 flex-1 flex-col justify-center border-t border-fg/10 p-2 md:border-l md:border-t-0">
           {rest.slice(0, 3).map((r) => (
-            <li key={`${r.type}:${r.id}`} className="group flex items-center rounded-[var(--radius)] pr-1 hover:bg-fg/10">
-              <button onClick={() => activate(r)} className="flex min-w-0 flex-1 items-center gap-4 p-2 text-left">
+            <li key={`${r.type}:${r.id}`} className="group relative flex items-center rounded-[var(--radius)] pr-1 hover:bg-fg/10">
+              <div className="flex min-w-0 flex-1 items-center gap-4 p-2">
                 <span className="relative shrink-0">
                   <Thumb src={r.thumbnail} round={r.type === "artist"} px={56} className="h-14 w-14" />
                   {isTrack(r) && (
@@ -89,11 +90,12 @@ function TopResult({ items, actions }: { items: Item[]; actions: CardAction[] })
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-base font-medium">{r.title}</span>
-                  <span className="block truncate text-sm text-[var(--c-text-muted)]">{r.subtitle}</span>
+                  {/* Covers the row (row-hit); a track's artist and album names are links above it. */}
+                  <button onClick={() => activate(r)} className="row-hit block max-w-full truncate text-left text-base font-medium">{r.title}</button>
+                  <span className="block truncate text-sm text-[var(--c-text-muted)]">{isTrack(r) ? <Byline track={r} /> : r.subtitle}</span>
                 </span>
-              </button>
-              <ItemMenu item={r} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
+              </div>
+              <ItemMenu item={r} className="relative opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
             </li>
           ))}
         </ul>

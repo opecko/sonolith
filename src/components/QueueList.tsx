@@ -5,6 +5,7 @@ import { usePlayer } from "../stores/player";
 import ItemMenu from "./ItemMenu";
 import { fmtTime } from "./PlayerBar";
 import Thumb from "./Thumb";
+import { Byline } from "./TrackByline";
 
 /** Pointer distance from the scroll box edge where dragging starts to auto-scroll, and the top speed (px/frame). */
 const EDGE = 48;
@@ -37,12 +38,11 @@ const Row = memo(function Row({ track, i, current, played, playing, drop, draggi
         aria-label={`Drag to reorder ${track.title}`}
         title="Drag to reorder"
         onPointerDown={(e) => onHandleDown(i, e)}
-        className={`flex h-10 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center text-[var(--c-text-subtle)] hover:text-[var(--c-text)] active:cursor-grabbing group-hover:opacity-100 ${dragging ? "opacity-100" : "opacity-0"}`}
+        className={`relative z-[1] flex h-10 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center text-[var(--c-text-subtle)] hover:text-[var(--c-text)] active:cursor-grabbing group-hover:opacity-100 ${dragging ? "opacity-100" : "opacity-0"}`}
       >
         <GripVertical size={16} aria-hidden />
       </span>
-      <button onClick={() => (current ? togglePlay() : playIndex(i))} aria-current={current ? "true" : undefined}
-        className="flex min-w-0 flex-1 items-center gap-3 py-2 pr-2 text-left">
+      <div className="flex min-w-0 flex-1 items-center gap-3 py-2 pr-2">
         <span className="relative shrink-0">
           <Thumb src={track.thumbnail} px={40} className="h-10 w-10" />
           <span className={`m3-art absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/60 ${current ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
@@ -50,13 +50,15 @@ const Row = memo(function Row({ track, i, current, played, playing, drop, draggi
           </span>
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">{track.title}</span>
-          <span className="block truncate text-xs text-[var(--c-text-muted)]">{track.artists.join(", ") || track.subtitle}</span>
+          {/* Covers the row (row-hit): a click anywhere plays; the byline links sit above it. */}
+          <button onClick={() => (current ? togglePlay() : playIndex(i))} aria-current={current ? "true" : undefined}
+            className="row-hit block max-w-full truncate text-left text-sm font-medium">{track.title}</button>
+          <span className="block truncate text-xs text-[var(--c-text-muted)]"><Byline track={track} text={track.artists.join(", ") || track.subtitle} /></span>
         </span>
         {track.explicit && <span className="rounded-sm bg-[var(--c-text-subtle)] px-1 text-[10px] font-bold text-[var(--c-bg)]" aria-label="Explicit">E</span>}
         {track.durationSec !== undefined && <span className="text-xs tabular-nums text-[var(--c-text-muted)]">{fmtTime(track.durationSec)}</span>}
-      </button>
-      <ItemMenu item={track} queueIndex={i} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
+      </div>
+      <ItemMenu item={track} queueIndex={i} className="relative opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
     </li>
   );
 });
