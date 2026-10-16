@@ -62,7 +62,7 @@ export default function SearchBox() {
         placeholder="Search songs, albums, artists, podcasts"
         aria-label="Search"
         aria-autocomplete="list"
-        className="h-10 w-full select-text rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-2)] pl-12 pr-10 text-sm text-[var(--c-text)] outline-none placeholder:text-[var(--c-text-subtle)] focus:border-[var(--c-text-subtle)] focus:bg-[var(--c-surface-3)]"
+        className="m3-search h-10 w-full select-text rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-2)] pl-12 pr-10 text-sm text-[var(--c-text)] outline-none placeholder:text-[var(--c-text-subtle)] focus:border-[var(--c-text-subtle)] focus:bg-[var(--c-surface-3)]"
       />
       {input && (
         <button type="button" aria-label="Clear search" onMouseDown={(e) => e.preventDefault()} onClick={() => { setInput(""); inputRef.current?.focus(); }}
@@ -71,7 +71,7 @@ export default function SearchBox() {
         </button>
       )}
       {open && input.trim() && (rows.length > 0 || error) && (
-        <ul role="listbox" className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] py-2 shadow-2xl">
+        <ul role="listbox" className="m3-menu absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] py-2 shadow-2xl">
           {error && <li className="px-4 py-2 text-xs text-[var(--c-error)]">Suggestions failed: {error}</li>}
           {rows.map((row, i) => (
             <li key={row.q ?? `${row.item!.type}:${row.item!.id}`} role="option" aria-selected={i === active}>
@@ -79,7 +79,7 @@ export default function SearchBox() {
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => choose(row)}
-                className={`flex w-full items-center gap-4 px-4 py-2 text-left text-sm ${i === active ? "bg-[var(--c-hover)]" : "hover:bg-[var(--c-hover)]"}`}
+                className={`m3-menu-item flex w-full items-center gap-4 px-4 py-2 text-left text-sm ${i === active ? "bg-[var(--c-hover)]" : "hover:bg-[var(--c-hover)]"}`}
               >
                 {row.q ? (
                   <>

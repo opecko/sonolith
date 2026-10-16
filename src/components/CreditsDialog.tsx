@@ -16,7 +16,7 @@ export default function CreditsDialog() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--c-overlay)] p-6" onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <div role="dialog" aria-modal="true" aria-label="Song credits"
-        className="flex max-h-[80vh] w-[min(480px,100%)] flex-col rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] shadow-2xl">
+        className="m3-dialog flex max-h-[80vh] w-[min(480px,100%)] flex-col rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] shadow-2xl">
         <header className="flex items-center justify-between px-6 pb-2 pt-4">
           <h2 className="text-lg font-semibold">{credits.status === "ok" ? credits.data.title : "Song credits"}</h2>
           <button className="icon-btn h-10 w-10" onClick={close} aria-label="Close"><X size={20} /></button>

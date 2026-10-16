@@ -63,7 +63,7 @@ export default function ThemeTransfer({ kind, current, onImport, onClose }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--c-overlay)] p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" aria-label={kind === "export" ? "Export theme" : "Import theme"}
-        className="flex max-h-full w-[min(560px,100%)] flex-col gap-3 rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] p-6 shadow-2xl">
+        className="m3-dialog flex max-h-full w-[min(560px,100%)] flex-col gap-3 rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] p-6 shadow-2xl">
         <header className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">{kind === "export" ? "Export theme" : "Import theme"}</h2>
           <button className="icon-btn h-9 w-9" onClick={onClose} aria-label="Close"><X size={20} /></button>

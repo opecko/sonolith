@@ -74,7 +74,8 @@ function PlaylistList() {
         return (
           <li key={p.id} className="group relative">
             <button onClick={() => go({ name: "playlist", id: p.id })} onPointerEnter={() => prefetchItem(p)} onPointerLeave={() => prefetchItem(null)}
-              className={`w-full rounded-[var(--radius)] py-2 pl-4 pr-10 text-left hover:bg-[var(--c-hover)] ${active ? "bg-[var(--c-hover)]" : ""}`}>
+              aria-current={active ? "page" : undefined}
+              className={`m3-nav-sub w-full rounded-[var(--radius)] py-2 pl-4 pr-10 text-left hover:bg-[var(--c-hover)] ${active ? "bg-[var(--c-hover)]" : ""}`}>
               <span className="block truncate text-sm font-medium">{p.title}</span>
               {p.subtitle && <span className="block truncate text-xs text-[var(--c-text-muted)]">{p.subtitle}</span>}
             </button>
@@ -92,7 +93,7 @@ export default function Sidebar() {
   const go = useNav((s) => s.go);
   const signedIn = useAuth((s) => s.status === "signedIn");
   return (
-    <nav aria-label="Main" className="flex w-60 shrink-0 flex-col border-r border-[var(--c-outline)] bg-[var(--c-bg)]">
+    <nav aria-label="Main" className="m3-drawer flex w-60 shrink-0 flex-col border-r border-[var(--c-outline)] bg-[var(--c-bg)]">
       <div className="flex h-16 items-center gap-2 px-6">
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--c-accent)]" aria-hidden>
           <span className="ml-0.5 h-0 w-0 border-y-[6px] border-l-[10px] border-y-transparent border-l-white" />
@@ -104,14 +105,14 @@ export default function Sidebar() {
           const active = current === route.name;
           return (
             <button key={label} onClick={() => go(route)} aria-current={active ? "page" : undefined}
-              className={`flex h-12 w-full items-center gap-6 rounded-[var(--radius)] px-4 text-left text-base hover:bg-[var(--c-hover)] ${active ? "bg-[var(--c-hover)] font-medium" : "text-[var(--c-text-muted)]"}`}>
+              className={`m3-nav-item flex h-12 w-full items-center gap-6 rounded-[var(--radius)] px-4 text-left text-base hover:bg-[var(--c-hover)] ${active ? "bg-[var(--c-hover)] font-medium" : "text-[var(--c-text-muted)]"}`}>
               {icon}
               {label}
             </button>
           );
         })}
       </div>
-      <hr className="mx-6 my-4 border-[var(--c-outline)]" />
+      <hr className="m3-divider mx-6 my-4 border-[var(--c-outline)]" />
       {signedIn && (
         <>
           <NewPlaylist />
@@ -121,7 +122,7 @@ export default function Sidebar() {
         </>
       )}
       <button onClick={() => go({ name: "settings" })} aria-current={current === "settings" ? "page" : undefined}
-        className="mx-2 mb-3 mt-auto flex h-10 items-center gap-6 rounded-[var(--radius)] px-4 text-sm text-[var(--c-text-muted)] hover:bg-[var(--c-hover)]">
+        className="m3-nav-item mx-2 mb-3 mt-auto flex h-10 items-center gap-6 rounded-[var(--radius)] px-4 text-sm text-[var(--c-text-muted)] hover:bg-[var(--c-hover)]">
         <Settings size={20} aria-hidden /> Settings
       </button>
     </nav>

@@ -77,7 +77,7 @@ export default function PaletteGallery({ mode, selected, onSelect, onMode, onClo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--c-overlay)] p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={panel} role="dialog" aria-modal="true" aria-label="All palettes"
-        className="flex h-[min(760px,100%)] w-[min(960px,100%)] flex-col rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] shadow-2xl">
+        className="m3-dialog flex h-[min(760px,100%)] w-[min(960px,100%)] flex-col rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] shadow-2xl">
         <header className="flex flex-wrap items-center gap-3 px-6 pb-3 pt-5">
           <h2 className="mr-auto text-lg font-semibold">All palettes</h2>
           <button className="icon-btn h-9 w-9 shrink-0" onClick={onClose} aria-label="Close"><X size={20} /></button>

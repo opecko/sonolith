@@ -42,7 +42,7 @@ export default function ChangelogDialog({ current, onClose }: { current: string;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--c-overlay)] p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" aria-label="Changelog"
-        className="flex max-h-[80vh] w-[min(640px,100%)] flex-col rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] shadow-2xl">
+        className="m3-dialog flex max-h-[80vh] w-[min(640px,100%)] flex-col rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] shadow-2xl">
         <header className="flex items-center justify-between gap-4 px-6 pb-2 pt-5">
           <h2 className="text-lg font-semibold">Changelog</h2>
           <button className="icon-btn h-10 w-10 shrink-0" onClick={onClose} aria-label="Close"><X size={20} /></button>

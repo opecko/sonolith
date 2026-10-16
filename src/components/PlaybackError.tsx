@@ -13,7 +13,7 @@ export default function PlaybackError({ error }: { error: string }) {
       </button>
       {open && (
         <div role="dialog" aria-label="Playback error details"
-          className="absolute bottom-7 left-0 z-40 w-[min(560px,80vw)] rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] p-4 text-[var(--c-text)] shadow-2xl">
+          className="m3-surface-card absolute bottom-7 left-0 z-40 w-[min(560px,80vw)] rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] p-4 text-[var(--c-text)] shadow-2xl">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium">Playback error</span>
             <span className="flex gap-1">

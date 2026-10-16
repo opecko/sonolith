@@ -50,7 +50,7 @@ export default function UpdateDialog() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--c-overlay)] p-6" onMouseDown={(e) => e.target === e.currentTarget && !busy && close()}>
       <div role="dialog" aria-modal="true" aria-label="Update available"
-        className="flex max-h-[80vh] w-[min(520px,100%)] flex-col rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] shadow-2xl">
+        className="m3-dialog flex max-h-[80vh] w-[min(520px,100%)] flex-col rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] shadow-2xl">
         <header className="flex items-start justify-between gap-4 px-6 pb-2 pt-5">
           <div>
             <h2 className="text-lg font-semibold">ytdesk {info.latest} is available</h2>

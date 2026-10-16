@@ -109,12 +109,12 @@ export default function Menu({ entries, label = "More actions", className = "", 
           <div
             ref={pop}
             role="menu"
-            className="fixed z-50 max-h-80 overflow-y-auto rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] py-2 shadow-2xl"
+            className="m3-menu fixed z-50 max-h-80 overflow-y-auto rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] py-2 shadow-2xl"
             style={{ left: pos.left, width: W, ...(pos.up ? { bottom: window.innerHeight - pos.top } : { top: pos.top }) }}
           >
             {stack.length > 0 && (
               <button role="menuitem" onClick={() => setStack((s) => s.slice(0, -1))}
-                className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-[var(--c-text-muted)] hover:bg-[var(--c-hover)]">
+                className="m3-menu-item flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-[var(--c-text-muted)] hover:bg-[var(--c-hover)]">
                 <ChevronLeft size={18} aria-hidden /> Back
               </button>
             )}
@@ -130,7 +130,7 @@ export default function Menu({ entries, label = "More actions", className = "", 
                   setOpen(false);
                   e.onSelect?.();
                 }}
-                className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-[var(--c-hover)] disabled:opacity-40"
+                className="m3-menu-item flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-[var(--c-hover)] disabled:opacity-40"
               >
                 {e.icon && <span className="shrink-0 text-[var(--c-text-muted)]" aria-hidden>{e.icon}</span>}
                 <span className="truncate">{e.label}</span>

@@ -39,7 +39,7 @@ export default function ConfirmDialog() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--c-overlay)] p-6" onMouseDown={(e) => e.target === e.currentTarget && answer(false)}>
       <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message"
-        className="flex w-[min(460px,100%)] flex-col gap-3 rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] p-6 shadow-2xl">
+        className="m3-dialog flex w-[min(460px,100%)] flex-col gap-3 rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] p-6 shadow-2xl">
         <h2 id="confirm-title" className="flex items-center gap-2 text-lg font-semibold">
           {request.danger && <AlertTriangle size={20} className="shrink-0 text-[var(--c-error)]" aria-hidden />}
           {request.title}
