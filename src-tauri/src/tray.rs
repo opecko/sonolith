@@ -1,7 +1,8 @@
 //! System tray: playback controls + show/hide, so the window can be closed (nothing renders) while music plays.
-//! Linux AppIndicator only delivers menu events (no icon clicks), so everything lives in the menu.
+//! Linux AppIndicator (tray-icon's backend in Tauri) only delivers menu events, never icon clicks, so "Show
+//! ytdesk" is the menu's first item; on Windows a left click shows / focuses the window.
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
-use tauri::tray::TrayIconBuilder;
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewWindow};
 
 pub struct TrayItems<R: Runtime> {
@@ -42,6 +43,10 @@ pub fn hide_window<R: Runtime>(app: &AppHandle<R>) {
     set_window_visible(app, false);
 }
 
+/// The tray icon's id. With AppIndicator the SNI `Id` becomes "tray-icon tray app <this>" (tray-icon's fixed
+/// prefix), so the id at least ends in the app's name; hosts show the `Title` set in `init`.
+pub const TRAY_ID: &str = "ytdesk";
+
 pub fn init<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let now = MenuItem::with_id(app, "now", "Nothing playing", false, None::<&str>)?;
     let prev = MenuItem::with_id(app, "prev", "Previous", true, None::<&str>)?;
@@ -49,14 +54,21 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let next = MenuItem::with_id(app, "next", "Next", true, None::<&str>)?;
     let toggle = MenuItem::with_id(app, "toggle", "Hide ytdesk", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    // Show / hide first: on Linux the menu is the only way back to the window.
     let menu = Menu::with_items(
         app,
-        &[&now, &PredefinedMenuItem::separator(app)?, &prev, &play, &next, &PredefinedMenuItem::separator(app)?, &toggle, &quit],
+        &[&toggle, &PredefinedMenuItem::separator(app)?, &now, &prev, &play, &next, &PredefinedMenuItem::separator(app)?, &quit],
     )?;
-    let mut builder = TrayIconBuilder::with_id("main")
+    let mut builder = TrayIconBuilder::with_id(TRAY_ID)
         .tooltip("ytdesk")
         .menu(&menu)
-        .show_menu_on_left_click(true)
+        // Windows: left click brings the window, right click opens the menu. (No effect with AppIndicator.)
+        .show_menu_on_left_click(false)
+        .on_tray_icon_event(|tray, e| {
+            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = e {
+                show_window(tray.app_handle());
+            }
+        })
         .on_menu_event(|app, e| match e.id().as_ref() {
             id @ ("prev" | "play" | "next") => {
                 let _ = app.emit("tray", id);
@@ -68,9 +80,28 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     if let Some(icon) = app.default_window_icon() {
         builder = builder.icon(icon.clone());
     }
-    builder.build(app)?;
+    let _tray = builder.build(app)?;
+    #[cfg(target_os = "linux")]
+    set_indicator_title(&_tray, "ytdesk");
     app.manage(TrayItems { now, play, toggle });
     Ok(())
+}
+
+/// SNI hosts (StatusNotifierWatcher clients like bars on Hyprland) label the item by its `Title`, falling back to its
+/// `Id`. tray-icon never sets the AppIndicator title (its `set_title` sets the label drawn next to the icon, and
+/// the tooltip is a no-op there), so hosts showed the Id "tray-icon tray app <id>". Set it through tray-icon's
+/// documented escape hatch, on the main thread where the indicator lives.
+#[cfg(target_os = "linux")]
+fn set_indicator_title<R: Runtime>(tray: &tauri::tray::TrayIcon<R>, title: &'static str) {
+    let _ = tray.with_inner_tray_icon(move |t| {
+        // SAFETY: the pointer is valid while the tray icon is (it is, inside this call). libappindicator's wrapper
+        // only holds the GObject pointer; set_title hands it to app_indicator_set_title and writes no Rust state,
+        // and nothing else borrows the indicator during this main-thread call.
+        unsafe {
+            let indicator = t.app_indicator() as *mut libappindicator::AppIndicator;
+            (*indicator).set_title(title);
+        }
+    });
 }
 
 /// Frontend → tray: current track line and Play/Pause label.
@@ -84,7 +115,7 @@ pub fn tray_update(app: AppHandle, title: Option<String>, playing: bool) {
     };
     let _ = items.now.set_text(line);
     let _ = items.play.set_text(if playing { "Pause" } else { "Play" });
-    if let Some(tray) = app.tray_by_id("main") {
+    if let Some(tray) = app.tray_by_id(TRAY_ID) {
         let _ = tray.set_tooltip(Some(if playing { "ytdesk: playing" } else { "ytdesk" }));
     }
 }

@@ -30,4 +30,6 @@ fontdb = { version = "0.24.0", default-features = false, features = ["fs", "memm
 
 [target.'cfg(target_os = "linux")'.dependencies]
 webkit2gtk = "2.0"
+# Same version tray-icon uses: its AppIndicator gets a title (tray.rs).
+libappindicator = "0.9"
 zbus = "5"
