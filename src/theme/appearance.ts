@@ -9,6 +9,8 @@ export interface Appearance extends ThemeChoice {
   ambient: boolean;
   /** Ambient strength, 0–1. */
   ambientIntensity: number;
+  /** Ambient smoothness: how many colors are sampled and how big the canvas they're spread over is. */
+  ambientQuality: AmbientQuality;
   /** "Colors from album art": the whole scheme generated from the current cover (the palette as fallback). */
   coverColors: boolean;
   /** Corner radius in px. */
@@ -28,6 +30,8 @@ export interface Appearance extends ThemeChoice {
   animations: boolean;
 }
 
+export const AMBIENT_QUALITIES = ["low", "medium", "high"] as const;
+export type AmbientQuality = (typeof AMBIENT_QUALITIES)[number];
 export const UI_STYLES = ["m3", "classic"] as const;
 export type UiStyle = (typeof UI_STYLES)[number];
 export const NOW_PLAYING_LAYOUTS = ["material", "bento", "classic"] as const;
@@ -51,6 +55,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   overrides: {},
   ambient: true,
   ambientIntensity: 0.8,
+  ambientQuality: "medium",
   coverColors: false,
   radius: 8,
   density: "normal",
@@ -81,6 +86,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
     overrides,
     ambient: typeof r.ambient === "boolean" ? r.ambient : d.ambient,
     ambientIntensity: num(r.ambientIntensity, 0, 1, d.ambientIntensity),
+    ambientQuality: AMBIENT_QUALITIES.includes(r.ambientQuality as AmbientQuality) ? (r.ambientQuality as AmbientQuality) : d.ambientQuality,
     // Before 2.0 this was "Accent from artwork" (coverAccent): on stays on.
     coverColors: typeof r.coverColors === "boolean" ? r.coverColors : typeof r.coverAccent === "boolean" ? r.coverAccent : d.coverColors,
     radius: num(r.radius, 0, 24, d.radius),

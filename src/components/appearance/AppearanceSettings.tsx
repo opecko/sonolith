@@ -2,7 +2,7 @@ import { ChevronDown, Download, LayoutGrid, RotateCcw, Upload } from "lucide-rea
 import { useCallback, useMemo, useState } from "react";
 import { useCoverScheme } from "../../stores/coverColors";
 import { setAppearance, useSettings } from "../../stores/settings";
-import { DEFAULT_APPEARANCE, type FontKind } from "../../theme/appearance";
+import { AMBIENT_QUALITIES, DEFAULT_APPEARANCE, type FontKind } from "../../theme/appearance";
 import { FEATURED } from "../../theme/featured";
 import { effectiveTokens } from "../../theme/index";
 import { getPalette, hasMode, PALETTES } from "../../theme/palettes";
@@ -44,9 +44,18 @@ function DisplayOptions() {
         <Switch on={a.ambient} onChange={(ambient) => setAppearance({ ambient })} label="Ambient light in Now Playing" />
       </OptionRow>
       {a.ambient && (
-        <OptionRow title="Ambient intensity">
-          <Slider className="w-40" value={a.ambientIntensity} max={1} step={0.05} live onCommit={(ambientIntensity) => setAppearance({ ambientIntensity })} label="Ambient intensity" tooltip="value" format={pct} />
-        </OptionRow>
+        <>
+          <OptionRow title="Ambient intensity">
+            <Slider className="w-40" value={a.ambientIntensity} max={1} step={0.05} live onCommit={(ambientIntensity) => setAppearance({ ambientIntensity })} label="Ambient intensity" tooltip="value" format={pct} />
+          </OptionRow>
+          <OptionRow title="Ambient quality" detail="Higher is smoother. It's drawn once per song, only while Now Playing is open.">
+            <div className="m3-segmented flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Ambient quality">
+              {AMBIENT_QUALITIES.map((q) => (
+                <button key={q} type="button" aria-pressed={a.ambientQuality === q} className={`${seg(a.ambientQuality === q)} capitalize`} onClick={() => setAppearance({ ambientQuality: q })}>{q}</button>
+              ))}
+            </div>
+          </OptionRow>
+        </>
       )}
       <OptionRow title="Colors from album art" detail="The whole color scheme comes from the playing track's cover. Your custom colors still apply on top; without a cover the palette is used.">
         <Switch on={a.coverColors} onChange={(coverColors) => setAppearance({ coverColors })} label="Colors from album art" />

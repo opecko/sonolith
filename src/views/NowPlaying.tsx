@@ -3,7 +3,7 @@ import { memo, useEffect, useLayoutEffect, useRef, useState, type RefObject } fr
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
 import { setAppearance, useSettings } from "../stores/settings";
-import type { NowPlayingLayout } from "../theme/appearance";
+import type { AmbientQuality, NowPlayingLayout } from "../theme/appearance";
 import { Spring, tween } from "../motion";
 import { UiStyleScope, useUiStyle } from "../components/UiStyle";
 import { useUi } from "../stores/ui";
@@ -11,11 +11,44 @@ import BentoLayout from "./nowplaying/Bento";
 import ClassicLayout from "./nowplaying/Classic";
 import MaterialLayout from "./nowplaying/Material";
 
+/** Ambient quality → [colors sampled across the art, canvas size]. */
+const AMBIENT: Record<AmbientQuality, [number, number]> = { low: [12, 12], medium: [16, 128], high: [24, 384] };
+
 /**
- * Ambient light: the art is drawn once into a 12×12 canvas and stretched by the browser, which gives a soft blur
- * with no CSS filter. A static layer costs nothing to recomposite while the user hovers or scrolls above it.
+ * Paints the ambient light once: the art averaged down to a few colors (two steps, so more pixels count), then for
+ * Medium and High scaled back up in smoothing steps of at most 2.5× each, which spreads every color into soft
+ * gradients with no blocks and no blur filter. Low is the small grid stretched by the browser, as before 2.0.
  */
-const AmbientLayer = memo(function AmbientLayer({ src, opacity }: { src: string; opacity: number }) {
+function paintAmbient(canvas: HTMLCanvasElement, img: HTMLImageElement, quality: AmbientQuality) {
+  const t0 = performance.now();
+  const [sample, size] = AMBIENT[quality];
+  const step = (from: CanvasImageSource, w: number) => {
+    const c = document.createElement("canvas");
+    c.width = c.height = w;
+    const ctx = c.getContext("2d")!;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(from, 0, 0, w, w);
+    return c;
+  };
+  let cur = step(step(img, 64), sample);
+  for (let w = sample; w < size; ) {
+    w = Math.min(size, Math.round(w * 2.5));
+    cur = step(cur, w);
+  }
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(cur, 0, 0);
+  performance.measure(`ambient-paint-${quality}`, { start: t0, end: performance.now() });
+}
+
+/**
+ * Ambient light: the art painted once per cover into a small canvas (see paintAmbient) and stretched by the
+ * browser, a soft glow with no CSS filter. A static layer costs nothing to recomposite while the user hovers or
+ * scrolls above it, and it only exists while Now Playing is open.
+ */
+const AmbientLayer = memo(function AmbientLayer({ src, opacity, quality }: { src: string; opacity: number; quality: AmbientQuality }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const target = useRef(opacity);
   // Fade-in progress 0–1. Driven from JS like the overlay's slide: a CSS animation's last frame on WebKitGTK
@@ -33,13 +66,8 @@ const AmbientLayer = memo(function AmbientLayer({ src, opacity }: { src: string;
     const img = new Image();
     img.referrerPolicy = "no-referrer";
     img.onload = () => {
-      const ctx = ref.current?.getContext("2d");
-      if (!ctx) return;
-      // Two-step downscale averages more pixels than a single 1200→12 sample.
-      const mid = document.createElement("canvas");
-      mid.width = mid.height = 48;
-      mid.getContext("2d")?.drawImage(img, 0, 0, 48, 48);
-      ctx.drawImage(mid, 0, 0, 12, 12);
+      if (!ref.current) return;
+      paintAmbient(ref.current, img, quality);
       cancel = tween(300, (t) => 1 - (1 - t) ** 3, (p) => {
         shown.current = p;
         paint();
@@ -50,18 +78,18 @@ const AmbientLayer = memo(function AmbientLayer({ src, opacity }: { src: string;
       img.onload = null;
       cancel();
     };
-  }, [src]);
+  }, [src, quality]);
   return <canvas ref={ref} width={12} height={12} className="absolute inset-0 h-full w-full" />;
 });
 
-const Backdrop = memo(function Backdrop({ src, intensity }: { src?: string; intensity: number }) {
+const Backdrop = memo(function Backdrop({ src, intensity, quality }: { src?: string; intensity: number; quality: AmbientQuality }) {
   const [layers, setLayers] = useState<string[]>(src ? [src] : []);
   useEffect(() => {
     if (src) setLayers((l) => (l.at(-1) === src ? l : [...l.slice(-1), src]));
   }, [src]);
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden will-change-transform" aria-hidden>
-      {layers.map((l) => <AmbientLayer key={l} src={l} opacity={intensity} />)}
+      {layers.map((l) => <AmbientLayer key={l} src={l} opacity={intensity} quality={quality} />)}
       <div className="absolute inset-0 bg-[var(--c-overlay)]" />
     </div>
   );
@@ -138,6 +166,7 @@ export default function NowPlaying() {
   // Ambient light (Settings → Appearance); when off it is neither computed nor drawn, the overlay shows --c-bg.
   const ambientOn = useSettings((s) => s.appearance.ambient);
   const ambientIntensity = useSettings((s) => s.appearance.ambientIntensity);
+  const ambientQuality = useSettings((s) => s.appearance.ambientQuality);
   const route = useNav((s) => s.route);
   // Stays mounted after closing until it has slid away (set during render, so no frame is lost).
   const [mounted, setMounted] = useState(open);
@@ -165,7 +194,7 @@ export default function NowPlaying() {
   return (
     <div ref={panel} role="dialog" aria-label="Now playing" aria-hidden={!open} data-ambient={ambientOn ? "" : undefined}
       className={`${open ? "" : "pointer-events-none"} fixed inset-x-0 ${layout === "bento" ? "bottom-0" : "bottom-[72px]"} top-0 z-30 flex bg-[var(--c-bg)] will-change-transform`}>
-      {ambientOn && <Backdrop src={thumb} intensity={ambientIntensity} />}
+      {ambientOn && <Backdrop src={thumb} intensity={ambientIntensity} quality={ambientQuality} />}
       {/* One close button per layout: Bento replaces the player bar (and keeps this corner free for it); Material
           and Classic use the player bar's. */}
       {layout === "bento" && <button onClick={close} aria-label="Close now playing" className="icon-btn absolute left-4 top-3 z-10 h-10 w-10">

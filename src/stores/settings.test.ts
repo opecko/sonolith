@@ -9,6 +9,7 @@ describe("settings migration", () => {
     expect(s.autoplay).toBe(false);
     expect(s.appearance).toMatchObject({ palette: "nord", mode: "light", radius: 12, uiStyle: "m3", nowPlayingLayout: "material", animations: true });
     expect(s.lastSeenVersion).toBeNull();
+    expect(s.appearance.ambientQuality).toBe("medium");
   });
 
   it("keeps valid 2.0 values and drops malformed ones", () => {
