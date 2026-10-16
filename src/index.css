@@ -82,6 +82,8 @@ button:disabled { cursor: default; }
 :hover::-webkit-scrollbar-thumb { background: var(--c-scrollbar); }
 ::-webkit-scrollbar-thumb:hover { background: var(--c-scrollbar-hover); }
 .scroll-y { overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
+/* Horizontal rows (queue chips): always room for the thin bar, so nothing moves when the row starts to overflow. */
+.scroll-x { overflow-x: scroll; overflow-y: hidden; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
