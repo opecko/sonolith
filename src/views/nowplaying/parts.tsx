@@ -1,5 +1,4 @@
-import { X } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { hiResArt } from "../../api/art";
 import type { Track } from "../../api/types";
@@ -8,7 +7,6 @@ import { fmtTime, M3Controls, TrackMoreMenu } from "../../components/PlayerBar";
 import PodcastVideo from "../../components/PodcastVideo";
 import RatingButtons from "../../components/RatingButtons";
 import Slider from "../../components/Slider";
-import { Spring } from "../../motion";
 import { useNav } from "../../stores/nav";
 import { usePlayer } from "../../stores/player";
 import { useProgress } from "../../stores/progress";
@@ -98,46 +96,5 @@ export function TrackActions({ track }: { track: Track }) {
       <RatingButtons track={track} />
       <TrackMoreMenu key={track.id} track={track} />
     </div>
-  );
-}
-
-const HIDDEN = -108;
-/** Default spatial, damped a little more: the panel may settle with a small bounce but never swings far. */
-const PANEL_SPRING = { damping: 0.85, stiffness: 380 };
-
-/**
- * A panel that slides in from the left over its positioned parent on a spatial spring (transform written from the
- * frame loop, never a CSS transition). Mounted while open and until it has slid out.
- */
-export function SlidePanel({ open, title, onClose, className = "", children }: {
-  open: boolean; title: string; onClose: () => void; className?: string; children: ReactNode;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const spring = useRef<Spring | null>(null);
-  const [mounted, setMounted] = useState(open);
-  if (open && !mounted) setMounted(true);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    // Each mount starts outside (the style below) and slides in; closing slides out, then unmounts.
-    spring.current ??= new Spring(HIDDEN, PANEL_SPRING, (x) => (el.style.transform = `translateX(${x}%)`));
-    spring.current.to(open ? 0 : HIDDEN, () => {
-      if (open) return;
-      spring.current = null;
-      setMounted(false);
-    });
-  }, [open, mounted]);
-  useEffect(() => () => spring.current?.stop(), []);
-  if (!mounted) return null;
-  return (
-    <section aria-label={title} aria-hidden={!open}
-      className={`np-panel absolute z-20 flex flex-col overflow-hidden rounded-[var(--m3-corner-xl)] bg-[var(--m3-surface-container)] ${open ? "" : "pointer-events-none"} ${className}`}
-      style={{ transform: `translateX(${HIDDEN}%)` }} ref={ref}>
-      <header className="flex shrink-0 items-center justify-between gap-2 px-5 pb-2 pt-4">
-        <h2 className="type-title-large-em">{title}</h2>
-        <button className="icon-btn h-10 w-10" onClick={onClose} aria-label={`Close ${title.toLowerCase()}`}><X size={20} /></button>
-      </header>
-      <div className="flex min-h-0 flex-1 flex-col px-3 pb-3">{children}</div>
-    </section>
   );
 }
