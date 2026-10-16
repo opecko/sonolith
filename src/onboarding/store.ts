@@ -10,9 +10,11 @@ interface OnboardingState {
   open: boolean;
   /** Opened from the dev toolkit: finishing or skipping changes no flags and puts the look back as it was. */
   preview: Appearance | null;
+  /** Opened again from Settings → About: starts from the current settings, closing changes nothing. */
+  rerun: boolean;
 }
 
-export const useOnboarding = create<OnboardingState>(() => ({ open: false, preview: null }));
+export const useOnboarding = create<OnboardingState>(() => ({ open: false, preview: null, rerun: false }));
 
 function presentKeys(): string[] {
   try {
@@ -70,18 +72,29 @@ export async function initOnboarding() {
   initWhatsNew(decision === "show");
 }
 
-/** Done or skipped: never again (a preview from the dev toolkit only closes and restores the look). */
+/**
+ * Done or skipped: never again. A preview from the dev toolkit only closes and restores the look; a re-run from
+ * Settings only closes (its choices were saved as they were made, and onboardingCompleted is already true).
+ */
 export function finishOnboarding() {
-  const { preview } = useOnboarding.getState();
+  const { preview, rerun } = useOnboarding.getState();
   if (preview) useSettings.getState().set({ appearance: preview });
-  else {
+  else if (!rerun) {
     useSettings.getState().set({ onboardingCompleted: true });
     flush();
   }
-  useOnboarding.setState({ open: false, preview: null });
+  useOnboarding.setState({ open: false, preview: null, rerun: false });
+}
+
+/**
+ * Settings → About → Run setup again: the same welcome, every step showing the current settings (the steps read
+ * them, nothing is reset). No first-run path: the flags and What's new are untouched.
+ */
+export function rerunOnboarding() {
+  useOnboarding.setState({ open: true, preview: null, rerun: true });
 }
 
 /** Dev toolkit: the welcome at any time, without touching the real flags; the look is restored when it closes. */
 export function previewOnboarding() {
-  useOnboarding.setState({ open: true, preview: useSettings.getState().appearance });
+  useOnboarding.setState({ open: true, preview: useSettings.getState().appearance, rerun: false });
 }

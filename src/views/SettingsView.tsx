@@ -1,4 +1,4 @@
-import { ChevronDown, Download, ExternalLink, RefreshCw, ScrollText } from "lucide-react";
+import { ChevronDown, Download, ExternalLink, Hand, RefreshCw, ScrollText } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { ytdlpInstall, ytdlpSetPath, ytdlpStatus, ytdlpUpdate } from "../api/ytdlp";
@@ -9,6 +9,7 @@ import ChangelogDialog from "../components/ChangelogDialog";
 import Switch from "../components/Switch";
 import { ErrorBox, Loading } from "../components/Status";
 import { useAsync } from "../hooks/useData";
+import { rerunOnboarding } from "../onboarding/store";
 import { useSettings } from "../stores/settings";
 import { useUpdate } from "../stores/update";
 // Shipped with the font, as the OFL asks.
@@ -225,6 +226,12 @@ function About() {
         </p>
         <button className="chip inline-flex items-center gap-2" onClick={() => setChangelog(true)}>
           <ScrollText size={16} aria-hidden /> Changelog
+        </button>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-[var(--c-text-muted)]">Walk through the welcome setup again.</p>
+        <button className="chip inline-flex items-center gap-2" onClick={rerunOnboarding}>
+          <Hand size={16} aria-hidden /> Run setup again
         </button>
       </div>
       <details className="mt-3 text-sm text-[var(--c-text-muted)]">

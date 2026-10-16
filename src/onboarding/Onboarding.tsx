@@ -4,7 +4,7 @@ import { UiStyleScope } from "../components/UiStyle";
 import { Spring, useSwap } from "../motion";
 import { useAuth } from "../stores/auth";
 import { openSettings, useNav } from "../stores/nav";
-import { finishOnboarding } from "./store";
+import { finishOnboarding, useOnboarding } from "./store";
 import { ColorsStep, Done, NowPlayingStep, SignIn, StyleStep, Welcome } from "./steps";
 
 const STEPS = [
@@ -33,6 +33,9 @@ export default function Onboarding() {
   const fade = useRef<Spring | null>(null);
   const swap = useSwap(STEPS[step].id, dir);
   const last = step === STEPS.length - 1;
+  // Run again from Settings → About: Done goes back there.
+  const rerun = useOnboarding((s) => s.rerun);
+  const signedIn = useAuth((s) => s.status === "signedIn");
 
   // Fade in (opacity per frame from the shared loop).
   useLayoutEffect(() => {
@@ -60,7 +63,7 @@ export default function Onboarding() {
     setDir(to > step ? 1 : -1);
     setStep(Math.max(0, Math.min(STEPS.length - 1, to)));
   };
-  const next = () => (last ? close(() => useNav.getState().go({ name: "home" })) : go(step + 1));
+  const next = () => (last ? close(() => (rerun ? openSettings("about") : useNav.getState().go({ name: "home" }))) : go(step + 1));
   const skip = () => close();
   const signIn = () => {
     setSigningIn(true);
@@ -124,7 +127,7 @@ export default function Onboarding() {
             <button className="m3-btn m3-outlined h-12" onClick={() => go(step - 1)}><ArrowLeft size={18} aria-hidden /> Back</button>
           ) : <span />}
           <button className="m3-btn m3-filled h-12 px-6" onClick={next}>
-            {step === 0 ? "Get started" : last ? "Start listening" : "Next"}
+            {step === 0 ? "Get started" : last ? (rerun ? "Back to Settings" : "Start listening") : STEPS[step].id === "signin" && signedIn ? "Continue" : "Next"}
             {!last && <ArrowRight size={18} aria-hidden />}
           </button>
         </footer>
@@ -135,7 +138,7 @@ export default function Onboarding() {
               className="m3-dialog w-full max-w-sm rounded-[var(--m3-corner-xl)] bg-[var(--m3-surface-container-high)] p-6">
               <h2 id="skip-title" className="type-headline-small">Skip setup?</h2>
               <p id="skip-text" className="type-body-medium mt-3 text-[var(--m3-on-surface-variant)]">
-                What you've picked so far stays, the rest keeps its defaults. You can change it all in Settings.
+                {rerun ? "Your settings stay as they are now." : "What you've picked so far stays, the rest keeps its defaults."} You can change it all in Settings.
               </p>
               <div className="mt-6 flex justify-end gap-2">
                 <button autoFocus className="m3-btn m3-text h-10" onClick={() => setAskSkip(false)}>Keep going</button>
