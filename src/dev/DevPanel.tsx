@@ -7,6 +7,7 @@ import { useUpdate, type UpdateInfo } from "../stores/update";
 import { NOW_PLAYING_LAYOUTS, UI_STYLES } from "../theme/appearance";
 import { WHATS_NEW } from "../whatsNew/entries";
 import { useWhatsNew } from "../whatsNew/store";
+import { useDevFlags } from "./flags";
 
 type Flavor = "github" | "installer" | "aur";
 
@@ -41,6 +42,8 @@ export default function DevPanel({ onClose }: { onClose: () => void }) {
   const { uiStyle, nowPlayingLayout, animations } = settings.appearance;
   const [version, setVersion] = useState("0.0.0");
   const [flavor, setFlavor] = useState<Flavor>("github");
+  const noHistory = useDevFlags((s) => s.noHistory);
+  const setNoHistory = useDevFlags((s) => s.setNoHistory);
   useEffect(() => {
     getVersion().then(setVersion, () => {});
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -96,6 +99,15 @@ export default function DevPanel({ onClose }: { onClose: () => void }) {
           <div className="flex items-center justify-between">
             <span className="type-body-medium">Animations</span>
             <Switch on={animations} onChange={(on) => setAppearance({ animations: on })} label="Animations" />
+          </div>
+        </Section>
+        <Section title="Playback">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="type-body-medium">Don't save played tracks to history</p>
+              <p className="type-body-small text-[var(--m3-on-surface-variant)]">No YouTube Music history pings while on. Not saved: off again after a restart.</p>
+            </div>
+            <Switch on={noHistory} onChange={setNoHistory} label="Don't save played tracks to history" />
           </div>
         </Section>
         <Section title="Settings JSON">

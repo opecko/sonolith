@@ -1,4 +1,5 @@
 import { recordHistory } from "../api/ytm";
+import { useDevSlot } from "./devSlot";
 import { onPlaybackTick, playbackTime, usePlayer } from "./player";
 import { useProgress } from "./progress";
 import { useSettings } from "./settings";
@@ -25,6 +26,8 @@ export function initHistory() {
     // Short tracks count once half of them has played.
     if (position < Math.min(RECORD_AFTER_S, duration > 0 ? duration / 2 : RECORD_AFTER_S)) return;
     recorded = true;
+    // Dev toolkit's "Don't save played tracks to history"; the whole condition is false (and dropped) in release.
+    if (import.meta.env.DEV && useDevSlot.getState().skipHistory?.()) return;
     recordHistory(id).catch((e) => console.warn("history ping failed:", e));
   };
 

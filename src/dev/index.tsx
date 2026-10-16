@@ -1,5 +1,6 @@
 import { useDevSlot } from "../stores/devSlot";
 import DevChip from "./DevChip";
+import { useDevFlags } from "./flags";
 
 /**
  * Dev toolkit entry. Loaded only from main.tsx inside `if (import.meta.env.DEV)` with a dynamic import, so Vite
@@ -8,5 +9,5 @@ import DevChip from "./DevChip";
 export const DEV_TOOLKIT_MARKER = "ytdesk-dev-toolkit-9c41e7";
 
 export function mountDevTools() {
-  useDevSlot.setState({ chip: DevChip });
+  useDevSlot.setState({ chip: DevChip, skipHistory: () => useDevFlags.getState().noHistory });
 }

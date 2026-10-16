@@ -6,7 +6,7 @@ out="${1:-/tmp/ytdesk-verify}"
 node_modules/.bin/vite build --outDir "$out" --emptyOutDir > /dev/null 2>&1
 marker=$(sed -n 's/.*DEV_TOOLKIT_MARKER = "\([^"]*\)".*/\1/p' src/dev/index.tsx)
 fail=0
-for s in "$marker" "Dev build" "Developer tools" "Simulate update available" "mountDevTools"; do
+for s in "$marker" "Dev build" "Developer tools" "Simulate update available" "mountDevTools" "Don't save played tracks to history" "skipHistory"; do
   n=$( (grep -rlF -- "$s" "$out" || true) | wc -l)
   echo "$s: $n"
   [ "$n" -eq 0 ] || fail=1
