@@ -195,10 +195,13 @@ function Progress() {
   const position = useProgress((s) => s.position);
   const duration = useProgress((s) => s.duration);
   const seek = usePlayer((s) => s.seek);
+  // M3: the wavy track while playing (flat when paused); Classic keeps its plain bar.
+  const playing = usePlayer((s) => s.status === "playing");
+  const m3 = useUiStyle() === "m3";
   return (
     <div className="flex w-full max-w-[600px] items-center gap-2 text-xs tabular-nums text-[var(--c-text-muted)]">
       <span className="w-10 text-right">{fmtTime(position)}</span>
-      <Slider className="flex-1" value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" />
+      <Slider className="flex-1" value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" wavy={m3 ? playing : undefined} />
       <span className="w-10">{fmtTime(duration)}</span>
     </div>
   );

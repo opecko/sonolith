@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { ticker, useSpring } from "../motion";
+import { useSettings } from "../stores/settings";
 import { useUiStyle } from "./UiStyle";
 
 interface SliderProps {
@@ -172,9 +173,13 @@ const SPEED = 0.6;
 
 /**
  * Wavy active track (M3 Expressive progress): a stroked sine on a canvas, drawn only on value changes and, while
- * playing and visible, at ~30 fps as the wave travels. The amplitude springs to 0 when playback pauses.
+ * playing and visible, at ~30 fps as the wave travels. The amplitude springs to 0 when playback pauses; with
+ * animations off it stays flat.
  */
-function Wave({ pct, edge, on }: { pct: number; edge: number; on: boolean }) {
+function Wave({ pct, edge, on: playing }: { pct: number; edge: number; on: boolean }) {
+  // With animations off the track stays flat: a wave that can't move would only look broken.
+  const animations = useSettings((s) => s.appearance.animations);
+  const on = playing && animations;
   const ref = useRef<HTMLCanvasElement>(null);
   const st = useRef({ phase: 0, amp: on ? 1 : 0, pct, edge, color: "", w: 0, h: 0, acc: 0 });
   st.current.pct = pct;
