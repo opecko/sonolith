@@ -1,0 +1,122 @@
+/*
+ * Material 3 Expressive foundations: color roles, corner scale and type scale. Only the M3 style
+ * (html[data-ui-style="m3"]) uses them for components; Classic ignores them. Values: docs/m3-expressive.md.
+ */
+
+/* Color roles derived from the --c-* tokens (recipes in m3.ts; a test keeps both in sync). */
+:root {
+  --m3-primary: var(--c-accent);
+  --m3-on-primary: var(--c-on-accent);
+  --m3-primary-container: color-mix(in srgb, var(--c-accent) 30%, var(--c-bg));
+  --m3-on-primary-container: color-mix(in srgb, var(--c-accent) 30%, var(--c-text));
+  --m3-secondary: var(--c-accent-2);
+  --m3-on-secondary: var(--c-bg);
+  --m3-secondary-container: color-mix(in srgb, var(--c-accent-2) 20%, var(--m3-surface-container-high));
+  --m3-on-secondary-container: color-mix(in srgb, var(--c-accent-2) 22%, var(--c-text));
+  --m3-tertiary: color-mix(in oklch, var(--c-accent) 50%, var(--c-accent-2));
+  --m3-on-tertiary: var(--c-bg);
+  --m3-tertiary-container: color-mix(in srgb, var(--m3-tertiary) 30%, var(--c-bg));
+  --m3-on-tertiary-container: color-mix(in srgb, var(--m3-tertiary) 30%, var(--c-text));
+  --m3-error: var(--c-error);
+  --m3-on-error: var(--c-bg);
+  --m3-error-container: color-mix(in srgb, var(--c-error) 25%, var(--c-bg));
+  --m3-on-error-container: color-mix(in srgb, var(--c-error) 30%, var(--c-text));
+  --m3-surface: var(--c-bg);
+  --m3-surface-tint: color-mix(in srgb, var(--c-accent) 4%, var(--c-bg));
+  --m3-surface-container-lowest: var(--c-bg);
+  --m3-surface-container-low: color-mix(in srgb, var(--c-text) 5%, var(--m3-surface-tint));
+  --m3-surface-container: color-mix(in srgb, var(--c-text) 8%, var(--m3-surface-tint));
+  --m3-surface-container-high: color-mix(in srgb, var(--c-text) 11%, var(--m3-surface-tint));
+  --m3-surface-container-highest: color-mix(in srgb, var(--c-text) 15%, var(--m3-surface-tint));
+  --m3-on-surface: var(--c-text);
+  --m3-on-surface-variant: var(--c-text-muted);
+  --m3-outline: color-mix(in srgb, var(--c-text) 40%, var(--c-bg));
+  --m3-outline-variant: var(--c-outline);
+  --m3-inverse-surface: var(--c-text);
+  --m3-inverse-on-surface: var(--c-bg);
+  --m3-inverse-primary: color-mix(in srgb, var(--c-accent) 70%, var(--c-bg));
+  --m3-scrim: var(--c-scrim);
+  /* Corner scale at the default 8px corner setting; applyLayout() rewrites them for other settings. */
+  --m3-corner-none: 0px;
+  --m3-corner-xs: 4px;
+  --m3-corner-sm: 8px;
+  --m3-corner-md: 12px;
+  --m3-corner-lg: 16px;
+  --m3-corner-lg-plus: 20px;
+  --m3-corner-xl: 28px;
+  --m3-corner-xl-plus: 32px;
+  --m3-corner-2xl: 48px;
+  --m3-corner-full: 9999px;
+}
+
+/* Roles and corners as Tailwind colors and radii: bg-m3-primary-container, text-m3-on-surface-variant, rounded-m3-lg … */
+@theme inline {
+  --color-m3-primary: var(--m3-primary);
+  --color-m3-on-primary: var(--m3-on-primary);
+  --color-m3-primary-container: var(--m3-primary-container);
+  --color-m3-on-primary-container: var(--m3-on-primary-container);
+  --color-m3-secondary: var(--m3-secondary);
+  --color-m3-on-secondary: var(--m3-on-secondary);
+  --color-m3-secondary-container: var(--m3-secondary-container);
+  --color-m3-on-secondary-container: var(--m3-on-secondary-container);
+  --color-m3-tertiary: var(--m3-tertiary);
+  --color-m3-on-tertiary: var(--m3-on-tertiary);
+  --color-m3-tertiary-container: var(--m3-tertiary-container);
+  --color-m3-on-tertiary-container: var(--m3-on-tertiary-container);
+  --color-m3-error: var(--m3-error);
+  --color-m3-error-container: var(--m3-error-container);
+  --color-m3-on-error-container: var(--m3-on-error-container);
+  --color-m3-surface: var(--m3-surface);
+  --color-m3-surface-container-lowest: var(--m3-surface-container-lowest);
+  --color-m3-surface-container-low: var(--m3-surface-container-low);
+  --color-m3-surface-container: var(--m3-surface-container);
+  --color-m3-surface-container-high: var(--m3-surface-container-high);
+  --color-m3-surface-container-highest: var(--m3-surface-container-highest);
+  --color-m3-on-surface: var(--m3-on-surface);
+  --color-m3-on-surface-variant: var(--m3-on-surface-variant);
+  --color-m3-outline: var(--m3-outline);
+  --color-m3-outline-variant: var(--m3-outline-variant);
+  --color-m3-inverse-surface: var(--m3-inverse-surface);
+  --color-m3-inverse-on-surface: var(--m3-inverse-on-surface);
+  --radius-m3-xs: var(--m3-corner-xs);
+  --radius-m3-sm: var(--m3-corner-sm);
+  --radius-m3-md: var(--m3-corner-md);
+  --radius-m3-lg: var(--m3-corner-lg);
+  --radius-m3-lg-plus: var(--m3-corner-lg-plus);
+  --radius-m3-xl: var(--m3-corner-xl);
+  --radius-m3-xl-plus: var(--m3-corner-xl-plus);
+  --radius-m3-2xl: var(--m3-corner-2xl);
+  --radius-m3-full: var(--m3-corner-full);
+}
+
+/* Type scale in the user's font (body's --font); *-em = the emphasized set. Sizes in px: zoom scales the UI. */
+@utility type-display-large { font-size: 57px; line-height: 64px; letter-spacing: -0.25px; font-weight: 400; }
+@utility type-display-large-em { font-size: 57px; line-height: 64px; letter-spacing: -0.25px; font-weight: 500; }
+@utility type-display-medium { font-size: 45px; line-height: 52px; letter-spacing: 0px; font-weight: 400; }
+@utility type-display-medium-em { font-size: 45px; line-height: 52px; letter-spacing: 0px; font-weight: 500; }
+@utility type-display-small { font-size: 36px; line-height: 44px; letter-spacing: 0px; font-weight: 400; }
+@utility type-display-small-em { font-size: 36px; line-height: 44px; letter-spacing: 0px; font-weight: 500; }
+@utility type-headline-large { font-size: 32px; line-height: 40px; letter-spacing: 0px; font-weight: 400; }
+@utility type-headline-large-em { font-size: 32px; line-height: 40px; letter-spacing: 0px; font-weight: 500; }
+@utility type-headline-medium { font-size: 28px; line-height: 36px; letter-spacing: 0px; font-weight: 400; }
+@utility type-headline-medium-em { font-size: 28px; line-height: 36px; letter-spacing: 0px; font-weight: 500; }
+@utility type-headline-small { font-size: 24px; line-height: 32px; letter-spacing: 0px; font-weight: 400; }
+@utility type-headline-small-em { font-size: 24px; line-height: 32px; letter-spacing: 0px; font-weight: 500; }
+@utility type-title-large { font-size: 22px; line-height: 28px; letter-spacing: 0px; font-weight: 400; }
+@utility type-title-large-em { font-size: 22px; line-height: 28px; letter-spacing: 0px; font-weight: 500; }
+@utility type-title-medium { font-size: 16px; line-height: 24px; letter-spacing: 0.15px; font-weight: 500; }
+@utility type-title-medium-em { font-size: 16px; line-height: 24px; letter-spacing: 0.15px; font-weight: 700; }
+@utility type-title-small { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; font-weight: 500; }
+@utility type-title-small-em { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; font-weight: 700; }
+@utility type-body-large { font-size: 16px; line-height: 24px; letter-spacing: 0.5px; font-weight: 400; }
+@utility type-body-large-em { font-size: 16px; line-height: 24px; letter-spacing: 0.5px; font-weight: 500; }
+@utility type-body-medium { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; font-weight: 400; }
+@utility type-body-medium-em { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; font-weight: 500; }
+@utility type-body-small { font-size: 12px; line-height: 16px; letter-spacing: 0.4px; font-weight: 400; }
+@utility type-body-small-em { font-size: 12px; line-height: 16px; letter-spacing: 0.4px; font-weight: 500; }
+@utility type-label-large { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; font-weight: 500; }
+@utility type-label-large-em { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; font-weight: 700; }
+@utility type-label-medium { font-size: 12px; line-height: 16px; letter-spacing: 0.5px; font-weight: 500; }
+@utility type-label-medium-em { font-size: 12px; line-height: 16px; letter-spacing: 0.5px; font-weight: 700; }
+@utility type-label-small { font-size: 11px; line-height: 16px; letter-spacing: 0.5px; font-weight: 500; }
+@utility type-label-small-em { font-size: 11px; line-height: 16px; letter-spacing: 0.5px; font-weight: 700; }

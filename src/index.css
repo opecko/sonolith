@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./theme/m3.css";
 
 /*
  * Theme tokens. These defaults are the built-in YT Music-like dark palette; src/theme/ overrides them inline on

@@ -83,14 +83,29 @@ export function fontStack(font: string, family: string): string | null {
 /** index.css --font; keep in sync. */
 export const APP_FONT = `"Inter", "Roboto", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif`;
 
+/** M3 corner scale in px at the default 8px corner setting (docs/m3-expressive.md); m3.css has the same defaults. */
+export const M3_CORNERS = { none: 0, xs: 4, sm: 8, md: 12, lg: 16, "lg-plus": 20, xl: 28, "xl-plus": 32, "2xl": 48, full: 9999 } as const;
+
+/** The M3 corner scale follows the corner radius setting (8px = M3's own values, 0 = square everything). */
+export const m3Corner = (step: keyof typeof M3_CORNERS, radius: number) => Math.round(M3_CORNERS[step] * (radius / 8) * 100) / 100;
+
 /** Corner radius, density and font (zoom is the webview's own, see main.tsx). */
 export function applyLayout(
   a: { radius: number; density: "normal" | "compact"; font: string; fontFamily: string },
   root: HTMLElement = document.documentElement,
 ) {
   root.style.setProperty("--radius", `${a.radius}px`);
+  // Plain px, not calc(): the motion engine reads them back as numbers (getPropertyValue → parseFloat).
+  for (const step of Object.keys(M3_CORNERS) as (keyof typeof M3_CORNERS)[])
+    root.style.setProperty(`--m3-corner-${step}`, `${m3Corner(step, a.radius)}px`);
   root.dataset.density = a.density;
   const stack = fontStack(a.font, a.fontFamily);
   if (stack) root.style.setProperty("--font", stack);
   else root.style.removeProperty("--font");
+}
+
+/** Style switch and animations on <html>: CSS picks the look from data-ui-style, the motion engine reads data-animations. */
+export function applyStyle(a: { uiStyle: string; animations: boolean }, root: HTMLElement = document.documentElement) {
+  root.dataset.uiStyle = a.uiStyle;
+  root.dataset.animations = a.animations ? "on" : "off";
 }
