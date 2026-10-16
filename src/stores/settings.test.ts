@@ -20,6 +20,12 @@ describe("settings migration", () => {
     expect(bad.lastSeenVersion).toBeNull();
   });
 
+  it("onboardingCompleted: only a stored true counts (1.x settings have none)", () => {
+    expect(parseSettings({ autoplay: true }).onboardingCompleted).toBe(false);
+    expect(parseSettings({ onboardingCompleted: true }).onboardingCompleted).toBe(true);
+    expect(parseSettings({ onboardingCompleted: "yes" }).onboardingCompleted).toBe(false);
+  });
+
   it("garbage falls back to the defaults", () => {
     expect(parseSettings(null).appearance).toEqual(DEFAULT_APPEARANCE);
     expect(parseSettings("x").updateCheck).toBe(true);

@@ -19,10 +19,12 @@ export interface Settings {
   appearance: Appearance;
   /** App version whose "What's new" was handled (shown, or skipped on a fresh install); null before 2.0. */
   lastSeenVersion: string | null;
+  /** The first-run welcome was finished or skipped (existing installs get it set silently, see onboarding/detect). */
+  onboardingCompleted: boolean;
 }
 
 const KEY = "settings";
-const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null };
+const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false };
 
 /** Stored JSON → Settings. Missing keys (older versions) get the defaults; normalizing drops malformed values. */
 export function parseSettings(stored: unknown): Settings {
@@ -33,17 +35,20 @@ export function parseSettings(stored: unknown): Settings {
     // Settings saved before 1.2 have no `appearance`, before 2.0 no style, Now Playing layout or animations.
     appearance: normalizeAppearance(s.appearance),
     lastSeenVersion: typeof s.lastSeenVersion === "string" ? s.lastSeenVersion : null,
+    // Missing before 2.0; whether that's an existing install is decided at startup from the raw stored object.
+    onboardingCompleted: s.onboardingCompleted === true,
   };
 }
 
-/** No settings were stored when the app started: a fresh install (What's new stays quiet). */
-export let freshInstall = true;
+/** The settings object as stored when the app started (null: none), for the first-run detection. */
+export let storedSettings: Record<string, unknown> | null = null;
 
 function read(): Settings {
   try {
     const raw = localStorage.getItem(KEY);
-    freshInstall = raw === null;
-    return parseSettings(JSON.parse(raw ?? "{}"));
+    const parsed: unknown = JSON.parse(raw ?? "null");
+    storedSettings = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : raw === null ? null : {};
+    return parseSettings(parsed);
   } catch {
     return DEFAULTS;
   }
@@ -51,8 +56,8 @@ function read(): Settings {
 
 function write() {
   try {
-    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion } = useSettings.getState();
-    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion }));
+    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted } = useSettings.getState();
+    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted }));
   } catch {
     /* storage unavailable */
   }
@@ -61,7 +66,8 @@ function write() {
 // Live sliders (corner radius, ambient intensity) change settings on every pointer move; storage gets the result
 // once things settle, and right away when the window hides or the page goes away.
 let pending: ReturnType<typeof setTimeout> | undefined;
-function flush() {
+/** Writes pending changes now (the onboarding's flags must survive the app being closed right away). */
+export function flush() {
   if (pending === undefined) return;
   clearTimeout(pending);
   pending = undefined;

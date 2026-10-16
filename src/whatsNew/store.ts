@@ -1,7 +1,7 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { create } from "zustand";
 import { openSettings } from "../stores/nav";
-import { freshInstall, setAppearance, useSettings } from "../stores/settings";
+import { setAppearance, useSettings } from "../stores/settings";
 import { useUi } from "../stores/ui";
 import { WHATS_NEW } from "./entries";
 import { pickWhatsNew } from "./select";
@@ -31,9 +31,12 @@ export function runWhatsNewAction(a: WhatsNewAction) {
   }
 }
 
-/** Startup: after an update to a version with an entry, shows it once (a moment in, after the first page). */
+/**
+ * Startup (after the first-run check): after an update to a version with an entry, shows it once (a moment in,
+ * after the first page). On a fresh install it only saves the version.
+ */
 let started = false;
-export function initWhatsNew() {
+export function initWhatsNew(freshInstall: boolean) {
   if (started) return;
   started = true;
   getVersion().then((version) => {

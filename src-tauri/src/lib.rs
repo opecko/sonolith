@@ -80,6 +80,7 @@ pub fn run() {
             render::render_set_close_to_tray,
             tray::tray_update,
             render::render_set_gpu,
+            render::app_has_prior_data,
             proxy::proxy_url,
             proxy::stream_probe,
             ytdlp::ytdlp_status,

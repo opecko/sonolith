@@ -17,7 +17,7 @@ import CreditsDialog from "./components/CreditsDialog";
 import UpdateDialog from "./components/UpdateDialog";
 import { initUpdates } from "./stores/update";
 import WhatsNewDialog from "./whatsNew/WhatsNewDialog";
-import { initWhatsNew } from "./whatsNew/store";
+import { initOnboarding } from "./onboarding/store";
 
 export default function App() {
   // WebKit keeps painting content under an opaque overlay; hiding it makes Now Playing hover/scroll cheap.
@@ -30,7 +30,7 @@ export default function App() {
     void initMpris();
     initHistory();
     initUpdates();
-    initWhatsNew();
+    void initOnboarding();
   }, []);
   // One delegated handler for every artist / album link in the app (TrackByline): rows carry only data-* attributes.
   return (

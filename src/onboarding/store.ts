@@ -1,0 +1,77 @@
+import { invoke } from "@tauri-apps/api/core";
+import { create } from "zustand";
+import { getCookie } from "../api/client";
+import { flush, storedSettings, useSettings } from "../stores/settings";
+import type { Appearance } from "../theme/appearance";
+import { initWhatsNew } from "../whatsNew/store";
+import { decideLocal, decideWithNative, PRIOR_KEYS } from "./detect";
+
+interface OnboardingState {
+  open: boolean;
+  /** Opened from the dev toolkit: finishing or skipping changes no flags and puts the look back as it was. */
+  preview: Appearance | null;
+}
+
+export const useOnboarding = create<OnboardingState>(() => ({ open: false, preview: null }));
+
+function presentKeys(): string[] {
+  try {
+    // Dev toolkit's "Simulate fresh install" (dev builds only; the whole branch is dropped from release builds).
+    if (import.meta.env.DEV && localStorage.getItem("dev:simulateFresh")) return [];
+    return PRIOR_KEYS.filter((k) => localStorage.getItem(k) !== null);
+  } catch {
+    return [];
+  }
+}
+
+async function nativeEvidence() {
+  if (import.meta.env.DEV && localStorage.getItem("dev:simulateFresh")) {
+    localStorage.removeItem("dev:simulateFresh");
+    return { cookie: false, nativeFiles: false };
+  }
+  const [cookie, nativeFiles] = await Promise.all([
+    getCookie().then((c) => !!c, () => false),
+    invoke<boolean>("app_has_prior_data").catch(() => false),
+  ]);
+  return { cookie, nativeFiles };
+}
+
+/**
+ * Startup: decides whether this is a fresh install (welcome shows) or not, then lets What's new run: a fresh
+ * install only saves the version (no What's new over the welcome); an existing one is marked as onboarded silently
+ * and gets What's new as before.
+ */
+let started = false;
+export async function initOnboarding() {
+  if (started) return;
+  started = true;
+  let decision = decideLocal({ settings: storedSettings, keys: presentKeys() });
+  if (decision === "ask") decision = decideWithNative(await nativeEvidence());
+  const { set } = useSettings.getState();
+  if (decision === "existing") {
+    set({ onboardingCompleted: true });
+    flush();
+  } else if (decision === "show") {
+    // Stored right away: closed mid-way, it shows again next time (with the choices made so far kept).
+    set({ onboardingCompleted: false });
+    flush();
+    useOnboarding.setState({ open: true });
+  }
+  initWhatsNew(decision === "show");
+}
+
+/** Done or skipped: never again (a preview from the dev toolkit only closes and restores the look). */
+export function finishOnboarding() {
+  const { preview } = useOnboarding.getState();
+  if (preview) useSettings.getState().set({ appearance: preview });
+  else {
+    useSettings.getState().set({ onboardingCompleted: true });
+    flush();
+  }
+  useOnboarding.setState({ open: false, preview: null });
+}
+
+/** Dev toolkit: the welcome at any time, without touching the real flags; the look is restored when it closes. */
+export function previewOnboarding() {
+  useOnboarding.setState({ open: true, preview: useSettings.getState().appearance });
+}

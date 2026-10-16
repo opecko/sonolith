@@ -78,3 +78,12 @@ pub fn render_set_gpu(app: AppHandle, enabled: bool) -> Result<(), String> {
     apply(&app, enabled);
     Ok(())
 }
+
+/// Whether an earlier ytdesk left data on disk: its config.json (GPU, close to tray, yt-dlp path) or a yt-dlp it
+/// downloaded. The first-run onboarding counts that as an existing install (along with stored settings and cookie).
+#[tauri::command(async)]
+pub fn app_has_prior_data(app: AppHandle) -> bool {
+    let config = config_path(&app).is_some_and(|p| p.exists());
+    let ytdlp = app.path().app_data_dir().ok().is_some_and(|d| d.join("bin").exists());
+    config || ytdlp
+}
