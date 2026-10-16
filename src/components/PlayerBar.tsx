@@ -7,6 +7,7 @@ import { usePlayer, type Repeat as RepeatMode } from "../stores/player";
 import { useProgress } from "../stores/progress";
 import { useUi } from "../stores/ui";
 import { useUiStyle } from "./UiStyle";
+import { useSettings } from "../stores/settings";
 import type { Track } from "../api/types";
 import { itemEntries, useTrackMenu } from "./ItemMenu";
 import Menu from "./Menu";
@@ -65,7 +66,7 @@ function NowPlaying() {
   );
 }
 
-function SkipSeconds({ sec, onClick }: { sec: number; onClick: () => void }) {
+export function SkipSeconds({ sec, onClick }: { sec: number; onClick: () => void }) {
   const Icon = sec < 0 ? RotateCcw : RotateCw;
   return (
     <button className="icon-btn relative h-10 w-10" onClick={onClick} aria-label={sec < 0 ? `Back ${-sec} seconds` : `Forward ${sec} seconds`}>
@@ -203,17 +204,21 @@ function Progress() {
   );
 }
 
+/** Mouse wheel over a volume control: ±5 %, snapped to whole steps. */
+export function wheelVolume(deltaY: number) {
+  if (!deltaY) return;
+  const { volume, muted, setVolume } = usePlayer.getState();
+  const base = muted ? 0 : volume;
+  setVolume(Math.min(1, Math.max(0, Math.round((base + (deltaY < 0 ? 0.05 : -0.05)) * 20) / 20)));
+}
+
 function VolumeControl() {
   const { volume, muted } = usePlayer(useShallow((s) => ({ volume: s.volume, muted: s.muted })));
   const { setVolume, toggleMute } = usePlayer.getState();
   const Icon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
   return (
     // Mouse wheel over the icon or slider: ±5 %, snapped to whole steps.
-    <div className="flex items-center gap-1" onWheel={(e) => {
-      if (!e.deltaY) return;
-      const base = muted ? 0 : volume;
-      setVolume(Math.min(1, Math.max(0, Math.round((base + (e.deltaY < 0 ? 0.05 : -0.05)) * 20) / 20)));
-    }}>
+    <div className="flex items-center gap-1" onWheel={(e) => wheelVolume(e.deltaY)}>
       <button className="icon-btn h-10 w-10" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted}>
         <Icon size={20} />
       </button>
@@ -245,7 +250,13 @@ export function byline(t: Track): string {
   return [t.artists.join(", "), t.album?.title].filter(Boolean).join(" • ") || t.subtitle || "";
 }
 
+/** Hidden while Bento Now Playing is open (it has all of this): the bar keeps its space but renders nothing. */
 export default function PlayerBar({ queueOpen, onToggleQueue }: { queueOpen: boolean; onToggleQueue: () => void }) {
+  const npOpen = useUi((s) => s.nowPlaying);
+  const bento = useSettings((s) => s.appearance.nowPlayingLayout) === "bento";
+  const hidden = npOpen && bento;
+  // Same height, so the (covered) content above doesn't lay out again; no children, so no clock subscriptions.
+  if (hidden) return <footer aria-hidden className="h-[72px] shrink-0" />;
   return (
     <footer className="m3-playerbar relative z-40 flex h-[72px] shrink-0 items-center gap-6 border-t border-[var(--c-outline)] bg-[var(--c-surface)] px-4">
       <NowPlaying />
