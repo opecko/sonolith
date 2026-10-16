@@ -13,6 +13,7 @@ import { useAsync } from "../hooks/useData";
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
 import { useSettings } from "../stores/settings";
+import { tween } from "../motion";
 import { useUi } from "../stores/ui";
 
 type Tab = "upnext" | "related" | "lyrics";
@@ -35,7 +36,7 @@ const AmbientLayer = memo(function AmbientLayer({ src, opacity }: { src: string;
     paint();
   }, [opacity]);
   useEffect(() => {
-    let raf = 0;
+    let cancel = () => {};
     const img = new Image();
     img.referrerPolicy = "no-referrer";
     img.onload = () => {
@@ -46,19 +47,15 @@ const AmbientLayer = memo(function AmbientLayer({ src, opacity }: { src: string;
       mid.width = mid.height = 48;
       mid.getContext("2d")?.drawImage(img, 0, 0, 48, 48);
       ctx.drawImage(mid, 0, 0, 12, 12);
-      let start = 0;
-      raf = requestAnimationFrame(function frame(now) {
-        start ||= now;
-        const t = Math.min(1, (now - start) / 300);
-        shown.current = 1 - (1 - t) ** 3;
+      cancel = tween(300, (t) => 1 - (1 - t) ** 3, (p) => {
+        shown.current = p;
         paint();
-        if (t < 1) raf = requestAnimationFrame(frame);
       });
     };
     img.src = src;
     return () => {
       img.onload = null;
-      cancelAnimationFrame(raf);
+      cancel();
     };
   }, [src]);
   return <canvas ref={ref} width={12} height={12} className="absolute inset-0 h-full w-full" />;
@@ -206,16 +203,10 @@ function useSlide(ref: RefObject<HTMLDivElement | null>, open: boolean, onOpened
       : [100, 160, (t: number) => t * t];
     // Before the first paint, so the overlay never shows at its final place first.
     el.style.transform = `translateY(${from}%)`;
-    let start = 0;
-    let raf = requestAnimationFrame(function frame(now) {
-      start ||= now;
-      const t = Math.min(1, (now - start) / ms);
-      pos.current = from + (to - from) * ease(t);
+    return tween(ms, ease, (p) => {
+      pos.current = from + (to - from) * p;
       el.style.transform = `translateY(${pos.current}%)`;
-      if (t < 1) raf = requestAnimationFrame(frame);
-      else (open ? onOpened : onClosed)();
-    });
-    return () => cancelAnimationFrame(raf);
+    }, open ? onOpened : onClosed);
     // The callbacks only run at the end; re-running for new ones would restart the slide.
   }, [open]);
 }

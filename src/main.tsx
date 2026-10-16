@@ -6,13 +6,16 @@ import "./index.css";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { coverTokens, initCoverAccent } from "./stores/coverAccent";
 import { useSettings } from "./stores/settings";
-import { applyLayout, applyTheme } from "./theme";
+import { applyLayout, applyStyle, applyTheme } from "./theme";
+import { initMorph, setMotionEnabled } from "./motion";
 
 // Appearance goes on synchronously before the first render, so startup never flashes the default colors.
 const applyColors = () => applyTheme(useSettings.getState().appearance, coverTokens());
 const applyZoom = (z: number) => void getCurrentWebview().setZoom(z).catch(() => {});
 applyColors();
 applyLayout(useSettings.getState().appearance);
+applyStyle(useSettings.getState().appearance);
+setMotionEnabled(useSettings.getState().appearance.animations);
 if (useSettings.getState().appearance.zoom !== 1) applyZoom(useSettings.getState().appearance.zoom);
 useSettings.subscribe((s, prev) => {
   if (s.appearance === prev.appearance) return;
@@ -21,8 +24,13 @@ useSettings.subscribe((s, prev) => {
   if (a.palette !== p.palette || a.mode !== p.mode || a.overrides !== p.overrides || a.coverAccent !== p.coverAccent) applyColors();
   if (a.radius !== p.radius || a.density !== p.density || a.font !== p.font || a.fontFamily !== p.fontFamily) applyLayout(a);
   if (s.appearance.zoom !== prev.appearance.zoom) applyZoom(s.appearance.zoom);
+  if (a.uiStyle !== p.uiStyle || a.animations !== p.animations) {
+    applyStyle(a);
+    setMotionEnabled(a.animations);
+  }
 });
 initCoverAccent(applyColors);
+initMorph();
 
 // The browser context menu (Back, Forward, Reload, Inspect Element…) never shows. Right-click on anything with a ⋮
 // menu (track rows, cards, the player bar) opens that menu at the pointer instead.
