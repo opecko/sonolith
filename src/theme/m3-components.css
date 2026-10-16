@@ -261,3 +261,35 @@
 }
 :root[data-ui-style="m3"] .m3-snackbar svg { color: var(--m3-inverse-primary); }
 :root[data-ui-style="m3"] .m3-surface-card { border: 0; border-radius: var(--m3-corner-lg); background: var(--m3-surface-container-high); }
+
+/* ---------- Loading indicator, skeletons ---------- */
+
+:root .m3-loading { color: var(--m3-primary); }
+:root .m3-loading.m3-loading-contained { background: var(--m3-primary-container); color: var(--m3-on-primary-container); }
+:root[data-ui-style="m3"] .skeleton { border-radius: var(--m3-corner-md); background: var(--m3-surface-container-high); }
+
+/* ---------- Artwork, cards, list rows ---------- */
+
+:root[data-ui-style="m3"] .m3-art { border-radius: var(--m3-corner-sm); }
+:root[data-ui-style="m3"] .m3-art-lg { border-radius: var(--m3-corner-lg); }
+:root[data-ui-style="m3"] .m3-art-xl { border-radius: var(--m3-corner-xl); }
+/* Card play button: a small FAB on the art. */
+:root[data-ui-style="m3"] .m3-card-play {
+  --r-rest: var(--m3-corner-md);
+  --r-press: var(--m3-corner-sm);
+  background: var(--m3-primary-container);
+  color: var(--m3-on-primary-container);
+  transform: none;
+  scale: none;
+}
+:root[data-ui-style="m3"] .m3-card-play:hover { background: color-mix(in srgb, var(--m3-on-primary-container) 8%, var(--m3-primary-container)); }
+
+:root[data-ui-style="m3"] .m3-row {
+  border-bottom-color: transparent;
+  border-radius: var(--m3-corner-md);
+  transition: background-color 150ms var(--m3-ease-effects);
+}
+:root[data-ui-style="m3"] .m3-row:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, transparent); }
+:root[data-ui-style="m3"] .m3-row[data-current] { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+:root[data-ui-style="m3"] .m3-row[data-current]:hover { background: color-mix(in srgb, var(--m3-on-secondary-container) 8%, var(--m3-secondary-container)); }
+:root[data-ui-style="m3"] .m3-row[data-current] .font-medium { color: var(--m3-on-secondary-container); font-weight: 700; }

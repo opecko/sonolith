@@ -17,15 +17,16 @@ function CardImpl({ item, fluid = false }: { item: Item; fluid?: boolean }) {
       <div className="relative">
         <button onClick={() => activateItem(item)} className="block w-full" aria-label={`Open ${item.title}`}>
           <span className="relative block">
-            <Thumb src={item.thumbnail} round={round} className={`${item.art === "wide" ? "aspect-video" : "aspect-square"} w-full`} />
-            <span className={`absolute inset-0 bg-scrim/30 opacity-0 group-hover:opacity-100 ${round ? "rounded-full" : "rounded-[var(--radius)]"}`} />
+            <Thumb src={item.thumbnail} round={round} className={`${item.art === "wide" ? "aspect-video" : "aspect-square"} m3-art-lg w-full`} />
+            <span className={`absolute inset-0 bg-scrim/30 opacity-0 group-hover:opacity-100 ${round ? "rounded-full" : "m3-art m3-art-lg rounded-[var(--radius)]"}`} />
           </span>
         </button>
         {canPlay && (
           <button
             onClick={() => void playItem(item)}
             aria-label={`Play ${item.title}`}
-            className={`absolute flex h-10 w-10 items-center justify-center rounded-full bg-scrim/70 text-on-scrim opacity-0 hover:scale-110 hover:bg-scrim/90 focus-visible:opacity-100 group-hover:opacity-100 ${
+            data-morph=""
+            className={`m3-card-play absolute flex h-10 w-10 items-center justify-center rounded-full bg-scrim/70 text-on-scrim opacity-0 hover:scale-110 hover:bg-scrim/90 focus-visible:opacity-100 group-hover:opacity-100 ${
               item.type === "track" ? "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" : "bottom-2 right-2"
             }`}
           >

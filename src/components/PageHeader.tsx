@@ -18,7 +18,7 @@ export default function PageHeader({ title, subtitle, thumbnail, tracks, round, 
   const toggleShuffle = usePlayer((s) => s.toggleShuffle);
   return (
     <header className="mb-8 flex items-end gap-8">
-      <Thumb src={thumbnail} round={round} className="h-56 w-56 shrink-0 shadow-2xl" />
+      <Thumb src={thumbnail} round={round} className="m3-art-xl h-56 w-56 shrink-0 shadow-2xl" />
       <div className="min-w-0 pb-2">
         <h1 className="line-clamp-2 text-4xl font-bold tracking-tight">{title}</h1>
         <p className="mt-2 line-clamp-2 text-sm text-[var(--c-text-muted)]">{subtitle}</p>

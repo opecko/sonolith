@@ -25,12 +25,12 @@ interface RowProps {
 const Row = memo(function Row({ track: t, index, current, variant, compact, onPlay, playlistId }: RowProps) {
   const albumId = t.album?.id;
   return (
-    <li className="group flex items-center gap-2 rounded-[var(--radius)] border-b border-[var(--c-outline)] pr-2 last:border-0 hover:bg-[var(--c-hover)]">
+    <li data-current={current ? "" : undefined} className="m3-row group flex items-center gap-2 rounded-[var(--radius)] border-b border-[var(--c-outline)] pr-2 last:border-0 hover:bg-[var(--c-hover)]">
       <button onClick={() => onPlay(index)} aria-current={current ? "true" : undefined} className="flex min-w-0 flex-1 items-center gap-4 px-2 py-2 text-left">
         {variant === "list" && !compact && <span className="w-6 text-right text-sm tabular-nums text-[var(--c-text-subtle)]">{index + 1}</span>}
         <span className="relative shrink-0">
           <Thumb src={t.thumbnail} px={40} className="h-10 w-10" />
-          <span className={`absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/60 ${current ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+          <span className={`m3-art absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/60 ${current ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
             {current ? <AudioLines size={18} aria-hidden /> : <Play size={18} fill="currentColor" aria-hidden />}
           </span>
         </span>

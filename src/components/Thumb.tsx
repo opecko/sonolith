@@ -16,7 +16,7 @@ export function sizedArt(src: string, px: number): string {
 function Thumb({ src, className = "", round = false, px }: { src?: string; className?: string; round?: boolean; px?: number }) {
   const url = src && px ? sizedArt(src, px) : src;
   return (
-    <div className={`overflow-hidden bg-[var(--c-surface-2)] ${round ? "rounded-full" : "rounded-[var(--radius)]"} ${className}`}>
+    <div className={`overflow-hidden bg-[var(--c-surface-2)] ${round ? "rounded-full" : "m3-art rounded-[var(--radius)]"} ${className}`}>
       {url && <img src={url} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" className="h-full w-full object-cover" />}
     </div>
   );

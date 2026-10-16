@@ -30,7 +30,7 @@ const Row = memo(function Row({ track, i, current, played, playing, drop, draggi
     <li
       data-index={i}
       data-current={current || undefined}
-      className={`group relative flex items-center rounded-[var(--radius)] pr-1 hover:bg-[var(--c-hover)] ${current ? "bg-[var(--c-hover)]" : ""} ${played && !current ? "opacity-60" : ""} ${dragging ? "opacity-40" : ""}`}
+      className={`m3-row group relative flex items-center rounded-[var(--radius)] pr-1 hover:bg-[var(--c-hover)] ${current ? "bg-[var(--c-hover)]" : ""} ${played && !current ? "opacity-60" : ""} ${dragging ? "opacity-40" : ""}`}
     >
       {drop && <span className={`pointer-events-none absolute inset-x-2 h-0.5 rounded bg-[var(--c-accent)] ${drop === "before" ? "-top-px" : "-bottom-px"}`} />}
       <span
@@ -45,7 +45,7 @@ const Row = memo(function Row({ track, i, current, played, playing, drop, draggi
         className="flex min-w-0 flex-1 items-center gap-3 py-2 pr-2 text-left">
         <span className="relative shrink-0">
           <Thumb src={track.thumbnail} px={40} className="h-10 w-10" />
-          <span className={`absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/60 ${current ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+          <span className={`m3-art absolute inset-0 flex items-center justify-center rounded-[var(--radius)] bg-scrim/60 ${current ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
             {current ? (playing ? <><AudioLines size={18} className="group-hover:hidden" aria-hidden /><Pause size={18} fill="currentColor" className="hidden group-hover:block" aria-hidden /></> : <Play size={18} fill="currentColor" aria-hidden />) : <Play size={18} fill="currentColor" aria-hidden />}
           </span>
         </span>
