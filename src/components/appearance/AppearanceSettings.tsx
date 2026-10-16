@@ -83,7 +83,7 @@ function readView(): EditorView {
   }
 }
 
-const outlineBtn = "flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]";
+const outlineBtn = "m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]";
 
 export default function AppearanceSettings() {
   const appearance = useSettings((s) => s.appearance);

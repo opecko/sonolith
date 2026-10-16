@@ -87,16 +87,16 @@ export default function ThemeTransfer({ kind, current, onImport, onClose }: {
         {error && <p className="text-sm text-[var(--c-error)]">{error}</p>}
         <div className="flex justify-end gap-2">
           {kind === "export" ? (
-            <button className={`${btn} bg-button text-on-button`} onClick={copy}>
+            <button className={`${btn} m3-btn m3-filled bg-button text-on-button`} onClick={copy}>
               {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />} {copied ? "Copied" : "Copy"}
             </button>
           ) : (
             <>
-              <label className={`${btn} cursor-pointer border border-[var(--c-outline)] hover:bg-[var(--c-hover)]`}>
+              <label className={`${btn} m3-btn m3-outlined cursor-pointer border border-[var(--c-outline)] hover:bg-[var(--c-hover)]`}>
                 <FileUp size={16} aria-hidden /> Open file
                 <input type="file" accept=".json,application/json" className="hidden" onChange={(e) => void loadFile(e.target.files?.[0])} />
               </label>
-              <button className={`${btn} bg-button text-on-button disabled:opacity-50`} disabled={!text.trim()} onClick={apply}>Apply</button>
+              <button className={`${btn} m3-btn m3-filled bg-button text-on-button disabled:opacity-50`} disabled={!text.trim()} onClick={apply}>Apply</button>
             </>
           )}
         </div>

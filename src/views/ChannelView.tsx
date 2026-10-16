@@ -27,7 +27,7 @@ export default function ChannelView({ id }: { id: string }) {
         <Thumb src={c.avatar} round className="h-36 w-36 shrink-0" />
         <h1 className="min-w-0 flex-1 text-4xl font-bold tracking-tight">{c.title}</h1>
         <button onClick={toggle} aria-pressed={subscribed}
-          className={`flex h-9 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium ${subscribed ? "border border-[var(--c-outline)] hover:bg-[var(--c-hover)]" : "bg-button text-on-button hover:bg-button/90"}`}>
+          className={`flex h-9 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium m3-btn ${subscribed ? "m3-tonal border border-[var(--c-outline)] hover:bg-[var(--c-hover)]" : "m3-filled bg-button text-on-button hover:bg-button/90"}`}>
           {subscribed ? <Check size={16} aria-hidden /> : <Bell size={16} aria-hidden />}
           {subscribed ? "Subscribed" : "Subscribe"} {c.subscribers && <span className={subscribed ? "text-[var(--c-text-muted)]" : "text-on-button/60"}>{c.subscribers}</span>}
         </button>

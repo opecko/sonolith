@@ -1,0 +1,137 @@
+/*
+ * Material 3 Expressive component styles. Everything is scoped to html[data-ui-style="m3"] and sits outside
+ * Tailwind's layers, so it wins over the utility classes the components share with Classic (which stays exactly
+ * as before). Components opt in with m3-* marker classes; .icon-btn and .chip are restyled as they are.
+ *
+ * State layers are color-mixes of the content color over the container (--ct), never opacity animations.
+ * Shapes: --r-rest / --r-sel / --r-press per state, morphed by src/motion/morph.ts through --r.
+ */
+
+/* Per-element, never inherited: a nested button must not pick up its parent's shape mid-morph. */
+@property --r { syntax: "*"; inherits: false; }
+@property --r-rest { syntax: "*"; inherits: false; }
+@property --r-sel { syntax: "*"; inherits: false; }
+@property --r-press { syntax: "*"; inherits: false; }
+@property --r-now { syntax: "*"; inherits: false; }
+@property --ct { syntax: "*"; inherits: false; }
+@property --sl { syntax: "*"; inherits: false; }
+
+/* Animations off (Settings or the OS): transitions jump too, in both styles. */
+:root[data-animations="off"] *,
+:root[data-animations="off"] *::before,
+:root[data-animations="off"] *::after { transition: none !important; }
+
+:root[data-ui-style="m3"] {
+  --m3-ease-effects: cubic-bezier(0.34, 0.8, 0.34, 1);
+  --m3-sl-hover: 8%;
+  --m3-sl-press: 10%;
+}
+
+/* ---------- Shared: shape states and the state layer ---------- */
+
+:root[data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph]) {
+  --r-now: var(--r-rest);
+  border-radius: var(--r, var(--r-now));
+}
+:root[data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph]):is([aria-pressed="true"], [aria-checked="true"], [aria-selected="true"], [data-selected]) {
+  --r-now: var(--r-sel, var(--r-rest));
+}
+:root[data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph])[data-pressed] { --r-now: var(--r-press, var(--r-rest)); }
+
+:root[data-ui-style="m3"] :is(.m3-btn, .icon-btn, .chip, .m3-sl) {
+  --ct: transparent;
+  --sl: 0%;
+  background-color: color-mix(in srgb, currentColor var(--sl), var(--ct));
+  transition: background-color 200ms var(--m3-ease-effects), color 200ms var(--m3-ease-effects);
+  /* Classic's hover/press scaling (Tailwind's scale-* is the `scale` property). */
+  transform: none;
+  scale: none;
+}
+:root[data-ui-style="m3"] :is(.m3-btn, .icon-btn, .chip, .m3-sl):hover:not(:disabled) { --sl: var(--m3-sl-hover); }
+:root[data-ui-style="m3"] :is(.m3-btn, .icon-btn, .chip, .m3-sl):is(:active, [data-pressed]):not(:disabled) { --sl: var(--m3-sl-press); }
+
+/* ---------- Buttons: filled, tonal, outlined, text, danger ---------- */
+
+:root[data-ui-style="m3"] .m3-btn {
+  --r-rest: var(--m3-corner-full);
+  --r-press: var(--m3-corner-sm);
+  --r-sel: var(--m3-corner-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-inline: 16px;
+  border: 0;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+:root[data-ui-style="m3"] .m3-btn:hover:not(:disabled) { transform: none; filter: none; }
+:root[data-ui-style="m3"] .m3-btn.m3-medium { --r-press: var(--m3-corner-md); --r-sel: var(--m3-corner-lg); padding-inline: 24px; }
+:root[data-ui-style="m3"] .m3-filled { --ct: var(--m3-primary); color: var(--m3-on-primary); }
+:root[data-ui-style="m3"] .m3-tonal { --ct: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+:root[data-ui-style="m3"] .m3-outlined { box-shadow: inset 0 0 0 1px var(--m3-outline-variant); color: var(--m3-on-surface-variant); }
+:root[data-ui-style="m3"] .m3-outlined[aria-pressed="true"] { --ct: var(--m3-inverse-surface); color: var(--m3-inverse-on-surface); box-shadow: none; }
+:root[data-ui-style="m3"] .m3-text { color: var(--m3-primary); padding-inline: 12px; }
+:root[data-ui-style="m3"] .m3-danger { --ct: var(--m3-error); color: var(--m3-on-error); }
+:root[data-ui-style="m3"] .m3-btn:disabled {
+  --ct: color-mix(in srgb, var(--m3-on-surface) 10%, transparent);
+  color: color-mix(in srgb, var(--m3-on-surface) 38%, transparent);
+  opacity: 1;
+  box-shadow: none;
+}
+:root[data-ui-style="m3"] :is(.m3-outlined, .m3-text):disabled { --ct: transparent; }
+
+/* ---------- Icon buttons: standard (default), filled, tonal, outlined; toggles ---------- */
+
+:root[data-ui-style="m3"] .icon-btn {
+  --r-rest: var(--m3-corner-full);
+  --r-press: var(--m3-corner-sm);
+  --r-sel: var(--m3-corner-md);
+  color: var(--m3-on-surface-variant);
+}
+:root[data-ui-style="m3"] .icon-btn:hover { color: var(--m3-on-surface-variant); }
+:root[data-ui-style="m3"] .icon-btn[aria-pressed="true"] { color: var(--m3-primary); }
+:root[data-ui-style="m3"] .icon-btn:disabled { opacity: 1; color: color-mix(in srgb, var(--m3-on-surface) 38%, transparent); }
+:root[data-ui-style="m3"] .icon-btn.m3-icon-filled { --ct: var(--m3-surface-container-highest); color: var(--m3-on-surface-variant); }
+:root[data-ui-style="m3"] .icon-btn.m3-icon-filled:not([aria-pressed]),
+:root[data-ui-style="m3"] .icon-btn.m3-icon-filled[aria-pressed="true"] { --ct: var(--m3-primary); color: var(--m3-on-primary); }
+:root[data-ui-style="m3"] .icon-btn.m3-icon-tonal { --ct: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+:root[data-ui-style="m3"] .icon-btn.m3-icon-tonal[aria-pressed="true"] { --ct: var(--m3-secondary); color: var(--m3-on-secondary); }
+:root[data-ui-style="m3"] .icon-btn.m3-icon-outlined { box-shadow: inset 0 0 0 1px var(--m3-outline-variant); }
+:root[data-ui-style="m3"] .icon-btn.m3-icon-outlined[aria-pressed="true"] { --ct: var(--m3-inverse-surface); color: var(--m3-inverse-on-surface); box-shadow: none; }
+/* Toggle in a toolbar (shuffle, repeat, queue): no container until selected, then a tonal square. */
+:root[data-ui-style="m3"] .icon-btn.m3-icon-toggle[aria-pressed="true"],
+:root[data-ui-style="m3"] .icon-btn.m3-icon-toggle[aria-expanded="true"] { --ct: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+:root[data-ui-style="m3"] :is(.icon-btn.m3-icon-filled, .icon-btn.m3-icon-tonal):disabled { --ct: color-mix(in srgb, var(--m3-on-surface) 10%, transparent); }
+
+/* ---------- Chips (filter chips: assist look until selected) ---------- */
+
+:root[data-ui-style="m3"] .chip {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: var(--m3-corner-sm);
+  box-shadow: inset 0 0 0 1px var(--m3-outline-variant);
+  color: var(--m3-on-surface-variant);
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+:root[data-ui-style="m3"] .chip[aria-pressed="true"] {
+  --ct: var(--m3-secondary-container);
+  color: var(--m3-on-secondary-container);
+  box-shadow: none;
+}
+:root[data-ui-style="m3"] .m3-chip-assist { --ct: transparent; color: var(--m3-on-surface); }
+
+/* Medium buttons (page headers: Play, Shuffle, Radio) and the extended FAB (New playlist). */
+:root[data-ui-style="m3"] .m3-btn.m3-medium { height: 56px; font-size: 16px; letter-spacing: 0.15px; }
+:root[data-ui-style="m3"] .m3-btn.m3-medium svg { width: 24px; height: 24px; }
+:root[data-ui-style="m3"] .m3-btn.m3-fab {
+  --ct: var(--m3-primary-container);
+  --r-rest: var(--m3-corner-lg);
+  --r-press: var(--m3-corner-md);
+  color: var(--m3-on-primary-container);
+  height: 56px;
+  padding-inline: 20px;
+  justify-content: flex-start;
+  font-size: 16px;
+}

@@ -25,8 +25,8 @@ function activate(item: Item) {
 }
 
 const pill = "flex h-9 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium";
-const primary = `${pill} bg-button text-on-button hover:bg-button/90`;
-const secondary = `${pill} border border-fg/25 hover:bg-fg/10`;
+const primary = `${pill} m3-btn m3-filled bg-button text-on-button hover:bg-button/90`;
+const secondary = `${pill} m3-btn m3-outlined border border-fg/25 hover:bg-fg/10`;
 
 /** Shuffle / Mix (artists) and Play / Save (songs), as on the YouTube Music top-result card. */
 function CardButtons({ top, actions }: { top: Item; actions: CardAction[] }) {

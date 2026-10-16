@@ -26,7 +26,7 @@ export default function PageHeader({ title, subtitle, thumbnail, tracks, round, 
           <div className="mt-6 flex gap-3">
             {!!tracks?.length && (<>
             <button onClick={() => playQueue(tracks, 0, { playlistId, title })}
-              className="flex h-10 items-center gap-2 rounded-full bg-button px-6 text-sm font-medium text-on-button hover:scale-105 active:scale-95">
+              className="m3-btn m3-filled m3-medium flex h-10 items-center gap-2 rounded-full bg-button px-6 text-sm font-medium text-on-button hover:scale-105 active:scale-95">
               <Play size={20} fill="currentColor" aria-hidden /> Play
             </button>
             <button
@@ -34,13 +34,13 @@ export default function PageHeader({ title, subtitle, thumbnail, tracks, round, 
                 if (!shuffleOn) toggleShuffle();
                 playQueue(tracks, Math.floor(Math.random() * tracks.length), { playlistId, title });
               }}
-              className="flex h-10 items-center gap-2 rounded-full border border-[var(--c-outline)] px-6 text-sm font-medium hover:bg-[var(--c-hover)]">
+              className="m3-btn m3-tonal m3-medium flex h-10 items-center gap-2 rounded-full border border-[var(--c-outline)] px-6 text-sm font-medium hover:bg-[var(--c-hover)]">
               <Shuffle size={20} aria-hidden /> Shuffle
             </button>
             </>)}
             {radio && (
               <button onClick={() => void startRadio(radio, title)} disabled={radioPending}
-                className="flex h-10 items-center gap-2 rounded-full border border-[var(--c-outline)] px-6 text-sm font-medium hover:bg-[var(--c-hover)] disabled:opacity-60">
+                className="m3-btn m3-tonal m3-medium flex h-10 items-center gap-2 rounded-full border border-[var(--c-outline)] px-6 text-sm font-medium hover:bg-[var(--c-hover)] disabled:opacity-60">
                 {radioPending ? <Loader2 size={20} className="animate-spin" aria-hidden /> : <Radio size={20} aria-hidden />} Radio
               </button>
             )}

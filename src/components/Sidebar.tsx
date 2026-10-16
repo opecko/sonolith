@@ -51,7 +51,7 @@ function NewPlaylist() {
     );
   return (
     <button onClick={() => setEditing(true)}
-      className="mx-2 flex h-10 items-center justify-center gap-2 rounded-full bg-[var(--c-hover)] text-sm font-medium hover:bg-[var(--c-active)]">
+      className="m3-btn m3-fab mx-2 flex h-10 items-center justify-center gap-2 rounded-full bg-[var(--c-hover)] text-sm font-medium hover:bg-[var(--c-active)]">
       <Plus size={20} aria-hidden /> New playlist
     </button>
   );

@@ -1,15 +1,18 @@
 import { motionOn, Spring } from "./engine";
 
 /**
- * Shape morph for M3 buttons, delegated from the document so components only add `data-morph`. CSS owns the
- * shapes: an element declares its corner radius per state as custom properties (plain px, from the corner scale)
+ * Shape morph for M3 buttons, delegated from the document: `.m3-btn`, `.icon-btn` and anything with `data-morph`.
+ * CSS owns the shapes: an element declares its corner radius per state as custom properties (plain px, from the
+ * corner scale)
  *   --r-rest   resting radius
  *   --r-sel    when selected (aria-pressed / aria-checked / aria-selected = "true", or data-selected)
  *   --r-press  while pressed (data-pressed, set here on pointerdown)
- * and uses them for `border-radius`, so with animations off the shape simply switches. With animations on, the
- * radius springs between states (inline style while moving, removed once it rests). Classic CSS declares no
- * --r-rest, so nothing happens there.
+ * and picks one per state for `border-radius: var(--r, …)`, so with animations off the shape simply switches. With
+ * animations on, the radius springs between states through an inline `--r` (removed once it rests); asymmetric
+ * shapes (connected groups) use `--r` for their outer corners only. Classic CSS declares no --r-rest, so nothing
+ * happens there.
  */
+const MORPH = "[data-morph], .m3-btn, .icon-btn";
 const springs = new WeakMap<HTMLElement, Spring>();
 
 const isSelected = (el: HTMLElement, attr?: string, old?: string | null) => {
@@ -39,13 +42,13 @@ function morph(el: HTMLElement, from: { pressed: boolean; selected: boolean }) {
   if (to === null) return;
   let s = springs.get(el);
   if (!s) {
-    s = new Spring(to, "fastSpatial", (r) => (el.style.borderRadius = `${r}px`), { precision: 0.05 });
+    s = new Spring(to, "fastSpatial", (r) => el.style.setProperty("--r", `${r}px`), { precision: 0.05 });
     springs.set(el, s);
   }
   // At rest, start from the previous state's shape (size or corner setting may have changed since).
   if (!s.animating) s.value = radiusFor(el, from.pressed, from.selected) ?? to;
   // At rest the stylesheet takes over again (hover/selected rules stay authoritative).
-  s.to(to, () => (el.style.borderRadius = ""));
+  s.to(to, () => el.style.removeProperty("--r"));
 }
 
 let started = false;
@@ -63,7 +66,7 @@ export function initMorph() {
   };
   document.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
-    const el = (e.target as Element | null)?.closest?.<HTMLElement>("[data-morph]");
+    const el = (e.target as Element | null)?.closest?.<HTMLElement>(MORPH);
     if (!el || (el as HTMLButtonElement).disabled) return;
     pressed = el;
     el.setAttribute("data-pressed", "");
@@ -75,7 +78,7 @@ export function initMorph() {
   new MutationObserver((records) => {
     for (const r of records) {
       const el = r.target as HTMLElement;
-      if (!el.hasAttribute?.("data-morph") || r.attributeName === null) continue;
+      if (!el.matches?.(MORPH) || r.attributeName === null) continue;
       if (isSelected(el) === isSelected(el, r.attributeName, r.oldValue)) continue;
       morph(el, { pressed: el.hasAttribute("data-pressed"), selected: isSelected(el, r.attributeName, r.oldValue) });
     }

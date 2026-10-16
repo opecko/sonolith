@@ -79,13 +79,13 @@ export default function UpdateDialog() {
             <p className="text-xs text-[var(--c-text-subtle)]">You can turn off update checks in Settings.</p>
             {info.aur ? null : info.installer ? (
               <button onClick={() => void installNow()} disabled={busy}
-                className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button hover:scale-105 disabled:opacity-60 disabled:hover:scale-100">
+                className="m3-btn m3-filled flex h-10 shrink-0 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button hover:scale-105 disabled:opacity-60 disabled:hover:scale-100">
                 {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Download size={18} aria-hidden />}
                 {install.status === "error" ? "Try again" : "Download installer"}
               </button>
             ) : (
               <button onClick={() => void invoke("update_open_page").catch(() => {})}
-                className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button hover:scale-105">
+                className="m3-btn m3-filled flex h-10 shrink-0 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button hover:scale-105">
                 <ExternalLink size={18} aria-hidden /> Open GitHub
               </button>
             )}

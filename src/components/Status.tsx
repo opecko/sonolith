@@ -60,9 +60,9 @@ export function ErrorBox({ error, onRetry }: { error: Error; onRetry?: () => voi
         <p className="text-sm font-medium">{isAuth ? "Please sign in" : "Something went wrong"}</p>
         <p className="mt-1 select-text whitespace-pre-wrap break-words text-sm text-[var(--c-text-muted)]">{error.message}</p>
         <div className="mt-4 flex gap-2">
-          {isAuth && <button onClick={login} className="h-8 rounded-full bg-button px-4 text-sm font-medium text-on-button">Sign in</button>}
+          {isAuth && <button onClick={login} className="m3-btn m3-filled h-8 rounded-full bg-button px-4 text-sm font-medium text-on-button">Sign in</button>}
           {onRetry && (
-            <button onClick={onRetry} className="flex h-8 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]">
+            <button onClick={onRetry} className="m3-btn m3-outlined flex h-8 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]">
               <RotateCw size={16} aria-hidden /> Retry
             </button>
           )}

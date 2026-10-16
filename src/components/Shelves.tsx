@@ -68,7 +68,7 @@ export function ShelfRow({ shelf }: { shelf: Shelf }) {
               const { browseId, params } = shelf.more!;
               go(browseId.startsWith("VL") ? { name: "playlist", id: browseId.slice(2) } : { name: "browse", id: browseId, params, title: shelf.title });
             }}
-              className="h-8 rounded-full border border-[var(--c-outline)] px-4 text-sm font-medium hover:bg-[var(--c-hover)]">
+              className="m3-btn m3-outlined h-8 rounded-full border border-[var(--c-outline)] px-4 text-sm font-medium hover:bg-[var(--c-hover)]">
               More
             </button>
           )}
