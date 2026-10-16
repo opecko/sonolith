@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { ChevronDown } from "lucide-react";
 import { hiResArt } from "../../api/art";
+import PlaybackError from "../../components/PlaybackError";
 import type { Track } from "../../api/types";
 import { useTrackMenu } from "../../components/ItemMenu";
 import { fmtTime, M3Controls, TrackMoreMenu } from "../../components/PlayerBar";
@@ -87,6 +89,22 @@ export function SeekBar({ className = "", times = "inline" }: { className?: stri
 export function Transport({ split = false, size = "lg" }: { split?: boolean; size?: "md" | "lg" }) {
   const s = usePlayer(useShallow((s) => ({ status: s.status, shuffle: s.shuffle, repeat: s.repeat, hasTrack: s.index >= 0, podcast: !!s.queue[s.index]?.podcast })));
   return <M3Controls {...s} size={size} split={split} />;
+}
+
+/** The layout's only close button (M3 tonal icon button), bottom right where Material and Bento keep room for it. */
+export function CloseNowPlaying() {
+  return (
+    <button className="icon-btn m3-icon-tonal h-12 w-12 shrink-0" onClick={() => useUi.getState().setNowPlaying(false)} aria-label="Close now playing" title="Close now playing">
+      <ChevronDown size={24} />
+    </button>
+  );
+}
+
+/** Playback error or "Loading…" for the current track (the player bar's status line, for layouts without the bar). */
+export function PlaybackStatus() {
+  const { status, error } = usePlayer(useShallow((s) => ({ status: s.status, error: s.error })));
+  if (error) return <PlaybackError error={error} />;
+  return status === "loading" ? <p className="type-body-medium text-[var(--m3-on-surface-variant)]">Loading…</p> : null;
 }
 
 /** Like / dislike and the track's ⋮ menu. */

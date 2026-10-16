@@ -3,7 +3,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { UiStyleScope } from "../../components/UiStyle";
 import { Spring } from "../../motion";
-import { CoverArt, PodcastMode, SeekBar, TrackActions, TrackLinks, Transport, useCurrentTrack } from "./parts";
+import PodcastSpeed from "../../components/PodcastSpeed";
+import { usePlayer } from "../../stores/player";
+import { CloseNowPlaying, CoverArt, PlaybackStatus, PodcastMode, SeekBar, TrackActions, TrackLinks, Transport, useCurrentTrack } from "./parts";
+import VolumeRing from "./VolumeRing";
 import { LyricsTab, RelatedTab, UpNextTab, useTrackExtras, type Tab } from "./shared";
 
 const TITLES: Record<Tab, string> = { upnext: "Up next", lyrics: "Lyrics", related: "Related" };
@@ -76,6 +79,7 @@ function usePushPanel(open: boolean) {
  */
 export default function MaterialLayout() {
   const track = useCurrentTrack();
+  const podcast = usePlayer((s) => !!s.queue[s.index]?.podcast);
   const { videoId, related, lyrics } = useTrackExtras();
   const [panel, setPanel] = useState<Tab | null>(null);
   // A panel the next track doesn't have (no lyrics) closes.
@@ -101,7 +105,7 @@ export default function MaterialLayout() {
             </button>
           ))}
         </div>
-        <div ref={push.group} className="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 items-center justify-center gap-12 px-12 pb-10 pt-20 max-lg:flex-col max-lg:gap-6 max-lg:px-8">
+        <div ref={push.group} className="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 items-center justify-center gap-12 px-12 pb-2 pt-20 max-lg:flex-col max-lg:gap-6 max-lg:px-8">
           <div className="flex shrink-0 flex-col items-center gap-4">
             <PodcastMode />
             <CoverArt className="np-cover aspect-square rounded-[var(--m3-corner-2xl)]" />
@@ -119,6 +123,13 @@ export default function MaterialLayout() {
               <Transport split />
             </div>
           )}
+        </div>
+        {/* What the player bar had (status, podcast speed, volume) and the close button, in a strip of their own. */}
+        <div className="flex h-16 shrink-0 items-center gap-3 pl-12 pr-4 max-lg:pl-8">
+          <div className="min-w-0 flex-1"><PlaybackStatus /></div>
+          {podcast && <PodcastSpeed />}
+          <VolumeRing />
+          <CloseNowPlaying />
         </div>
       </div>
       {push.mounted && (

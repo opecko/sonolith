@@ -13,7 +13,7 @@ import { UiStyleScope } from "../../components/UiStyle";
 import { useAsync } from "../../hooks/useData";
 import { Spring } from "../../motion";
 import { usePlayer, type Repeat as RepeatMode } from "../../stores/player";
-import { CoverArt, PodcastMode, SeekBar, TrackActions, TrackLinks, useCurrentTrack } from "./parts";
+import { CloseNowPlaying, CoverArt, PodcastMode, SeekBar, TrackActions, TrackLinks, useCurrentTrack } from "./parts";
 import { LyricsTab, RelatedTab, UpNextTab, useTrackExtras } from "./shared";
 import VolumeRing from "./VolumeRing";
 
@@ -182,9 +182,7 @@ export default function BentoLayout() {
   };
   return (
     <UiStyleScope value="m3" className="np-bento relative flex min-h-0 min-w-0 flex-1 flex-col">
-      {/* Gutter for the close button (Now Playing's only one in this layout): no tile ever sits under it. */}
-      <div className="h-16 shrink-0" aria-hidden />
-      <div className="scroll-y min-h-0 flex-1 px-6 pb-6">
+      <div className="scroll-y min-h-0 flex-1 px-6 pt-6">
         <div className="bento-grid" data-expanded={expanded ? "" : undefined}>
           <Tile area="cover" label="Artwork" className="relative overflow-hidden !p-0">
             <CoverArt className="h-full w-full" />
@@ -251,6 +249,8 @@ export default function BentoLayout() {
           )}
         </div>
       </div>
+      {/* The close button's strip: its own space, so no tile ever sits under it. */}
+      <div className="flex h-16 shrink-0 items-center justify-end px-4"><CloseNowPlaying /></div>
     </UiStyleScope>
   );
 }

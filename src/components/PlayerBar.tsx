@@ -254,11 +254,11 @@ export function byline(t: Track): string {
   return [t.artists.join(", "), t.album?.title].filter(Boolean).join(" • ") || t.subtitle || "";
 }
 
-/** Hidden while Bento Now Playing is open (it has all of this): the bar keeps its space but renders nothing. */
+/** Hidden while Material or Bento Now Playing is open (they have all of this): the bar keeps its space, renders nothing. */
 export default function PlayerBar() {
   const npOpen = useUi((s) => s.nowPlaying);
-  const bento = useSettings((s) => s.appearance.nowPlayingLayout) === "bento";
-  const hidden = npOpen && bento;
+  const ownBar = useSettings((s) => s.appearance.nowPlayingLayout) !== "classic";
+  const hidden = npOpen && ownBar;
   // Same height, so the (covered) content above doesn't lay out again; no children, so no clock subscriptions.
   if (hidden) return <footer aria-hidden className="h-[72px] shrink-0" />;
   return (

@@ -1,4 +1,3 @@
-import { ChevronDown } from "lucide-react";
 import { memo, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
@@ -193,13 +192,10 @@ export default function NowPlaying() {
   if (!mounted) return null;
   return (
     <div ref={panel} role="dialog" aria-label="Now playing" aria-hidden={!open} data-ambient={ambientOn ? "" : undefined}
-      className={`${open ? "" : "pointer-events-none"} fixed inset-x-0 ${layout === "bento" ? "bottom-0" : "bottom-[72px]"} top-0 z-30 flex bg-[var(--c-bg)] will-change-transform`}>
+      className={`${open ? "" : "pointer-events-none"} fixed inset-x-0 ${layout === "classic" ? "bottom-[72px]" : "bottom-0"} top-0 z-30 flex bg-[var(--c-bg)] will-change-transform`}>
       {ambientOn && <Backdrop src={thumb} intensity={ambientIntensity} quality={ambientQuality} />}
-      {/* One close button per layout: Bento replaces the player bar (and keeps this corner free for it); Material
-          and Classic use the player bar's. */}
-      {layout === "bento" && <button onClick={close} aria-label="Close now playing" className="icon-btn absolute left-4 top-3 z-10 h-10 w-10">
-        <ChevronDown size={24} />
-      </button>}
+      {/* One close button per layout: Classic uses the player bar's; Material and Bento, which replace the bar, put
+          theirs bottom right in space they keep free for it (CloseNowPlaying). */}
       {layout === "material" ? <MaterialLayout /> : layout === "bento" ? <BentoLayout /> : <ClassicLayout />}
       <TryLooksCard />
     </div>

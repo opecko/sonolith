@@ -409,8 +409,8 @@
 
 /* Three columns filling the view: a square cover the full height, info over controls, the right column. */
 @media (min-width: 1024px) {
-  /* Height left for the grid: window − overlay gutter (64) − bottom padding (24); the player bar is hidden. */
-  .np-bento { --bento-h: max(440px, calc(100vh - 64px - 24px)); }
+  /* Height left for the grid: window − top padding (24) − the close button's strip (64); the player bar is hidden. */
+  .np-bento { --bento-h: max(440px, calc(100vh - 24px - 64px)); }
   .bento-grid {
     height: var(--bento-h);
     grid-template-columns: minmax(0, min(var(--bento-h), 38vw)) minmax(0, 1fr) minmax(300px, 0.8fr);
