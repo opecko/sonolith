@@ -82,10 +82,22 @@ function Controls() {
   const { status, shuffle, repeat, hasTrack, podcast } = usePlayer(
     useShallow((s) => ({ status: s.status, shuffle: s.shuffle, repeat: s.repeat, hasTrack: s.index >= 0, podcast: !!s.queue[s.index]?.podcast })),
   );
-  const { togglePlay, next, prev, toggleShuffle, cycleRepeat, skipBy } = usePlayer.getState();
-  const playing = status === "playing";
   const m3 = useUiStyle() === "m3";
   if (m3) return <M3Controls status={status} shuffle={shuffle} repeat={repeat} hasTrack={hasTrack} podcast={podcast} />;
+  return <ClassicControls status={status} shuffle={shuffle} repeat={repeat} hasTrack={hasTrack} podcast={podcast} />;
+}
+
+/** The transport as either style draws it, for a given state (style previews: the onboarding's style cards). */
+export function TransportSample({ status = "paused" }: { status?: string }) {
+  const props = { status, shuffle: false, repeat: "off" as const, hasTrack: true, podcast: false };
+  return useUiStyle() === "m3" ? <M3Controls {...props} /> : <ClassicControls {...props} />;
+}
+
+function ClassicControls({ status, shuffle, repeat, hasTrack, podcast }: {
+  status: string; shuffle: boolean; repeat: RepeatMode; hasTrack: boolean; podcast: boolean;
+}) {
+  const { togglePlay, next, prev, toggleShuffle, cycleRepeat, skipBy } = usePlayer.getState();
+  const playing = status === "playing";
   const playButton = (
     <button
       className="flex h-10 w-10 items-center justify-center rounded-full bg-button text-on-button hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100"

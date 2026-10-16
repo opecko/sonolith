@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useAuth } from "./stores/auth";
 import { initDiscord } from "./stores/discord";
 import { initMpris } from "./stores/mpris";
@@ -17,11 +17,15 @@ import CreditsDialog from "./components/CreditsDialog";
 import UpdateDialog from "./components/UpdateDialog";
 import { initUpdates } from "./stores/update";
 import WhatsNewDialog from "./whatsNew/WhatsNewDialog";
-import { initOnboarding } from "./onboarding/store";
+import { initOnboarding, useOnboarding } from "./onboarding/store";
+
+// The welcome is only ever needed on a fresh install: its code loads when it opens.
+const Onboarding = lazy(() => import("./onboarding/Onboarding"));
 
 export default function App() {
   // WebKit keeps painting content under an opaque overlay; hiding it makes Now Playing hover/scroll cheap.
   const covered = useUi((s) => s.nowPlayingCovering);
+  const onboarding = useOnboarding((s) => s.open);
   useEffect(() => {
     useAuth.getState().init();
     initMediaKeys();
@@ -49,6 +53,7 @@ export default function App() {
       <WhatsNewDialog />
       <ConfirmDialog />
       <Toast />
+      {onboarding && <Suspense fallback={null}><Onboarding /></Suspense>}
     </div>
   );
 }

@@ -3,19 +3,19 @@ import { setAppearance, useSettings } from "../../stores/settings";
 import type { NowPlayingLayout, UiStyle } from "../../theme/appearance";
 import Switch from "../Switch";
 
-const STYLES: { id: UiStyle; label: string; detail: string }[] = [
+export const STYLES: { id: UiStyle; label: string; detail: string }[] = [
   { id: "m3", label: "Material 3 Expressive", detail: "Rounder shapes, tonal colors, springy motion and buttons that change shape as you press them." },
   { id: "classic", label: "Classic", detail: "The ytdesk look from before 2.0: flat, compact, like YouTube Music." },
 ];
 
-const LAYOUTS: { id: NowPlayingLayout; label: string }[] = [
+export const LAYOUTS: { id: NowPlayingLayout; label: string }[] = [
   { id: "material", label: "Material" },
   { id: "bento", label: "Bento" },
   { id: "classic", label: "Classic" },
 ];
 
 /** A tiny schematic of a Now Playing layout, drawn with the theme's own colors. */
-function LayoutPreview({ id }: { id: NowPlayingLayout }) {
+export function LayoutPreview({ id }: { id: NowPlayingLayout }) {
   const tile = "rounded-[3px] bg-[var(--m3-surface-container-highest)]";
   const art = "rounded-[6px] bg-[var(--m3-primary-container)]";
   if (id === "material")
