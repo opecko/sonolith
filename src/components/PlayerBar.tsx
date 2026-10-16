@@ -140,8 +140,9 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
   const playing = status === "playing";
   const lg = size === "lg", md = size === "md";
   const side = lg ? "h-14 w-16" : md ? "h-12 w-14" : "h-10 w-12";
-  // Half the height: the outer corners' full radius, clamped so the inner corners keep theirs (m3-components.css).
-  const pill = { "--pill": `${lg ? 28 : md ? 24 : 20}px` } as CSSProperties;
+  // Half the height (h-14 / h-12 / h-10, in spacing steps so compact density follows): the outer corners' full
+  // radius, clamped so the inner corners keep theirs (m3-components.css).
+  const pill = { "--pill": `calc(var(--spacing) * ${lg ? 7 : md ? 6 : 5})` } as CSSProperties;
   const icon = lg ? 28 : md ? 24 : 22;
   const toggle = `icon-btn m3-icon-toggle ${lg ? "h-12 w-12" : "h-10 w-10"}`;
   const play = lg ? "h-14 w-24" : md ? "h-12 w-20" : "h-10 w-16";

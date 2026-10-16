@@ -45,8 +45,9 @@ function morph(el: HTMLElement, from: { pressed: boolean; selected: boolean }) {
     s = new Spring(to, "fastSpatial", (r) => el.style.setProperty("--r-now", `${r}px`), { precision: 0.05 });
     springs.set(el, s);
   }
-  // At rest, start from the previous state's shape (size or corner setting may have changed since).
-  if (!s.animating) s.value = radiusFor(el, from.pressed, from.selected) ?? to;
+  // At rest, start from the previous state's shape (size or corner setting may have changed since), written inline
+  // right now: the stylesheet already shows the new state, and waiting for the next frame would paint it once.
+  if (!s.animating) s.set(radiusFor(el, from.pressed, from.selected) ?? to);
   // At rest the stylesheet takes over again (hover/selected rules stay authoritative).
   s.to(to, () => el.style.removeProperty("--r-now"));
 }
