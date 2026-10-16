@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Spinner } from "./LoadingIndicator";
 import { useEffect, useRef } from "react";
 
 export default function LoadMore({ onVisible, active, loading }: { onVisible: () => void; active: boolean; loading: boolean }) {
@@ -12,7 +12,7 @@ export default function LoadMore({ onVisible, active, loading }: { onVisible: ()
   }, [active, onVisible]);
   return (
     <div ref={ref} className="flex h-16 items-center justify-center text-[var(--c-text-subtle)]" aria-live="polite">
-      {loading && <Loader2 size={24} className="animate-spin" aria-label="Loading more" />}
+      {loading && <Spinner size={24} label="Loading more" />}
     </div>
   );
 }

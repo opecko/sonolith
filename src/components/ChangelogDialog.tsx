@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
+import { Spinner } from "./LoadingIndicator";
 import { useEffect, useState } from "react";
 import ReleaseNotes from "./ReleaseNotes";
 
@@ -51,7 +52,7 @@ export default function ChangelogDialog({ current, onClose }: { current: string;
           {error ? (
             <p className="text-[var(--c-error)]">{error}</p>
           ) : !entries ? (
-            <p className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" aria-hidden /> Loading releases…</p>
+            <p className="flex items-center gap-2"><Spinner size={16} /> Loading releases…</p>
           ) : !entries.length ? (
             <p>No releases yet.</p>
           ) : (

@@ -1,4 +1,5 @@
-import { Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
+import { Spinner } from "./LoadingIndicator";
 import { useEffect } from "react";
 import { useUi } from "../stores/ui";
 
@@ -22,7 +23,7 @@ export default function CreditsDialog() {
           <button className="icon-btn h-10 w-10" onClick={close} aria-label="Close"><X size={20} /></button>
         </header>
         <div className="scroll-y min-h-0 px-6 pb-6">
-          {credits.status === "loading" && <Loader2 size={24} className="mx-auto my-8 animate-spin text-[var(--c-text-muted)]" aria-label="Loading" />}
+          {credits.status === "loading" && <div className="my-8 flex justify-center"><Spinner size={24} className="text-[var(--c-text-muted)]" /></div>}
           {credits.status === "error" && <p className="py-4 text-sm text-[var(--c-error)]">{credits.message}</p>}
           {credits.status === "ok" && (credits.data.sections.length === 0
             ? <p className="py-4 text-sm text-[var(--c-text-muted)]">No credits for this song.</p>

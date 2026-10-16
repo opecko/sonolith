@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "./LoadingIndicator";
 import { useEffect, useRef, useState } from "react";
 import { getVideoStreamUrl } from "../api/stream";
 import { getAudio } from "../stores/player";
@@ -76,7 +76,7 @@ export default function PodcastVideo({ videoId }: { videoId: string }) {
   return (
     <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-[var(--radius)] bg-scrim">
       {src && <video ref={ref} src={src} muted playsInline preload="auto" onError={onError} className="h-full w-full object-contain" />}
-      {!src && !error && <Loader2 size={32} className="animate-spin text-[var(--c-text-muted)]" aria-label="Loading video" />}
+      {!src && !error && <Spinner size={32} className="text-[var(--c-text-muted)]" label="Loading video" />}
       {error && <p className="px-6 text-center text-sm text-[var(--c-text-muted)]">{error}</p>}
     </div>
   );
