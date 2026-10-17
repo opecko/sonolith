@@ -8,6 +8,7 @@ import { coverTokens, initCoverColors } from "./stores/coverColors";
 import { useSettings } from "./stores/settings";
 import { applyLayout, applyStyle, applyTheme } from "./theme";
 import { initMorph, setMotionEnabled } from "./motion";
+import { initFocusMode } from "./focusMode";
 
 // Appearance goes on synchronously before the first render, so startup never flashes the default colors.
 const applyColors = () => applyTheme(useSettings.getState().appearance, coverTokens());
@@ -31,6 +32,7 @@ useSettings.subscribe((s, prev) => {
 });
 initCoverColors(applyColors);
 initMorph();
+initFocusMode();
 
 // The browser context menu (Back, Forward, Reload, Inspect Element…) never shows. Right-click on anything with a ⋮
 // menu (track rows, cards, the player bar) opens that menu at the pointer instead.

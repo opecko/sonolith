@@ -73,7 +73,10 @@ body {
 }
 button { cursor: pointer; }
 button:disabled { cursor: default; }
-:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+/* Focus rings only while navigating by keyboard (focusMode.ts sets data-keyboard-nav on Tab / arrows, a pointer
+   press clears it), so a click followed by Enter or a shortcut shows none. Text fields always show where typing goes. */
+:focus-visible { outline: none; }
+:root[data-keyboard-nav] :focus-visible, :is(input, textarea, select):focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
 
 /* Thin scrollbars whose thumb only shows while hovering the scroll area; gutters stay reserved so content never jumps. */
 ::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
@@ -93,7 +96,7 @@ button:disabled { cursor: default; }
    from one delegated click handler (rowPlayClick). */
 .row-hit::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
 .row-hit:focus-visible { outline: none; }
-.row-hit:focus-visible::after { outline: 2px solid var(--c-focus); outline-offset: -2px; }
+:root[data-keyboard-nav] .row-hit:focus-visible::after { outline: 2px solid var(--c-focus); outline-offset: -2px; }
 .row-above .track-link { position: relative; }
 /* Artist / album names in a byline (TrackByline). */
 .track-link { cursor: pointer; border-radius: 2px; }
