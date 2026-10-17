@@ -23,6 +23,9 @@ pub struct Cached {
 
 #[derive(Serialize, Deserialize, Clone)]
 struct Entry {
+    /// The video id itself: on case-insensitive file systems (Windows, macOS) "abc" and "ABC" share a file.
+    #[serde(default)]
+    id: String,
     saved: u64,
     setup: String,
     value: Cached,
@@ -59,13 +62,16 @@ impl Cache {
         }
         let path = self.dir.as_ref()?.join(format!("{}.json", file_key(id)?));
         let e: Entry = serde_json::from_slice(&std::fs::read(path).ok()?).ok()?;
+        if e.id != id {
+            return None;
+        }
         let hit = fresh(&e, setup, at).then(|| e.value.clone());
         self.mem.lock().unwrap().insert(id.to_string(), e);
         hit
     }
 
     pub fn put(&self, id: &str, setup: &str, value: Cached) {
-        let e = Entry { saved: now(), setup: setup.to_string(), value };
+        let e = Entry { id: id.to_string(), saved: now(), setup: setup.to_string(), value };
         if let (Some(dir), Some(key)) = (self.dir.as_ref(), file_key(id)) {
             if std::fs::create_dir_all(dir).is_ok() {
                 if let Ok(bytes) = serde_json::to_vec(&e) {
@@ -129,8 +135,19 @@ mod tests {
     }
 
     #[test]
+    fn ids_differing_only_in_case_never_share_an_entry() {
+        let dir = tmp("case");
+        let c = Cache::new(Some(dir.clone()));
+        c.put("abcDEF12345", "a", Cached { provider: Some("lrclib".into()), lyrics: Lyrics::plain("x"), source: None });
+        // What a case-insensitive file system does: the other id's lookup opens this file.
+        std::fs::rename(dir.join("abcDEF12345.json"), dir.join("ABCdef12345.json")).unwrap();
+        assert_eq!(Cache::new(Some(dir.clone())).get("ABCdef12345", "a"), None);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
     fn misses_expire_sooner() {
-        let e = |found: bool, age: u64| Entry { saved: 1_000_000 - age, setup: "s".into(), value: Cached { provider: None, lyrics: if found { Lyrics::plain("x") } else { None }, source: None } };
+        let e = |found: bool, age: u64| Entry { id: String::new(), saved: 1_000_000 - age, setup: "s".into(), value: Cached { provider: None, lyrics: if found { Lyrics::plain("x") } else { None }, source: None } };
         assert!(fresh(&e(false, 3600), "s", 1_000_000));
         assert!(!fresh(&e(false, MISS_TTL + 1), "s", 1_000_000));
         assert!(fresh(&e(true, MISS_TTL + 1), "s", 1_000_000));
