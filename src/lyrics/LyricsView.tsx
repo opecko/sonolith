@@ -1,10 +1,10 @@
-import { useLayoutEffect, useRef } from "react";
+import { Fragment, useLayoutEffect, useMemo, useRef } from "react";
 import { EmptyState, Loading } from "../components/Status";
 import { Spring } from "../motion";
 import { onPlayhead } from "../playback/playhead";
 import { usePlayer } from "../stores/player";
 import { useSettings } from "../stores/settings";
-import { createKaraoke, type KaraokeStyle } from "./karaoke";
+import { createKaraoke, gapsOf, type KaraokeStyle } from "./karaoke";
 import { PROVIDER_NAMES } from "./providers";
 import type { LyricLine, LyricsData } from "./pick";
 import { useLyrics } from "./store";
@@ -35,9 +35,8 @@ function SyncedLines({ lines, size }: { lines: LyricLine[]; size: "full" | "prev
     const spring = scroller ? new Spring(scroller.scrollTop, "slowSpatial", (v) => (scroller!.scrollTop = v), { precision: 0.5 }) : null;
     // New lines in a scroller already showing lyrics (an upgrade): land on the current line without a glide.
     let instant = scroller ? scroller.scrollTop > 0 : false;
-    const follow = (i: number) => {
-      const li = ol.querySelector<HTMLElement>(`:scope > li[data-i="${i}"]`);
-      if (!scroller || !spring || !li || Date.now() < userUntil) return;
+    const follow = (li: HTMLElement) => {
+      if (!scroller || !spring || Date.now() < userUntil) return;
       const target = li.offsetTop - ol.offsetTop - scroller.clientHeight * (size === "preview" ? 0.15 : 0.35) + li.offsetHeight / 2;
       const to = Math.max(0, Math.min(target, scroller.scrollHeight - scroller.clientHeight));
       if (instant) {
@@ -69,6 +68,7 @@ function SyncedLines({ lines, size }: { lines: LyricLine[]; size: "full" | "prev
     };
   }, [lines, size, style]);
 
+  const gaps = useMemo(() => new Map(gapsOf(lines).map(([i, from, to]) => [i, [from, to] as const])), [lines]);
   return (
     <ol ref={list} className={`lyrics-synced ${size === "preview" ? "lyrics-preview" : ""}`}
       onClick={(e) => {
@@ -76,9 +76,17 @@ function SyncedLines({ lines, size }: { lines: LyricLine[]; size: "full" | "prev
         if (li) usePlayer.getState().seek(lines[Number(li.dataset.i)].start / 1000);
       }}>
       {lines.map((l, i) => (
-        <li key={i} data-i={i} title="Play from here">
-          {l.words?.length ? l.words.map((w, k) => <span key={k} data-w="">{w.text}</span>) : l.text}
-        </li>
+        <Fragment key={i}>
+          {gaps.get(i) && (
+            <li data-gap="" data-from={gaps.get(i)![0]} data-to={gaps.get(i)![1]} className="lyrics-gap" aria-label="Instrumental">
+              <span data-d="" /><span data-d="" /><span data-d="" />
+            </li>
+          )}
+          <li data-i={i} title="Play from here">
+            {l.words?.length ? l.words.map((w, k) => <span key={k} data-w="">{w.text}</span>) : l.text}
+            {l.background?.length ? <span className="lyrics-bg">{l.background.map((w, k) => <span key={k} data-bw="">{w.text}</span>)}</span> : null}
+          </li>
+        </Fragment>
       ))}
     </ol>
   );

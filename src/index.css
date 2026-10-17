@@ -119,7 +119,21 @@ button:disabled { cursor: default; }
   -webkit-background-clip: text; background-clip: text;
 }
 .lyrics-synced[data-k="glow"] li[data-active] [data-w][data-g] { text-shadow: 0 0 calc(var(--g) * 14px) var(--ly-glow); }
-.lyrics-synced[data-k="bounce"] [data-w] { position: relative; }
+.lyrics-synced[data-k="bounce"] [data-w], .lyrics-synced[data-k="bounce"] [data-bw] { position: relative; }
+/* Background vocals: smaller and dimmer, under the main line. */
+.lyrics-synced .lyrics-bg { display: block; font-size: 0.7em; font-weight: 600; opacity: 0.75; }
+.lyrics-synced li[data-active] .lyrics-bg [data-bw] { color: var(--ly-off); }
+.lyrics-synced li[data-active] .lyrics-bg [data-bw][data-on] { color: var(--ly-on); }
+.lyrics-synced[data-k="sweep"] li[data-active] [data-bw] {
+  color: transparent;
+  background-image: linear-gradient(90deg, var(--ly-on) calc(var(--k, 0) * 110% - 10%), var(--ly-off) calc(var(--k, 0) * 110%));
+  -webkit-background-clip: text; background-clip: text;
+}
+.lyrics-synced[data-k="glow"] li[data-active] [data-bw][data-g] { text-shadow: 0 0 calc(var(--g) * 10px) var(--ly-glow); }
+/* Instrumental break: three dots that light up across it (karaoke.ts sets --d and a breathing scale). */
+.lyrics-synced .lyrics-gap { display: flex; gap: 0.3em; height: 1.3em; align-items: center; cursor: default; transform-origin: left center; }
+.lyrics-synced .lyrics-gap [data-d] { width: 0.4em; height: 0.4em; border-radius: 9999px; background: var(--ly-on); opacity: 0.3; }
+.lyrics-synced .lyrics-gap[data-active] [data-d] { opacity: calc(0.3 + var(--d, 0) * 0.7); }
 /* Artist / album names in a byline (TrackByline). */
 .track-link { cursor: pointer; border-radius: 2px; }
 .track-link:hover { text-decoration: underline; }

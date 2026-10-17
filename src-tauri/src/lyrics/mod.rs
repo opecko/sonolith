@@ -21,6 +21,9 @@ use tauri_plugin_http::reqwest::Client;
 use tokio::task::JoinSet;
 
 
+/// Bumped when the selection rules or the model change.
+const RULES: &str = "v2";
+
 pub struct LyricsState {
     http: Client,
     cache: Cache,
@@ -71,7 +74,8 @@ pub struct LyricsResponse {
 #[tauri::command]
 pub async fn lyrics_get(state: State<'_, LyricsState>, args: GetArgs, on_update: Channel<LyricsResponse>) -> Result<LyricsResponse, String> {
     let sources: Vec<_> = args.providers.iter().filter_map(|id| providers::source(id)).collect();
-    let setup = sources.iter().map(|s| s.id()).collect::<Vec<_>>().join(",");
+    // The rules' version is part of the setup: entries picked by older rules (or parsed without background vocals) are misses.
+    let setup = format!("{RULES}:{}", sources.iter().map(|s| s.id()).collect::<Vec<_>>().join(","));
     if sources.is_empty() || args.req.video_id.is_empty() {
         return Ok(LyricsResponse { provider: None, lyrics: None, source: None, cached: false, attempts: Vec::new() });
     }

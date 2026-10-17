@@ -6,6 +6,8 @@ export interface LyricLine {
   end?: number;
   text: string;
   words?: { start: number; end: number; text: string }[];
+  /** Background vocals over the line, timed like `words`. */
+  background?: { start: number; end: number; text: string }[];
 }
 
 export interface LyricsData {

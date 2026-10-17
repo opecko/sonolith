@@ -43,19 +43,58 @@ export function wordLift(w: Word, ms: number): number {
   return springAt(BOUNCE, at.x, 0, at.v, (ms - w.end) / 1000).x;
 }
 
+/** An instrumental break shorter than this gets no dots. */
+export const GAP_MS = 5000;
+
+/** When a line stops being sung: its stated end, else its last word's; unknown for plain line-synced LRC. */
+const lineEnd = (l: LyricLine) => l.end ?? l.words?.at(-1)?.end;
+
+/**
+ * Instrumental breaks of at least `min` ms, as `[before, from, to]`: the break before line `before`, from the end of
+ * the line above it (or the song's start) to its start. Pure.
+ */
+export function gapsOf(lines: LyricLine[], min = GAP_MS): [number, number, number][] {
+  const out: [number, number, number][] = [];
+  lines.forEach((l, i) => {
+    const from = i === 0 ? 0 : lineEnd(lines[i - 1]);
+    if (from !== undefined && l.start - from >= min) out.push([i, from, l.start]);
+  });
+  return out;
+}
+
+/** Breathing dots: how lit dot `k` of 3 is (they light up one by one across the break) and the group's scale. */
+export function gapPose(from: number, to: number, ms: number, breathe: boolean): { dots: number[]; scale: number } {
+  const p = Math.min(1, Math.max(0, (ms - from) / (to - from)));
+  const dots = [0, 1, 2].map((k) => Math.min(1, Math.max(0, p * 3 - k)));
+  if (!breathe) return { dots, scale: 1 };
+  // A slow breath; it shrinks away over the last half second so the next line takes over.
+  const fade = Math.min(1, Math.max(0, (to - ms) / 500));
+  return { dots, scale: (1 + 0.1 * Math.sin((2 * Math.PI * (ms - from)) / 1800)) * fade };
+}
+
 const round = (v: number, step: number) => Math.round(v / step) * step;
 
 /**
- * Drives synced lyrics already rendered in `ol` (`li[data-i]` lines, `[data-w]` word spans) from the playback clock:
- * the current line gets `data-active`, earlier ones `data-past`; on a word-synced line each word gets what the style
- * needs — `data-on` (sung), Sweep's `--k`, Glow's `--g` / `data-g`, Bounce's `top`. Only the current line and the
- * one just left are touched per frame, and only values that changed are written. `onLine` hears line changes.
+ * Drives synced lyrics already rendered in `ol` (`li[data-i]` lines with `[data-w]` word and `[data-bw]` background
+ * spans, `li[data-gap]` breaks with three `[data-d]` dots) from the playback clock: the current line (or break) gets
+ * `data-active`, earlier lines `data-past`; on a word-synced line each word gets what the style needs — `data-on`
+ * (sung), Sweep's `--k`, Glow's `--g` / `data-g`, Bounce's `top`; a break's dots get `--d` and the group a breathing
+ * scale. Only the current line / break and the line just left are touched per frame, and only values that changed
+ * are written. `onLine` hears which element became current.
  */
-export function createKaraoke(ol: HTMLElement, lines: LyricLine[], style: KaraokeStyle, onLine?: (i: number) => void) {
+export function createKaraoke(ol: HTMLElement, lines: LyricLine[], style: KaraokeStyle, onLine?: (el: HTMLElement) => void) {
   const items = Array.from(ol.querySelectorAll<HTMLElement>(":scope > li[data-i]"));
   const words = items.map((li) => Array.from(li.querySelectorAll<HTMLElement>("[data-w]")));
+  const backing = items.map((li) => Array.from(li.querySelectorAll<HTMLElement>("[data-bw]")));
+  const gaps = Array.from(ol.querySelectorAll<HTMLElement>(":scope > li[data-gap]")).map((el) => ({
+    el,
+    from: Number(el.dataset.from),
+    to: Number(el.dataset.to),
+    dots: Array.from(el.querySelectorAll<HTMLElement>("[data-d]")),
+  }));
   ol.dataset.k = style;
   let active = -2;
+  let current: HTMLElement | null = null;
   let leaving = -1;
   // Last written values per word span, to skip writes that change nothing.
   const written = new WeakMap<HTMLElement, string>();
@@ -65,9 +104,7 @@ export function createKaraoke(ol: HTMLElement, lines: LyricLine[], style: Karaok
     apply();
   };
 
-  const paint = (i: number, ms: number) => {
-    const timing = lines[i]?.words;
-    const spans = words[i];
+  const paintWords = (timing: LyricLine["words"], spans: HTMLElement[] | undefined, ms: number) => {
     if (!timing || !spans) return;
     spans.forEach((el, k) => {
       const w = timing[k];
@@ -95,20 +132,39 @@ export function createKaraoke(ol: HTMLElement, lines: LyricLine[], style: Karaok
       } else put(el, `s${on}`, () => el.toggleAttribute("data-on", on));
     });
   };
+  const paint = (i: number, ms: number) => {
+    paintWords(lines[i]?.words, words[i], ms);
+    paintWords(lines[i]?.background, backing[i], ms);
+  };
 
   return {
     update(ms: number) {
-      const i = lineAt(lines, ms);
-      if (i !== active) {
+      const sung = lineAt(lines, ms);
+      const gap = gaps.find((g) => g.from <= ms && ms < g.to);
+      // During a break the line above it is done: past, not current.
+      const i = gap ? -1 : sung;
+      const now = gap?.el ?? items[i] ?? null;
+      if (i !== active || now !== current) {
         items.forEach((li, k) => {
           li.toggleAttribute("data-active", k === i);
-          li.toggleAttribute("data-past", k < i);
+          li.toggleAttribute("data-past", gap ? k <= sung : k < i);
         });
-        if (active >= 0) leaving = active;
+        for (const g of gaps) g.el.toggleAttribute("data-active", g === gap);
+        if (active >= 0 && active !== i) leaving = active;
         active = i;
-        onLine?.(i);
+        current = now;
+        if (now) onLine?.(now);
       }
       if (i >= 0) paint(i, ms);
+      if (gap) {
+        const pose = gapPose(gap.from, gap.to, ms, style !== "simple");
+        gap.dots.forEach((d, k) => {
+          const v = round(pose.dots[k], 0.02);
+          put(d, `d${v}`, () => d.style.setProperty("--d", String(v)));
+        });
+        const sc = round(pose.scale, 0.005);
+        put(gap.el, `s${sc}`, () => (gap.el.style.transform = sc === 1 ? "" : `scale(${sc})`));
+      }
       // The line just left finishes its glow / settle, then is left alone.
       if (leaving >= 0 && leaving !== i) {
         paint(leaving, ms);
@@ -118,13 +174,14 @@ export function createKaraoke(ol: HTMLElement, lines: LyricLine[], style: Karaok
     },
     /** Back to static lines (a style change or unmount). */
     dispose() {
-      for (const spans of words)
+      for (const spans of [...words, ...backing])
         for (const el of spans) {
           el.style.removeProperty("--k");
           el.style.removeProperty("--g");
           el.style.top = "";
           el.removeAttribute("data-g");
         }
+      for (const g of gaps) g.el.style.transform = "";
       delete ol.dataset.k;
     },
   };

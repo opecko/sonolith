@@ -47,7 +47,7 @@ pub fn parse_lrc(text: &str) -> Option<Lyrics> {
         let (text, words) = enhanced_words(rest);
         for s in starts {
             let start = (s as i64 - offset).max(0) as u32;
-            lines.push(Line { start, end: None, text: text.clone(), words: words.clone() });
+            lines.push(Line { start, end: None, text: text.clone(), words: words.clone(), background: Vec::new() });
         }
     }
     if !any_tag {
@@ -89,7 +89,7 @@ fn enhanced_words(s: &str) -> (String, Vec<Word>) {
 }
 
 /// Apple-style TTML (Better Lyrics, Unison): `<p begin end>` lines with `<span begin end>` words; whitespace text
-/// between spans separates words. Background vocals (`ttm:role="x-bg"`) are left out. `itunes:timing="None"` or
+/// between spans separates words. Background vocals (`ttm:role="x-bg"`) go to `background` with their own word timings. `itunes:timing="None"` or
 /// untimed `<p>`: plain lyrics.
 pub fn parse_ttml(xml: &str) -> Option<Lyrics> {
     let doc = roxmltree::Document::parse(xml).ok()?;
@@ -99,6 +99,7 @@ pub fn parse_ttml(xml: &str) -> Option<Lyrics> {
         let begin = p.attribute("begin").and_then(parse_clock);
         let end = p.attribute("end").and_then(parse_clock);
         let mut words = Vec::new();
+        let mut background = Vec::new();
         let mut text = String::new();
         for child in p.children() {
             if child.is_text() {
@@ -112,6 +113,7 @@ pub fn parse_ttml(xml: &str) -> Option<Lyrics> {
                 }
             } else if child.is_element() && child.has_tag_name("span") {
                 if child.attributes().any(|a| a.name() == "role" && a.value() == "x-bg") {
+                    background = ttml_background(child);
                     continue;
                 }
                 let t: String = child.descendants().filter(|n| n.is_text()).filter_map(|n| n.text()).collect();
@@ -123,7 +125,10 @@ pub fn parse_ttml(xml: &str) -> Option<Lyrics> {
         }
         let text = text.split_whitespace().collect::<Vec<_>>().join(" ");
         match begin {
-            Some(start) => lines.push(Line { start, end, text, words: if words.len() > 1 { words } else { Vec::new() } }),
+            Some(start) => {
+                let word_sync = words.len() > 1;
+                lines.push(Line { start, end, text, words: if word_sync { words } else { Vec::new() }, background: if word_sync { background } else { Vec::new() } })
+            }
             None => plain.push(text),
         }
     }
@@ -131,6 +136,27 @@ pub fn parse_ttml(xml: &str) -> Option<Lyrics> {
         return Lyrics::plain(&plain.join("\n"));
     }
     Lyrics::synced(lines)
+}
+
+/// The timed spans of an `x-bg` span, spaces kept between words like the main line's.
+fn ttml_background(bg: roxmltree::Node) -> Vec<Word> {
+    let mut words: Vec<Word> = Vec::new();
+    for c in bg.children() {
+        if c.is_text() {
+            let t = c.text().unwrap_or("");
+            if let Some(w) = words.last_mut() {
+                if !t.is_empty() && t.chars().all(char::is_whitespace) && !w.text.ends_with(' ') {
+                    w.text.push(' ');
+                }
+            }
+        } else if c.is_element() && c.has_tag_name("span") {
+            let t: String = c.descendants().filter(|n| n.is_text()).filter_map(|n| n.text()).collect();
+            if let (Some(s), Some(e)) = (c.attribute("begin").and_then(parse_clock), c.attribute("end").and_then(parse_clock)) {
+                words.push(Word { start: s, end: e, text: t });
+            }
+        }
+    }
+    words
 }
 
 /// The total length a TTML document states (`<body dur>`), in seconds; used to check the match.
@@ -154,23 +180,26 @@ pub fn parse_lyricsplus(v: &Value) -> Option<Lyrics> {
     for r in rows {
         let Some(start) = ms(r.get("time")) else { continue };
         let dur = ms(r.get("duration")).unwrap_or(0);
-        let words: Vec<Word> = r
-            .get("syllabus")
-            .and_then(Value::as_array)
-            .map(|s| {
-                s.iter()
-                    .filter(|w| !w.get("isBackground").and_then(Value::as_bool).unwrap_or(false))
-                    .filter_map(|w| {
-                        let s = ms(w.get("time"))?;
-                        let d = ms(w.get("duration")).unwrap_or(0);
-                        Some(Word { start: s, end: s + d, text: w.get("text")?.as_str()?.to_string() })
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
+        let syllables = |bg: bool| -> Vec<Word> {
+            r.get("syllabus")
+                .and_then(Value::as_array)
+                .map(|s| {
+                    s.iter()
+                        .filter(|w| w.get("isBackground").and_then(Value::as_bool).unwrap_or(false) == bg)
+                        .filter_map(|w| {
+                            let s = ms(w.get("time"))?;
+                            let d = ms(w.get("duration")).unwrap_or(0);
+                            Some(Word { start: s, end: s + d, text: w.get("text")?.as_str()?.to_string() })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        let (words, background) = (syllables(false), syllables(true));
         let text = r.get("text").and_then(Value::as_str).map(str::to_string).unwrap_or_else(|| words.iter().map(|w| w.text.as_str()).collect());
         let word_sync = kind.eq_ignore_ascii_case("word") && words.len() > 1;
-        lines.push(Line { start, end: (dur > 0).then_some(start + dur), text: text.trim().to_string(), words: if word_sync { words } else { Vec::new() } });
+        let (words, background) = if word_sync { (words, background) } else { (Vec::new(), Vec::new()) };
+        lines.push(Line { start, end: (dur > 0).then_some(start + dur), text: text.trim().to_string(), words, background });
     }
     Lyrics::synced(lines)
 }
@@ -188,7 +217,7 @@ pub fn parse_youtube(v: &Value) -> Option<(Lyrics, Option<String>)> {
             let start = num(r.pointer("/cueRange/startTimeMilliseconds"))?;
             let end = num(r.pointer("/cueRange/endTimeMilliseconds"));
             // "♪" marks an instrumental stretch: no line to show.
-            (text != "♪").then_some(Line { start, end, text, words: Vec::new() })
+            (text != "♪").then_some(Line { start, end, text, words: Vec::new(), background: Vec::new() })
         })
         .collect();
     let source = data.get("sourceMessage").and_then(Value::as_str).map(|s| s.trim_start_matches("Source:").trim().to_string());
@@ -315,6 +344,23 @@ mod tests {
         let l = parse_kugou(&String::from_utf8(bytes).unwrap()).unwrap();
         assert_eq!(l.lines[0].text, "Line 1");
         assert!(l.lines.iter().all(|x| !x.text.contains("Written by") && !x.text.contains(" - ")));
+    }
+
+    #[test]
+    fn background_vocals_kept_apart() {
+        let xml = r#"<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div>
+            <p begin="1.0" end="4.0"><span begin="1.0" end="1.5">Main</span> <span begin="1.5" end="2.0">line</span><span ttm:role="x-bg"><span begin="2.0" end="2.5">(ooh</span> <span begin="2.5" end="3.0">yeah)</span></span></p>
+        </div></body></tt>"#;
+        let l = parse_ttml(xml).unwrap();
+        assert_eq!(l.lines[0].text, "Main line");
+        assert_eq!(l.lines[0].background.iter().map(|w| w.text.as_str()).collect::<String>(), "(ooh yeah)");
+        assert_eq!(l.lines[0].background[0].start, 2000);
+
+        let v: Value = serde_json::from_str(r#"{"type":"Word","lyrics":[{"time":1000,"duration":3000,"text":"Main line","syllabus":[
+            {"time":1000,"duration":500,"text":"Main "},{"time":1500,"duration":500,"text":"line"},{"time":2000,"duration":500,"text":"(ooh)","isBackground":true}]}]}"#).unwrap();
+        let l = parse_lyricsplus(&v).unwrap();
+        assert_eq!(l.lines[0].words.len(), 2);
+        assert_eq!(l.lines[0].background[0].text, "(ooh)");
     }
 
     #[test]

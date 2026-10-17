@@ -20,6 +20,9 @@ pub struct Line {
     /// Word / syllable timings, when the provider has them.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub words: Vec<Word>,
+    /// Background vocals sung over the line, timed like `words` (word-synced TTML / LyricsPlus only).
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub background: Vec<Word>,
 }
 
 /// Synced lyrics have `lines`; unsynced ones only `plain` text.

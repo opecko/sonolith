@@ -68,7 +68,7 @@ mod tests {
     use crate::lyrics::model::{Line, Word};
 
     fn line(words: Vec<Word>) -> Line {
-        Line { start: 0, end: None, text: "a".into(), words }
+        Line { start: 0, end: None, text: "a".into(), words, background: vec![] }
     }
     fn word() -> Outcome {
         let w = Word { start: 0, end: 5, text: "a".into() };
