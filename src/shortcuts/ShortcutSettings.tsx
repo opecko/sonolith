@@ -1,4 +1,4 @@
-import { RotateCcw } from "lucide-react";
+import { AppWindow, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import Switch from "../components/Switch";
 import { useSettings } from "../stores/settings";
@@ -62,10 +62,14 @@ export default function ShortcutSettings() {
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h2 className="mb-1 text-lg font-semibold">Keyboard shortcuts</h2>
-          <p className="text-sm text-[var(--c-text-muted)]">While the ytdesk window is focused. Media keys work separately, everywhere.</p>
+          <p className="text-sm text-[var(--c-text-muted)]">Keys for the player while you're in the app.</p>
         </div>
         <Switch on={enabled} onChange={(on) => setShortcuts({ enabled: on })} label="Keyboard shortcuts" />
       </div>
+      <p className="m3-surface-card mt-3 flex items-start gap-3 rounded-[var(--radius)] border border-[var(--c-outline)] p-3 text-sm">
+        <AppWindow size={18} className="mt-0.5 shrink-0 text-[var(--c-accent)]" aria-hidden />
+        <span><strong className="font-semibold">Only inside ytdesk:</strong> these keys work while the ytdesk window is focused, not system-wide. Your keyboard's media keys control playback everywhere.</span>
+      </p>
       <ul className={`mt-4 flex flex-col ${enabled ? "" : "pointer-events-none opacity-50"}`} aria-disabled={!enabled}>
         {SHORTCUT_ACTIONS.map((a) => {
           const isDefault = sameBinding(bindings[a], DEFAULT_BINDINGS[a]);

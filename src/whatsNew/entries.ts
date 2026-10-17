@@ -22,8 +22,8 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       },
       {
         icon: Keyboard,
-        title: "Keyboard shortcuts",
-        text: "Space plays and pauses, < and > skip, + and - change the volume. Rebind or turn them off in Settings → Keyboard shortcuts.",
+        title: "In-app keyboard shortcuts",
+        text: "Only while the ytdesk window is focused, not system-wide: Space plays and pauses, < and > skip, + and - change the volume. Rebind or turn them off in Settings → Keyboard shortcuts.",
       },
     ],
     actions: [
