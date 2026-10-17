@@ -6,6 +6,7 @@ import type { QueueChip, Rating, Track } from "../api/types";
 import type { RadioSource } from "../api/queue";
 import { getChipTracks, getWatch, rate, startRadio } from "../api/ytm";
 import { autoplayTrigger, dedupeAutoplay, pushHistory } from "./autoplay";
+import { savedResume, savePosition } from "./episodeProgress";
 import { pipelineStuck, reconcileStatus, toggleAction } from "./playState";
 import { useProgress } from "./progress";
 import { append, dedupe, insertNext, reorder } from "./queueOps";
@@ -199,7 +200,9 @@ export const usePlayer = create<PlayerState>((set, get) => {
     stuckRecoveries = 0;
     pausedAt = null;
     prefetchedFor = -1;
-    void load(index);
+    // Episodes continue where they were left (stores/episodeProgress).
+    const t = get().queue[index];
+    void load(index, t?.podcast ? savedResume(t.id) : 0);
     const id = get().queue[index]?.id;
     if (id) history = pushHistory(history, id);
     void refreshWatch();
@@ -358,7 +361,18 @@ export const usePlayer = create<PlayerState>((set, get) => {
   }
 
   audio.addEventListener("playing", () => set({ status: "playing" }));
+  // An episode's position is saved every few seconds while it plays, and when it pauses or ends.
+  let episodeSavedAt = 0;
+  function saveEpisode(force: boolean) {
+    const t = get().queue[get().index];
+    if (!t?.podcast || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+    const now = Date.now();
+    if (!force && now - episodeSavedAt < 5000) return;
+    episodeSavedAt = now;
+    savePosition(t.id, audio.ended ? audio.duration : audio.currentTime, audio.duration);
+  }
   audio.addEventListener("pause", () => {
+    saveEpisode(true);
     pausedAt = audio.currentTime;
     if (!audio.ended && get().status === "playing") set({ status: "paused" });
   });
@@ -413,6 +427,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     if (!document.hidden) pushClock();
     syncStatus();
     checkStuck();
+    saveEpisode(false);
     for (const fn of tickListeners) fn();
     const { index } = get();
     if (prefetchedFor !== index && audio.currentTime > Math.min(30, audio.duration / 2 || 30)) {
@@ -422,7 +437,10 @@ export const usePlayer = create<PlayerState>((set, get) => {
       if (track) prefetchStream(track.id);
     }
   });
-  audio.addEventListener("ended", () => void advance(true));
+  audio.addEventListener("ended", () => {
+    saveEpisode(true);
+    void advance(true);
+  });
   // Recovery ladder for <audio> errors: same URL via local proxy → fresh URL from the other resolver (proxied).
   audio.addEventListener("error", () => {
     const err = audio.error;

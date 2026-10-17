@@ -1,5 +1,5 @@
 import {
-  Bookmark, BookmarkMinus, Disc3, History, ListEnd, ListMinus, ListPlus, ListStart, Loader2, Pin, PinOff, Play, Radio, Share2, Shuffle,
+  Bookmark, BookmarkMinus, CircleCheck, CircleDashed, Disc3, History, ListEnd, ListMinus, ListPlus, ListStart, Loader2, Pin, PinOff, Play, Podcast, Radio, Share2, Shuffle,
   Trash2, User, Users,
 } from "lucide-react";
 import { useState } from "react";
@@ -7,6 +7,7 @@ import type { Item, MenuToggle, Track, TrackMenu } from "../api/types";
 import { addToPlaylist, getCredits, getTrackMenu, removeFromPlaylist, sendFeedback } from "../api/ytm";
 import { invalidate } from "../hooks/useData";
 import { playItem, queueCollection } from "../stores/actions";
+import { markEpisode, useEpisodeProgress } from "../stores/episodeProgress";
 import { useLibrary } from "../stores/library";
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
@@ -121,6 +122,27 @@ export function playlistEntries(track: Track): MenuEntry[] {
 // Toggles flipped this session (feedback token → done), so a reopened menu shows the opposite action.
 const flipped = new Set<string>();
 
+/** The server's "Mark as played" toggle of an episode (CHECK icon), if its menu has one. */
+const playedToggle = (menu: TrackMenu | undefined) => menu?.toggles.find((t) => t.icon === "CHECK");
+
+/**
+ * Mark as played / unplayed: the local progress (lists, resume) changes at once; the server's toggle, when there
+ * is one, is sent along so YouTube Music agrees.
+ */
+function markEntry(track: Track, menu: TrackMenu | undefined): MenuEntry {
+  const local = useEpisodeProgress.getState().entries[track.id];
+  const played = local ? local.played : !!track.episode?.progress?.played;
+  const server = playedToggle(menu);
+  return {
+    label: played ? "Mark as unplayed" : "Mark as played",
+    icon: played ? <CircleDashed size={S} /> : <CircleCheck size={S} />,
+    onSelect: () => {
+      markEpisode(track.id, !played, track.durationSec);
+      if (server) void sendFeedback(played ? server.toggledToken : server.token).catch(() => {});
+    },
+  };
+}
+
 function toggleEntry(t: MenuToggle): MenuEntry {
   const on = flipped.has(t.token);
   const label = on ? t.toggledLabel : t.label;
@@ -165,13 +187,16 @@ function trackEntries(track: Track, menu: TrackMenu | undefined, loading: boolea
     ...(track.podcast ? [] : [{ label: "Start radio", icon: <Radio size={S} />, onSelect: () => void p.startRadio(radioSource(track), track.title) }]),
     { label: "Play next", icon: <ListStart size={S} />, onSelect: () => p.playNext(track) },
     { label: "Add to queue", icon: <ListEnd size={S} />, onSelect: () => p.addToQueue(track) },
-    ...(menu?.toggles ?? []).map(toggleEntry),
+    // An episode's own "Mark as played" (below) replaces the server's, and also sends it.
+    ...(menu?.toggles ?? []).filter((t) => !(track.podcast && t === playedToggle(menu))).map(toggleEntry),
+    ...(track.podcast ? [markEntry(track, menu)] : []),
     { label: "Save to playlist", icon: <ListPlus size={S} />, submenu: () => playlistEntries(track) },
     // Only on the user's own playlists (saved ones by others are in the library too, but can't be edited).
     ...(playlistId && ownPlaylist(playlistId) ? [removeEntry(track, playlistId)] : []),
   ];
   if (queueIndex !== undefined)
     out.push({ label: "Remove from queue", icon: <Trash2 size={S} />, onSelect: () => p.removeAt(queueIndex), disabled: queueIndex === p.index });
+  if (track.show) out.push({ label: "Go to show", icon: <Podcast size={S} />, onSelect: () => go({ name: "podcast", id: track.show!.id }) });
   const albumId = menu?.albumId ?? track.album?.id;
   if (albumId) out.push({ label: "Go to album", icon: <Disc3 size={S} />, onSelect: () => go({ name: "album", id: albumId }) });
   if (menu?.artistId) out.push({ label: "Go to artist", icon: <User size={S} />, onSelect: () => go({ name: "artist", id: menu.artistId! }) });

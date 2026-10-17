@@ -1,20 +1,26 @@
-import { AudioLines, Play } from "lucide-react";
+import { AudioLines, CircleCheck, Play } from "lucide-react";
 import { memo } from "react";
 import type { EpisodeInfo, Track } from "../api/types";
+import { progressFor, useEpisodeProgress } from "../stores/episodeProgress";
 import { usePlayer } from "../stores/player";
 import ItemMenu from "./ItemMenu";
 import Thumb from "./Thumb";
 
-/** "2.4K views • 9h ago • 3 min left" (+ progress bar), as on YouTube Music. */
-function Meta({ ep }: { ep?: EpisodeInfo }) {
-  const p = ep?.progress;
-  const parts = [ep?.meta, p?.text ?? ep?.durationText].filter(Boolean);
+/**
+ * "2.4K views • 9h ago • 3 min left" (+ progress bar), as on YouTube Music. Progress is the local one (where the
+ * episode was left in ytdesk, stores/episodeProgress) when there is one, else the server's.
+ */
+function Meta({ id, ep }: { id: string; ep?: EpisodeInfo }) {
+  const local = useEpisodeProgress((s) => s.entries[id]);
+  const p = progressFor(local, ep?.progress);
+  const parts = [ep?.meta ?? ep?.published, p?.text ?? ep?.durationText].filter(Boolean);
   return (
     <span className="flex items-center gap-2 text-xs text-[var(--c-text-muted)]">
+      {p?.played && <CircleCheck size={14} className="shrink-0 text-[var(--c-accent)]" aria-label="Played" />}
       <span className="truncate">{parts.join(" • ")}</span>
       {p && p.percent > 0 && !p.played && (
         <span className="h-0.5 w-10 shrink-0 overflow-hidden rounded-full bg-[var(--c-slider-track)]" aria-label={`${p.percent}% played`}>
-          <span className="block h-full origin-left bg-[var(--c-accent)]" style={{ transform: `scaleX(${p.percent / 100})` }} />
+          <span className="block h-full bg-[var(--c-accent)]" style={{ width: `${p.percent}%` }} />
         </span>
       )}
     </span>
@@ -44,7 +50,7 @@ export const EpisodeRow = memo(function EpisodeRow({ track, onPlay }: { track: T
           {track.episode?.description && (
             <span className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-[var(--c-text-muted)]">{track.episode.description}</span>
           )}
-          <span className="mt-2 block"><Meta ep={track.episode} /></span>
+          <span className="mt-2 block"><Meta id={track.id} ep={track.episode} /></span>
         </span>
       </button>
       <ItemMenu item={track} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100" />
@@ -60,7 +66,7 @@ export const EpisodeCard = memo(function EpisodeCard({ track, onPlay }: { track:
       <button onClick={onPlay} className="flex min-w-0 flex-1 items-center gap-4 text-left" aria-label={`Play ${track.title}`}>
         <Art track={track} current={current} size="h-[72px] w-[124px]" />
         <span className="min-w-0 flex-1">
-          <Meta ep={track.episode} />
+          <Meta id={track.id} ep={track.episode} />
           <span className={`mt-1 line-clamp-2 text-sm font-medium ${current ? "text-[var(--c-accent)]" : ""}`}>{track.title}</span>
         </span>
       </button>
