@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { ticker, useSpring } from "../motion";
+import { useSpring } from "../motion";
 import { useSettings } from "../stores/settings";
 import { useUiStyle } from "./UiStyle";
 
@@ -187,10 +187,27 @@ const WAVELENGTH = 40;
 const AMPLITUDE = 3;
 /** Wavelengths per second the wave travels. */
 const SPEED = 0.6;
+const WAVE_FPS = 20;
+
+/** Whether the app window has focus (a blur when another window comes to the front). */
+function useWindowFocused() {
+  const [focused, setFocused] = useState(() => document.hasFocus());
+  useEffect(() => {
+    const on = () => setFocused(true);
+    const off = () => setFocused(false);
+    window.addEventListener("focus", on);
+    window.addEventListener("blur", off);
+    return () => {
+      window.removeEventListener("focus", on);
+      window.removeEventListener("blur", off);
+    };
+  }, []);
+  return focused;
+}
 
 /**
  * Wavy active track (M3 Expressive progress): a stroked sine on a canvas, drawn only on value changes and, while
- * playing and visible, at ~30 fps as the wave travels from the playhead toward the start. The amplitude springs to 0 when playback pauses; with
+ * playing, visible and focused, at 20 fps as the wave travels from the playhead toward the start. The amplitude springs to 0 when playback pauses; with
  * animations off it stays flat.
  */
 function Wave({ pct, edge, on: playing, redraw }: { pct: number; edge: number; on: boolean; redraw: { current: ((pct: number) => void) | null } }) {
@@ -198,7 +215,7 @@ function Wave({ pct, edge, on: playing, redraw }: { pct: number; edge: number; o
   const animations = useSettings((s) => s.appearance.animations);
   const on = playing && animations;
   const ref = useRef<HTMLCanvasElement>(null);
-  const st = useRef({ phase: 0, amp: on ? 1 : 0, pct, edge, color: "", w: 0, h: 0, acc: 0 });
+  const st = useRef({ phase: 0, amp: on ? 1 : 0, pct, edge, color: "", w: 0, h: 0 });
   st.current.edge = edge;
 
   const draw = () => {
@@ -212,7 +229,7 @@ function Wave({ pct, edge, on: playing, redraw }: { pct: number; edge: number; o
     if (end <= 2) return;
     const mid = s.h / 2;
     ctx.beginPath();
-    for (let x = 2; x <= end; x += 1.5) {
+    for (let x = 2; x <= end; x += 2) {
       // The wave grows in over the first half wavelength so the start stays on the track's line.
       const ramp = Math.min(1, (x - 2) / (WAVELENGTH / 2));
       // + phase: the crests travel leftward, out of the playhead toward the start (as on Android).
@@ -246,13 +263,11 @@ function Wave({ pct, edge, on: playing, redraw }: { pct: number; edge: number; o
     if (ref.current) st.current.color = getComputedStyle(ref.current).color;
     draw();
   }, [pct, edge]);
-  // The slider writes the new position: drawn at once unless the travelling wave draws anyway.
-  const travelling = useRef(on);
-  travelling.current = on;
+  // The slider writes the new position (once a second while playing): drawn at once.
   useLayoutEffect(() => {
     redraw.current = (p) => {
       st.current.pct = p;
-      if (!travelling.current) draw();
+      draw();
     };
     return () => void (redraw.current = null);
   });
@@ -260,17 +275,22 @@ function Wave({ pct, edge, on: playing, redraw }: { pct: number; edge: number; o
     st.current.amp = Math.max(0, a);
     draw();
   });
+  // The wave travels only while the window is focused and shown: listening with another app in front leaves it
+  // still (same shape, no flattening). A 20 fps timer, not the frame loop: it doesn't keep 60 wakeups a second
+  // alive for a slow wave.
+  const focused = useWindowFocused();
   useEffect(() => {
-    if (!on) return;
-    return ticker((dt) => {
+    if (!on || !focused) return;
+    let last = performance.now();
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      const now = performance.now();
       const s = st.current;
-      s.phase = (s.phase + dt * SPEED * 2 * Math.PI) % (2 * Math.PI);
-      // ~30 fps is plenty for a slow wave and halves the repaints.
-      s.acc += dt;
-      if (s.acc < 1 / 30) return;
-      s.acc = 0;
+      s.phase = (s.phase + Math.min(0.2, (now - last) / 1000) * SPEED * 2 * Math.PI) % (2 * Math.PI);
+      last = now;
       draw();
-    });
-  }, [on]);
+    }, 1000 / WAVE_FPS);
+    return () => clearInterval(id);
+  }, [on, focused]);
   return <canvas ref={ref} className="pointer-events-none absolute left-0 w-full text-[var(--m3-primary)]" style={{ height: AMPLITUDE * 2 + 6 }} aria-hidden />;
 }
