@@ -1,4 +1,4 @@
-import { Clapperboard, LayoutDashboard, Sparkles } from "lucide-react";
+import { Clapperboard, Keyboard, LayoutDashboard, MicVocal, Podcast, Sparkles } from "lucide-react";
 import type { WhatsNewEntry } from "./types";
 
 /**
@@ -6,6 +6,31 @@ import type { WhatsNewEntry } from "./types";
  * entry shows nothing after the update.
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
+  {
+    version: "2.1.0",
+    title: "ytdesk 2.1: lyrics that sing along",
+    highlights: [
+      {
+        icon: MicVocal,
+        title: "Synced lyrics",
+        text: "Lyrics follow the song line by line, word by word where available, from six providers. Pick a karaoke style and the providers' order in Settings → Lyrics.",
+      },
+      {
+        icon: Podcast,
+        title: "Better podcasts",
+        text: "Episodes remember where you left off, the next episode plays when one ends, and searching for a podcast shows its shows and episodes first.",
+      },
+      {
+        icon: Keyboard,
+        title: "Keyboard shortcuts",
+        text: "Space plays and pauses, < and > skip, + and - change the volume. Rebind or turn them off in Settings → Keyboard shortcuts.",
+      },
+    ],
+    actions: [
+      { label: "Choose a karaoke style", action: { type: "openSettings", section: "lyrics" } },
+      { label: "Keyboard shortcuts", action: { type: "openSettings", section: "shortcuts" } },
+    ],
+  },
   {
     version: "2.0.0",
     title: "ytdesk 2.0: a Material 3 Expressive redesign",

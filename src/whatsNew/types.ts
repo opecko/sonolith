@@ -1,9 +1,10 @@
 import type { LucideIcon } from "lucide-react";
+import type { SettingsSection } from "../stores/nav";
 import type { NowPlayingLayout, UiStyle } from "../theme/appearance";
 
 /** What a "What's new" button may do: a closed set of safe in-app actions, never arbitrary code. */
 export type WhatsNewAction =
-  | { type: "openSettings"; section: "appearance" | "about" }
+  | { type: "openSettings"; section: SettingsSection }
   | { type: "setStyle"; style: UiStyle }
   /** Sets the layout; `open` also opens Now Playing, `tryCard` shows the layout picker card at its top. */
   | { type: "setNowPlayingLayout"; layout: NowPlayingLayout; open?: boolean; tryCard?: boolean };

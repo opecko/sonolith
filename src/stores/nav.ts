@@ -37,7 +37,9 @@ export const useNav = create<NavState>((set) => ({
 }));
 
 /** Settings, scrolled to one of its sections once it has rendered. */
-export function openSettings(section?: "appearance" | "about") {
+export type SettingsSection = "appearance" | "lyrics" | "shortcuts" | "about";
+
+export function openSettings(section?: SettingsSection) {
   useNav.getState().go({ name: "settings" });
   if (section)
     requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(`settings-${section}`)?.scrollIntoView({ block: "start" })));
