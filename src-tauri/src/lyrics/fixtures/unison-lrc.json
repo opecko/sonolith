@@ -1,0 +1,7 @@
+{
+ "success": true,
+ "data": {
+  "format": "lrc",
+  "lyrics": "[00:01.00]Line 1\n[00:04.50]Line 2\n[00:08.25]Line 3"
+ }
+}

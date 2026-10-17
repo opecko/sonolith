@@ -1,0 +1,371 @@
+{
+ "contents": {
+  "elementRenderer": {
+   "newElement": {
+    "type": {
+     "componentType": {
+      "model": {
+       "timedLyricsModel": {
+        "lyricsData": {
+         "timedLyricsData": [
+          {
+           "lyricLine": "♪",
+           "cueRange": {
+            "startTimeMilliseconds": "0",
+            "endTimeMilliseconds": "25090",
+            "metadata": {
+             "id": "0"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 1",
+           "cueRange": {
+            "startTimeMilliseconds": "25090",
+            "endTimeMilliseconds": "28710",
+            "metadata": {
+             "id": "1"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 2",
+           "cueRange": {
+            "startTimeMilliseconds": "28710",
+            "endTimeMilliseconds": "32700",
+            "metadata": {
+             "id": "2"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 3",
+           "cueRange": {
+            "startTimeMilliseconds": "32700",
+            "endTimeMilliseconds": "36920",
+            "metadata": {
+             "id": "3"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 4",
+           "cueRange": {
+            "startTimeMilliseconds": "36920",
+            "endTimeMilliseconds": "41590",
+            "metadata": {
+             "id": "4"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 5",
+           "cueRange": {
+            "startTimeMilliseconds": "41590",
+            "endTimeMilliseconds": "45260",
+            "metadata": {
+             "id": "5"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 6",
+           "cueRange": {
+            "startTimeMilliseconds": "45260",
+            "endTimeMilliseconds": "49420",
+            "metadata": {
+             "id": "6"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 7",
+           "cueRange": {
+            "startTimeMilliseconds": "49420",
+            "endTimeMilliseconds": "53430",
+            "metadata": {
+             "id": "7"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 8",
+           "cueRange": {
+            "startTimeMilliseconds": "53430",
+            "endTimeMilliseconds": "58910",
+            "metadata": {
+             "id": "8"
+            }
+           }
+          },
+          {
+           "lyricLine": "♪",
+           "cueRange": {
+            "startTimeMilliseconds": "58910",
+            "endTimeMilliseconds": "62050",
+            "metadata": {
+             "id": "9"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 10",
+           "cueRange": {
+            "startTimeMilliseconds": "62050",
+            "endTimeMilliseconds": "66100",
+            "metadata": {
+             "id": "10"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 11",
+           "cueRange": {
+            "startTimeMilliseconds": "66100",
+            "endTimeMilliseconds": "74310",
+            "metadata": {
+             "id": "11"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 12",
+           "cueRange": {
+            "startTimeMilliseconds": "74310",
+            "endTimeMilliseconds": "82440",
+            "metadata": {
+             "id": "12"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 13",
+           "cueRange": {
+            "startTimeMilliseconds": "82440",
+            "endTimeMilliseconds": "90800",
+            "metadata": {
+             "id": "13"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 14",
+           "cueRange": {
+            "startTimeMilliseconds": "90800",
+            "endTimeMilliseconds": "99040",
+            "metadata": {
+             "id": "14"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 15",
+           "cueRange": {
+            "startTimeMilliseconds": "99040",
+            "endTimeMilliseconds": "102110",
+            "metadata": {
+             "id": "15"
+            }
+           }
+          },
+          {
+           "lyricLine": "♪",
+           "cueRange": {
+            "startTimeMilliseconds": "102110",
+            "endTimeMilliseconds": "106920",
+            "metadata": {
+             "id": "16"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 17",
+           "cueRange": {
+            "startTimeMilliseconds": "106920",
+            "endTimeMilliseconds": "111170",
+            "metadata": {
+             "id": "17"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 18",
+           "cueRange": {
+            "startTimeMilliseconds": "111170",
+            "endTimeMilliseconds": "114810",
+            "metadata": {
+             "id": "18"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 19",
+           "cueRange": {
+            "startTimeMilliseconds": "114810",
+            "endTimeMilliseconds": "118830",
+            "metadata": {
+             "id": "19"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 20",
+           "cueRange": {
+            "startTimeMilliseconds": "118830",
+            "endTimeMilliseconds": "124350",
+            "metadata": {
+             "id": "20"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 21",
+           "cueRange": {
+            "startTimeMilliseconds": "127220",
+            "endTimeMilliseconds": "132500",
+            "metadata": {
+             "id": "21"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 22",
+           "cueRange": {
+            "startTimeMilliseconds": "135330",
+            "endTimeMilliseconds": "140010",
+            "metadata": {
+             "id": "22"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 23",
+           "cueRange": {
+            "startTimeMilliseconds": "140010",
+            "endTimeMilliseconds": "148340",
+            "metadata": {
+             "id": "23"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 24",
+           "cueRange": {
+            "startTimeMilliseconds": "148340",
+            "endTimeMilliseconds": "156790",
+            "metadata": {
+             "id": "24"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 25",
+           "cueRange": {
+            "startTimeMilliseconds": "156790",
+            "endTimeMilliseconds": "161000",
+            "metadata": {
+             "id": "25"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 26",
+           "cueRange": {
+            "startTimeMilliseconds": "161000",
+            "endTimeMilliseconds": "165280",
+            "metadata": {
+             "id": "26"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 27",
+           "cueRange": {
+            "startTimeMilliseconds": "165280",
+            "endTimeMilliseconds": "169280",
+            "metadata": {
+             "id": "27"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 28",
+           "cueRange": {
+            "startTimeMilliseconds": "169280",
+            "endTimeMilliseconds": "173350",
+            "metadata": {
+             "id": "28"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 29",
+           "cueRange": {
+            "startTimeMilliseconds": "173350",
+            "endTimeMilliseconds": "177340",
+            "metadata": {
+             "id": "29"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 30",
+           "cueRange": {
+            "startTimeMilliseconds": "177340",
+            "endTimeMilliseconds": "181790",
+            "metadata": {
+             "id": "30"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 31",
+           "cueRange": {
+            "startTimeMilliseconds": "181790",
+            "endTimeMilliseconds": "185240",
+            "metadata": {
+             "id": "31"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 32",
+           "cueRange": {
+            "startTimeMilliseconds": "185240",
+            "endTimeMilliseconds": "190200",
+            "metadata": {
+             "id": "32"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 33",
+           "cueRange": {
+            "startTimeMilliseconds": "193210",
+            "endTimeMilliseconds": "198680",
+            "metadata": {
+             "id": "33"
+            }
+           }
+          },
+          {
+           "lyricLine": "Line 34",
+           "cueRange": {
+            "startTimeMilliseconds": "201490",
+            "endTimeMilliseconds": "205250",
+            "metadata": {
+             "id": "34"
+            }
+           }
+          }
+         ],
+         "sourceMessage": "Source: Musixmatch"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,1774 @@
+{
+ "KpoeTools": "1.7-1-ConvertTTMLtoJSON-DOMParser",
+ "type": "Word",
+ "metadata": {
+  "source": "qApple",
+  "title": "The Less I Know The Better",
+  "language": "en",
+  "agents": {
+   "v1": {
+    "type": "person",
+    "name": "Tame Impala",
+    "alias": "v1"
+   }
+  },
+  "songParts": [
+   {
+    "name": "",
+    "time": 24693,
+    "duration": 16806
+   },
+   {
+    "name": "",
+    "time": 41609,
+    "duration": 24433
+   },
+   {
+    "name": "",
+    "time": 66064,
+    "duration": 35205
+   },
+   {
+    "name": "",
+    "time": 106741,
+    "duration": 33196
+   },
+   {
+    "name": "",
+    "time": 139937,
+    "duration": 15830
+   },
+   {
+    "name": "",
+    "time": 157066,
+    "duration": 16195
+   },
+   {
+    "name": "",
+    "time": 173531,
+    "duration": 32856
+   }
+  ],
+  "totalDuration": "3:38.543",
+  "artist": "Tame Impala",
+  "album": "Currents",
+  "isrc": "AUUM71500303"
+ },
+ "lyrics": [
+  {
+   "time": 24693,
+   "duration": 3905,
+   "text": "Line 1",
+   "syllabus": [
+    {
+     "time": 24693,
+     "duration": 1152,
+     "text": "w1 "
+    },
+    {
+     "time": 25845,
+     "duration": 518,
+     "text": "w2 "
+    },
+    {
+     "time": 26363,
+     "duration": 250,
+     "text": "w3 "
+    },
+    {
+     "time": 26613,
+     "duration": 521,
+     "text": "w4 "
+    },
+    {
+     "time": 27134,
+     "duration": 1087,
+     "text": "w5"
+    },
+    {
+     "time": 28221,
+     "duration": 377,
+     "text": "w6"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 0
+   }
+  },
+  {
+   "time": 28878,
+   "duration": 3748,
+   "text": "Line 2",
+   "syllabus": [
+    {
+     "time": 28878,
+     "duration": 510,
+     "text": "w1 "
+    },
+    {
+     "time": 29388,
+     "duration": 568,
+     "text": "w2 "
+    },
+    {
+     "time": 29956,
+     "duration": 466,
+     "text": "w3 "
+    },
+    {
+     "time": 30422,
+     "duration": 251,
+     "text": "w4 "
+    },
+    {
+     "time": 30673,
+     "duration": 549,
+     "text": "w5 "
+    },
+    {
+     "time": 31222,
+     "duration": 216,
+     "text": "w6 "
+    },
+    {
+     "time": 31438,
+     "duration": 916,
+     "text": "w7 "
+    },
+    {
+     "time": 32354,
+     "duration": 272,
+     "text": "w8"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 0
+   }
+  },
+  {
+   "time": 32917,
+   "duration": 3941,
+   "text": "Line 3",
+   "syllabus": [
+    {
+     "time": 32917,
+     "duration": 610,
+     "text": "w1 "
+    },
+    {
+     "time": 33527,
+     "duration": 499,
+     "text": "w2 "
+    },
+    {
+     "time": 34026,
+     "duration": 800,
+     "text": "w3 "
+    },
+    {
+     "time": 34826,
+     "duration": 501,
+     "text": "w4 "
+    },
+    {
+     "time": 35327,
+     "duration": 232,
+     "text": "w5 "
+    },
+    {
+     "time": 35559,
+     "duration": 883,
+     "text": "w6"
+    },
+    {
+     "time": 36442,
+     "duration": 416,
+     "text": "w7"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 0
+   }
+  },
+  {
+   "time": 37059,
+   "duration": 4440,
+   "text": "Line 4",
+   "syllabus": [
+    {
+     "time": 37059,
+     "duration": 530,
+     "text": "w1 "
+    },
+    {
+     "time": 37589,
+     "duration": 555,
+     "text": "w2 "
+    },
+    {
+     "time": 38144,
+     "duration": 779,
+     "text": "w3 "
+    },
+    {
+     "time": 38923,
+     "duration": 768,
+     "text": "w4 "
+    },
+    {
+     "time": 39691,
+     "duration": 1808,
+     "text": "w5"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 0
+   }
+  },
+  {
+   "time": 41609,
+   "duration": 3424,
+   "text": "Line 5",
+   "syllabus": [
+    {
+     "time": 41609,
+     "duration": 691,
+     "text": "w1 "
+    },
+    {
+     "time": 42300,
+     "duration": 466,
+     "text": "w2 "
+    },
+    {
+     "time": 42766,
+     "duration": 768,
+     "text": "w3 "
+    },
+    {
+     "time": 43534,
+     "duration": 1139,
+     "text": "w4"
+    },
+    {
+     "time": 44673,
+     "duration": 360,
+     "text": "w5"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 1
+   }
+  },
+  {
+   "time": 45282,
+   "duration": 3752,
+   "text": "Line 6",
+   "syllabus": [
+    {
+     "time": 45282,
+     "duration": 552,
+     "text": "w1 "
+    },
+    {
+     "time": 45834,
+     "duration": 549,
+     "text": "w2 "
+    },
+    {
+     "time": 46383,
+     "duration": 517,
+     "text": "w3 "
+    },
+    {
+     "time": 46900,
+     "duration": 299,
+     "text": "w4 "
+    },
+    {
+     "time": 47199,
+     "duration": 517,
+     "text": "w5 "
+    },
+    {
+     "time": 47716,
+     "duration": 200,
+     "text": "w6 "
+    },
+    {
+     "time": 47916,
+     "duration": 697,
+     "text": "w7"
+    },
+    {
+     "time": 48613,
+     "duration": 421,
+     "text": "w8"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 1
+   }
+  },
+  {
+   "time": 49415,
+   "duration": 3750,
+   "text": "Line 7",
+   "syllabus": [
+    {
+     "time": 49415,
+     "duration": 544,
+     "text": "w1 "
+    },
+    {
+     "time": 49959,
+     "duration": 565,
+     "text": "w2 "
+    },
+    {
+     "time": 50524,
+     "duration": 467,
+     "text": "w3 "
+    },
+    {
+     "time": 50991,
+     "duration": 266,
+     "text": "w4 "
+    },
+    {
+     "time": 51257,
+     "duration": 550,
+     "text": "w5 "
+    },
+    {
+     "time": 51807,
+     "duration": 955,
+     "text": "w6"
+    },
+    {
+     "time": 52762,
+     "duration": 403,
+     "text": "w7"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 1
+   }
+  },
+  {
+   "time": 53497,
+   "duration": 5621,
+   "text": "Line 8",
+   "syllabus": [
+    {
+     "time": 53497,
+     "duration": 541,
+     "text": "w1 "
+    },
+    {
+     "time": 54038,
+     "duration": 497,
+     "text": "w2 "
+    },
+    {
+     "time": 54535,
+     "duration": 487,
+     "text": "w3 "
+    },
+    {
+     "time": 55022,
+     "duration": 283,
+     "text": "w4 "
+    },
+    {
+     "time": 55305,
+     "duration": 478,
+     "text": "w5 "
+    },
+    {
+     "time": 55783,
+     "duration": 384,
+     "text": "w6 "
+    },
+    {
+     "time": 56167,
+     "duration": 784,
+     "text": "w7"
+    },
+    {
+     "time": 56951,
+     "duration": 2167,
+     "text": "w8"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 1
+   }
+  },
+  {
+   "time": 62250,
+   "duration": 3792,
+   "text": "Line 9",
+   "syllabus": [
+    {
+     "time": 62250,
+     "duration": 613,
+     "text": "w1 "
+    },
+    {
+     "time": 62863,
+     "duration": 419,
+     "text": "w2 "
+    },
+    {
+     "time": 63282,
+     "duration": 282,
+     "text": "w3 "
+    },
+    {
+     "time": 63564,
+     "duration": 467,
+     "text": "w4 "
+    },
+    {
+     "time": 64031,
+     "duration": 251,
+     "text": "w5 "
+    },
+    {
+     "time": 64282,
+     "duration": 816,
+     "text": "w6"
+    },
+    {
+     "time": 65098,
+     "duration": 944,
+     "text": "w7"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 1
+   }
+  },
+  {
+   "time": 66064,
+   "duration": 2215,
+   "text": "Line 10",
+   "syllabus": [
+    {
+     "time": 66064,
+     "duration": 576,
+     "text": "w1 "
+    },
+    {
+     "time": 66640,
+     "duration": 314,
+     "text": "w2 "
+    },
+    {
+     "time": 66954,
+     "duration": 1325,
+     "text": "w3"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 2
+   }
+  },
+  {
+   "time": 68569,
+   "duration": 5372,
+   "text": "Line 11",
+   "syllabus": [
+    {
+     "time": 68569,
+     "duration": 574,
+     "text": "w1 "
+    },
+    {
+     "time": 69143,
+     "duration": 467,
+     "text": "w2 "
+    },
+    {
+     "time": 69610,
+     "duration": 693,
+     "text": "w3 "
+    },
+    {
+     "time": 70303,
+     "duration": 856,
+     "text": "w4 "
+    },
+    {
+     "time": 71210,
+     "duration": 416,
+     "text": "w5 "
+    },
+    {
+     "time": 71626,
+     "duration": 301,
+     "text": "w6 "
+    },
+    {
+     "time": 71927,
+     "duration": 2014,
+     "text": "w7"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 2
+   }
+  },
+  {
+   "time": 74325,
+   "duration": 1870,
+   "text": "Line 12",
+   "syllabus": [
+    {
+     "time": 74325,
+     "duration": 446,
+     "text": "w1 "
+    },
+    {
+     "time": 74771,
+     "duration": 1424,
+     "text": "w2"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 2
+   }
+  },
+  {
+   "time": 76386,
+   "duration": 5777,
+   "text": "Line 13",
+   "syllabus": [
+    {
+     "time": 76386,
+     "duration": 560,
+     "text": "w1 "
+    },
+    {
+     "time": 76946,
+     "duration": 365,
+     "text": "w2 "
+    },
+    {
+     "time": 77311,
+     "duration": 546,
+     "text": "w3 "
+    },
+    {
+     "time": 77857,
+     "duration": 905,
+     "text": "w4 "
+    },
+    {
+     "time": 78762,
+     "duration": 683,
+     "text": "w5 "
+    },
+    {
+     "time": 79445,
+     "duration": 666,
+     "text": "w6 "
+    },
+    {
+     "time": 80111,
+     "duration": 2052,
+     "text": "w7"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 2
+   }
+  },
+  {
+   "time": 82471,
+   "duration": 2332,
+   "text": "Line 14",
+   "syllabus": [
+    {
+     "time": 82471,
+     "duration": 530,
+     "text": "w1 "
+    },
+    {
+     "time": 83001,
+     "duration": 328,
+     "text": "w2 "
+    },
+    {
+     "time": 83329,
+     "duration": 1474,
+     "text": "w3"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 2
+   }
+  },
+  {
+   "time": 85012,
+   "duration": 5268,
+   "text": "Line 15",
+   "syllabus": [
+    {
+     "time": 85012,
+     "duration": 563,
+     "text": "w1 "
+    },
+    {
+     "time": 85575,
+     "duration": 514,
+     "text": "w2 "
+    },
+    {
+     "time": 86089,
+     "duration": 502,
+     "text": "w3 "
+    },
+    {
+     "time": 86591,
+     "duration": 498,
+     "text": "w4 "
+    },
+    {
+     "time": 87089,
+     "duration": 557,
+     "text": "w5 "
+    },
+    {
+     "time": 87673,
+     "duration": 400,
+     "text": "w6 "
+    },
+    {
+     "time": 88073,
+     "duration": 334,
+     "text": "w7 "
+    },
+    {
+     "time": 88407,
+     "duration": 1873,
+     "text": "w8"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 2
+   }
+  },
+  {
+   "time": 90744,
+   "duration": 7722,
+   "text": "Line 16",
+   "syllabus": [
+    {
+     "time": 90744,
+     "duration": 541,
+     "text": "w1 "
+    },
+    {
+     "time": 91285,
+     "duration": 734,
+     "text": "w2 "
+    },
+    {
+     "time": 92019,
+     "duration": 334,
+     "text": "w3 "
+    },
+    {
+     "time": 92353,
+     "duration": 476,
+     "text": "w4 "
+    },
+    {
+     "time": 92829,
+     "duration": 907,
+     "text": "w5 "
+    },
+    {
+     "time": 93736,
+     "duration": 549,
+     "text": "w6 "
+    },
+    {
+     "time": 94285,
+     "duration": 1049,
+     "text": "w7 "
+    },
+    {
+     "time": 95334,
+     "duration": 349,
+     "text": "w8 "
+    },
+    {
+     "time": 95837,
+     "duration": 483,
+     "text": "w9 "
+    },
+    {
+     "time": 96320,
+     "duration": 413,
+     "text": "w10 "
+    },
+    {
+     "time": 96733,
+     "duration": 1733,
+     "text": "w11"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 2
+   }
+  },
+  {
+   "time": 98836,
+   "duration": 2433,
+   "text": "Line 17",
+   "syllabus": [
+    {
+     "time": 98836,
+     "duration": 563,
+     "text": "w1 "
+    },
+    {
+     "time": 99399,
+     "duration": 283,
+     "text": "w2"
+    },
+    {
+     "time": 99682,
+     "duration": 1587,
+     "text": "w3"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 2
+   }
+  },
+  {
+   "time": 106741,
+   "duration": 3871,
+   "text": "Line 18",
+   "syllabus": [
+    {
+     "time": 106741,
+     "duration": 603,
+     "text": "w1 "
+    },
+    {
+     "time": 107344,
+     "duration": 549,
+     "text": "w2 "
+    },
+    {
+     "time": 107893,
+     "duration": 517,
+     "text": "w3 "
+    },
+    {
+     "time": 108410,
+     "duration": 267,
+     "text": "w4 "
+    },
+    {
+     "time": 108677,
+     "duration": 616,
+     "text": "w5 "
+    },
+    {
+     "time": 109293,
+     "duration": 219,
+     "text": "w6 "
+    },
+    {
+     "time": 109512,
+     "duration": 680,
+     "text": "w7"
+    },
+    {
+     "time": 110192,
+     "duration": 420,
+     "text": "w8"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 3
+   }
+  },
+  {
+   "time": 110936,
+   "duration": 3738,
+   "text": "Line 19",
+   "syllabus": [
+    {
+     "time": 110936,
+     "duration": 605,
+     "text": "w1 "
+    },
+    {
+     "time": 111541,
+     "duration": 499,
+     "text": "w2 "
+    },
+    {
+     "time": 112040,
+     "duration": 483,
+     "text": "w3 "
+    },
+    {
+     "time": 112523,
+     "duration": 234,
+     "text": "w4 "
+    },
+    {
+     "time": 112757,
+     "duration": 534,
+     "text": "w5 "
+    },
+    {
+     "time": 113291,
+     "duration": 890,
+     "text": "w6"
+    },
+    {
+     "time": 114181,
+     "duration": 493,
+     "text": "w7"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 3
+   }
+  },
+  {
+   "time": 115003,
+   "duration": 3900,
+   "text": "Line 20",
+   "syllabus": [
+    {
+     "time": 115003,
+     "duration": 638,
+     "text": "w1 "
+    },
+    {
+     "time": 115641,
+     "duration": 501,
+     "text": "w2 "
+    },
+    {
+     "time": 116142,
+     "duration": 781,
+     "text": "w3 "
+    },
+    {
+     "time": 116923,
+     "duration": 518,
+     "text": "w4 "
+    },
+    {
+     "time": 117441,
+     "duration": 271,
+     "text": "w5 "
+    },
+    {
+     "time": 117712,
+     "duration": 1191,
+     "text": "w6"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 3
+   }
+  },
+  {
+   "time": 119085,
+   "duration": 5404,
+   "text": "Line 21",
+   "syllabus": [
+    {
+     "time": 119085,
+     "duration": 638,
+     "text": "w1 "
+    },
+    {
+     "time": 119723,
+     "duration": 487,
+     "text": "w2 "
+    },
+    {
+     "time": 120210,
+     "duration": 515,
+     "text": "w3 "
+    },
+    {
+     "time": 120725,
+     "duration": 274,
+     "text": "w4 "
+    },
+    {
+     "time": 120999,
+     "duration": 502,
+     "text": "w5 "
+    },
+    {
+     "time": 121501,
+     "duration": 283,
+     "text": "w6"
+    },
+    {
+     "time": 121784,
+     "duration": 2705,
+     "text": "w7"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 3
+   }
+  },
+  {
+   "time": 127841,
+   "duration": 4766,
+   "text": "Line 22",
+   "syllabus": [
+    {
+     "time": 127841,
+     "duration": 588,
+     "text": "w1 "
+    },
+    {
+     "time": 128429,
+     "duration": 483,
+     "text": "w2 "
+    },
+    {
+     "time": 128912,
+     "duration": 266,
+     "text": "w3 "
+    },
+    {
+     "time": 129178,
+     "duration": 502,
+     "text": "w4 "
+    },
+    {
+     "time": 129680,
+     "duration": 197,
+     "text": "w5"
+    },
+    {
+     "time": 129877,
+     "duration": 2730,
+     "text": "w6"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 3
+   }
+  },
+  {
+   "time": 135977,
+   "duration": 3960,
+   "text": "Line 23",
+   "syllabus": [
+    {
+     "time": 135977,
+     "duration": 707,
+     "text": "w1 "
+    },
+    {
+     "time": 136684,
+     "duration": 451,
+     "text": "w2 "
+    },
+    {
+     "time": 137135,
+     "duration": 266,
+     "text": "w3 "
+    },
+    {
+     "time": 137401,
+     "duration": 499,
+     "text": "w4 "
+    },
+    {
+     "time": 137900,
+     "duration": 219,
+     "text": "w5"
+    },
+    {
+     "time": 138119,
+     "duration": 1818,
+     "text": "w6"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 3
+   }
+  },
+  {
+   "time": 139937,
+   "duration": 2106,
+   "text": "Line 24",
+   "syllabus": [
+    {
+     "time": 139937,
+     "duration": 560,
+     "text": "w1 "
+    },
+    {
+     "time": 140497,
+     "duration": 275,
+     "text": "w2 "
+    },
+    {
+     "time": 140772,
+     "duration": 1271,
+     "text": "w3"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 4
+   }
+  },
+  {
+   "time": 142485,
+   "duration": 5185,
+   "text": "Line 25",
+   "syllabus": [
+    {
+     "time": 142485,
+     "duration": 557,
+     "text": "w1 "
+    },
+    {
+     "time": 143042,
+     "duration": 485,
+     "text": "w2 "
+    },
+    {
+     "time": 143527,
+     "duration": 432,
+     "text": "w3 "
+    },
+    {
+     "time": 143959,
+     "duration": 958,
+     "text": "w4 "
+    },
+    {
+     "time": 145042,
+     "duration": 485,
+     "text": "w5 "
+    },
+    {
+     "time": 145527,
+     "duration": 267,
+     "text": "w6 "
+    },
+    {
+     "time": 145794,
+     "duration": 1876,
+     "text": "w7"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 4
+   }
+  },
+  {
+   "time": 148119,
+   "duration": 7648,
+   "text": "Line 26",
+   "syllabus": [
+    {
+     "time": 148119,
+     "duration": 351,
+     "text": "w1 "
+    },
+    {
+     "time": 148470,
+     "duration": 223,
+     "text": "w2 "
+    },
+    {
+     "time": 148693,
+     "duration": 838,
+     "text": "w3 "
+    },
+    {
+     "time": 149531,
+     "duration": 202,
+     "text": "w4 "
+    },
+    {
+     "time": 149733,
+     "duration": 534,
+     "text": "w5 "
+    },
+    {
+     "time": 150267,
+     "duration": 917,
+     "text": "w6 "
+    },
+    {
+     "time": 151184,
+     "duration": 616,
+     "text": "w7 "
+    },
+    {
+     "time": 151800,
+     "duration": 816,
+     "text": "w8 "
+    },
+    {
+     "time": 152616,
+     "duration": 487,
+     "text": "w9 "
+    },
+    {
+     "time": 153240,
+     "duration": 630,
+     "text": "w10 "
+    },
+    {
+     "time": 153870,
+     "duration": 377,
+     "text": "w11 "
+    },
+    {
+     "time": 154247,
+     "duration": 1520,
+     "text": "w12"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 4
+   }
+  },
+  {
+   "time": 157066,
+   "duration": 3732,
+   "text": "Line 27",
+   "syllabus": [
+    {
+     "time": 157066,
+     "duration": 602,
+     "text": "w1 "
+    },
+    {
+     "time": 157668,
+     "duration": 518,
+     "text": "w2 "
+    },
+    {
+     "time": 158186,
+     "duration": 1032,
+     "text": "w3 "
+    },
+    {
+     "time": 159218,
+     "duration": 517,
+     "text": "w4 "
+    },
+    {
+     "time": 159735,
+     "duration": 699,
+     "text": "w5 "
+    },
+    {
+     "time": 160434,
+     "duration": 364,
+     "text": "w6"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 5
+   }
+  },
+  {
+   "time": 160939,
+   "duration": 2025,
+   "text": "Line 28",
+   "syllabus": [
+    {
+     "time": 160939,
+     "duration": 586,
+     "text": "w1 "
+    },
+    {
+     "time": 161525,
+     "duration": 302,
+     "text": "w2 "
+    },
+    {
+     "time": 161827,
+     "duration": 266,
+     "text": "w3 "
+    },
+    {
+     "time": 162093,
+     "duration": 232,
+     "text": "w4 "
+    },
+    {
+     "time": 162325,
+     "duration": 639,
+     "text": "w5"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 5
+   }
+  },
+  {
+   "time": 163034,
+   "duration": 1924,
+   "text": "Line 29",
+   "syllabus": [
+    {
+     "time": 163034,
+     "duration": 539,
+     "text": "w1 "
+    },
+    {
+     "time": 163573,
+     "duration": 250,
+     "text": "w2 "
+    },
+    {
+     "time": 163823,
+     "duration": 299,
+     "text": "w3 "
+    },
+    {
+     "time": 164122,
+     "duration": 836,
+     "text": "w4"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 5
+   }
+  },
+  {
+   "time": 165322,
+   "duration": 3714,
+   "text": "Line 30",
+   "syllabus": [
+    {
+     "time": 165322,
+     "duration": 1029,
+     "text": "w1 "
+    },
+    {
+     "time": 166351,
+     "duration": 517,
+     "text": "w2 "
+    },
+    {
+     "time": 166868,
+     "duration": 500,
+     "text": "w3 "
+    },
+    {
+     "time": 167418,
+     "duration": 565,
+     "text": "w4 "
+    },
+    {
+     "time": 167983,
+     "duration": 235,
+     "text": "w5 "
+    },
+    {
+     "time": 168218,
+     "duration": 472,
+     "text": "w6"
+    },
+    {
+     "time": 168690,
+     "duration": 346,
+     "text": "w7"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 5
+   }
+  },
+  {
+   "time": 169198,
+   "duration": 1965,
+   "text": "Line 31",
+   "syllabus": [
+    {
+     "time": 169198,
+     "duration": 515,
+     "text": "w1 "
+    },
+    {
+     "time": 169713,
+     "duration": 285,
+     "text": "w2 "
+    },
+    {
+     "time": 169998,
+     "duration": 267,
+     "text": "w3 "
+    },
+    {
+     "time": 170265,
+     "duration": 248,
+     "text": "w4 "
+    },
+    {
+     "time": 170513,
+     "duration": 650,
+     "text": "w5"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 5
+   }
+  },
+  {
+   "time": 171261,
+   "duration": 2000,
+   "text": "Line 32",
+   "syllabus": [
+    {
+     "time": 171261,
+     "duration": 549,
+     "text": "w1 "
+    },
+    {
+     "time": 171810,
+     "duration": 245,
+     "text": "w2 "
+    },
+    {
+     "time": 172055,
+     "duration": 283,
+     "text": "w3 "
+    },
+    {
+     "time": 172338,
+     "duration": 232,
+     "text": "w4 "
+    },
+    {
+     "time": 172570,
+     "duration": 691,
+     "text": "w5"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 5
+   }
+  },
+  {
+   "time": 173531,
+   "duration": 3780,
+   "text": "Line 33",
+   "syllabus": [
+    {
+     "time": 173531,
+     "duration": 574,
+     "text": "w1 "
+    },
+    {
+     "time": 174105,
+     "duration": 498,
+     "text": "w2 "
+    },
+    {
+     "time": 174603,
+     "duration": 984,
+     "text": "w3 "
+    },
+    {
+     "time": 175587,
+     "duration": 613,
+     "text": "w4 "
+    },
+    {
+     "time": 176200,
+     "duration": 654,
+     "text": "w5 "
+    },
+    {
+     "time": 176854,
+     "duration": 457,
+     "text": "w6"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 6
+   }
+  },
+  {
+   "time": 177403,
+   "duration": 1955,
+   "text": "Line 34",
+   "syllabus": [
+    {
+     "time": 177403,
+     "duration": 595,
+     "text": "w1 "
+    },
+    {
+     "time": 177998,
+     "duration": 192,
+     "text": "w2 "
+    },
+    {
+     "time": 178190,
+     "duration": 341,
+     "text": "w3 "
+    },
+    {
+     "time": 178531,
+     "duration": 251,
+     "text": "w4 "
+    },
+    {
+     "time": 178782,
+     "duration": 576,
+     "text": "w5"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 6
+   }
+  },
+  {
+   "time": 179437,
+   "duration": 2053,
+   "text": "Line 35",
+   "syllabus": [
+    {
+     "time": 179437,
+     "duration": 600,
+     "text": "w1 "
+    },
+    {
+     "time": 180037,
+     "duration": 474,
+     "text": "w2 "
+    },
+    {
+     "time": 180511,
+     "duration": 232,
+     "text": "w3 "
+    },
+    {
+     "time": 180743,
+     "duration": 747,
+     "text": "w4"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 6
+   }
+  },
+  {
+   "time": 181726,
+   "duration": 3535,
+   "text": "Line 36",
+   "syllabus": [
+    {
+     "time": 181726,
+     "duration": 608,
+     "text": "w1 "
+    },
+    {
+     "time": 182334,
+     "duration": 451,
+     "text": "w2 "
+    },
+    {
+     "time": 182785,
+     "duration": 863,
+     "text": "w3 "
+    },
+    {
+     "time": 183817,
+     "duration": 549,
+     "text": "w4 "
+    },
+    {
+     "time": 184366,
+     "duration": 251,
+     "text": "w5 "
+    },
+    {
+     "time": 184617,
+     "duration": 435,
+     "text": "w6 "
+    },
+    {
+     "time": 185052,
+     "duration": 209,
+     "text": "w7"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 6
+   }
+  },
+  {
+   "time": 185261,
+   "duration": 4603,
+   "text": "Line 37",
+   "syllabus": [
+    {
+     "time": 185261,
+     "duration": 412,
+     "text": "w1 "
+    },
+    {
+     "time": 185673,
+     "duration": 483,
+     "text": "w2 "
+    },
+    {
+     "time": 186156,
+     "duration": 216,
+     "text": "w3 "
+    },
+    {
+     "time": 186372,
+     "duration": 1142,
+     "text": "w4 "
+    },
+    {
+     "time": 187606,
+     "duration": 566,
+     "text": "w5 "
+    },
+    {
+     "time": 188172,
+     "duration": 218,
+     "text": "w6 "
+    },
+    {
+     "time": 188390,
+     "duration": 534,
+     "text": "w7 "
+    },
+    {
+     "time": 188924,
+     "duration": 940,
+     "text": "w8"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 6
+   }
+  },
+  {
+   "time": 193476,
+   "duration": 4779,
+   "text": "Line 38",
+   "syllabus": [
+    {
+     "time": 193476,
+     "duration": 339,
+     "text": "w1 "
+    },
+    {
+     "time": 193815,
+     "duration": 517,
+     "text": "w2 "
+    },
+    {
+     "time": 194332,
+     "duration": 232,
+     "text": "w3 "
+    },
+    {
+     "time": 194564,
+     "duration": 1175,
+     "text": "w4 "
+    },
+    {
+     "time": 195834,
+     "duration": 530,
+     "text": "w5 "
+    },
+    {
+     "time": 196364,
+     "duration": 219,
+     "text": "w6 "
+    },
+    {
+     "time": 196583,
+     "duration": 483,
+     "text": "w7 "
+    },
+    {
+     "time": 197066,
+     "duration": 1189,
+     "text": "w8"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 6
+   }
+  },
+  {
+   "time": 201615,
+   "duration": 4772,
+   "text": "Line 39",
+   "syllabus": [
+    {
+     "time": 201615,
+     "duration": 405,
+     "text": "w1 "
+    },
+    {
+     "time": 202020,
+     "duration": 517,
+     "text": "w2 "
+    },
+    {
+     "time": 202537,
+     "duration": 235,
+     "text": "w3 "
+    },
+    {
+     "time": 202772,
+     "duration": 1109,
+     "text": "w4 "
+    },
+    {
+     "time": 204020,
+     "duration": 517,
+     "text": "w5 "
+    },
+    {
+     "time": 204537,
+     "duration": 251,
+     "text": "w6 "
+    },
+    {
+     "time": 204788,
+     "duration": 517,
+     "text": "w7 "
+    },
+    {
+     "time": 205305,
+     "duration": 1082,
+     "text": "w8"
+    }
+   ],
+   "element": {
+    "key": "",
+    "singer": "v1",
+    "songPartIndex": 6
+   }
+  }
+ ],
+ "cached": "Remote",
+ "processingTime": {
+  "timeElapsed": 371,
+  "lastProcessed": 1792145323878,
+  "totalElapsedMs": 371,
+  "winnerSource": "qApple",
+  "syncPriority": 3,
+  "sourcesStatus": {
+   "qapple": {
+    "status": "OK",
+    "elapsedMs": 307
+   },
+   "qq": {
+    "status": "BAD",
+    "elapsedMs": 329
+   },
+   "deezer": {
+    "status": "BAD",
+    "elapsedMs": 370
+   }
+  }
+ }
+}

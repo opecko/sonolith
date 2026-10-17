@@ -1,6 +1,7 @@
 mod auth;
 mod discord;
 mod fonts;
+mod lyrics;
 #[cfg(target_os = "linux")]
 mod mpris;
 mod proxy;
@@ -45,6 +46,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
+            app.manage(lyrics::LyricsState::new(app.handle()));
             ytdlp::ensure_fresh(app.handle().clone());
             #[cfg(target_os = "linux")]
             mpris::init(app.handle());
@@ -81,6 +83,8 @@ pub fn run() {
             tray::tray_update,
             render::render_set_gpu,
             render::app_has_prior_data,
+            lyrics::lyrics_get,
+            lyrics::lyrics_clear_cache,
             proxy::proxy_url,
             proxy::stream_probe,
             ytdlp::ytdlp_status,

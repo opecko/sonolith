@@ -5708,9 +5708,11 @@ dependencies = [
 name = "ytdesk"
 version = "2.0.0"
 dependencies = [
+ "base64 0.22.1",
  "fontdb",
  "keyring",
  "libappindicator",
+ "roxmltree",
  "serde",
  "serde_json",
  "sha2 0.10.9",

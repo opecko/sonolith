@@ -1,0 +1,6 @@
+{
+ "success": false,
+ "error": "Lyrics not found",
+ "code": "NOT_FOUND",
+ "hint": "Couldn't find lyrics for this. Try a different search, or be the first to submit them."
+}
