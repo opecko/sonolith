@@ -11,6 +11,8 @@ import MainView from "./views/MainView";
 import NowPlaying from "./views/NowPlaying";
 import { useUi } from "./stores/ui";
 import Toast from "./components/Toast";
+import { initShortcuts } from "./shortcuts/init";
+import ShortcutFeedback from "./shortcuts/ShortcutFeedback";
 import { browseLinks } from "./components/TrackByline";
 import ConfirmDialog from "./components/ConfirmDialog";
 import CreditsDialog from "./components/CreditsDialog";
@@ -35,6 +37,7 @@ export default function App() {
     initHistory();
     initUpdates();
     void initOnboarding();
+    initShortcuts();
   }, []);
   // One delegated handler for every artist / album link in the app (TrackByline): rows carry only data-* attributes.
   return (
@@ -53,6 +56,7 @@ export default function App() {
       <WhatsNewDialog />
       <ConfirmDialog />
       <Toast />
+      <ShortcutFeedback />
       {onboarding && <Suspense fallback={null}><Onboarding /></Suspense>}
     </div>
   );

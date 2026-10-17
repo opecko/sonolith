@@ -129,12 +129,13 @@ export function isTyping(t: TargetLike | null | undefined): boolean {
 }
 
 /**
- * Space on a control inside a menu or dialog belongs to that control (activating a menu item, a dialog button,
+ * Space on a control inside a menu or modal dialog belongs to that control (activating a menu item, a dialog button,
  * a switch); there Space doesn't toggle playback. Elsewhere it does, even on a focused button or row.
  */
 export function spaceOwnedByControl(t: TargetLike | null | undefined): boolean {
   if (!t?.closest) return false;
-  const inside = t.closest('[role="menu"], [role="dialog"], [role="alertdialog"], [role="listbox"], [aria-modal="true"]');
+  // Modal dialogs and menus only: Now Playing is a (non-modal) dialog too, and Space must play / pause there.
+  const inside = t.closest('[role="menu"], [role="listbox"], [role="alertdialog"], [aria-modal="true"]');
   const control = t.closest('button, a[href], [role="menuitem"], [role="option"], [role="switch"], [role="checkbox"], [role="radio"], [role="tab"], [role="slider"]');
   return !!inside && !!control;
 }

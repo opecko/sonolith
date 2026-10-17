@@ -3,12 +3,18 @@ import { useShallow } from "zustand/react/shallow";
 import { usePlayer } from "../stores/player";
 import Slider from "./Slider";
 
-/** Mouse wheel over a volume control: ±5 %, snapped to whole steps. */
-export function wheelVolume(deltaY: number) {
-  if (!deltaY) return;
+/** One volume step (±5 %, snapped to whole steps, 0–100 %); returns the new level. Wheel and keyboard shortcuts. */
+export function stepVolume(dir: 1 | -1): number {
   const { volume, muted, setVolume } = usePlayer.getState();
   const base = muted ? 0 : volume;
-  setVolume(Math.min(1, Math.max(0, Math.round((base + (deltaY < 0 ? 0.05 : -0.05)) * 20) / 20)));
+  const v = Math.min(1, Math.max(0, Math.round((base + dir * 0.05) * 20) / 20));
+  setVolume(v);
+  return v;
+}
+
+/** Mouse wheel over a volume control. */
+export function wheelVolume(deltaY: number) {
+  if (deltaY) stepVolume(deltaY < 0 ? 1 : -1);
 }
 
 /**
