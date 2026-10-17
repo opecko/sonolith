@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Switch from "../components/Switch";
 import { useSettings } from "../stores/settings";
 import {
-  ACTION_LABELS, bindingFromEvent, DEFAULT_BINDINGS, findConflict, formatBinding, rebind, sameBinding, SHORTCUT_ACTIONS,
+  ACTION_LABELS, bindingFromEvent, DEFAULT_BINDINGS, usesSuper, findConflict, formatBinding, rebind, sameBinding, SHORTCUT_ACTIONS,
   type Bindings, type KeyBinding, type ShortcutAction,
 } from "./keys";
 import { useShortcutUi } from "./store";
@@ -25,15 +25,19 @@ export default function ShortcutSettings() {
   const { enabled, bindings } = useSettings((s) => s.shortcuts);
   const [recording, setRecording] = useState<ShortcutAction | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
+  const [superTried, setSuperTried] = useState(false);
 
   useEffect(() => {
     useShortcutUi.setState({ recording: recording !== null });
+    setSuperTried(false);
     if (!recording) return;
     const onKey = (e: KeyboardEvent) => {
       // Captured before anything else: the press is the new key, not a command.
       e.preventDefault();
       e.stopPropagation();
       if (e.key === "Escape" && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) return setRecording(null);
+      // The desktop owns Super: say so and keep listening for another key.
+      if (usesSuper(e)) return setSuperTried(true);
       const binding = bindingFromEvent({ key: e.key, ctrlKey: e.ctrlKey, altKey: e.altKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altGraph: e.getModifierState?.("AltGraph") });
       if (!binding) return; // a modifier on its own: wait for the key
       const { bindings: current } = useSettings.getState().shortcuts;
@@ -88,7 +92,11 @@ export default function ShortcutSettings() {
                   </button>
                 </div>
               </div>
-              {recording === a && <p className="text-xs text-[var(--c-text-muted)]">Press the new key or combination. Esc cancels.</p>}
+              {recording === a && (
+                <p className={`text-xs ${superTried ? "text-[var(--c-error)]" : "text-[var(--c-text-muted)]"}`} role={superTried ? "alert" : undefined}>
+                  {superTried ? "The Super key can't be used for shortcuts. Press another key, or Esc to cancel." : "Press the new key or combination. Esc cancels."}
+                </p>
+              )}
               {pending?.action === a && (
                 <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius)] bg-[var(--c-surface-2)] px-3 py-2 text-sm">
                   <span><strong className="font-mono">{formatBinding(pending.binding)}</strong> is already {ACTION_LABELS[pending.other].toLowerCase()}.</span>

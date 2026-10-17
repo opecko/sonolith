@@ -14,14 +14,14 @@ export const ACTION_LABELS: Record<ShortcutAction, string> = {
 /**
  * A key as `KeyboardEvent.key` reports it (" " for Space), so it means the same character on every layout: on a
  * Czech QWERTZ "+" is unshifted and "<" / ">" sit elsewhere, and the numpad's + and − report "+" and "-" too.
- * Modifiers are only the ones that change what a key does (Ctrl, Alt, Meta); Shift is part of the character
- * (">" is already Shift+.), and only counts for named keys such as "ArrowUp".
+ * Modifiers are only the ones that change what a key does (Ctrl, Alt); Shift is part of the character (">" is
+ * already Shift+.), and only counts for named keys such as "ArrowUp". The Super / Meta key is never part of a
+ * binding: the desktop owns it (launcher, window management).
  */
 export interface KeyBinding {
   key: string;
   ctrl?: boolean;
   alt?: boolean;
-  meta?: boolean;
   shift?: boolean;
 }
 
@@ -57,32 +57,35 @@ export interface KeyEventLike {
   altGraph?: boolean;
 }
 
+/** The Super / Meta key, alone or held with another key. */
+export const SUPER_KEYS: ReadonlySet<string> = new Set(["Meta", "OS", "Super", "Hyper"]);
+export const usesSuper = (e: Pick<KeyEventLike, "key" | "metaKey">) => e.metaKey || SUPER_KEYS.has(e.key);
+
 /** Keys that are only modifiers: pressing them alone never binds or triggers anything. */
-export const MODIFIER_KEYS: ReadonlySet<string> = new Set(["Shift", "Control", "Alt", "AltGraph", "Meta", "OS", "CapsLock", "Fn", "Dead", "Unidentified", "Process"]);
+export const MODIFIER_KEYS: ReadonlySet<string> = new Set(["Shift", "Control", "Alt", "AltGraph", "Meta", "OS", "Super", "Hyper", "CapsLock", "Fn", "Dead", "Unidentified", "Process"]);
 
 const printable = (key: string) => [...key].length === 1;
 /** Letters match in either case (Caps Lock), everything else exactly. */
 const normKey = (key: string) => (printable(key) ? key.toLowerCase() : key);
 
-/** The binding a key press makes (Settings' recording). Null for a bare modifier. */
+/** The binding a key press makes (Settings' recording). Null for a bare modifier or anything with Super. */
 export function bindingFromEvent(e: KeyEventLike): KeyBinding | null {
-  if (MODIFIER_KEYS.has(e.key)) return null;
+  if (MODIFIER_KEYS.has(e.key) || usesSuper(e)) return null;
   const altGr = !!e.altGraph;
   const b: KeyBinding = { key: printable(e.key) ? normKey(e.key) : e.key };
   if (e.ctrlKey && !altGr) b.ctrl = true;
   if (e.altKey && !altGr) b.alt = true;
-  if (e.metaKey) b.meta = true;
   if (e.shiftKey && !printable(e.key)) b.shift = true;
   return b;
 }
 
 export const sameBinding = (a: KeyBinding, b: KeyBinding) =>
-  normKey(a.key) === normKey(b.key) && !!a.ctrl === !!b.ctrl && !!a.alt === !!b.alt && !!a.meta === !!b.meta &&
+  normKey(a.key) === normKey(b.key) && !!a.ctrl === !!b.ctrl && !!a.alt === !!b.alt &&
   (printable(a.key) || !!a.shift === !!b.shift);
 
 /**
- * The action a key press triggers, or null. Unbound combos (Ctrl+…, Alt+…, Meta+…: app zoom and the like) never
- * match a plain binding; held-down keys only repeat the volume actions.
+ * The action a key press triggers, or null. Unbound combos (Ctrl+…, Alt+…: app zoom and the like) and anything
+ * with Super never match; held-down keys only repeat the volume actions.
  */
 export function matchAction(e: KeyEventLike, bindings: Bindings): ShortcutAction | null {
   const pressed = bindingFromEvent(e);
@@ -110,7 +113,7 @@ const NAMES: Record<string, string> = { " ": "Space", ArrowUp: "↑", ArrowDown:
 /** "Space", ">", "Ctrl+Shift+↑". */
 export function formatBinding(b: KeyBinding): string {
   const key = NAMES[b.key] ?? (printable(b.key) ? b.key.toUpperCase() : b.key);
-  return [b.ctrl && "Ctrl", b.alt && "Alt", b.meta && "Meta", b.shift && "Shift", key].filter(Boolean).join("+");
+  return [b.ctrl && "Ctrl", b.alt && "Alt", b.shift && "Shift", key].filter(Boolean).join("+");
 }
 
 /** What a shortcut can be focused on and still not count as typing. */
@@ -143,7 +146,8 @@ export function spaceOwnedByControl(t: TargetLike | null | undefined): boolean {
 const isBinding = (v: unknown): v is KeyBinding => {
   if (!v || typeof v !== "object") return false;
   const b = v as Record<string, unknown>;
-  return typeof b.key === "string" && b.key.length > 0 && b.key.length <= 24 && !MODIFIER_KEYS.has(b.key) &&
+  // A stored binding with Super (allowed before) is dropped: the action gets its default back.
+  return typeof b.key === "string" && b.key.length > 0 && b.key.length <= 24 && !MODIFIER_KEYS.has(b.key) && !b.meta &&
     ["ctrl", "alt", "meta", "shift"].every((m) => b[m] === undefined || typeof b[m] === "boolean");
 };
 
@@ -154,7 +158,7 @@ export function normalizeShortcuts(raw: unknown): ShortcutSettings {
   const bindings = { ...DEFAULT_BINDINGS };
   for (const a of SHORTCUT_ACTIONS) {
     const b = stored[a];
-    if (isBinding(b)) bindings[a] = { key: b.key, ...(b.ctrl && { ctrl: true }), ...(b.alt && { alt: true }), ...(b.meta && { meta: true }), ...(b.shift && { shift: true }) };
+    if (isBinding(b)) bindings[a] = { key: b.key, ...(b.ctrl && { ctrl: true }), ...(b.alt && { alt: true }), ...(b.shift && { shift: true }) };
   }
   return { enabled: typeof r.enabled === "boolean" ? r.enabled : true, bindings };
 }

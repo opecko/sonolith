@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  bindingFromEvent, DEFAULT_BINDINGS, findConflict, formatBinding, isTyping, matchAction, normalizeShortcuts, rebind, spaceOwnedByControl,
+  bindingFromEvent, DEFAULT_BINDINGS, usesSuper, findConflict, formatBinding, isTyping, matchAction, normalizeShortcuts, rebind, spaceOwnedByControl,
   type KeyEventLike,
 } from "./keys";
 
@@ -108,6 +108,23 @@ describe("conflicts", () => {
     expect(swapped.playPause).toEqual({ key: ">" });
     const plain = rebind(DEFAULT_BINDINGS, "next", { key: "n" }, false);
     expect(plain).toEqual({ ...DEFAULT_BINDINGS, next: { key: "n" } });
+  });
+});
+
+describe("no Super key", () => {
+  it("recording ignores Super, alone or held with another key", () => {
+    expect(bindingFromEvent(ev("Meta", { metaKey: true }))).toBeNull();
+    expect(bindingFromEvent(ev("OS"))).toBeNull();
+    expect(bindingFromEvent(ev("k", { metaKey: true }))).toBeNull();
+    expect(bindingFromEvent(ev("ArrowUp", { metaKey: true, ctrlKey: true }))).toBeNull();
+    expect(usesSuper(ev("k", { metaKey: true }))).toBe(true);
+    expect(usesSuper(ev("k", { ctrlKey: true }))).toBe(false);
+  });
+
+  it("a stored binding with Super falls back to the default", () => {
+    const s = normalizeShortcuts({ bindings: { next: { key: "n", meta: true }, prev: { key: "p" } } });
+    expect(s.bindings.next).toEqual(DEFAULT_BINDINGS.next);
+    expect(s.bindings.prev).toEqual({ key: "p" });
   });
 });
 
