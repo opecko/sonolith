@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { ticker, useSpring } from "../motion";
-import { playheadTime, useVisiblePlayhead } from "../playback/playhead";
 import { useSettings } from "../stores/settings";
 import { useUiStyle } from "./UiStyle";
 
@@ -24,57 +23,22 @@ interface SliderProps {
   size?: "xs" | "sm" | "seek";
   /** M3 "seek" only: the active track waves (playing); the wave flattens out when this turns false. */
   wavy?: boolean;
-  /**
-   * The seek bar: the fill and handle follow the smooth playhead every frame (straight to the DOM), `value` only
-   * keeps the accessible value and the keyboard steps current.
-   */
-  playhead?: boolean;
 }
 
 /** Pointer, keyboard and hover handling shared by both looks. */
-function useSliderInput({ value, max, onCommit, onChange, live = false, step, disabled, playhead }: SliderProps, onPct?: (pct: number) => void) {
+function useSliderInput({ value, max, onCommit, onChange, live = false, step, disabled }: SliderProps, onPct?: (pct: number) => void) {
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const shown = drag ?? value;
   const pct = max > 0 ? Math.min(100, Math.max(0, (shown / max) * 100)) : 0;
 
-  // The position is a CSS variable (--p 0–100, --f 0–1) on the root: React writes it on value changes, the playhead loop
-  // every frame; a drag always wins.
-  const state = useRef({ drag, max, onPct });
-  state.current = { drag, max, onPct };
-  // Snapped to whole device pixels and written only when that pixel changes: a song moves a seek bar a few px a
-  // second, so most frames write (and repaint) nothing.
-  const px = useRef({ w: 0, last: -1 });
+  // The position is a CSS variable (--p 0–100, --f 0–1) on the root, written before paint on every render.
   useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => {
-      px.current.w = el.clientWidth * (window.devicePixelRatio || 1);
-      px.current.last = -1;
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const write = useCallback((raw: number) => {
-    const { w } = px.current;
-    const p = w > 0 ? (Math.round((raw / 100) * w) / w) * 100 : raw;
-    if (p === px.current.last) return;
-    px.current.last = p;
-    ref.current?.style.setProperty("--p", String(p));
-    ref.current?.style.setProperty("--f", String(p / 100));
-    state.current.onPct?.(p);
-  }, []);
-  const follow = useCallback((sec: number) => {
-    const { drag, max } = state.current;
-    if (drag === null) write(max > 0 ? Math.min(100, Math.max(0, (sec / max) * 100)) : 0);
-  }, [write]);
-  // After every render: the React value, or (a playhead between its frames) the playhead now.
-  useLayoutEffect(() => {
-    if (!playhead || drag !== null) write(pct);
-    else follow(playheadTime());
+    ref.current?.style.setProperty("--p", String(pct));
+    ref.current?.style.setProperty("--f", String(pct / 100));
+    onPct?.(pct);
   });
-  useVisiblePlayhead(ref, playhead && !disabled ? follow : null);
 
   const at = (e: PointerEvent) => {
     const r = ref.current!.getBoundingClientRect();
@@ -282,7 +246,7 @@ function Wave({ pct, edge, on: playing, redraw }: { pct: number; edge: number; o
     if (ref.current) st.current.color = getComputedStyle(ref.current).color;
     draw();
   }, [pct, edge]);
-  // The playhead moves it between renders: drawn at once unless the travelling wave draws anyway.
+  // The slider writes the new position: drawn at once unless the travelling wave draws anyway.
   const travelling = useRef(on);
   travelling.current = on;
   useLayoutEffect(() => {

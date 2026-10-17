@@ -1,4 +1,3 @@
-import { useEffect, type RefObject } from "react";
 import { ticker } from "../motion";
 
 /**
@@ -48,7 +47,7 @@ function emit() {
 }
 
 /**
- * One frame loop for everything that follows the playhead (seek bars, karaoke lyrics). It runs only while
+ * One frame loop for everything that follows the playhead (karaoke lyrics; seek bars stay on the 1 Hz clock). It runs only while
  * something visible listens, the audio plays and motion runs (window shown, animations on — the motion engine's
  * ticker pauses with them); otherwise listeners hear the clock on its events (timeupdate, seek, pause, rate).
  */
@@ -83,25 +82,4 @@ export function onPlayhead(fn: (sec: number) => void): () => void {
     subs.delete(fn);
     updateLoop();
   };
-}
-
-/** `onPlayhead` only while `ref`'s element is on screen (a closed panel or a scrolled-away tile costs nothing). */
-export function useVisiblePlayhead(ref: RefObject<Element | null>, fn: ((sec: number) => void) | null) {
-  useEffect(() => {
-    const node = ref.current;
-    if (!node || !fn) return;
-    let stop: (() => void) | null = null;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !stop) stop = onPlayhead(fn);
-      else if (!e.isIntersecting && stop) {
-        stop();
-        stop = null;
-      }
-    });
-    io.observe(node);
-    return () => {
-      io.disconnect();
-      stop?.();
-    };
-  }, [ref, fn]);
 }

@@ -221,7 +221,7 @@ function Progress() {
   return (
     <div className="flex w-full max-w-[600px] items-center gap-2 text-xs tabular-nums text-[var(--c-text-muted)]">
       <span className="w-10 text-right">{fmtTime(position)}</span>
-      <Slider className="flex-1" value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" playhead wavy={m3 ? playing : undefined} />
+      <Slider className="flex-1" value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" wavy={m3 ? playing : undefined} />
       {/* Episodes: the time left. */}
       <span className="w-12">{podcast && duration ? `−${fmtTime(Math.max(0, duration - position))}` : fmtTime(duration)}</span>
     </div>
