@@ -202,13 +202,23 @@ export function NowPlayingStep() {
 
 export function LyricsStep() {
   const animations = useSettings((s) => s.appearance.animations);
+  const on = useSettings((s) => s.lyricsEnabled);
   return (
     <div>
-      <StepTitle sub={`How word-by-word lyrics follow the song in Now Playing.${animations ? "" : " Animations are off, so every style shows as Simple."}`}>Lyrics</StepTitle>
-      <KaraokeChoices
-        card={(on) => `m3-choice rounded-[var(--m3-corner-lg)] border-2 p-4 text-left ${on ? "border-[var(--m3-primary)]" : "border-[var(--m3-outline-variant)] hover:bg-[color-mix(in_srgb,var(--m3-on-surface)_6%,transparent)]"}`}
-        label={() => "type-title-small-em mb-2"} />
-      <p className="type-body-medium mt-4 text-[var(--m3-on-surface-variant)]">Which lyrics providers to ask, and in what order, is in Settings → Lyrics.</p>
+      <StepTitle sub="Song lyrics in Now Playing, following the music line by line and word by word.">Lyrics</StepTitle>
+      <Option title="Show lyrics" detail="Off hides them and asks no lyrics provider.">
+        <Switch on={on} onChange={(lyricsEnabled) => useSettings.getState().set({ lyricsEnabled })} label="Show lyrics" />
+      </Option>
+      <div className={`mt-2 border-t border-[var(--m3-outline-variant)] pt-4 ${on ? "" : "pointer-events-none opacity-50"}`} aria-disabled={!on}>
+        <p className="type-title-medium">Karaoke style</p>
+        <p className="type-body-medium mb-3 text-[var(--m3-on-surface-variant)]">
+          How word-by-word lyrics show the sung words.{animations ? "" : " Animations are off, so every style shows as Simple."}
+        </p>
+        <KaraokeChoices
+          card={(sel) => `m3-choice rounded-[var(--m3-corner-lg)] border-2 p-4 text-left ${sel ? "border-[var(--m3-primary)]" : "border-[var(--m3-outline-variant)] hover:bg-[color-mix(in_srgb,var(--m3-on-surface)_6%,transparent)]"}`}
+          label={() => "type-title-small-em mb-2"} />
+        <p className="type-body-medium mt-4 text-[var(--m3-on-surface-variant)]">Which lyrics providers to ask, and in what order, is in Settings → Lyrics.</p>
+      </div>
     </div>
   );
 }

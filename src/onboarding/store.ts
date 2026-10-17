@@ -8,7 +8,7 @@ import { decideLocal, decideWithNative, PRIOR_KEYS } from "./detect";
 interface OnboardingState {
   open: boolean;
   /** Opened from the dev toolkit: finishing or skipping changes no flags and puts the look back as it was. */
-  preview: Pick<Settings, "appearance" | "karaokeStyle"> | null;
+  preview: Pick<Settings, "appearance" | "karaokeStyle" | "lyricsEnabled"> | null;
   /** Opened again from Settings → About: starts from the current settings, closing changes nothing. */
   rerun: boolean;
 }
@@ -72,7 +72,7 @@ export async function initOnboarding() {
 }
 
 /**
- * Done or skipped: never again. A preview from the dev toolkit only closes and restores the look and karaoke style; a re-run from
+ * Done or skipped: never again. A preview from the dev toolkit only closes and restores the look and the lyrics choices; a re-run from
  * Settings only closes (its choices were saved as they were made, and onboardingCompleted is already true).
  */
 export function finishOnboarding() {
@@ -95,6 +95,6 @@ export function rerunOnboarding() {
 
 /** Dev toolkit: the welcome at any time, without touching the real flags; the look is restored when it closes. */
 export function previewOnboarding() {
-  const { appearance, karaokeStyle } = useSettings.getState();
-  useOnboarding.setState({ open: true, preview: { appearance, karaokeStyle }, rerun: false });
+  const { appearance, karaokeStyle, lyricsEnabled } = useSettings.getState();
+  useOnboarding.setState({ open: true, preview: { appearance, karaokeStyle, lyricsEnabled }, rerun: false });
 }
