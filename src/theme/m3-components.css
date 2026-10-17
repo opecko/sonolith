@@ -482,3 +482,7 @@
 
 .m3-whats-icon { color: var(--c-text); }
 [data-ui-style="m3"] .m3-whats-icon { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+
+/* Wavy seek bar (Slider.tsx Wave): an endless slide by one wavelength on its own compositor layer. */
+.m3-wave { display: block; will-change: transform; animation: m3-wave linear infinite; }
+@keyframes m3-wave { from { transform: translateX(0); } to { transform: translateX(-40px); } }

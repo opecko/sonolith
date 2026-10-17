@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useSpring } from "../motion";
 import { useSettings } from "../stores/settings";
@@ -26,7 +27,7 @@ interface SliderProps {
 }
 
 /** Pointer, keyboard and hover handling shared by both looks. */
-function useSliderInput({ value, max, onCommit, onChange, live = false, step, disabled }: SliderProps, onPct?: (pct: number) => void) {
+function useSliderInput({ value, max, onCommit, onChange, live = false, step, disabled }: SliderProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -37,7 +38,6 @@ function useSliderInput({ value, max, onCommit, onChange, live = false, step, di
   useLayoutEffect(() => {
     ref.current?.style.setProperty("--p", String(pct));
     ref.current?.style.setProperty("--f", String(pct / 100));
-    onPct?.(pct);
   });
 
   const at = (e: PointerEvent) => {
@@ -135,9 +135,7 @@ const M3_SIZES = { xs: [16, 44, 8, 6], sm: [12, 32, 6, 4], seek: [4, 16, 2, 4] }
  */
 function M3Slider(props: SliderProps) {
   const { max, label, format, tooltip = "hover", disabled, className = "", size = "xs", wavy } = props;
-  // The wave is a canvas: it redraws when the position moves.
-  const wave = useRef<((pct: number) => void) | null>(null);
-  const { ref, drag, hover, shown, pct, handlers } = useSliderInput(props, (p) => wave.current?.(p));
+  const { ref, drag, hover, shown, handlers } = useSliderInput(props);
   const [track, handle, corner, gap] = M3_SIZES[size];
   const dragging = drag !== null;
   // The handle narrows while held (M3 pressed state); the gap follows its edges.
@@ -167,7 +165,7 @@ function M3Slider(props: SliderProps) {
         {size !== "seek" && <div className="absolute rounded-full bg-[var(--m3-primary)]" style={{ width: 4, height: 4, right: (track - 4) / 2, top: (track - 4) / 2 }} />}
       </div>
       {wavy !== undefined && size === "seek" ? (
-        <Wave pct={pct} edge={edge} on={wavy} redraw={wave} />
+        <Wave edge={edge} on={wavy} />
       ) : (
         <div className="absolute inset-x-0 bg-[var(--m3-primary)]"
           style={{ height: track, clipPath: `inset(0 calc((100 - var(--p)) * 1% + ${edge}px) 0 0 round ${corner}px ${inner}px ${inner}px ${corner}px)` }} />
@@ -185,9 +183,17 @@ function M3Slider(props: SliderProps) {
 
 const WAVELENGTH = 40;
 const AMPLITUDE = 3;
-/** Wavelengths per second the wave travels. */
-const SPEED = 0.6;
-const WAVE_FPS = 20;
+/** Seconds for the wave to travel one wavelength. */
+const PERIOD = 1 / 0.6;
+/** "Flat": a zero scale would make the transform singular and the stroke vanish. */
+const FLAT = 0.001;
+/** Wide enough for any seek bar; the path is built once. */
+const WAVE_WIDTH = 3200;
+const WAVE_PATH = (() => {
+  let d = "M0 0";
+  for (let x = 2; x <= WAVE_WIDTH + WAVELENGTH; x += 2) d += `L${x} ${(-Math.sin((2 * Math.PI * x) / WAVELENGTH)).toFixed(3)}`;
+  return d;
+})();
 
 /** Whether the app window has focus (a blur when another window comes to the front). */
 function useWindowFocused() {
@@ -205,92 +211,41 @@ function useWindowFocused() {
   return focused;
 }
 
+/** GPU rendering on (Settings → Advanced); asked once. Without it a moving wave would repaint on the main thread. */
+let gpu: boolean | null = null;
+const gpuAsked = invoke<boolean>("render_get_gpu").then((v) => (gpu = v !== false), () => (gpu = true));
+function useGpu() {
+  const [on, setOn] = useState(gpu ?? true);
+  useEffect(() => void gpuAsked.then(() => setOn(gpu ?? true)), []);
+  return on;
+}
+
 /**
- * Wavy active track (M3 Expressive progress): a stroked sine on a canvas, drawn only on value changes and, while
- * playing, visible and focused, at 20 fps as the wave travels from the playhead toward the start. The amplitude springs to 0 when playback pauses; with
- * animations off it stays flat.
+ * Wavy active track (M3 Expressive progress): one static SVG sine, cut at the playhead by the same clip as the flat
+ * track. It travels toward the start with an endless CSS animation on its own layer, which the compositor runs off
+ * the main thread (an endless animation never ends, so WebKitGTK's end-of-animation flash can't happen; it only
+ * pauses). It moves only while playing with the window focused and GPU rendering on; the amplitude springs to 0
+ * when playback pauses, and with animations off it stays flat.
  */
-function Wave({ pct, edge, on: playing, redraw }: { pct: number; edge: number; on: boolean; redraw: { current: ((pct: number) => void) | null } }) {
+function Wave({ edge, on: playing }: { edge: number; on: boolean }) {
   // With animations off the track stays flat: a wave that can't move would only look broken.
   const animations = useSettings((s) => s.appearance.animations);
   const on = playing && animations;
-  const ref = useRef<HTMLCanvasElement>(null);
-  const st = useRef({ phase: 0, amp: on ? 1 : 0, pct, edge, color: "", w: 0, h: 0 });
-  st.current.edge = edge;
-
-  const draw = () => {
-    const c = ref.current, s = st.current;
-    const ctx = c?.getContext("2d");
-    if (!c || !ctx || !s.w) return;
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, s.w, s.h);
-    const end = (s.w * s.pct) / 100 - s.edge - 2;
-    if (end <= 2) return;
-    const mid = s.h / 2;
-    ctx.beginPath();
-    for (let x = 2; x <= end; x += 2) {
-      // The wave grows in over the first half wavelength so the start stays on the track's line.
-      const ramp = Math.min(1, (x - 2) / (WAVELENGTH / 2));
-      // + phase: the crests travel leftward, out of the playhead toward the start (as on Android).
-      ctx.lineTo(x, mid + AMPLITUDE * s.amp * ramp * Math.sin((2 * Math.PI * x) / WAVELENGTH + s.phase));
-    }
-    ctx.lineWidth = 4;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = s.color;
-    ctx.stroke();
-  };
-
-  // Canvas size follows the element; the color is re-read on value changes (cover accent, palette switch).
-  useLayoutEffect(() => {
-    const c = ref.current;
-    if (!c) return;
-    const fit = () => {
-      const dpr = window.devicePixelRatio || 1;
-      st.current.w = c.clientWidth;
-      st.current.h = c.clientHeight;
-      c.width = Math.round(c.clientWidth * dpr);
-      c.height = Math.round(c.clientHeight * dpr);
-      draw();
-    };
-    const ro = new ResizeObserver(fit);
-    ro.observe(c);
-    fit();
-    return () => ro.disconnect();
-  }, []);
-  useLayoutEffect(() => {
-    if (ref.current) st.current.color = getComputedStyle(ref.current).color;
-    draw();
-  }, [pct, edge]);
-  // The slider writes the new position (once a second while playing): drawn at once.
-  useLayoutEffect(() => {
-    redraw.current = (p) => {
-      st.current.pct = p;
-      draw();
-    };
-    return () => void (redraw.current = null);
-  });
-  useSpring(on ? 1 : 0, "defaultSpatial", (a) => {
-    st.current.amp = Math.max(0, a);
-    draw();
-  });
-  // The wave travels only while the window is focused and shown: listening with another app in front leaves it
-  // still (same shape, no flattening). A 20 fps timer, not the frame loop: it doesn't keep 60 wakeups a second
-  // alive for a slow wave.
   const focused = useWindowFocused();
-  useEffect(() => {
-    if (!on || !focused) return;
-    let last = performance.now();
-    const id = setInterval(() => {
-      if (document.hidden) return;
-      const now = performance.now();
-      const s = st.current;
-      s.phase = (s.phase + Math.min(0.2, (now - last) / 1000) * SPEED * 2 * Math.PI) % (2 * Math.PI);
-      last = now;
-      draw();
-    }, 1000 / WAVE_FPS);
-    return () => clearInterval(id);
-  }, [on, focused]);
-  return <canvas ref={ref} className="pointer-events-none absolute left-0 w-full text-[var(--m3-primary)]" style={{ height: AMPLITUDE * 2 + 6 }} aria-hidden />;
+  const gpuOn = useGpu();
+  const travel = on && focused && gpuOn;
+  const g = useRef<SVGGElement>(null);
+  const h = AMPLITUDE * 2 + 6;
+  // The amplitude scales the wave's height inside the SVG; the stroke keeps its width.
+  useSpring(on ? 1 : 0, "defaultSpatial", (a) => g.current?.setAttribute("transform", `translate(0 ${h / 2}) scale(1 ${Math.max(FLAT, a * AMPLITUDE).toFixed(3)})`));
+  return (
+    <div className="pointer-events-none absolute left-0 w-full overflow-hidden text-[var(--m3-primary)]" aria-hidden
+      style={{ height: h, clipPath: `inset(0 calc((100 - var(--p)) * 1% + ${edge + 2}px) 0 0)` }}>
+      <svg className="m3-wave" width={WAVE_WIDTH + WAVELENGTH} height={h} style={{ animationDuration: `${PERIOD}s`, animationPlayState: travel ? "running" : "paused" }}>
+        <g ref={g} transform={`translate(0 ${h / 2}) scale(1 ${on ? AMPLITUDE : FLAT})`}>
+          <path d={WAVE_PATH} fill="none" stroke="currentColor" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        </g>
+      </svg>
+    </div>
+  );
 }
