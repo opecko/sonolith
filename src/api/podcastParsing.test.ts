@@ -15,7 +15,7 @@ import { isEpisode, isShow, type Item, type Track } from "./types";
 describe("podcasts from live responses", () => {
   it("search: episodes are episodes (not songs), shows are shows", async () => {
     const res = await searchPage(async () => search, "huberman lab");
-    const all: Item[] = [...(res.top ? [res.top] : []), ...res.groups.flatMap((g) => g.items)];
+    const all: Item[] = [...res.top, ...res.shelves.flatMap((s) => s.items), ...res.groups.flatMap((g) => g.items)];
     const ep = all.find((i) => i.id === "In9Bq4EJMZw") as Track & Item;
     expect(ep).toBeDefined();
     expect(isEpisode(ep)).toBe(true);
