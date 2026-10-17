@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEFAULT_SHORTCUTS, normalizeShortcuts, type ShortcutSettings } from "../shortcuts/keys";
 import { DEFAULT_APPEARANCE, normalizeAppearance, type Appearance } from "../theme/appearance";
 
 export interface Settings {
@@ -21,10 +22,12 @@ export interface Settings {
   lastSeenVersion: string | null;
   /** The first-run welcome was finished or skipped (existing installs get it set silently, see onboarding/detect). */
   onboardingCompleted: boolean;
+  /** In-window keyboard shortcuts (Settings → Keyboard shortcuts): on/off and the key for each action. */
+  shortcuts: ShortcutSettings;
 }
 
 const KEY = "settings";
-const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false };
+const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, shortcuts: DEFAULT_SHORTCUTS };
 
 /** Stored JSON → Settings. Missing keys (older versions) get the defaults; normalizing drops malformed values. */
 export function parseSettings(stored: unknown): Settings {
@@ -37,6 +40,8 @@ export function parseSettings(stored: unknown): Settings {
     lastSeenVersion: typeof s.lastSeenVersion === "string" ? s.lastSeenVersion : null,
     // Missing before 2.0; whether that's an existing install is decided at startup from the raw stored object.
     onboardingCompleted: s.onboardingCompleted === true,
+    // Missing before shortcuts existed; unknown or broken bindings fall back to their defaults.
+    shortcuts: normalizeShortcuts(s.shortcuts),
   };
 }
 
@@ -56,8 +61,8 @@ function read(): Settings {
 
 function write() {
   try {
-    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted } = useSettings.getState();
-    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted }));
+    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts } = useSettings.getState();
+    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts }));
   } catch {
     /* storage unavailable */
   }

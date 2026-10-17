@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SHORTCUTS } from "../shortcuts/keys";
 import { DEFAULT_APPEARANCE } from "../theme/appearance";
 import { parseSettings } from "./settings";
 
@@ -24,6 +25,14 @@ describe("settings migration", () => {
     expect(parseSettings({ autoplay: true }).onboardingCompleted).toBe(false);
     expect(parseSettings({ onboardingCompleted: true }).onboardingCompleted).toBe(true);
     expect(parseSettings({ onboardingCompleted: "yes" }).onboardingCompleted).toBe(false);
+  });
+
+  it("shortcuts: missing before they existed → defaults; broken bindings → their default", () => {
+    expect(parseSettings({ autoplay: true }).shortcuts).toEqual(DEFAULT_SHORTCUTS);
+    const s = parseSettings({ shortcuts: { enabled: false, bindings: { next: { key: "n" }, prev: { key: 5 } } } });
+    expect(s.shortcuts.enabled).toBe(false);
+    expect(s.shortcuts.bindings.next).toEqual({ key: "n" });
+    expect(s.shortcuts.bindings.prev).toEqual(DEFAULT_SHORTCUTS.bindings.prev);
   });
 
   it("garbage falls back to the defaults", () => {
