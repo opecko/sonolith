@@ -59,8 +59,9 @@ export async function initMpris() {
         track: t && {
           id: t.id,
           title: t.title,
-          artists: t.artists.length ? t.artists : t.subtitle ? [t.subtitle] : [],
-          album: t.album?.title,
+          // An episode: its show as artist and album (what podcast-aware players show).
+          artists: t.podcast ? [t.show?.title || t.subtitle].filter(Boolean) : t.artists.length ? t.artists : t.subtitle ? [t.subtitle] : [],
+          album: t.podcast ? t.show?.title : t.album?.title,
           art: mediaArtwork(t.thumbnail, t.id)[0]?.src,
           lengthUs: len ? Math.round(len * 1e6) : undefined,
         },

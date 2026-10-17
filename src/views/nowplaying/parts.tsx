@@ -68,13 +68,16 @@ export function SeekBar({ className = "", times = "inline" }: { className?: stri
   const duration = useProgress((s) => s.duration);
   const seek = usePlayer((s) => s.seek);
   const playing = usePlayer((s) => s.status === "playing");
+  const podcast = usePlayer((s) => !!s.queue[s.index]?.podcast);
+  // Episodes show the time left, the way podcast apps do.
+  const end = podcast && duration ? `−${fmtTime(Math.max(0, duration - position))}` : fmtTime(duration);
   return (
     <div className={className}>
       <Slider value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" wavy={playing} />
       {times === "split" ? (
-        <p className="type-label-large mt-1 flex justify-between tabular-nums text-[var(--m3-on-surface-variant)]"><span>{fmtTime(position)}</span><span>{fmtTime(duration)}</span></p>
+        <p className="type-label-large mt-1 flex justify-between tabular-nums text-[var(--m3-on-surface-variant)]"><span>{fmtTime(position)}</span><span>{end}</span></p>
       ) : (
-        <p className="type-label-large mt-1 tabular-nums text-[var(--m3-on-surface-variant)]">{fmtTime(position)} / {fmtTime(duration)}</p>
+        <p className="type-label-large mt-1 tabular-nums text-[var(--m3-on-surface-variant)]">{fmtTime(position)} / {end}</p>
       )}
     </div>
   );
@@ -106,7 +109,8 @@ export function PlaybackStatus() {
 export function TrackActions({ track }: { track: Track }) {
   return (
     <div className="flex shrink-0 items-center">
-      <RatingButtons track={track} />
+      {/* Like / dislike are for songs; an episode only has its menu. */}
+      {!track.podcast && <RatingButtons track={track} />}
       <TrackMoreMenu key={track.id} track={track} />
     </div>
   );

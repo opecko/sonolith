@@ -21,6 +21,13 @@ describe("buildActivity", () => {
     });
   });
 
+  it("an episode says it's a podcast and names its show", () => {
+    const ep: Track = { type: "track", id: "vid000000E1", title: "Sleep", subtitle: "Dec 5, 2024 • Huberman Lab", artists: [], podcast: true, show: { id: "PLx", title: "Huberman Lab" } };
+    const a = buildActivity({ track: ep, playing: true, position: 0, duration: 600, button: false, now: 0 });
+    expect(a.state).toBe("Podcast · Huberman Lab");
+    expect(a.assets.large_text).toBe("Huberman Lab");
+  });
+
   it("shows Paused without timestamps, and drops the button when disabled", () => {
     const a = buildActivity({ track, playing: false, position: 30, duration: 223, button: false });
     expect(a.details).toBe("Loser");

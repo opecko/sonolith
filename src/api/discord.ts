@@ -38,8 +38,10 @@ export function buildActivity(p: PresenceInput): Record<string, any> {
   const { track } = p;
   const now = p.now ?? Date.now();
   // Never the list subtitle: from search that's e.g. "Song • 3:58 • 247M plays". The player fills artists from /next.
-  const artist = track.artists.join(", ");
-  const album = track.album?.title;
+  // An episode says it's a podcast and names its show, where a song names its artists and album.
+  const show = track.podcast ? track.show?.title || track.subtitle || undefined : undefined;
+  const artist = track.podcast ? (show ? `Podcast · ${show}` : "Podcast") : track.artists.join(", ");
+  const album = track.podcast ? show : track.album?.title;
   // status_display_type = details: the member list shows the track name instead of the app name.
   const activity: Record<string, unknown> = {
     type: ACTIVITY_LISTENING,
