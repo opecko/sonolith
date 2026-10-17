@@ -75,8 +75,12 @@ function useSliderInput({ value, max, onCommit, onChange, live = false, step, di
   };
   const handlers = {
     onKeyDown: key,
-    onPointerDown: (e: PointerEvent) => {
-      if (disabled) return;
+    onPointerDown: (e: PointerEvent<HTMLElement>) => {
+      if (disabled || e.button !== 0) return;
+      // No text selection from a press or double-click here, nor from a drag that leaves the slider; the default
+      // focus goes with it, so the slider takes focus itself (keyboard steps after a click).
+      e.preventDefault();
+      e.currentTarget.focus({ preventScroll: true });
       e.currentTarget.setPointerCapture(e.pointerId);
       move(at(e));
     },
@@ -91,6 +95,8 @@ function useSliderInput({ value, max, onCommit, onChange, live = false, step, di
       setDrag(null);
     },
     onPointerLeave: () => setHover(null),
+    // Capture lost without a release (window switch, touch cancel): the drag ends where it was, uncommitted.
+    onPointerCancel: () => setDrag(null),
   };
   return { ref, drag, hover, shown, pct, handlers };
 }
@@ -118,7 +124,7 @@ function ClassicSlider(props: SliderProps) {
       aria-valuetext={format?.(shown)}
       aria-disabled={disabled}
       {...handlers}
-      className={`group relative flex h-4 cursor-pointer touch-none items-center ${disabled ? "pointer-events-none opacity-40" : ""} ${className}`}
+      className={`group relative flex h-4 cursor-pointer touch-none select-none items-center ${disabled ? "pointer-events-none opacity-40" : ""} ${className}`}
     >
       <div className="relative h-1 w-full overflow-hidden rounded-full bg-[var(--c-slider-track)] group-hover:h-1.5">
         {hover !== null && max > 0 && <div className="absolute inset-0 origin-left bg-fg/20" style={{ transform: `scaleX(${hover / max})` }} />}
@@ -170,7 +176,7 @@ function M3Slider(props: SliderProps) {
       aria-valuetext={format?.(shown)}
       aria-disabled={disabled}
       {...handlers}
-      className={`m3-slider group relative flex cursor-pointer touch-none items-center ${disabled ? "pointer-events-none opacity-40" : ""} ${className}`}
+      className={`m3-slider group relative flex cursor-pointer touch-none select-none items-center ${disabled ? "pointer-events-none opacity-40" : ""} ${className}`}
       style={{ height: handle }}
     >
       {/* Inactive track, from the handle's right gap to the end, with the stop indicator at its end. The indicator is

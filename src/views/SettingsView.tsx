@@ -267,7 +267,7 @@ function About() {
 
 export default function SettingsView() {
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl select-text">
       <h1 className="mb-6 text-2xl font-bold">Settings</h1>
       <AppearanceSettings />
       <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">

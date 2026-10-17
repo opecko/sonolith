@@ -69,6 +69,13 @@ body {
   color: var(--c-text);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
+  /* App chrome isn't text; WebKitGTK only honors the prefixed property. Readable text opts back in with select-text. */
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* Controls stay unselectable inside selectable text too (Settings, dialogs): a drag or double-click on them selects nothing. */
+button, label, [role="button"], [role="slider"], [role="switch"], [role="radio"], [role="tab"], [role="menuitem"], [role="option"] {
+  -webkit-user-select: none;
   user-select: none;
 }
 button { cursor: pointer; }

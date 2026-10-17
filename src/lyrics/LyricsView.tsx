@@ -70,7 +70,7 @@ function SyncedLines({ lines, size }: { lines: LyricLine[]; size: "full" | "prev
 
   const gaps = useMemo(() => new Map(gapsOf(lines).map(([i, from, to]) => [i, [from, to] as const])), [lines]);
   return (
-    <ol ref={list} className={`lyrics-synced ${size === "preview" ? "lyrics-preview" : ""}`}
+    <ol ref={list} className={`lyrics-synced select-text ${size === "preview" ? "lyrics-preview" : ""}`}
       onClick={(e) => {
         const li = (e.target as Element).closest<HTMLElement>("li[data-i]");
         if (li) usePlayer.getState().seek(lines[Number(li.dataset.i)].start / 1000);
