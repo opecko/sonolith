@@ -1,15 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { getCookie } from "../api/client";
-import { flush, storedSettings, useSettings } from "../stores/settings";
-import type { Appearance } from "../theme/appearance";
+import { flush, storedSettings, useSettings, type Settings } from "../stores/settings";
 import { initWhatsNew } from "../whatsNew/store";
 import { decideLocal, decideWithNative, PRIOR_KEYS } from "./detect";
 
 interface OnboardingState {
   open: boolean;
   /** Opened from the dev toolkit: finishing or skipping changes no flags and puts the look back as it was. */
-  preview: Appearance | null;
+  preview: Pick<Settings, "appearance" | "karaokeStyle"> | null;
   /** Opened again from Settings → About: starts from the current settings, closing changes nothing. */
   rerun: boolean;
 }
@@ -73,12 +72,12 @@ export async function initOnboarding() {
 }
 
 /**
- * Done or skipped: never again. A preview from the dev toolkit only closes and restores the look; a re-run from
+ * Done or skipped: never again. A preview from the dev toolkit only closes and restores the look and karaoke style; a re-run from
  * Settings only closes (its choices were saved as they were made, and onboardingCompleted is already true).
  */
 export function finishOnboarding() {
   const { preview, rerun } = useOnboarding.getState();
-  if (preview) useSettings.getState().set({ appearance: preview });
+  if (preview) useSettings.getState().set(preview);
   else if (!rerun) {
     useSettings.getState().set({ onboardingCompleted: true });
     flush();
@@ -96,5 +95,6 @@ export function rerunOnboarding() {
 
 /** Dev toolkit: the welcome at any time, without touching the real flags; the look is restored when it closes. */
 export function previewOnboarding() {
-  useOnboarding.setState({ open: true, preview: useSettings.getState().appearance, rerun: false });
+  const { appearance, karaokeStyle } = useSettings.getState();
+  useOnboarding.setState({ open: true, preview: { appearance, karaokeStyle }, rerun: false });
 }

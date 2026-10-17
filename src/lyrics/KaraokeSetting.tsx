@@ -40,9 +40,23 @@ function Preview({ style }: { style: KaraokeStyle }) {
   );
 }
 
+/** The four styles as radio cards, each singing the sample line; `card` styles a card (Settings vs the welcome). */
+export function KaraokeChoices({ card, label, className = "" }: { card: (on: boolean) => string; label: (on: boolean) => string; className?: string }) {
+  const value = useSettings((s) => s.karaokeStyle);
+  return (
+    <div role="radiogroup" aria-label="Karaoke style" className={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${className}`}>
+      {KARAOKE_STYLES.map((s) => (
+        <button key={s} type="button" role="radio" aria-checked={value === s} onClick={() => useSettings.getState().set({ karaokeStyle: s })} className={card(value === s)}>
+          <p className={label(value === s)}>{KARAOKE_NAMES[s]}</p>
+          <Preview style={s} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Settings → Lyrics: how word-synced lyrics show the sung words, each option with a live preview. */
 export default function KaraokeSetting() {
-  const value = useSettings((s) => s.karaokeStyle);
   const animations = useSettings((s) => s.appearance.animations);
   return (
     <div className="mt-4">
@@ -50,15 +64,9 @@ export default function KaraokeSetting() {
       <p className="mb-3 text-sm text-[var(--c-text-muted)]">
         For word-synced lyrics.{animations ? "" : " Animations are off, so every style shows as Simple."}
       </p>
-      <div role="radiogroup" aria-label="Karaoke style" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {KARAOKE_STYLES.map((s) => (
-          <button key={s} type="button" role="radio" aria-checked={value === s} onClick={() => useSettings.getState().set({ karaokeStyle: s })}
-            className={`m3-choice rounded-[var(--radius)] border p-3 text-left ${value === s ? "border-[var(--c-accent)]" : "border-[var(--c-outline)] hover:bg-[var(--c-hover)]"}`}>
-            <p className={`mb-1 text-sm ${value === s ? "font-semibold" : ""}`}>{KARAOKE_NAMES[s]}</p>
-            <Preview style={s} />
-          </button>
-        ))}
-      </div>
+      <KaraokeChoices
+        card={(on) => `m3-choice rounded-[var(--radius)] border p-3 text-left ${on ? "border-[var(--c-accent)]" : "border-[var(--c-outline)] hover:bg-[var(--c-hover)]"}`}
+        label={(on) => `mb-1 text-sm ${on ? "font-semibold" : ""}`} />
     </div>
   );
 }

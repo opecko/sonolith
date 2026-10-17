@@ -8,6 +8,7 @@ import Slider from "../components/Slider";
 import Switch from "../components/Switch";
 import { UiStyleScope } from "../components/UiStyle";
 import { useAsync } from "../hooks/useData";
+import { KaraokeChoices } from "../lyrics/KaraokeSetting";
 import { useAuth } from "../stores/auth";
 import { setAppearance, useSettings } from "../stores/settings";
 import { AMBIENT_QUALITIES, type UiStyle } from "../theme/appearance";
@@ -195,6 +196,19 @@ export function NowPlayingStep() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+export function LyricsStep() {
+  const animations = useSettings((s) => s.appearance.animations);
+  return (
+    <div>
+      <StepTitle sub={`How word-by-word lyrics follow the song in Now Playing.${animations ? "" : " Animations are off, so every style shows as Simple."}`}>Lyrics</StepTitle>
+      <KaraokeChoices
+        card={(on) => `m3-choice rounded-[var(--m3-corner-lg)] border-2 p-4 text-left ${on ? "border-[var(--m3-primary)]" : "border-[var(--m3-outline-variant)] hover:bg-[color-mix(in_srgb,var(--m3-on-surface)_6%,transparent)]"}`}
+        label={() => "type-title-small-em mb-2"} />
+      <p className="type-body-medium mt-4 text-[var(--m3-on-surface-variant)]">Which lyrics providers to ask, and in what order, is in Settings → Lyrics.</p>
     </div>
   );
 }
