@@ -49,7 +49,13 @@ export function mapPanelVideo(n: R): Track | null {
   if (info.artists.length) t.artistIds = info.artistIds;
   if (explicit) t.explicit = true;
   const mvt = n.navigationEndpoint?.watchEndpoint?.watchEndpointMusicSupportedConfigs?.watchEndpointMusicConfig?.musicVideoType;
-  if (typeof mvt === "string" && mvt.includes("PODCAST")) t.podcast = true;
+  if ((typeof mvt === "string" && mvt.includes("PODCAST")) || info.show) {
+    // An episode: its byline is the show, not artists.
+    t.podcast = true;
+    t.artists = [];
+    delete t.artistIds;
+    if (info.show) t.show = info.show;
+  }
   const menu = parseTrackMenu(n.menu?.menuRenderer);
   if (menu) t.menu = menu;
   return t;

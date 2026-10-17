@@ -11,7 +11,7 @@ import Thumb from "../components/Thumb";
 import TrackList from "../components/TrackList";
 import { Byline } from "../components/TrackByline";
 import { useAsync, usePaged } from "../hooks/useData";
-import { openItem } from "../stores/nav";
+import { activateItem } from "../stores/actions";
 import { usePlayer } from "../stores/player";
 
 const GROUP_TITLE: Record<SearchGroup, string> = {
@@ -20,10 +20,8 @@ const GROUP_TITLE: Record<SearchGroup, string> = {
 };
 const isTrack = (i: Item): i is Track & Item => i.type === "track";
 
-function activate(item: Item) {
-  if (isTrack(item)) usePlayer.getState().playRadio(item);
-  else openItem(item);
-}
+// Songs start a radio, episodes play on their own, the rest opens.
+const activate = activateItem;
 
 const pill = "flex h-9 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium";
 const primary = `${pill} m3-btn m3-filled bg-button text-on-button hover:bg-button/90`;
@@ -41,7 +39,7 @@ function CardButtons({ top, actions }: { top: Item; actions: CardAction[] }) {
               trigger={<><ListPlus size={18} aria-hidden /> {a.label}</>} />
           ) : null;
         const run = () => {
-          if (a.kind === "play" && isTrack(top)) usePlayer.getState().playRadio(top);
+          if (a.kind === "play" && isTrack(top)) activateItem(top);
           else if (a.playlistId) void usePlayer.getState().startRadio({ type: "mix", id: a.playlistId, params: a.params }, top.title);
         };
         const icon = a.kind === "shuffle" ? <Shuffle size={18} aria-hidden /> : a.kind === "mix" ? <Radio size={18} aria-hidden /> : <Play size={18} fill="currentColor" aria-hidden />;

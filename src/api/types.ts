@@ -32,6 +32,8 @@ export interface Credits {
 export interface EpisodeInfo {
   /** "2.4K views • 8h ago" */
   meta?: string;
+  /** Publish date as YouTube Music shows it ("Dec 5, 2024", "3 days ago"). */
+  published?: string;
   description?: string;
   /** Listening progress: percent played, "3 min left" / "Played", total "57 min". */
   progress?: { percent: number; text?: string; played: boolean };
@@ -55,6 +57,8 @@ export interface Track {
   /** Podcast episode (speed control, −10/+30 s, optional video, not sent to Discord by default). */
   podcast?: boolean;
   episode?: EpisodeInfo;
+  /** The podcast show an episode belongs to (id without the MPSP prefix, as for its page route). */
+  show?: { id: string; title: string };
   /** Where the track entered the queue; autoplay tracks get a divider and can be dropped. */
   source?: "autoplay";
 }
@@ -190,5 +194,10 @@ export interface QueueChip {
 }
 
 
-export type LibrarySection = "playlists" | "songs" | "albums" | "artists" | "liked";
+export type LibrarySection = "playlists" | "songs" | "albums" | "artists" | "liked" | "podcasts" | "episodes";
+
+/** A podcast episode (never a song): plays alone or with its show, never starts a music radio. */
+export const isEpisode = (i: { type: string; podcast?: boolean }): boolean => i.type === "track" && !!i.podcast;
+/** A podcast show (a playlist-like page of episodes). */
+export const isShow = (i: { type: string; podcast?: boolean }): boolean => i.type === "playlist" && !!i.podcast;
 export type SearchType = "song" | "video" | "album" | "playlist" | "artist";

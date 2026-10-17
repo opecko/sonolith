@@ -1,0 +1,2191 @@
+{
+ "contents": {
+  "twoColumnBrowseResultsRenderer": {
+   "secondaryContents": {
+    "sectionListRenderer": {
+     "contents": [
+      {
+       "musicShelfRenderer": {
+        "contents": [
+         {
+          "musicMultiRowListItemRenderer": {
+           "thumbnail": {
+            "musicThumbnailRenderer": {
+             "thumbnail": {
+              "thumbnails": [
+               {
+                "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hqdefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCggAEOADGC0guwJIWg&rs=AMzJL3kmN_n6WDVLodgtMJDCUbebjY3V0w",
+                "width": 400,
+                "height": 225
+               },
+               {
+                "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hq720.jpg?sqp=-oaymwEKCKAGEMIDIABIWg&rs=AMzJL3newuBPncT0b9HqZQ8m-icjM5qI4w",
+                "width": 800,
+                "height": 450
+               },
+               {
+                "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mMkQlKM_xwftkHuafcP2P3nCblOw",
+                "width": 853,
+                "height": 479
+               }
+              ]
+             },
+             "thumbnailCrop": "MUSIC_THUMBNAIL_CROP_UNSPECIFIED",
+             "thumbnailScale": "MUSIC_THUMBNAIL_SCALE_ASPECT_FIT"
+            }
+           },
+           "overlay": {
+            "musicItemThumbnailOverlayRenderer": {
+             "background": {
+              "verticalGradient": {
+               "gradientLayerColors": [
+                "3422552064",
+                "3422552064"
+               ]
+              }
+             },
+             "content": {
+              "musicPlayButtonRenderer": {
+               "playNavigationEndpoint": {
+                "watchEndpoint": {
+                 "videoId": "YdIJW8RTptU",
+                 "params": "8gEDmAEI",
+                 "watchEndpointMusicSupportedConfigs": {
+                  "watchEndpointMusicConfig": {
+                   "musicVideoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE"
+                  }
+                 }
+                }
+               },
+               "playIcon": {
+                "iconType": "PLAY_ARROW"
+               },
+               "pauseIcon": {
+                "iconType": "PAUSE"
+               },
+               "iconColor": 4294967295,
+               "backgroundColor": 0,
+               "activeBackgroundColor": 0,
+               "loadingIndicatorColor": 14745645,
+               "playingIcon": {
+                "iconType": "VOLUME_UP"
+               },
+               "iconLoadingColor": 0,
+               "activeScaleFactor": 1,
+               "buttonSize": "MUSIC_PLAY_BUTTON_SIZE_SMALL",
+               "rippleTarget": "MUSIC_PLAY_BUTTON_RIPPLE_TARGET_SELF",
+               "accessibilityPlayData": {},
+               "accessibilityPauseData": {}
+              }
+             },
+             "contentPosition": "MUSIC_ITEM_THUMBNAIL_OVERLAY_CONTENT_POSITION_CENTERED",
+             "displayStyle": "MUSIC_ITEM_THUMBNAIL_OVERLAY_DISPLAY_STYLE_PERSISTENT"
+            }
+           },
+           "onTap": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "params": "8gEDmAEI",
+             "watchEndpointMusicSupportedConfigs": {
+              "watchEndpointMusicConfig": {
+               "musicVideoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE"
+              }
+             }
+            }
+           },
+           "menu": {
+            "menuRenderer": {
+             "items": [
+              {
+               "toggleMenuServiceItemRenderer": {
+                "defaultText": {
+                 "runs": [
+                  {
+                   "text": "Queue to "
+                  },
+                  {
+                   "text": "Episodes for Later"
+                  }
+                 ]
+                },
+                "defaultIcon": {
+                 "iconType": "ADD_CIRCLE"
+                },
+                "defaultServiceEndpoint": {
+                 "commandExecutorCommand": {
+                  "commands": [
+                   {
+                    "playlistEditEndpoint": {
+                     "playlistId": "SE",
+                     "actions": [
+                      {
+                       "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                       "suppressSuccessToast": true
+                      },
+                      {
+                       "addedVideoId": "YdIJW8RTptU",
+                       "action": "ACTION_ADD_VIDEO",
+                       "dedupeOption": "DEDUPE_OPTION_CHECK",
+                       "addedVideoPositionIfManualSort": 0
+                      }
+                     ],
+                     "params": "YAFwZA%3D%3D"
+                    }
+                   }
+                  ]
+                 }
+                },
+                "toggledText": {
+                 "runs": [
+                  {
+                   "text": "Remove from "
+                  },
+                  {
+                   "text": "Episodes for Later"
+                  }
+                 ]
+                },
+                "toggledIcon": {
+                 "iconType": "PLAYLIST_ADD_CHECK"
+                },
+                "toggledServiceEndpoint": {
+                 "playlistEditEndpoint": {
+                  "playlistId": "SE",
+                  "actions": [
+                   {
+                    "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID",
+                    "removedVideoId": "YdIJW8RTptU"
+                   },
+                   {
+                    "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                    "suppressSuccessToast": true
+                   }
+                  ],
+                  "params": "cGQ%3D"
+                 }
+                },
+                "isToggled": false
+               }
+              },
+              {
+               "toggleMenuServiceItemRenderer": {
+                "defaultText": {
+                 "runs": [
+                  {
+                   "text": "Mark as played"
+                  }
+                 ]
+                },
+                "defaultIcon": {
+                 "iconType": "CHECK"
+                },
+                "defaultServiceEndpoint": {
+                 "feedbackEndpoint": {
+                  "feedbackToken": "AB9zfpJxqQ-Z_Rri5vABSq5iKcm2mZqdT5rj9bBhnw0JzJPlVg5c8DRNT9k1XAc3_3HyghGd_JbCx65Rei6Tg3GfFbnCWJ7H-w",
+                  "actions": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationActionRenderer": {
+                       "responseText": {
+                        "runs": [
+                         {
+                          "text": "Episode marked as played"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                },
+                "toggledText": {
+                 "runs": [
+                  {
+                   "text": "Mark as unplayed"
+                  }
+                 ]
+                },
+                "toggledIcon": {
+                 "iconType": "ARROW_UNDO"
+                },
+                "toggledServiceEndpoint": {
+                 "feedbackEndpoint": {
+                  "feedbackToken": "AB9zfpK8dcPvYEWMhH9_DogaoYBGcsMiW49GmeiGFkVaISlree4cGR0eCVFQ8w3lIddGe2ykNDLFiD4OpoIwUouts6oKQrUSKA",
+                  "actions": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationActionRenderer": {
+                       "responseText": {
+                        "runs": [
+                         {
+                          "text": "Episode marked as unplayed"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                },
+                "isToggled": false
+               }
+              },
+              {
+               "menuServiceItemRenderer": {
+                "text": {
+                 "runs": [
+                  {
+                   "text": "Play next"
+                  }
+                 ]
+                },
+                "icon": {
+                 "iconType": "QUEUE_PLAY_NEXT"
+                },
+                "serviceEndpoint": {
+                 "queueAddEndpoint": {
+                  "queueTarget": {
+                   "videoId": "YdIJW8RTptU",
+                   "onEmptyQueue": {
+                    "watchEndpoint": {
+                     "videoId": "YdIJW8RTptU"
+                    }
+                   }
+                  },
+                  "queueInsertPosition": "INSERT_AFTER_CURRENT_VIDEO",
+                  "commands": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationTextRenderer": {
+                       "successResponseText": {
+                        "runs": [
+                         {
+                          "text": "Episode will play next"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                }
+               }
+              },
+              {
+               "menuServiceItemRenderer": {
+                "text": {
+                 "runs": [
+                  {
+                   "text": "Add to queue"
+                  }
+                 ]
+                },
+                "icon": {
+                 "iconType": "ADD_TO_REMOTE_QUEUE"
+                },
+                "serviceEndpoint": {
+                 "queueAddEndpoint": {
+                  "queueTarget": {
+                   "videoId": "YdIJW8RTptU",
+                   "onEmptyQueue": {
+                    "watchEndpoint": {
+                     "videoId": "YdIJW8RTptU"
+                    }
+                   }
+                  },
+                  "queueInsertPosition": "INSERT_AT_END",
+                  "commands": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationTextRenderer": {
+                       "successResponseText": {
+                        "runs": [
+                         {
+                          "text": "Episode added to queue"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                }
+               }
+              }
+             ],
+             "accessibility": {}
+            }
+           },
+           "subtitle": {
+            "runs": [
+             {
+              "text": "79K views"
+             },
+             {
+              "text": " • "
+             },
+             {
+              "text": "1d ago"
+             }
+            ],
+            "accessibility": {}
+           },
+           "playbackProgress": {
+            "musicPlaybackProgressRenderer": {
+             "playbackProgressPercentage": 0,
+             "playbackProgressText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "30 min"
+               }
+              ]
+             },
+             "videoPlaybackPositionFeedbackToken": "AB9zfpJxqQ-Z_Rri5vABSq5iKcm2mZqdT5rj9bBhnw0JzJPlVg5c8DRNT9k1XAc3_3HyghGd_JbCx65Rei6Tg3GfFbnCWJ7H-w",
+             "durationText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "30 min"
+               }
+              ]
+             },
+             "playedText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "Played",
+                "textColor": 4294921797
+               }
+              ]
+             }
+            }
+           },
+           "title": {
+            "runs": [
+             {
+              "text": "Essentials: Neuralink & Technologies to Enhance Human Brains | Dr. Matt MacDougall",
+              "navigationEndpoint": {
+               "browseEndpoint": {
+                "browseId": "MPEDYdIJW8RTptU",
+                "browseEndpointContextSupportedConfigs": {
+                 "browseEndpointContextMusicConfig": {
+                  "pageType": "MUSIC_PAGE_TYPE_NON_MUSIC_AUDIO_TRACK_PAGE"
+                 }
+                }
+               }
+              }
+             }
+            ]
+           },
+           "description": {
+            "runs": [
+             {
+              "text": "In this Huberman Lab Essentials episode, my guest is Dr. Matthew MacDougall, a neurosurgeon at Neuralink. We discuss how brain-machine interfaces could help people with paralysis control computers using their intended movements, and how robotic surgery enables the placement of tiny electrodes in the brain. We also explore advances in brain tumor surgery, implant safety, how the brain and software learn to work together, and the role of animal research. Dr. MacDougall shares his vision for future applications, including restoring movement, addressing mental health conditions and expanding human cognition and communication.\n\nShow notes: https://www.hubermanlab.com/episode/essentials-neuralink-and-technologies-to-enhance-human-brains-matthew-macdougall\n\nFollow Huberman Lab\nInstagram: https://www.instagram.com/hubermanlab \nThreads: https://www.threads.net/@hubermanlab\nX: https://x.com/hubermanlab \nFacebook: https://www.facebook.com/hubermanlab \nTikTok: https://www.tiktok.com/@hubermanlab \nLinkedIn: https://www.linkedin.com/in/andrew-huberman\n\nTimestamps\n00:00:00 Matt MacDougall\n00:00:23 Brain Function, Frontal Lobes & Impulse Control\n00:02:57 Brain Tumors, Laser Surgery & MRI\n00:04:38 Neuralink, Brain Implants & Paralysis\n00:07:04 Robotic Surgery & Electrode Placement\n00:09:09 Motor Cortex, Controlling Computers With the Brain\n00:11:05 Implant Safety & Brain Augmentation\n00:12:51 RFID Hand Implant & Everyday Uses\n00:15:34 Spinal Cord Stimulation, Reconnecting Brain & Body\n00:16:31 Brain-to-Brain Communication & AI\n00:18:44 Brain-Machine Interfaces, Learning & Adaptation\n00:21:14 Animal Research & Welfare\n00:24:18 Pigs & Monkeys, Device Safety & Function\n00:26:44 Future Applications, Mental Health & Human Cognition\n00:29:15 Acknowledgements\n\nDisclaimer & Disclosures: https://www.hubermanlab.com/disclaimer"
+             }
+            ]
+           },
+           "displayStyle": "MUSIC_MULTI_ROW_LIST_ITEM_DISPLAY_STYLE_DETAILED"
+          }
+         },
+         {
+          "musicMultiRowListItemRenderer": {
+           "thumbnail": {
+            "musicThumbnailRenderer": {
+             "thumbnail": {
+              "thumbnails": [
+               {
+                "url": "https://i.ytimg.com/vi/RqMWvhvt0DQ/hqdefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCggAEOADGC0guwJIWg&rs=AMzJL3n1IrDAnL4JTOFVN5i317xWQfuXww",
+                "width": 400,
+                "height": 225
+               },
+               {
+                "url": "https://i.ytimg.com/vi/RqMWvhvt0DQ/hq720.jpg?sqp=-oaymwEKCKAGEMIDIABIWg&rs=AMzJL3k1_x2KeSPJbiQ0ces3BXzzmg8Hxw",
+                "width": 800,
+                "height": 450
+               },
+               {
+                "url": "https://i.ytimg.com/vi/RqMWvhvt0DQ/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mQ8l4a4U37CbHLmDhLkukou3g-gg",
+                "width": 853,
+                "height": 479
+               }
+              ]
+             },
+             "thumbnailCrop": "MUSIC_THUMBNAIL_CROP_UNSPECIFIED",
+             "thumbnailScale": "MUSIC_THUMBNAIL_SCALE_ASPECT_FIT"
+            }
+           },
+           "overlay": {
+            "musicItemThumbnailOverlayRenderer": {
+             "background": {
+              "verticalGradient": {
+               "gradientLayerColors": [
+                "3422552064",
+                "3422552064"
+               ]
+              }
+             },
+             "content": {
+              "musicPlayButtonRenderer": {
+               "playNavigationEndpoint": {
+                "watchEndpoint": {
+                 "videoId": "RqMWvhvt0DQ",
+                 "params": "8gEDmAEI",
+                 "watchEndpointMusicSupportedConfigs": {
+                  "watchEndpointMusicConfig": {
+                   "musicVideoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE"
+                  }
+                 }
+                }
+               },
+               "playIcon": {
+                "iconType": "PLAY_ARROW"
+               },
+               "pauseIcon": {
+                "iconType": "PAUSE"
+               },
+               "iconColor": 4294967295,
+               "backgroundColor": 0,
+               "activeBackgroundColor": 0,
+               "loadingIndicatorColor": 14745645,
+               "playingIcon": {
+                "iconType": "VOLUME_UP"
+               },
+               "iconLoadingColor": 0,
+               "activeScaleFactor": 1,
+               "buttonSize": "MUSIC_PLAY_BUTTON_SIZE_SMALL",
+               "rippleTarget": "MUSIC_PLAY_BUTTON_RIPPLE_TARGET_SELF",
+               "accessibilityPlayData": {},
+               "accessibilityPauseData": {}
+              }
+             },
+             "contentPosition": "MUSIC_ITEM_THUMBNAIL_OVERLAY_CONTENT_POSITION_CENTERED",
+             "displayStyle": "MUSIC_ITEM_THUMBNAIL_OVERLAY_DISPLAY_STYLE_PERSISTENT"
+            }
+           },
+           "onTap": {
+            "watchEndpoint": {
+             "videoId": "RqMWvhvt0DQ",
+             "params": "8gEDmAEI",
+             "watchEndpointMusicSupportedConfigs": {
+              "watchEndpointMusicConfig": {
+               "musicVideoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE"
+              }
+             }
+            }
+           },
+           "menu": {
+            "menuRenderer": {
+             "items": [
+              {
+               "toggleMenuServiceItemRenderer": {
+                "defaultText": {
+                 "runs": [
+                  {
+                   "text": "Queue to "
+                  },
+                  {
+                   "text": "Episodes for Later"
+                  }
+                 ]
+                },
+                "defaultIcon": {
+                 "iconType": "ADD_CIRCLE"
+                },
+                "defaultServiceEndpoint": {
+                 "commandExecutorCommand": {
+                  "commands": [
+                   {
+                    "playlistEditEndpoint": {
+                     "playlistId": "SE",
+                     "actions": [
+                      {
+                       "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                       "suppressSuccessToast": true
+                      },
+                      {
+                       "addedVideoId": "RqMWvhvt0DQ",
+                       "action": "ACTION_ADD_VIDEO",
+                       "dedupeOption": "DEDUPE_OPTION_CHECK",
+                       "addedVideoPositionIfManualSort": 0
+                      }
+                     ],
+                     "params": "YAFwZA%3D%3D"
+                    }
+                   }
+                  ]
+                 }
+                },
+                "toggledText": {
+                 "runs": [
+                  {
+                   "text": "Remove from "
+                  },
+                  {
+                   "text": "Episodes for Later"
+                  }
+                 ]
+                },
+                "toggledIcon": {
+                 "iconType": "PLAYLIST_ADD_CHECK"
+                },
+                "toggledServiceEndpoint": {
+                 "playlistEditEndpoint": {
+                  "playlistId": "SE",
+                  "actions": [
+                   {
+                    "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID",
+                    "removedVideoId": "RqMWvhvt0DQ"
+                   },
+                   {
+                    "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                    "suppressSuccessToast": true
+                   }
+                  ],
+                  "params": "cGQ%3D"
+                 }
+                },
+                "isToggled": false
+               }
+              },
+              {
+               "toggleMenuServiceItemRenderer": {
+                "defaultText": {
+                 "runs": [
+                  {
+                   "text": "Mark as played"
+                  }
+                 ]
+                },
+                "defaultIcon": {
+                 "iconType": "CHECK"
+                },
+                "defaultServiceEndpoint": {
+                 "feedbackEndpoint": {
+                  "feedbackToken": "AB9zfpKX-cUUVIWPu5oGiDYbuFCGNYQ2JHsiuWWQ1ayBMXc5aHTnQEbrFoOpi9iIKTtpHgI7hiYas_LcgPRhdapgznWbo0mz-w",
+                  "actions": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationActionRenderer": {
+                       "responseText": {
+                        "runs": [
+                         {
+                          "text": "Episode marked as played"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                },
+                "toggledText": {
+                 "runs": [
+                  {
+                   "text": "Mark as unplayed"
+                  }
+                 ]
+                },
+                "toggledIcon": {
+                 "iconType": "ARROW_UNDO"
+                },
+                "toggledServiceEndpoint": {
+                 "feedbackEndpoint": {
+                  "feedbackToken": "AB9zfpImGeoHMmPr73QyI-8gTHjWLWVyaBG3vYct-y6B6yf6bf6wZDuzYGTioGcrG7uuD9JWKA_SIXCbtpkeGXi8TDY5GpV-tg",
+                  "actions": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationActionRenderer": {
+                       "responseText": {
+                        "runs": [
+                         {
+                          "text": "Episode marked as unplayed"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                },
+                "isToggled": false
+               }
+              },
+              {
+               "menuServiceItemRenderer": {
+                "text": {
+                 "runs": [
+                  {
+                   "text": "Play next"
+                  }
+                 ]
+                },
+                "icon": {
+                 "iconType": "QUEUE_PLAY_NEXT"
+                },
+                "serviceEndpoint": {
+                 "queueAddEndpoint": {
+                  "queueTarget": {
+                   "videoId": "RqMWvhvt0DQ",
+                   "onEmptyQueue": {
+                    "watchEndpoint": {
+                     "videoId": "RqMWvhvt0DQ"
+                    }
+                   }
+                  },
+                  "queueInsertPosition": "INSERT_AFTER_CURRENT_VIDEO",
+                  "commands": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationTextRenderer": {
+                       "successResponseText": {
+                        "runs": [
+                         {
+                          "text": "Episode will play next"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                }
+               }
+              },
+              {
+               "menuServiceItemRenderer": {
+                "text": {
+                 "runs": [
+                  {
+                   "text": "Add to queue"
+                  }
+                 ]
+                },
+                "icon": {
+                 "iconType": "ADD_TO_REMOTE_QUEUE"
+                },
+                "serviceEndpoint": {
+                 "queueAddEndpoint": {
+                  "queueTarget": {
+                   "videoId": "RqMWvhvt0DQ",
+                   "onEmptyQueue": {
+                    "watchEndpoint": {
+                     "videoId": "RqMWvhvt0DQ"
+                    }
+                   }
+                  },
+                  "queueInsertPosition": "INSERT_AT_END",
+                  "commands": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationTextRenderer": {
+                       "successResponseText": {
+                        "runs": [
+                         {
+                          "text": "Episode added to queue"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                }
+               }
+              }
+             ],
+             "accessibility": {}
+            }
+           },
+           "subtitle": {
+            "runs": [
+             {
+              "text": "253K views"
+             },
+             {
+              "text": " • "
+             },
+             {
+              "text": "Oct 8"
+             }
+            ],
+            "accessibility": {}
+           },
+           "playbackProgress": {
+            "musicPlaybackProgressRenderer": {
+             "playbackProgressPercentage": 0,
+             "playbackProgressText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "30 min"
+               }
+              ]
+             },
+             "videoPlaybackPositionFeedbackToken": "AB9zfpKX-cUUVIWPu5oGiDYbuFCGNYQ2JHsiuWWQ1ayBMXc5aHTnQEbrFoOpi9iIKTtpHgI7hiYas_LcgPRhdapgznWbo0mz-w",
+             "durationText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "30 min"
+               }
+              ]
+             },
+             "playedText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "Played",
+                "textColor": 4294921797
+               }
+              ]
+             }
+            }
+           },
+           "title": {
+            "runs": [
+             {
+              "text": "Essentials: Manage Stress & Build Resilience | Dr. Elissa Epel",
+              "navigationEndpoint": {
+               "browseEndpoint": {
+                "browseId": "MPEDRqMWvhvt0DQ",
+                "browseEndpointContextSupportedConfigs": {
+                 "browseEndpointContextMusicConfig": {
+                  "pageType": "MUSIC_PAGE_TYPE_NON_MUSIC_AUDIO_TRACK_PAGE"
+                 }
+                }
+               }
+              }
+             }
+            ]
+           },
+           "description": {
+            "runs": [
+             {
+              "text": "In this Huberman Lab Essentials episode, my guest is Dr. Elissa Epel, PhD, a Professor of Psychiatry and Behavioral Sciences at the University of California, San Francisco (UCSF). We discuss how acute and chronic stress affect the body and brain, including their links to cellular aging and mitochondrial health. We also explain tools to reduce rumination, reframe stress as a challenge and build resilience, as well as how radical acceptance and a sense of purpose can help us navigate stressors we cannot change.\n\nShow notes: https://go.hubermanlab.com/fqVKGyP\n\nHuberman Lab\nInstagram: https://www.instagram.com/hubermanlab \nThreads: https://www.threads.net/@hubermanlab\nX: https://x.com/hubermanlab \nFacebook: https://www.facebook.com/hubermanlab \nTikTok: https://www.tiktok.com/@hubermanlab \nLinkedIn: https://www.linkedin.com/in/andrew-huberman\n\nDr. Elissa Epel\nLinkedIn: https://www.linkedin.com/in/elissa-epel\nInstagram: https://www.instagram.com/elissa.epel\nX: https://x.com/Dr_Epel\n\nTimestamps\n00:00:00 Elissa Epel\n00:00:22 Good & Bad Stress, Stress Responses\n00:01:55 Rumination, Body Awareness\n00:03:23 Tools: Mindset, Body & Environment\n00:04:51 Acute & Chronic Stress, Energy & Recovery\n00:07:44 Sponsor: Eight Sleep\n00:09:27 Healthy Aging, Purpose & Brain Health\n00:10:54 Stress Resilience, Threat vs. Challenge\n00:14:40 Tool: Reframe Stress, “Stress Shields”\n00:16:54 Sponsor: AG1\n00:18:30 Mitochondrial Health, Caregiving & Daily Mood\n00:21:24 Chronic Stress, Tool: Radical Acceptance\n00:25:19 Tool: “Drop the Rope”, Uncontrollable Stressors\n00:26:48 Uncertainty, Tool: Posture & Slow Breathing\n00:29:10 Sponsor: ROKA\n00:30:34 Taking Action vs. Letting Go\n00:32:55 Journaling, Narrative & Purpose\n00:34:15 Acknowledgements\n\nDisclaimer & Disclosures: https://www.hubermanlab.com/disclaimer"
+             }
+            ]
+           },
+           "displayStyle": "MUSIC_MULTI_ROW_LIST_ITEM_DISPLAY_STYLE_DETAILED"
+          }
+         },
+         {
+          "musicMultiRowListItemRenderer": {
+           "thumbnail": {
+            "musicThumbnailRenderer": {
+             "thumbnail": {
+              "thumbnails": [
+               {
+                "url": "https://i.ytimg.com/vi/8e3RC1L5V_Y/hqdefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCggAEOADGC0guwJIWg&rs=AMzJL3nufLq6vQt5xP0222hhZ3mTGPVglA",
+                "width": 400,
+                "height": 225
+               },
+               {
+                "url": "https://i.ytimg.com/vi/8e3RC1L5V_Y/hq720.jpg?sqp=-oaymwEKCKAGEMIDIABIWg&rs=AMzJL3meItj8Xmb2ba_bZcL3w9mgKsM9tA",
+                "width": 800,
+                "height": 450
+               },
+               {
+                "url": "https://i.ytimg.com/vi/8e3RC1L5V_Y/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mbMNkxTlAzmQJEBxzIjTTurEsXDg",
+                "width": 853,
+                "height": 479
+               }
+              ]
+             },
+             "thumbnailCrop": "MUSIC_THUMBNAIL_CROP_UNSPECIFIED",
+             "thumbnailScale": "MUSIC_THUMBNAIL_SCALE_ASPECT_FIT"
+            }
+           },
+           "overlay": {
+            "musicItemThumbnailOverlayRenderer": {
+             "background": {
+              "verticalGradient": {
+               "gradientLayerColors": [
+                "3422552064",
+                "3422552064"
+               ]
+              }
+             },
+             "content": {
+              "musicPlayButtonRenderer": {
+               "playNavigationEndpoint": {
+                "watchEndpoint": {
+                 "videoId": "8e3RC1L5V_Y",
+                 "params": "8gEDmAEI",
+                 "watchEndpointMusicSupportedConfigs": {
+                  "watchEndpointMusicConfig": {
+                   "musicVideoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE"
+                  }
+                 }
+                }
+               },
+               "playIcon": {
+                "iconType": "PLAY_ARROW"
+               },
+               "pauseIcon": {
+                "iconType": "PAUSE"
+               },
+               "iconColor": 4294967295,
+               "backgroundColor": 0,
+               "activeBackgroundColor": 0,
+               "loadingIndicatorColor": 14745645,
+               "playingIcon": {
+                "iconType": "VOLUME_UP"
+               },
+               "iconLoadingColor": 0,
+               "activeScaleFactor": 1,
+               "buttonSize": "MUSIC_PLAY_BUTTON_SIZE_SMALL",
+               "rippleTarget": "MUSIC_PLAY_BUTTON_RIPPLE_TARGET_SELF",
+               "accessibilityPlayData": {},
+               "accessibilityPauseData": {}
+              }
+             },
+             "contentPosition": "MUSIC_ITEM_THUMBNAIL_OVERLAY_CONTENT_POSITION_CENTERED",
+             "displayStyle": "MUSIC_ITEM_THUMBNAIL_OVERLAY_DISPLAY_STYLE_PERSISTENT"
+            }
+           },
+           "onTap": {
+            "watchEndpoint": {
+             "videoId": "8e3RC1L5V_Y",
+             "params": "8gEDmAEI",
+             "watchEndpointMusicSupportedConfigs": {
+              "watchEndpointMusicConfig": {
+               "musicVideoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE"
+              }
+             }
+            }
+           },
+           "menu": {
+            "menuRenderer": {
+             "items": [
+              {
+               "toggleMenuServiceItemRenderer": {
+                "defaultText": {
+                 "runs": [
+                  {
+                   "text": "Queue to "
+                  },
+                  {
+                   "text": "Episodes for Later"
+                  }
+                 ]
+                },
+                "defaultIcon": {
+                 "iconType": "ADD_CIRCLE"
+                },
+                "defaultServiceEndpoint": {
+                 "commandExecutorCommand": {
+                  "commands": [
+                   {
+                    "playlistEditEndpoint": {
+                     "playlistId": "SE",
+                     "actions": [
+                      {
+                       "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                       "suppressSuccessToast": true
+                      },
+                      {
+                       "addedVideoId": "8e3RC1L5V_Y",
+                       "action": "ACTION_ADD_VIDEO",
+                       "dedupeOption": "DEDUPE_OPTION_CHECK",
+                       "addedVideoPositionIfManualSort": 0
+                      }
+                     ],
+                     "params": "YAFwZA%3D%3D"
+                    }
+                   }
+                  ]
+                 }
+                },
+                "toggledText": {
+                 "runs": [
+                  {
+                   "text": "Remove from "
+                  },
+                  {
+                   "text": "Episodes for Later"
+                  }
+                 ]
+                },
+                "toggledIcon": {
+                 "iconType": "PLAYLIST_ADD_CHECK"
+                },
+                "toggledServiceEndpoint": {
+                 "playlistEditEndpoint": {
+                  "playlistId": "SE",
+                  "actions": [
+                   {
+                    "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID",
+                    "removedVideoId": "8e3RC1L5V_Y"
+                   },
+                   {
+                    "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                    "suppressSuccessToast": true
+                   }
+                  ],
+                  "params": "cGQ%3D"
+                 }
+                },
+                "isToggled": false
+               }
+              },
+              {
+               "toggleMenuServiceItemRenderer": {
+                "defaultText": {
+                 "runs": [
+                  {
+                   "text": "Mark as played"
+                  }
+                 ]
+                },
+                "defaultIcon": {
+                 "iconType": "CHECK"
+                },
+                "defaultServiceEndpoint": {
+                 "feedbackEndpoint": {
+                  "feedbackToken": "AB9zfpKSyLOQ0slaPvoFAmVlc8_ZXodLsTNqm5p-Mctgr2Gmktmz7MFVMI0g-ljYxQ4gLrmnKpJks215SXsZ1Wm5h-jT8lzyqQ",
+                  "actions": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationActionRenderer": {
+                       "responseText": {
+                        "runs": [
+                         {
+                          "text": "Episode marked as played"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                },
+                "toggledText": {
+                 "runs": [
+                  {
+                   "text": "Mark as unplayed"
+                  }
+                 ]
+                },
+                "toggledIcon": {
+                 "iconType": "ARROW_UNDO"
+                },
+                "toggledServiceEndpoint": {
+                 "feedbackEndpoint": {
+                  "feedbackToken": "AB9zfpJG9OMHq9fq4OHz8AUj99kPgM-Ympi9AiVnL5051BTHUsX2_c4dhGHRmqvGnM9ZQeTXlv3_9k8O2ymI1ADWkO71rlOU8Q",
+                  "actions": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationActionRenderer": {
+                       "responseText": {
+                        "runs": [
+                         {
+                          "text": "Episode marked as unplayed"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                },
+                "isToggled": false
+               }
+              },
+              {
+               "menuServiceItemRenderer": {
+                "text": {
+                 "runs": [
+                  {
+                   "text": "Play next"
+                  }
+                 ]
+                },
+                "icon": {
+                 "iconType": "QUEUE_PLAY_NEXT"
+                },
+                "serviceEndpoint": {
+                 "queueAddEndpoint": {
+                  "queueTarget": {
+                   "videoId": "8e3RC1L5V_Y",
+                   "onEmptyQueue": {
+                    "watchEndpoint": {
+                     "videoId": "8e3RC1L5V_Y"
+                    }
+                   }
+                  },
+                  "queueInsertPosition": "INSERT_AFTER_CURRENT_VIDEO",
+                  "commands": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationTextRenderer": {
+                       "successResponseText": {
+                        "runs": [
+                         {
+                          "text": "Episode will play next"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                }
+               }
+              },
+              {
+               "menuServiceItemRenderer": {
+                "text": {
+                 "runs": [
+                  {
+                   "text": "Add to queue"
+                  }
+                 ]
+                },
+                "icon": {
+                 "iconType": "ADD_TO_REMOTE_QUEUE"
+                },
+                "serviceEndpoint": {
+                 "queueAddEndpoint": {
+                  "queueTarget": {
+                   "videoId": "8e3RC1L5V_Y",
+                   "onEmptyQueue": {
+                    "watchEndpoint": {
+                     "videoId": "8e3RC1L5V_Y"
+                    }
+                   }
+                  },
+                  "queueInsertPosition": "INSERT_AT_END",
+                  "commands": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationTextRenderer": {
+                       "successResponseText": {
+                        "runs": [
+                         {
+                          "text": "Episode added to queue"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                }
+               }
+              }
+             ],
+             "accessibility": {}
+            }
+           },
+           "subtitle": {
+            "runs": [
+             {
+              "text": "458K views"
+             },
+             {
+              "text": " • "
+             },
+             {
+              "text": "Oct 1"
+             }
+            ],
+            "accessibility": {}
+           },
+           "playbackProgress": {
+            "musicPlaybackProgressRenderer": {
+             "playbackProgressPercentage": 0,
+             "playbackProgressText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "37 min"
+               }
+              ]
+             },
+             "videoPlaybackPositionFeedbackToken": "AB9zfpKSyLOQ0slaPvoFAmVlc8_ZXodLsTNqm5p-Mctgr2Gmktmz7MFVMI0g-ljYxQ4gLrmnKpJks215SXsZ1Wm5h-jT8lzyqQ",
+             "durationText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "37 min"
+               }
+              ]
+             },
+             "playedText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "Played",
+                "textColor": 4294921797
+               }
+              ]
+             }
+            }
+           },
+           "title": {
+            "runs": [
+             {
+              "text": "Tools to Improve Your Focus & Concentration | Huberman Lab Essentials",
+              "navigationEndpoint": {
+               "browseEndpoint": {
+                "browseId": "MPED8e3RC1L5V_Y",
+                "browseEndpointContextSupportedConfigs": {
+                 "browseEndpointContextMusicConfig": {
+                  "pageType": "MUSIC_PAGE_TYPE_NON_MUSIC_AUDIO_TRACK_PAGE"
+                 }
+                }
+               }
+              }
+             }
+            ]
+           },
+           "description": {
+            "runs": [
+             {
+              "text": "In this Huberman Lab Essentials episode, I explain how the neurochemicals epinephrine, acetylcholine and dopamine contribute to focus and concentration. I discuss tools for improving attention, including sleep, sound, structured work sessions, nutrition, caffeine and deliberate cold exposure. I also describe a brief daily meditation and visual focus exercises that train your ability to refocus when attention drifts. Additionally, I discuss the potential benefits and limitations of supplements, prescription treatments for ADHD, and why taking time to deliberately defocus supports concentrated work.\n\nShow notes: https://go.hubermanlab.com/GBU899b\n\nFollow Huberman Lab\nInstagram: https://www.instagram.com/hubermanlab \nThreads: https://www.threads.net/@hubermanlab\nX: https://x.com/hubermanlab \nFacebook: https://www.facebook.com/hubermanlab \nTikTok: https://www.tiktok.com/@hubermanlab \nLinkedIn: https://www.linkedin.com/in/andrew-huberman\nWebsite: https://www.hubermanlab.com \n\nTimestamps\n00:00:00 Focus & Concentration\n00:02:00 Epinephrine, Acetylcholine & Dopamine\n00:04:20 Sleep, White Noise & Pink Noise\n00:07:35 Ultradian Cycles, 90-Minute Work Sessions\n00:09:15 Blood Glucose, Fasting & Meal Size\n00:12:10 Caffeine, Focus & Sleep\n00:13:25 Acute Stress & Concentration\n00:15:25 Tool: Deliberate Cold Exposure\n00:18:10 Tool: 13-Minute Daily Meditation\n00:22:20 Tool: Visual Focus Exercises\n00:27:00 Omega-3 Fatty Acids & Creatine\n00:29:00 Alpha-GPC, Acetylcholine & Safety Considerations\n00:31:05 L-Tyrosine, Dopamine & Combining Tools\n00:32:55 ADHD, Prescription Medications & Neuroplasticity\n00:35:50 Deliberate Defocusing & Recovery\n00:37:05 Acknowledgements\n\nDisclaimer & Disclosures: https://www.hubermanlab.com/disclaimer"
+             }
+            ]
+           },
+           "displayStyle": "MUSIC_MULTI_ROW_LIST_ITEM_DISPLAY_STYLE_DETAILED"
+          }
+         },
+         {
+          "musicMultiRowListItemRenderer": {
+           "thumbnail": {
+            "musicThumbnailRenderer": {
+             "thumbnail": {
+              "thumbnails": [
+               {
+                "url": "https://i.ytimg.com/vi/Gu04f6aFuBY/hqdefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCggAEOADGC0guwJIWg&rs=AMzJL3kv5IIuihZEeGcTkwT2tl3wwl8ZDg",
+                "width": 400,
+                "height": 225
+               },
+               {
+                "url": "https://i.ytimg.com/vi/Gu04f6aFuBY/hq720.jpg?sqp=-oaymwEKCKAGEMIDIABIWg&rs=AMzJL3mDRi7Wl5A2ysUST6OkoolutzFp8Q",
+                "width": 800,
+                "height": 450
+               },
+               {
+                "url": "https://i.ytimg.com/vi/Gu04f6aFuBY/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3kT8i7l6ZCP91jGVhEc_wiiYmiZPQ",
+                "width": 853,
+                "height": 479
+               }
+              ]
+             },
+             "thumbnailCrop": "MUSIC_THUMBNAIL_CROP_UNSPECIFIED",
+             "thumbnailScale": "MUSIC_THUMBNAIL_SCALE_ASPECT_FIT"
+            }
+           },
+           "overlay": {
+            "musicItemThumbnailOverlayRenderer": {
+             "background": {
+              "verticalGradient": {
+               "gradientLayerColors": [
+                "3422552064",
+                "3422552064"
+               ]
+              }
+             },
+             "content": {
+              "musicPlayButtonRenderer": {
+               "playNavigationEndpoint": {
+                "watchEndpoint": {
+                 "videoId": "Gu04f6aFuBY",
+                 "params": "8gEDmAEI",
+                 "watchEndpointMusicSupportedConfigs": {
+                  "watchEndpointMusicConfig": {
+                   "musicVideoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE"
+                  }
+                 }
+                }
+               },
+               "playIcon": {
+                "iconType": "PLAY_ARROW"
+               },
+               "pauseIcon": {
+                "iconType": "PAUSE"
+               },
+               "iconColor": 4294967295,
+               "backgroundColor": 0,
+               "activeBackgroundColor": 0,
+               "loadingIndicatorColor": 14745645,
+               "playingIcon": {
+                "iconType": "VOLUME_UP"
+               },
+               "iconLoadingColor": 0,
+               "activeScaleFactor": 1,
+               "buttonSize": "MUSIC_PLAY_BUTTON_SIZE_SMALL",
+               "rippleTarget": "MUSIC_PLAY_BUTTON_RIPPLE_TARGET_SELF",
+               "accessibilityPlayData": {},
+               "accessibilityPauseData": {}
+              }
+             },
+             "contentPosition": "MUSIC_ITEM_THUMBNAIL_OVERLAY_CONTENT_POSITION_CENTERED",
+             "displayStyle": "MUSIC_ITEM_THUMBNAIL_OVERLAY_DISPLAY_STYLE_PERSISTENT"
+            }
+           },
+           "onTap": {
+            "watchEndpoint": {
+             "videoId": "Gu04f6aFuBY",
+             "params": "8gEDmAEI",
+             "watchEndpointMusicSupportedConfigs": {
+              "watchEndpointMusicConfig": {
+               "musicVideoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE"
+              }
+             }
+            }
+           },
+           "menu": {
+            "menuRenderer": {
+             "items": [
+              {
+               "toggleMenuServiceItemRenderer": {
+                "defaultText": {
+                 "runs": [
+                  {
+                   "text": "Queue to "
+                  },
+                  {
+                   "text": "Episodes for Later"
+                  }
+                 ]
+                },
+                "defaultIcon": {
+                 "iconType": "ADD_CIRCLE"
+                },
+                "defaultServiceEndpoint": {
+                 "commandExecutorCommand": {
+                  "commands": [
+                   {
+                    "playlistEditEndpoint": {
+                     "playlistId": "SE",
+                     "actions": [
+                      {
+                       "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                       "suppressSuccessToast": true
+                      },
+                      {
+                       "addedVideoId": "Gu04f6aFuBY",
+                       "action": "ACTION_ADD_VIDEO",
+                       "dedupeOption": "DEDUPE_OPTION_CHECK",
+                       "addedVideoPositionIfManualSort": 0
+                      }
+                     ],
+                     "params": "YAFwZA%3D%3D"
+                    }
+                   }
+                  ]
+                 }
+                },
+                "toggledText": {
+                 "runs": [
+                  {
+                   "text": "Remove from "
+                  },
+                  {
+                   "text": "Episodes for Later"
+                  }
+                 ]
+                },
+                "toggledIcon": {
+                 "iconType": "PLAYLIST_ADD_CHECK"
+                },
+                "toggledServiceEndpoint": {
+                 "playlistEditEndpoint": {
+                  "playlistId": "SE",
+                  "actions": [
+                   {
+                    "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID",
+                    "removedVideoId": "Gu04f6aFuBY"
+                   },
+                   {
+                    "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                    "suppressSuccessToast": true
+                   }
+                  ],
+                  "params": "cGQ%3D"
+                 }
+                },
+                "isToggled": false
+               }
+              },
+              {
+               "toggleMenuServiceItemRenderer": {
+                "defaultText": {
+                 "runs": [
+                  {
+                   "text": "Mark as played"
+                  }
+                 ]
+                },
+                "defaultIcon": {
+                 "iconType": "CHECK"
+                },
+                "defaultServiceEndpoint": {
+                 "feedbackEndpoint": {
+                  "feedbackToken": "AB9zfpJtwFdwAcKRIDPQ8gFHYzbrxsy_8oR1WQPFCCQk-P-Y2sfFpbitqTWVmSyTibAFcqS8pAx4xQsWAArBa8POXcK4c_Veqg",
+                  "actions": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationActionRenderer": {
+                       "responseText": {
+                        "runs": [
+                         {
+                          "text": "Episode marked as played"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                },
+                "toggledText": {
+                 "runs": [
+                  {
+                   "text": "Mark as unplayed"
+                  }
+                 ]
+                },
+                "toggledIcon": {
+                 "iconType": "ARROW_UNDO"
+                },
+                "toggledServiceEndpoint": {
+                 "feedbackEndpoint": {
+                  "feedbackToken": "AB9zfpIQPi2wckeQbTmdD8I1pAxlz8h6cm_pRmOvOLWZKixiuuv0n6G_6OP0hDjyvNvtdLV1sWHuVeBPDDJxiHLFBIcf-v9L-Q",
+                  "actions": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationActionRenderer": {
+                       "responseText": {
+                        "runs": [
+                         {
+                          "text": "Episode marked as unplayed"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                },
+                "isToggled": false
+               }
+              },
+              {
+               "menuServiceItemRenderer": {
+                "text": {
+                 "runs": [
+                  {
+                   "text": "Play next"
+                  }
+                 ]
+                },
+                "icon": {
+                 "iconType": "QUEUE_PLAY_NEXT"
+                },
+                "serviceEndpoint": {
+                 "queueAddEndpoint": {
+                  "queueTarget": {
+                   "videoId": "Gu04f6aFuBY",
+                   "onEmptyQueue": {
+                    "watchEndpoint": {
+                     "videoId": "Gu04f6aFuBY"
+                    }
+                   }
+                  },
+                  "queueInsertPosition": "INSERT_AFTER_CURRENT_VIDEO",
+                  "commands": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationTextRenderer": {
+                       "successResponseText": {
+                        "runs": [
+                         {
+                          "text": "Episode will play next"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                }
+               }
+              },
+              {
+               "menuServiceItemRenderer": {
+                "text": {
+                 "runs": [
+                  {
+                   "text": "Add to queue"
+                  }
+                 ]
+                },
+                "icon": {
+                 "iconType": "ADD_TO_REMOTE_QUEUE"
+                },
+                "serviceEndpoint": {
+                 "queueAddEndpoint": {
+                  "queueTarget": {
+                   "videoId": "Gu04f6aFuBY",
+                   "onEmptyQueue": {
+                    "watchEndpoint": {
+                     "videoId": "Gu04f6aFuBY"
+                    }
+                   }
+                  },
+                  "queueInsertPosition": "INSERT_AT_END",
+                  "commands": [
+                   {
+                    "addToToastAction": {
+                     "item": {
+                      "notificationTextRenderer": {
+                       "successResponseText": {
+                        "runs": [
+                         {
+                          "text": "Episode added to queue"
+                         }
+                        ]
+                       }
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                }
+               }
+              }
+             ],
+             "accessibility": {}
+            }
+           },
+           "subtitle": {
+            "runs": [
+             {
+              "text": "246K views"
+             },
+             {
+              "text": " • "
+             },
+             {
+              "text": "Sep 24"
+             }
+            ],
+            "accessibility": {}
+           },
+           "playbackProgress": {
+            "musicPlaybackProgressRenderer": {
+             "playbackProgressPercentage": 0,
+             "playbackProgressText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "35 min"
+               }
+              ]
+             },
+             "videoPlaybackPositionFeedbackToken": "AB9zfpJtwFdwAcKRIDPQ8gFHYzbrxsy_8oR1WQPFCCQk-P-Y2sfFpbitqTWVmSyTibAFcqS8pAx4xQsWAArBa8POXcK4c_Veqg",
+             "durationText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "35 min"
+               }
+              ]
+             },
+             "playedText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "Played",
+                "textColor": 4294921797
+               }
+              ]
+             }
+            }
+           },
+           "title": {
+            "runs": [
+             {
+              "text": "Essentials: Optimal Protocols to Build Strength & Grow Muscles | Dr. Andy Galpin",
+              "navigationEndpoint": {
+               "browseEndpoint": {
+                "browseId": "MPEDGu04f6aFuBY",
+                "browseEndpointContextSupportedConfigs": {
+                 "browseEndpointContextMusicConfig": {
+                  "pageType": "MUSIC_PAGE_TYPE_NON_MUSIC_AUDIO_TRACK_PAGE"
+                 }
+                }
+               }
+              }
+             }
+            ]
+           },
+           "description": {
+            "runs": [
+             {
+              "text": "In this Huberman Lab Essentials episode, I revisit episode 2 of my six-part guest series with Dr. Andy Galpin, PhD, an exercise scientist and expert in human performance. We discuss how strength and muscle growth (hypertrophy) differ and why resistance training is important for maintaining physical function as we age. We also explain how to build effective training programs using progressive overload, exercise selection, repetition speed and weekly training volume. Dr. Galpin shares practical tools for developing strength, power and muscle size, including how to adapt workouts to your goals, equipment and schedule.\n\nShow notes: https://go.hubermanlab.com/OPn7tfZ\n\nTimestamps\n00:00:00 Andy Galpin\n00:00:51 Strength Training, Aging & Physical Function\n00:04:04 Strength vs. Hypertrophy\n00:05:57 Training Principles, Consistency & Progressive Overload\n00:07:21 Individualization, Specificity & Variation\n00:08:28 Training Variables; Tool: “3 to 5” Approach\n00:11:40 Repetition Speed, Strength vs. Hypertrophy\n00:14:59 Exercise Variation & Standardization\n00:16:59 Power & Strength Training: Exercise Selection, Order & Volume\n00:20:02 Progression, Deloads & Training Intent\n00:21:33 Hypertrophy: Training Stimulus & Exercise Selection\n00:23:41 Targeting Muscles, Squat Technique & Machines\n00:27:23 Exercise Order & Pre-Fatigue\n00:28:24 Training Splits, Balanced Muscle Development\n00:29:55 Weekly Training Volume, Reps in Reserve & Limited Workout Time\n00:32:34 Training Frequency, Workout Duration & Full-Body Training\n00:35:22 Acknowledgements\n\nDisclaimer & Disclosures: https://www.hubermanlab.com/disclaimer"
+             }
+            ]
+           },
+           "displayStyle": "MUSIC_MULTI_ROW_LIST_ITEM_DISPLAY_STYLE_DETAILED"
+          }
+         }
+        ],
+        "continuations": [
+         {
+          "nextContinuationData": {
+           "continuation": "4qmFsgJmEiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxo8ZWg1UVZEcERRekJwUlVWT1JFNUVSWHBOUlVaRFRtdEZlRkZVV1hkUFJFMlNBUU1JMlFqYUNBUUlBaEFC",
+           "autoloadEnabled": true,
+           "autoloadImmediately": true
+          }
+         }
+        ],
+        "shelfDivider": {
+         "musicShelfDividerRenderer": {
+          "hidden": true
+         }
+        }
+       }
+      }
+     ],
+     "header": {
+      "chipCloudRenderer": {
+       "chips": [
+        {
+         "chipCloudChipRenderer": {
+          "style": {
+           "styleType": "STYLE_ICON_SECOND"
+          },
+          "text": {
+           "runs": [
+            {
+             "text": "Latest"
+            }
+           ]
+          },
+          "navigationEndpoint": {
+           "openPopupAction": {
+            "popup": {
+             "menuPopupRenderer": {
+              "items": [
+               {
+                "menuNavigationItemRenderer": {
+                 "text": {
+                  "simpleText": "Latest"
+                 },
+                 "icon": {
+                  "iconType": "CHECK"
+                 },
+                 "navigationEndpoint": {
+                  "browseSectionListReloadEndpoint": {
+                   "continuation": {
+                    "reloadContinuationData": {
+                     "continuation": "4qmFsgJGEiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxoca2dFRENOa0lvQVlCMmdnRUNBSVFBUSUzRCUzRA%3D%3D",
+                     "showSpinnerOverlay": true
+                    }
+                   },
+                   "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+                  }
+                 },
+                 "accessibility": {}
+                }
+               },
+               {
+                "menuNavigationItemRenderer": {
+                 "text": {
+                  "simpleText": "Oldest"
+                 },
+                 "navigationEndpoint": {
+                  "browseSectionListReloadEndpoint": {
+                   "continuation": {
+                    "reloadContinuationData": {
+                     "continuation": "4qmFsgJGEiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxoca2dFRENOa0lvQVlCMmdnRUNBRVFBUSUzRCUzRA%3D%3D",
+                     "showSpinnerOverlay": true
+                    }
+                   },
+                   "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+                  }
+                 },
+                 "accessibility": {}
+                }
+               },
+               {
+                "menuNavigationItemRenderer": {
+                 "text": {
+                  "simpleText": "Popular"
+                 },
+                 "navigationEndpoint": {
+                  "browseSectionListReloadEndpoint": {
+                   "continuation": {
+                    "reloadContinuationData": {
+                     "continuation": "4qmFsgJGEiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxoca2dFRENOa0lvQVlCMmdnRUNBSVFBZyUzRCUzRA%3D%3D",
+                     "showSpinnerOverlay": true
+                    }
+                   },
+                   "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+                  }
+                 },
+                 "accessibility": {}
+                }
+               },
+               {
+                "menuNavigationItemRenderer": {
+                 "text": {
+                  "simpleText": "Creator provided"
+                 },
+                 "navigationEndpoint": {
+                  "browseSectionListReloadEndpoint": {
+                   "continuation": {
+                    "reloadContinuationData": {
+                     "continuation": "4qmFsgI2EiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxoMa2dFRENOa0lvQVlC",
+                     "showSpinnerOverlay": true
+                    }
+                   },
+                   "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+                  }
+                 },
+                 "accessibility": {}
+                }
+               }
+              ]
+             }
+            },
+            "popupType": "DIALOG",
+            "reusePopup": true
+           }
+          },
+          "icon": {
+           "iconType": "EXPAND"
+          },
+          "uniqueId": "YTM SDP Sort Chip",
+          "notSelectable": true
+         }
+        },
+        {
+         "chipCloudChipRenderer": {
+          "text": {
+           "simpleText": "In progress"
+          },
+          "navigationEndpoint": {
+           "browseSectionListReloadEndpoint": {
+            "continuation": {
+             "reloadContinuationData": {
+              "continuation": "4qmFsgJKEiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxoga2dFRENOa0lvQVlCMmdnRUNBSVFBWWdKQXclM0QlM0Q%3D",
+              "showSpinnerOverlay": true
+             }
+            },
+            "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+           }
+          },
+          "isSelected": false,
+          "onDeselectedCommand": {
+           "browseSectionListReloadEndpoint": {
+            "continuation": {
+             "reloadContinuationData": {
+              "continuation": "4qmFsgJGEiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxoca2dFRENOa0lvQVlCMmdnRUNBSVFBUSUzRCUzRA%3D%3D",
+              "showSpinnerOverlay": true
+             }
+            },
+            "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+           }
+          },
+          "uniqueId": "YTM SDP In progress Chip"
+         }
+        },
+        {
+         "chipCloudChipRenderer": {
+          "text": {
+           "simpleText": "Unplayed"
+          },
+          "navigationEndpoint": {
+           "browseSectionListReloadEndpoint": {
+            "continuation": {
+             "reloadContinuationData": {
+              "continuation": "4qmFsgJKEiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxoga2dFRENOa0lvQVlCMmdnRUNBSVFBWWdKQVElM0QlM0Q%3D",
+              "showSpinnerOverlay": true
+             }
+            },
+            "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+           }
+          },
+          "isSelected": false,
+          "onDeselectedCommand": {
+           "browseSectionListReloadEndpoint": {
+            "continuation": {
+             "reloadContinuationData": {
+              "continuation": "4qmFsgJGEiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxoca2dFRENOa0lvQVlCMmdnRUNBSVFBUSUzRCUzRA%3D%3D",
+              "showSpinnerOverlay": true
+             }
+            },
+            "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+           }
+          },
+          "uniqueId": "YTM SDP Unplayed Chip"
+         }
+        },
+        {
+         "chipCloudChipRenderer": {
+          "text": {
+           "simpleText": "Played"
+          },
+          "navigationEndpoint": {
+           "browseSectionListReloadEndpoint": {
+            "continuation": {
+             "reloadContinuationData": {
+              "continuation": "4qmFsgJKEiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxoga2dFRENOa0lvQVlCMmdnRUNBSVFBWWdKQWclM0QlM0Q%3D",
+              "showSpinnerOverlay": true
+             }
+            },
+            "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+           }
+          },
+          "isSelected": false,
+          "onDeselectedCommand": {
+           "browseSectionListReloadEndpoint": {
+            "continuation": {
+             "reloadContinuationData": {
+              "continuation": "4qmFsgJGEiZNUFNQUExQTldfZ2VyWGE0UGM4UzJxb1VRYzVlOElyOTdSTHVWVxoca2dFRENOa0lvQVlCMmdnRUNBSVFBUSUzRCUzRA%3D%3D",
+              "showSpinnerOverlay": true
+             }
+            },
+            "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+           }
+          },
+          "uniqueId": "YTM SDP Played Chip"
+         }
+        }
+       ],
+       "horizontalScrollable": true,
+       "selectionBehavior": "CHIP_CLOUD_SELECTION_BEHAVIOR_SINGLE_SELECT"
+      }
+     },
+     "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+    }
+   },
+   "tabs": [
+    {
+     "tabRenderer": {
+      "content": {
+       "sectionListRenderer": {
+        "contents": [
+         {
+          "musicResponsiveHeaderRenderer": {
+           "thumbnail": {
+            "musicThumbnailRenderer": {
+             "thumbnail": {
+              "thumbnails": [
+               {
+                "url": "https://i.ytimg.com/pl_c/PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW/studio_square_thumbnail.jpg?sqp=CMDRzNYG-oaymwEICDwQPCAASFqi85f_AwYIkfODoAY&rs=AMzJL3m6ltoV1KNy1RddItvQv_O6H-U4uA",
+                "width": 60,
+                "height": 60
+               },
+               {
+                "url": "https://i.ytimg.com/pl_c/PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW/studio_square_thumbnail.jpg?sqp=CMDRzNYG-oaymwEICHgQeCAASFqi85f_AwYIkfODoAY&rs=AMzJL3kgVyIKuhQ_eW9QnOHeurrfKllmxw",
+                "width": 120,
+                "height": 120
+               },
+               {
+                "url": "https://i.ytimg.com/pl_c/PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW/studio_square_thumbnail.jpg?sqp=CMDRzNYG-oaymwEKCOIBEOIBIABIWqLzl_8DBgiR84OgBg&rs=AMzJL3mqoZJyhKiV7MmX2FHtpWIQjyc7ZQ",
+                "width": 226,
+                "height": 226
+               },
+               {
+                "url": "https://i.ytimg.com/pl_c/PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW/studio_square_thumbnail.jpg?sqp=CMDRzNYG-oaymwEKCKAEEKAEIABIWqLzl_8DBgiR84OgBg&rs=AMzJL3mo2o3n1f_jLM9cbH3QHZGYs11u9A",
+                "width": 544,
+                "height": 544
+               }
+              ]
+             },
+             "thumbnailCrop": "MUSIC_THUMBNAIL_CROP_UNSPECIFIED",
+             "thumbnailScale": "MUSIC_THUMBNAIL_SCALE_UNSPECIFIED"
+            }
+           },
+           "buttons": [
+            {
+             "buttonRenderer": {
+              "style": "STYLE_DARK_ON_WHITE",
+              "icon": {
+               "iconType": "SHARE"
+              },
+              "accessibility": {
+               "label": "Share"
+              },
+              "command": {
+               "shareEntityEndpoint": {
+                "serializedShareEntity": "EiJQTFBOV19nZXJYYTRQYzhTMnFvVVFjNWU4SXI5N1JMdVZX",
+                "sharePanelType": "SHARE_PANEL_TYPE_UNIFIED_SHARE_PANEL"
+               }
+              }
+             }
+            },
+            {
+             "toggleButtonRenderer": {
+              "isToggled": false,
+              "isDisabled": false,
+              "defaultIcon": {
+               "iconType": "BOOKMARK_BORDER"
+              },
+              "defaultText": {
+               "runs": [
+                {
+                 "text": "Save to library"
+                }
+               ],
+               "accessibility": {}
+              },
+              "defaultServiceEndpoint": {
+               "likeEndpoint": {
+                "status": "LIKE",
+                "target": {
+                 "playlistId": "PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+                }
+               }
+              },
+              "toggledIcon": {
+               "iconType": "BOOKMARK"
+              },
+              "toggledText": {
+               "runs": [
+                {
+                 "text": "Saved to library"
+                }
+               ],
+               "accessibility": {}
+              },
+              "toggledServiceEndpoint": {
+               "likeEndpoint": {
+                "status": "INDIFFERENT",
+                "target": {
+                 "playlistId": "PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+                }
+               }
+              }
+             }
+            },
+            {
+             "menuRenderer": {
+              "items": [
+               {
+                "menuServiceItemRenderer": {
+                 "text": {
+                  "runs": [
+                   {
+                    "text": "Find in show"
+                   }
+                  ]
+                 },
+                 "icon": {
+                  "iconType": "SEARCH"
+                 },
+                 "serviceEndpoint": {
+                  "playlistFilterSearchEndpoint": {
+                   "playlistId": "PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+                  }
+                 }
+                }
+               },
+               {
+                "toggleMenuServiceItemRenderer": {
+                 "defaultText": {
+                  "runs": [
+                   {
+                    "text": "Save to library"
+                   }
+                  ]
+                 },
+                 "defaultIcon": {
+                  "iconType": "BOOKMARK_BORDER"
+                 },
+                 "defaultServiceEndpoint": {
+                  "likeEndpoint": {
+                   "status": "LIKE",
+                   "target": {
+                    "playlistId": "PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+                   }
+                  }
+                 },
+                 "toggledText": {
+                  "runs": [
+                   {
+                    "text": "Remove from library"
+                   }
+                  ]
+                 },
+                 "toggledIcon": {
+                  "iconType": "BOOKMARK"
+                 },
+                 "toggledServiceEndpoint": {
+                  "likeEndpoint": {
+                   "status": "INDIFFERENT",
+                   "target": {
+                    "playlistId": "PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW"
+                   }
+                  }
+                 },
+                 "isToggled": false
+                }
+               },
+               {
+                "menuNavigationItemRenderer": {
+                 "text": {
+                  "runs": [
+                   {
+                    "text": "Share"
+                   }
+                  ]
+                 },
+                 "icon": {
+                  "iconType": "SHARE"
+                 },
+                 "navigationEndpoint": {
+                  "shareEntityEndpoint": {
+                   "serializedShareEntity": "EiJQTFBOV19nZXJYYTRQYzhTMnFvVVFjNWU4SXI5N1JMdVZX",
+                   "sharePanelType": "SHARE_PANEL_TYPE_UNIFIED_SHARE_PANEL"
+                  }
+                 }
+                }
+               },
+               {
+                "toggleMenuServiceItemRenderer": {
+                 "defaultText": {
+                  "runs": [
+                   {
+                    "text": "Pin to Listen again"
+                   }
+                  ]
+                 },
+                 "defaultIcon": {
+                  "iconType": "KEEP"
+                 },
+                 "defaultServiceEndpoint": {
+                  "feedbackEndpoint": {
+                   "feedbackToken": "AB9zfpKBQKnEHZy_m8jxwr42-9E4CSIvkluCXs8KLP9TwDViaF2VWHImD-ZLP1BWPHBxMRIpetyRvxMt_8vMdk3O9rqFpRPZ0mzgpTExlEpRdWSaF9PC3neJpOWbT-9l3MX-sD4AMRPp"
+                  }
+                 },
+                 "toggledText": {
+                  "runs": [
+                   {
+                    "text": "Unpin from Listen again"
+                   }
+                  ]
+                 },
+                 "toggledIcon": {
+                  "iconType": "KEEP_OFF"
+                 },
+                 "toggledServiceEndpoint": {
+                  "feedbackEndpoint": {
+                   "feedbackToken": "AB9zfpIbk_UyTU7CDKe6D3U0arifyUVPB5I-rQ6hqjTbpWMwLQCWl7Dog3iQwnfflP6v7Q3zwEWReEClDWJtg8j61ijfZIQ2EmrT-Ql6jbhhgLLejPUVen_ux6djTXPhuIzEL4IxRinB"
+                  }
+                 }
+                }
+               }
+              ],
+              "accessibility": {}
+             }
+            }
+           ],
+           "title": {
+            "runs": [
+             {
+              "text": "Huberman Lab"
+             }
+            ]
+           },
+           "subtitle": {},
+           "straplineTextOne": {
+            "runs": [
+             {
+              "text": "Andrew Huberman",
+              "navigationEndpoint": {
+               "browseEndpoint": {
+                "browseId": "UC2D2CMWXMOVWx7giW1n3LIg",
+                "browseEndpointContextSupportedConfigs": {
+                 "browseEndpointContextMusicConfig": {
+                  "pageType": "MUSIC_PAGE_TYPE_USER_CHANNEL"
+                 }
+                }
+               }
+              }
+             }
+            ]
+           },
+           "straplineThumbnail": {
+            "musicThumbnailRenderer": {
+             "thumbnail": {
+              "thumbnails": [
+               {
+                "url": "https://yt3.ggpht.com/Y8lhyl8aHY42phxwoAwUqwLGDp-z8nmtj3Z7_JB-Oh4yIZ1OFYb-MlJRuz_oygqsYQU-VgGqiOM=s48-c-k-c0x00000000-no-cc-rj-rp",
+                "width": 48,
+                "height": 48
+               },
+               {
+                "url": "https://yt3.ggpht.com/Y8lhyl8aHY42phxwoAwUqwLGDp-z8nmtj3Z7_JB-Oh4yIZ1OFYb-MlJRuz_oygqsYQU-VgGqiOM=s96-c-k-c0x00000000-no-cc-rj-rp",
+                "width": 96,
+                "height": 96
+               }
+              ]
+             },
+             "thumbnailCrop": "MUSIC_THUMBNAIL_CROP_UNSPECIFIED",
+             "thumbnailScale": "MUSIC_THUMBNAIL_SCALE_UNSPECIFIED"
+            }
+           },
+           "description": {
+            "musicDescriptionShelfRenderer": {
+             "header": {
+              "runs": [
+               {
+                "text": "Huberman Lab"
+               }
+              ]
+             },
+             "description": {
+              "runs": [
+               {
+                "text": "The Huberman Lab podcast is hosted by Andrew Huberman, Ph.D., a neuroscientist and tenured professor in the department of neurobiology, and by courtesy, psychiatry and behavioral sciences at Stanford School of Medicine. The podcast discusses neuroscience and science-based tools, including how our brain and its connections with the organs of our body control our perceptions, our behaviors, and our health, as well as existing and emerging tools for measuring and changing how our nervous system works.\n\nHuberman has made numerous significant contributions to the fields of brain development, brain function, and neural plasticity, which is the ability of our nervous system to rewire and learn new behaviors, skills, and cognitive functioning. He is a McKnight Foundation and Pew Foundation Fellow and was awarded the Cogan Award, given to the scientist making the most significant discoveries in the study of vision, in 2017. \n\nWork from the Huberman Laboratory at Stanford School of Medicine has been published in top journals, including Nature, Science, and Cell, and has been featured in TIME, BBC, Scientific American, Discover, and other top media outlets.\n\nIn 2021, Dr. Huberman launched the Huberman Lab podcast. The podcast is frequently ranked in the top 10 of all podcasts globally and is often ranked #1 in the categories of Science, Education, and Health & Fitness."
+               }
+              ]
+             },
+             "moreButton": {
+              "toggleButtonRenderer": {
+               "isToggled": false,
+               "isDisabled": false,
+               "defaultIcon": {
+                "iconType": "EXPAND"
+               },
+               "defaultText": {
+                "runs": [
+                 {
+                  "text": "More"
+                 }
+                ]
+               },
+               "toggledIcon": {
+                "iconType": "COLLAPSE"
+               },
+               "toggledText": {
+                "runs": [
+                 {
+                  "text": "Less"
+                 }
+                ]
+               }
+              }
+             },
+             "shelfStyle": "MUSIC_SHELF_STYLE_OPEN_DIALOG_ON_CLICK"
+            }
+           }
+          }
+         }
+        ],
+        "targetId": "browse-feedMPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW_header"
+       }
+      }
+     }
+    }
+   ]
+  }
+ },
+ "background": {
+  "musicThumbnailRenderer": {
+   "thumbnail": {
+    "thumbnails": [
+     {
+      "url": "https://i.ytimg.com/pl_c/PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW/studio_square_thumbnail.jpg?sqp=CMDRzNYG-oaymwEICDwQPCAASFqi85f_AwYIkfODoAY&rs=AMzJL3m6ltoV1KNy1RddItvQv_O6H-U4uA",
+      "width": 60,
+      "height": 60
+     },
+     {
+      "url": "https://i.ytimg.com/pl_c/PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW/studio_square_thumbnail.jpg?sqp=CMDRzNYG-oaymwEICHgQeCAASFqi85f_AwYIkfODoAY&rs=AMzJL3kgVyIKuhQ_eW9QnOHeurrfKllmxw",
+      "width": 120,
+      "height": 120
+     },
+     {
+      "url": "https://i.ytimg.com/pl_c/PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW/studio_square_thumbnail.jpg?sqp=CMDRzNYG-oaymwEKCOIBEOIBIABIWqLzl_8DBgiR84OgBg&rs=AMzJL3mqoZJyhKiV7MmX2FHtpWIQjyc7ZQ",
+      "width": 226,
+      "height": 226
+     },
+     {
+      "url": "https://i.ytimg.com/pl_c/PLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW/studio_square_thumbnail.jpg?sqp=CMDRzNYG-oaymwEKCKAEEKAEIABIWqLzl_8DBgiR84OgBg&rs=AMzJL3mo2o3n1f_jLM9cbH3QHZGYs11u9A",
+      "width": 544,
+      "height": 544
+     }
+    ]
+   },
+   "thumbnailCrop": "MUSIC_THUMBNAIL_CROP_UNSPECIFIED",
+   "thumbnailScale": "MUSIC_THUMBNAIL_SCALE_UNSPECIFIED"
+  }
+ }
+}

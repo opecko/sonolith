@@ -1,11 +1,13 @@
 import { useState } from "react";
 import type { LibrarySection, Track } from "../api/types";
 import { getLibrary } from "../api/ytm";
+import { EpisodeRow } from "../components/Episode";
 import LoadMore from "../components/LoadMore";
 import { ItemGrid } from "../components/Shelves";
 import { EmptyState, ErrorBox, Loading } from "../components/Status";
 import TrackList from "../components/TrackList";
 import { usePaged } from "../hooks/useData";
+import { playEpisode } from "../stores/actions";
 
 const tabs: { id: LibrarySection; label: string }[] = [
   { id: "playlists", label: "Playlists" },
@@ -13,6 +15,8 @@ const tabs: { id: LibrarySection; label: string }[] = [
   { id: "albums", label: "Albums" },
   { id: "artists", label: "Artists" },
   { id: "liked", label: "Liked songs" },
+  { id: "podcasts", label: "Podcasts" },
+  { id: "episodes", label: "Episodes for later" },
 ];
 
 const EMPTY: Record<LibrarySection, string> = {
@@ -21,6 +25,8 @@ const EMPTY: Record<LibrarySection, string> = {
   artists: "Subscribe to artists to see them here.",
   liked: "Songs you like show up here.",
   songs: "Songs you save to your library show up here.",
+  podcasts: "Podcasts you save show up here.",
+  episodes: "Episodes you save for later show up here.",
 };
 
 const QUEUE_CONTEXT = {
@@ -48,12 +54,14 @@ export default function LibraryView() {
           </button>
         ))}
       </div>
-      {error && !items ? <ErrorBox error={error} onRetry={reload} /> : loading || !items ? <Loading variant={section === "liked" || section === "songs" ? "list" : "grid"} /> : (
+      {error && !items ? <ErrorBox error={error} onRetry={reload} /> : loading || !items ? <Loading variant={section === "liked" || section === "songs" || section === "episodes" ? "list" : "grid"} /> : (
         <>
           {items.length === 0 && <EmptyState title="Nothing here yet" detail={EMPTY[section]} />}
           {section === "liked" || section === "songs"
             ? <TrackList tracks={items as Track[]} context={QUEUE_CONTEXT[section]} />
-            : <ItemGrid items={items} />}
+            : section === "episodes"
+              ? <ol>{(items as Track[]).map((t, i) => <EpisodeRow key={`${t.id}:${i}`} track={t} onPlay={() => playEpisode(t)} />)}</ol>
+              : <ItemGrid items={items} />}
           <LoadMore active={hasMore && !error} loading={loadingMore} onVisible={loadMore} />
         </>
       )}

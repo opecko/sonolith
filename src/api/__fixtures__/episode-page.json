@@ -1,0 +1,710 @@
+{
+ "contents": {
+  "twoColumnBrowseResultsRenderer": {
+   "secondaryContents": {
+    "sectionListRenderer": {
+     "contents": [
+      {
+       "musicDescriptionShelfRenderer": {
+        "description": {
+         "runs": [
+          {
+           "text": "In this Huberman Lab Essentials episode, my guest is Dr. Matthew MacDougall, a neurosurgeon at Neuralink. We discuss how brain-machine interfaces could help people with paralysis control computers using their intended movements, and how robotic surgery enables the placement of tiny electrodes in the brain. We also explore advances in brain tumor surgery, implant safety, how the brain and software learn to work together, and the role of animal research. Dr. MacDougall shares his vision for future applications, including restoring movement, addressing mental health conditions and expanding human cognition and communication.\n\nShow notes: "
+          },
+          {
+           "text": "https://www.hubermanlab.com/episode/e...",
+           "navigationEndpoint": {
+            "urlEndpoint": {
+             "url": "https://www.hubermanlab.com/episode/essentials-neuralink-and-technologies-to-enhance-human-brains-matthew-macdougall",
+             "target": "TARGET_NEW_WINDOW"
+            }
+           }
+          },
+          {
+           "text": "\n\nFollow Huberman Lab\nInstagram: "
+          },
+          {
+           "text": "https://www.instagram.com/hubermanlab",
+           "navigationEndpoint": {
+            "urlEndpoint": {
+             "url": "https://www.instagram.com/hubermanlab",
+             "target": "TARGET_NEW_WINDOW"
+            }
+           }
+          },
+          {
+           "text": " \nThreads: "
+          },
+          {
+           "text": "https://www.threads.net/@hubermanlab",
+           "navigationEndpoint": {
+            "urlEndpoint": {
+             "url": "https://www.threads.net/@hubermanlab",
+             "target": "TARGET_NEW_WINDOW"
+            }
+           }
+          },
+          {
+           "text": "\nX: "
+          },
+          {
+           "text": "https://x.com/hubermanlab",
+           "navigationEndpoint": {
+            "urlEndpoint": {
+             "url": "https://x.com/hubermanlab",
+             "target": "TARGET_NEW_WINDOW"
+            }
+           }
+          },
+          {
+           "text": " \nFacebook: "
+          },
+          {
+           "text": "https://www.facebook.com/hubermanlab",
+           "navigationEndpoint": {
+            "urlEndpoint": {
+             "url": "https://www.facebook.com/hubermanlab",
+             "target": "TARGET_NEW_WINDOW"
+            }
+           }
+          },
+          {
+           "text": " \nTikTok: "
+          },
+          {
+           "text": "https://www.tiktok.com/@hubermanlab",
+           "navigationEndpoint": {
+            "urlEndpoint": {
+             "url": "https://www.tiktok.com/@hubermanlab",
+             "target": "TARGET_NEW_WINDOW"
+            }
+           }
+          },
+          {
+           "text": " \nLinkedIn: "
+          },
+          {
+           "text": "https://www.linkedin.com/in/andrew-hu...",
+           "navigationEndpoint": {
+            "urlEndpoint": {
+             "url": "https://www.linkedin.com/in/andrew-huberman",
+             "target": "TARGET_NEW_WINDOW"
+            }
+           }
+          },
+          {
+           "text": "\n\nTimestamps\n"
+          },
+          {
+           "text": "00:00:00",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true
+            }
+           }
+          },
+          {
+           "text": " Matt MacDougall\n"
+          },
+          {
+           "text": "00:00:23",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 23
+            }
+           }
+          },
+          {
+           "text": " Brain Function, Frontal Lobes & Impulse Control\n"
+          },
+          {
+           "text": "00:02:57",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 177
+            }
+           }
+          },
+          {
+           "text": " Brain Tumors, Laser Surgery & MRI\n"
+          },
+          {
+           "text": "00:04:38",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 278
+            }
+           }
+          },
+          {
+           "text": " Neuralink, Brain Implants & Paralysis\n"
+          },
+          {
+           "text": "00:07:04",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 424
+            }
+           }
+          },
+          {
+           "text": " Robotic Surgery & Electrode Placement\n"
+          },
+          {
+           "text": "00:09:09",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 549,
+             "playerParams": "0gcJCWMAwfN6Pr3D"
+            }
+           }
+          },
+          {
+           "text": " Motor Cortex, Controlling Computers With the Brain\n"
+          },
+          {
+           "text": "00:11:05",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 665
+            }
+           }
+          },
+          {
+           "text": " Implant Safety & Brain Augmentation\n"
+          },
+          {
+           "text": "00:12:51",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 771
+            }
+           }
+          },
+          {
+           "text": " RFID Hand Implant & Everyday Uses\n"
+          },
+          {
+           "text": "00:15:34",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 934
+            }
+           }
+          },
+          {
+           "text": " Spinal Cord Stimulation, Reconnecting Brain & Body\n"
+          },
+          {
+           "text": "00:16:31",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 991
+            }
+           }
+          },
+          {
+           "text": " Brain-to-Brain Communication & AI\n"
+          },
+          {
+           "text": "00:18:44",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 1124
+            }
+           }
+          },
+          {
+           "text": " Brain-Machine Interfaces, Learning & Adaptation\n"
+          },
+          {
+           "text": "00:21:14",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 1274
+            }
+           }
+          },
+          {
+           "text": " Animal Research & Welfare\n"
+          },
+          {
+           "text": "00:24:18",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 1458
+            }
+           }
+          },
+          {
+           "text": " Pigs & Monkeys, Device Safety & Function\n"
+          },
+          {
+           "text": "00:26:44",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 1604
+            }
+           }
+          },
+          {
+           "text": " Future Applications, Mental Health & Human Cognition\n"
+          },
+          {
+           "text": "00:29:15",
+           "navigationEndpoint": {
+            "watchEndpoint": {
+             "videoId": "YdIJW8RTptU",
+             "continuePlayback": true,
+             "startTimeSeconds": 1755
+            }
+           }
+          },
+          {
+           "text": " Acknowledgements\n\nDisclaimer & Disclosures: "
+          },
+          {
+           "text": "https://www.hubermanlab.com/disclaimer",
+           "navigationEndpoint": {
+            "urlEndpoint": {
+             "url": "https://www.hubermanlab.com/disclaimer",
+             "target": "TARGET_NEW_WINDOW"
+            }
+           }
+          }
+         ]
+        },
+        "maxCollapsedLines": 0,
+        "maxExpandedLines": 0
+       }
+      }
+     ]
+    }
+   },
+   "tabs": [
+    {
+     "tabRenderer": {
+      "content": {
+       "sectionListRenderer": {
+        "contents": [
+         {
+          "musicResponsiveHeaderRenderer": {
+           "thumbnail": {
+            "musicThumbnailRenderer": {
+             "thumbnail": {
+              "thumbnails": [
+               {
+                "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hqdefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCggAEOADGC0guwJIWg&rs=AMzJL3kmN_n6WDVLodgtMJDCUbebjY3V0w",
+                "width": 400,
+                "height": 225
+               },
+               {
+                "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hq720.jpg?sqp=-oaymwEKCKAGEMIDIABIWg&rs=AMzJL3newuBPncT0b9HqZQ8m-icjM5qI4w",
+                "width": 800,
+                "height": 450
+               },
+               {
+                "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mMkQlKM_xwftkHuafcP2P3nCblOw",
+                "width": 853,
+                "height": 479
+               }
+              ]
+             },
+             "thumbnailCrop": "MUSIC_THUMBNAIL_CROP_UNSPECIFIED",
+             "thumbnailScale": "MUSIC_THUMBNAIL_SCALE_UNSPECIFIED"
+            }
+           },
+           "buttons": [
+            {
+             "toggleButtonRenderer": {
+              "isToggled": false,
+              "defaultIcon": {
+               "iconType": "ADD_CIRCLE"
+              },
+              "defaultServiceEndpoint": {
+               "commandExecutorCommand": {
+                "commands": [
+                 {
+                  "playlistEditEndpoint": {
+                   "playlistId": "SE",
+                   "actions": [
+                    {
+                     "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                     "suppressSuccessToast": true
+                    },
+                    {
+                     "addedVideoId": "YdIJW8RTptU",
+                     "action": "ACTION_ADD_VIDEO",
+                     "dedupeOption": "DEDUPE_OPTION_CHECK",
+                     "addedVideoPositionIfManualSort": 0
+                    }
+                   ],
+                   "params": "YAFwZA%3D%3D"
+                  }
+                 }
+                ]
+               }
+              },
+              "toggledIcon": {
+               "iconType": "PLAYLIST_ADD_CHECK"
+              },
+              "toggledServiceEndpoint": {
+               "playlistEditEndpoint": {
+                "playlistId": "SE",
+                "actions": [
+                 {
+                  "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID",
+                  "removedVideoId": "YdIJW8RTptU"
+                 },
+                 {
+                  "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                  "suppressSuccessToast": true
+                 }
+                ],
+                "params": "cGQ%3D"
+               }
+              },
+              "defaultTooltip": "Queue to Episodes for Later",
+              "toggledTooltip": "Remove from Episodes for Later",
+              "toggledAccessibilityData": {}
+             }
+            },
+            {
+             "musicPlayButtonRenderer": {
+              "playNavigationEndpoint": {
+               "watchEndpoint": {
+                "videoId": "YdIJW8RTptU",
+                "params": "8gEDmAEI",
+                "watchEndpointMusicSupportedConfigs": {
+                 "watchEndpointMusicConfig": {
+                  "musicVideoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE"
+                 }
+                }
+               }
+              },
+              "playIcon": {
+               "iconType": "PLAY_ARROW"
+              },
+              "pauseIcon": {
+               "iconType": "PAUSE"
+              },
+              "iconColor": 4278387459,
+              "backgroundColor": 0,
+              "activeBackgroundColor": 0,
+              "loadingIndicatorColor": 14745645,
+              "playingIcon": {
+               "iconType": "PAUSE"
+              },
+              "iconLoadingColor": 0,
+              "activeScaleFactor": 1,
+              "accessibilityPlayData": {},
+              "accessibilityPauseData": {},
+              "playbackIdMatchers": [
+               {
+                "videoId": "YdIJW8RTptU"
+               }
+              ]
+             }
+            },
+            {
+             "menuRenderer": {
+              "items": [
+               {
+                "toggleMenuServiceItemRenderer": {
+                 "defaultText": {
+                  "runs": [
+                   {
+                    "text": "Mark as played"
+                   }
+                  ]
+                 },
+                 "defaultIcon": {
+                  "iconType": "CHECK"
+                 },
+                 "defaultServiceEndpoint": {
+                  "feedbackEndpoint": {
+                   "feedbackToken": "AB9zfpLQeq8fpFiwt-XMsJe9o_sYXMSmlGTwnd1urz-k8ys9kRlxi5VtqvP1gsc3_iYUXwvk7UE6oiRoVfjBwzVWYk-3rRqx2w",
+                   "actions": [
+                    {
+                     "addToToastAction": {
+                      "item": {
+                       "notificationActionRenderer": {
+                        "responseText": {
+                         "runs": [
+                          {
+                           "text": "Episode marked as played"
+                          }
+                         ]
+                        }
+                       }
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 "toggledText": {
+                  "runs": [
+                   {
+                    "text": "Mark as unplayed"
+                   }
+                  ]
+                 },
+                 "toggledIcon": {
+                  "iconType": "ARROW_UNDO"
+                 },
+                 "toggledServiceEndpoint": {
+                  "feedbackEndpoint": {
+                   "feedbackToken": "AB9zfpKQXpfpDTvxiRpNTGaS2TtshgYdS-g8TuNPXP9qEatcKLuZu8CuLvm0OYbU2GJePHMQeMIKu6GpKHQdf5x6Wpy7G1Hr0Q",
+                   "actions": [
+                    {
+                     "addToToastAction": {
+                      "item": {
+                       "notificationActionRenderer": {
+                        "responseText": {
+                         "runs": [
+                          {
+                           "text": "Episode marked as unplayed"
+                          }
+                         ]
+                        }
+                       }
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 "isToggled": false
+                }
+               },
+               {
+                "menuServiceItemRenderer": {
+                 "text": {
+                  "runs": [
+                   {
+                    "text": "Play next"
+                   }
+                  ]
+                 },
+                 "icon": {
+                  "iconType": "QUEUE_PLAY_NEXT"
+                 },
+                 "serviceEndpoint": {
+                  "queueAddEndpoint": {
+                   "queueTarget": {
+                    "videoId": "YdIJW8RTptU",
+                    "onEmptyQueue": {
+                     "watchEndpoint": {
+                      "videoId": "YdIJW8RTptU"
+                     }
+                    }
+                   },
+                   "queueInsertPosition": "INSERT_AFTER_CURRENT_VIDEO",
+                   "commands": [
+                    {
+                     "addToToastAction": {
+                      "item": {
+                       "notificationTextRenderer": {
+                        "successResponseText": {
+                         "runs": [
+                          {
+                           "text": "Episode will play next"
+                          }
+                         ]
+                        }
+                       }
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 }
+                }
+               },
+               {
+                "menuServiceItemRenderer": {
+                 "text": {
+                  "runs": [
+                   {
+                    "text": "Add to queue"
+                   }
+                  ]
+                 },
+                 "icon": {
+                  "iconType": "ADD_TO_REMOTE_QUEUE"
+                 },
+                 "serviceEndpoint": {
+                  "queueAddEndpoint": {
+                   "queueTarget": {
+                    "videoId": "YdIJW8RTptU",
+                    "onEmptyQueue": {
+                     "watchEndpoint": {
+                      "videoId": "YdIJW8RTptU"
+                     }
+                    }
+                   },
+                   "queueInsertPosition": "INSERT_AT_END",
+                   "commands": [
+                    {
+                     "addToToastAction": {
+                      "item": {
+                       "notificationTextRenderer": {
+                        "successResponseText": {
+                         "runs": [
+                          {
+                           "text": "Episode added to queue"
+                          }
+                         ]
+                        }
+                       }
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 }
+                }
+               }
+              ],
+              "accessibility": {}
+             }
+            }
+           ],
+           "title": {
+            "runs": [
+             {
+              "text": "Essentials: Neuralink & Technologies to Enhance Human Brains | Dr. Matt MacDougall"
+             }
+            ]
+           },
+           "subtitle": {
+            "runs": [
+             {
+              "text": "79K views"
+             },
+             {
+              "text": " • "
+             },
+             {
+              "text": "1d ago"
+             }
+            ]
+           },
+           "progress": {
+            "musicPlaybackProgressRenderer": {
+             "playbackProgressPercentage": 0,
+             "playbackProgressText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "30 min"
+               }
+              ]
+             },
+             "videoPlaybackPositionFeedbackToken": "AB9zfpLQeq8fpFiwt-XMsJe9o_sYXMSmlGTwnd1urz-k8ys9kRlxi5VtqvP1gsc3_iYUXwvk7UE6oiRoVfjBwzVWYk-3rRqx2w",
+             "durationText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "30 min"
+               }
+              ]
+             },
+             "playedText": {
+              "runs": [
+               {
+                "text": " • "
+               },
+               {
+                "text": "Played",
+                "textColor": 4294921797
+               }
+              ]
+             }
+            }
+           },
+           "straplineTextOne": {
+            "runs": [
+             {
+              "text": "Huberman Lab",
+              "navigationEndpoint": {
+               "browseEndpoint": {
+                "browseId": "MPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW",
+                "browseEndpointContextSupportedConfigs": {
+                 "browseEndpointContextMusicConfig": {
+                  "pageType": "MUSIC_PAGE_TYPE_PODCAST_SHOW_DETAIL_PAGE"
+                 }
+                }
+               }
+              }
+             }
+            ]
+           }
+          }
+         }
+        ]
+       }
+      }
+     }
+    }
+   ]
+  }
+ },
+ "background": {
+  "musicThumbnailRenderer": {
+   "thumbnail": {
+    "thumbnails": [
+     {
+      "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hqdefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCggAEOADGC0guwJIWg&rs=AMzJL3kmN_n6WDVLodgtMJDCUbebjY3V0w",
+      "width": 400,
+      "height": 225
+     },
+     {
+      "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hq720.jpg?sqp=-oaymwEKCKAGEMIDIABIWg&rs=AMzJL3newuBPncT0b9HqZQ8m-icjM5qI4w",
+      "width": 800,
+      "height": 450
+     },
+     {
+      "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mMkQlKM_xwftkHuafcP2P3nCblOw",
+      "width": 853,
+      "height": 479
+     }
+    ]
+   },
+   "thumbnailCrop": "MUSIC_THUMBNAIL_CROP_UNSPECIFIED",
+   "thumbnailScale": "MUSIC_THUMBNAIL_SCALE_UNSPECIFIED"
+  }
+ }
+}

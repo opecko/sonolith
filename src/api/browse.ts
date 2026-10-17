@@ -13,6 +13,8 @@ export const LIBRARY_BROWSE: Record<LibrarySection, string> = {
   albums: "FEmusic_liked_albums",
   artists: "FEmusic_library_corpus_artists",
   liked: "VLLM",
+  podcasts: "FEmusic_library_non_music_audio_list",
+  episodes: "VLSE",
 };
 
 export async function browse(exec: Exec, ref: BrowseRef | { continuation: Continuation }): Promise<BrowsePage> {

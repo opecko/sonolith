@@ -46,7 +46,7 @@ export function parseDuration(s: string): number | undefined {
   return s.trim().split(":").reduce((acc, p) => acc * 60 + Number(p), 0);
 }
 
-interface RunInfo { artists: string[]; artistIds: (string | undefined)[]; album?: { id?: string; title: string }; label?: string }
+interface RunInfo { artists: string[]; artistIds: (string | undefined)[]; album?: { id?: string; title: string }; show?: { id: string; title: string }; label?: string }
 export function runInfo(runs: R[]): RunInfo {
   const info: RunInfo = { artists: [], artistIds: [] };
   for (const r of runs) {
@@ -55,6 +55,7 @@ export function runInfo(runs: R[]): RunInfo {
       info.artists.push(r.text);
       info.artistIds.push(r.navigationEndpoint?.browseEndpoint?.browseId);
     } else if (pt === "MUSIC_PAGE_TYPE_ALBUM") info.album = { id: r.navigationEndpoint.browseEndpoint.browseId, title: r.text };
+    else if (pt === "MUSIC_PAGE_TYPE_PODCAST_SHOW_DETAIL_PAGE") info.show = { id: stripPrefix(r.navigationEndpoint.browseEndpoint.browseId, "MPSP"), title: r.text };
   }
   return info;
 }
@@ -93,6 +94,30 @@ function refFromBrowse(ep: R, title: string, subtitle: string, thumbnail?: strin
   }
 }
 
+const isSep = (t: string) => /^\s*[•·]\s*$/.test(t);
+const EPISODE_PAGE = "MUSIC_PAGE_TYPE_NON_MUSIC_AUDIO_TRACK_PAGE";
+const isPodcastType = (mvt: string) => /PODCAST/.test(mvt);
+
+/**
+ * A row / card is an episode when its title links to an episode page, its video type says podcast, or its byline
+ * links a podcast show. Its byline then reads "Episode • Dec 5, 2024 • Show": no artists, no album.
+ */
+function asEpisode(t: Track & Item, runs: R[], info: RunInfo) {
+  t.podcast = true;
+  t.artists = [];
+  delete t.artistIds;
+  delete t.album;
+  if (info.show) t.show = info.show;
+  // Plain runs other than the leading label: the publish date (and occasionally a duration).
+  const plain = runs.filter((r, i) => !r?.navigationEndpoint && r?.text && !isSep(r.text) && !(i === 0 && runs.length > 1)).map((r) => String(r.text).trim());
+  const published = plain.find((p) => !parseDuration(p));
+  const duration = plain.map(parseDuration).find((d) => d !== undefined);
+  if (duration !== undefined && t.durationSec === undefined) t.durationSec = duration;
+  t.episode = { ...t.episode, ...(published && { published }) };
+  t.subtitle = [published, info.show?.title].filter(Boolean).join(" • ") || t.subtitle;
+  t.kind = t.kind ?? runs[0]?.text;
+}
+
 function mapTwoRow(n: R): Item | null {
   const title = runsText(n.title);
   const subRuns = arr(n.subtitle?.runs);
@@ -104,9 +129,9 @@ function mapTwoRow(n: R): Item | null {
   const watch = nav?.watchEndpoint;
   if (watch?.videoId) {
     const info = runInfo(subRuns);
-    const t: Item = { type: "track", id: watch.videoId, title, subtitle, thumbnail, artists: info.artists, artistIds: info.artistIds, album: info.album, kind: subRuns[0]?.text };
+    const t: Track & Item = { type: "track", id: watch.videoId, title, subtitle, thumbnail, artists: info.artists, artistIds: info.artistIds, album: info.album, kind: subRuns[0]?.text };
     if (wide) t.art = "wide";
-    if (/PODCAST/.test(watch.watchEndpointMusicSupportedConfigs?.watchEndpointMusicConfig?.musicVideoType ?? "")) t.podcast = true;
+    if (isPodcastType(watch.watchEndpointMusicSupportedConfigs?.watchEndpointMusicConfig?.musicVideoType ?? "") || info.show) asEpisode(t, subRuns, info);
     return t;
   }
   const playlistId: string | undefined = nav?.watchPlaylistEndpoint?.playlistId;
@@ -152,7 +177,8 @@ function mapCard(n: R): Item[] {
     const info = runInfo(subRuns);
     top = { type: "track", id: watch.videoId, title, subtitle, thumbnail, artists: info.artists, artistIds: info.artistIds, album: info.album, kind: subRuns[0]?.text };
     const mvt = watch.watchEndpointMusicSupportedConfigs?.watchEndpointMusicConfig?.musicVideoType ?? "";
-    if (mvt && !/ATV|OFFICIAL_SOURCE_MUSIC|PRIVATELY_OWNED/.test(mvt)) top.art = "wide";
+    if (isPodcastType(mvt) || info.show) asEpisode(top as Track & Item, subRuns, info);
+    else if (mvt && !/ATV|OFFICIAL_SOURCE_MUSIC|PRIVATELY_OWNED/.test(mvt)) top.art = "wide";
     if (JSON.stringify(n.subtitleBadges ?? []).includes("EXPLICIT")) top.explicit = true;
   }
   if (top && top.type !== "artist" && !top.kind) top.kind = subRuns[0]?.text;
@@ -200,7 +226,7 @@ function mapResponsive(n: R): Item | null {
     if (rating) t.rating = rating;
     const menu = parseTrackMenu(n.menu?.menuRenderer);
     if (menu) t.menu = menu;
-    if (/PODCAST/.test(musicVideoType)) t.podcast = true;
+    if (isPodcastType(musicVideoType) || pageType(titleRuns[0]?.navigationEndpoint) === EPISODE_PAGE || info.show) asEpisode(t, restRuns, info);
     else if (!isSongish) t.art = "wide";
     const label = flexRuns(n, 1);
     if (label.length > 1 && !label[0]?.navigationEndpoint) t.kind = label[0]?.text;

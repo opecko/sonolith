@@ -1,0 +1,536 @@
+{
+ "contents": {
+  "singleColumnMusicWatchNextResultsRenderer": {
+   "tabbedRenderer": {
+    "watchNextTabbedResultsRenderer": {
+     "tabs": [
+      {
+       "tabRenderer": {
+        "title": "Up next",
+        "content": {
+         "musicQueueRenderer": {
+          "content": {
+           "playlistPanelRenderer": {
+            "contents": [
+             {
+              "playlistPanelVideoRenderer": {
+               "title": {
+                "runs": [
+                 {
+                  "text": "Essentials: Neuralink & Technologies to Enhance Human Brains | Dr. Matt MacDougall"
+                 }
+                ]
+               },
+               "longBylineText": {
+                "runs": [
+                 {
+                  "text": "Huberman Lab",
+                  "navigationEndpoint": {
+                   "browseEndpoint": {
+                    "browseId": "MPSPPLPNW_gerXa4Pc8S2qoUQc5e8Ir97RLuVW",
+                    "browseEndpointContextSupportedConfigs": {
+                     "browseEndpointContextMusicConfig": {
+                      "pageType": "MUSIC_PAGE_TYPE_PODCAST_SHOW_DETAIL_PAGE"
+                     }
+                    }
+                   }
+                  }
+                 }
+                ]
+               },
+               "thumbnail": {
+                "thumbnails": [
+                 {
+                  "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hqdefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCggAEOADGC0guwJIWg&rs=AMzJL3kmN_n6WDVLodgtMJDCUbebjY3V0w",
+                  "width": 400,
+                  "height": 225
+                 },
+                 {
+                  "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hq720.jpg?sqp=-oaymwEKCKAGEMIDIABIWg&rs=AMzJL3newuBPncT0b9HqZQ8m-icjM5qI4w",
+                  "width": 800,
+                  "height": 450
+                 },
+                 {
+                  "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mMkQlKM_xwftkHuafcP2P3nCblOw",
+                  "width": 853,
+                  "height": 479
+                 }
+                ]
+               },
+               "lengthText": {
+                "runs": [
+                 {
+                  "text": "30:18"
+                 }
+                ],
+                "accessibility": {}
+               },
+               "selected": true,
+               "navigationEndpoint": {
+                "watchEndpoint": {
+                 "videoId": "YdIJW8RTptU",
+                 "params": "OAHyAQUIAZgBCJIEI1FQZjdqM09fUGl2LTdFWm1CXzJNX0hGNnZ1Q3lIeC0yaVhJ6gQLWWRJSlc4UlRwdFU%3D",
+                 "playerParams": "igYjUVBmN2ozT19QaXYtN0VabUJfMk1fSEY2dnVDeUh4LTJpWEk%3D",
+                 "watchEndpointMusicSupportedConfigs": {
+                  "watchEndpointMusicConfig": {
+                   "hasPersistentPlaylistPanel": true,
+                   "musicVideoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE"
+                  }
+                 }
+                }
+               },
+               "videoId": "YdIJW8RTptU",
+               "shortBylineText": {
+                "runs": [
+                 {
+                  "text": "Huberman Lab"
+                 }
+                ]
+               },
+               "menu": {
+                "menuRenderer": {
+                 "items": [
+                  {
+                   "toggleMenuServiceItemRenderer": {
+                    "defaultText": {
+                     "runs": [
+                      {
+                       "text": "Queue to "
+                      },
+                      {
+                       "text": "Episodes for Later"
+                      }
+                     ]
+                    },
+                    "defaultIcon": {
+                     "iconType": "ADD_CIRCLE"
+                    },
+                    "defaultServiceEndpoint": {
+                     "commandExecutorCommand": {
+                      "commands": [
+                       {
+                        "playlistEditEndpoint": {
+                         "playlistId": "SE",
+                         "actions": [
+                          {
+                           "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                           "suppressSuccessToast": true
+                          },
+                          {
+                           "addedVideoId": "YdIJW8RTptU",
+                           "action": "ACTION_ADD_VIDEO",
+                           "dedupeOption": "DEDUPE_OPTION_CHECK",
+                           "addedVideoPositionIfManualSort": 0
+                          }
+                         ],
+                         "params": "YAFwZA%3D%3D"
+                        }
+                       }
+                      ]
+                     }
+                    },
+                    "toggledText": {
+                     "runs": [
+                      {
+                       "text": "Remove from "
+                      },
+                      {
+                       "text": "Episodes for Later"
+                      }
+                     ]
+                    },
+                    "toggledIcon": {
+                     "iconType": "PLAYLIST_ADD_CHECK"
+                    },
+                    "toggledServiceEndpoint": {
+                     "playlistEditEndpoint": {
+                      "playlistId": "SE",
+                      "actions": [
+                       {
+                        "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID",
+                        "removedVideoId": "YdIJW8RTptU"
+                       },
+                       {
+                        "action": "ACTION_REMOVE_WATCHED_VIDEOS",
+                        "suppressSuccessToast": true
+                       }
+                      ],
+                      "params": "cGQ%3D"
+                     }
+                    },
+                    "isToggled": false
+                   }
+                  },
+                  {
+                   "menuServiceItemRenderer": {
+                    "text": {
+                     "runs": [
+                      {
+                       "text": "Play next"
+                      }
+                     ]
+                    },
+                    "icon": {
+                     "iconType": "QUEUE_PLAY_NEXT"
+                    },
+                    "serviceEndpoint": {
+                     "queueAddEndpoint": {
+                      "queueTarget": {
+                       "videoId": "YdIJW8RTptU",
+                       "onEmptyQueue": {
+                        "watchEndpoint": {
+                         "videoId": "YdIJW8RTptU"
+                        }
+                       },
+                       "backingQueuePlaylistId": "QPf7j3O_Piv-7EZmB_2M_HF6vuCyHx-2iXI"
+                      },
+                      "queueInsertPosition": "INSERT_AFTER_CURRENT_VIDEO",
+                      "commands": [
+                       {
+                        "addToToastAction": {
+                         "item": {
+                          "notificationTextRenderer": {
+                           "successResponseText": {
+                            "runs": [
+                             {
+                              "text": "Episode will play next"
+                             }
+                            ]
+                           }
+                          }
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   }
+                  },
+                  {
+                   "menuServiceItemRenderer": {
+                    "text": {
+                     "runs": [
+                      {
+                       "text": "Add to queue"
+                      }
+                     ]
+                    },
+                    "icon": {
+                     "iconType": "ADD_TO_REMOTE_QUEUE"
+                    },
+                    "serviceEndpoint": {
+                     "queueAddEndpoint": {
+                      "queueTarget": {
+                       "videoId": "YdIJW8RTptU",
+                       "onEmptyQueue": {
+                        "watchEndpoint": {
+                         "videoId": "YdIJW8RTptU",
+                         "playerParams": "0gcJCbQKYeQlTpbE"
+                        }
+                       },
+                       "backingQueuePlaylistId": "QPf7j3O_Piv-7EZmB_2M_HF6vuCyHx-2iXI"
+                      },
+                      "queueInsertPosition": "INSERT_AT_END",
+                      "commands": [
+                       {
+                        "addToToastAction": {
+                         "item": {
+                          "notificationTextRenderer": {
+                           "successResponseText": {
+                            "runs": [
+                             {
+                              "text": "Episode added to queue"
+                             }
+                            ]
+                           }
+                          }
+                         }
+                        }
+                       }
+                      ]
+                     }
+                    }
+                   }
+                  }
+                 ],
+                 "accessibility": {}
+                }
+               },
+               "canReorder": true,
+               "playlistEditParams": "SiNRUGY3ajNPX1Bpdi03RVptQl8yTV9IRjZ2dUN5SHgtMmlYSQ%3D%3D",
+               "queueNavigationEndpoint": {
+                "queueAddEndpoint": {
+                 "queueTarget": {
+                  "videoId": "YdIJW8RTptU",
+                  "backingQueuePlaylistId": "QPf7j3O_Piv-7EZmB_2M_HF6vuCyHx-2iXI"
+                 },
+                 "queueInsertPosition": "INSERT_AT_END",
+                 "params": "Q0FJJTNE"
+                }
+               }
+              }
+             },
+             {
+              "automixPreviewVideoRenderer": {
+               "content": {
+                "automixPlaylistVideoRenderer": {
+                 "navigationEndpoint": {
+                  "watchPlaylistEndpoint": {
+                   "playlistId": "RDPN",
+                   "params": "wAEB8gECeAGSBCNRUGY3ajNPX1Bpdi03RVptQl8yTV9IRjZ2dUN5SHgtMmlYSeoEC1lkSUpXOFJUcHRV"
+                  }
+                 },
+                 "automixMode": "AUTOMIX_MODE_DEFAULT_OFF"
+                }
+               }
+              }
+             }
+            ],
+            "isInfinite": false,
+            "shuffleToggleButton": {
+             "toggleButtonRenderer": {
+              "defaultIcon": {
+               "iconType": "MUSIC_SHUFFLE"
+              },
+              "defaultServiceEndpoint": {
+               "watchEndpoint": {
+                "playlistId": "QPf7j3O_Piv-7EZmB_2M_HF6vuCyHx-2iXI",
+                "params": "wAEB8gECKAGSBCNRUGY3ajNPX1Bpdi03RVptQl8yTV9IRjZ2dUN5SHgtMmlYSQ%3D%3D",
+                "playerParams": "igYjUVBmN2ozT19QaXYtN0VabUJfMk1fSEY2dnVDeUh4LTJpWEk%3D"
+               }
+              },
+              "toggledIcon": {
+               "iconType": "MUSIC_SHUFFLE"
+              },
+              "toggledServiceEndpoint": {
+               "watchEndpoint": {
+                "playlistId": "QPf7j3O_Piv-7EZmB_2M_HF6vuCyHx-2iXI",
+                "params": "wAEBkgQjUVBmN2ozT19QaXYtN0VabUJfMk1fSEY2dnVDeUh4LTJpWEk%3D",
+                "playerParams": "igYjUVBmN2ozT19QaXYtN0VabUJfMk1fSEY2dnVDeUh4LTJpWEk%3D"
+               }
+              }
+             }
+            }
+           }
+          },
+          "hack": true,
+          "musicQueueConfig": {},
+          "header": {
+           "musicQueueHeaderRenderer": {
+            "title": {},
+            "subtitle": {
+             "runs": [
+              {
+               "text": "Now playing"
+              }
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      },
+      {
+       "tabRenderer": {
+        "title": "Comments",
+        "content": {
+         "sectionListRenderer": {
+          "continuations": [
+           {
+            "reloadContinuationData": {
+             "continuation": "Eg0SC1lkSUpXOFJUcHRVGAYyHCINIgtZZElKVzhSVHB0VUILWWRJSlc4UlRwdFVqC1lkSUpXOFJUcHRV"
+            }
+           }
+          ],
+          "targetId": "YdIJW8RTptU"
+         }
+        }
+       }
+      },
+      {
+       "tabRenderer": {
+        "endpoint": {
+         "browseEndpoint": {
+          "browseId": "MPPRYdIJW8RTptU",
+          "browseEndpointContextSupportedConfigs": {
+           "browseEndpointContextMusicConfig": {
+            "pageType": "MUSIC_PAGE_TYPE_NON_MUSIC_AUDIO_RELATED"
+           }
+          }
+         }
+        },
+        "title": "Related"
+       }
+      }
+     ]
+    }
+   }
+  }
+ },
+ "currentVideoEndpoint": {
+  "watchEndpoint": {
+   "videoId": "YdIJW8RTptU",
+   "ustreamerConfig": "GgIIAg=="
+  }
+ },
+ "playerOverlays": {
+  "playerOverlayRenderer": {
+   "actions": [
+    {
+     "likeButtonRenderer": {
+      "target": {
+       "videoId": "YdIJW8RTptU"
+      },
+      "likeStatus": "INDIFFERENT",
+      "likesAllowed": true,
+      "serviceEndpoints": [
+       {
+        "likeEndpoint": {
+         "status": "LIKE",
+         "target": {
+          "videoId": "YdIJW8RTptU"
+         },
+         "likeParams": "OAI%3D"
+        }
+       },
+       {
+        "likeEndpoint": {
+         "status": "DISLIKE",
+         "target": {
+          "videoId": "YdIJW8RTptU"
+         },
+         "dislikeParams": "KAI%3D"
+        }
+       },
+       {
+        "likeEndpoint": {
+         "status": "INDIFFERENT",
+         "target": {
+          "videoId": "YdIJW8RTptU"
+         },
+         "removeLikeParams": "MAI%3D"
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "browserMediaSession": {
+    "browserMediaSessionRenderer": {
+     "thumbnailDetails": {
+      "thumbnails": [
+       {
+        "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hqdefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCggAEOADGC0guwJIWg&rs=AMzJL3kmN_n6WDVLodgtMJDCUbebjY3V0w",
+        "width": 400,
+        "height": 225
+       },
+       {
+        "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hq720.jpg?sqp=-oaymwEKCKAGEMIDIABIWg&rs=AMzJL3newuBPncT0b9HqZQ8m-icjM5qI4w",
+        "width": 800,
+        "height": 450
+       },
+       {
+        "url": "https://i.ytimg.com/vi/YdIJW8RTptU/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mMkQlKM_xwftkHuafcP2P3nCblOw",
+        "width": 853,
+        "height": 479
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "videoReporting": {
+  "reportFormModalRenderer": {
+   "optionsSupportedRenderers": {
+    "optionsRenderer": {
+     "items": [
+      {
+       "optionSelectableItemRenderer": {
+        "text": {
+         "runs": [
+          {
+           "text": "Sexual content"
+          }
+         ]
+        },
+        "submitEndpoint": {
+         "flagEndpoint": {
+          "flagAction": "EAciDwoLWWRJSlc4UlRwdFVQBTILWWRJSlc4UlRwdFWQASyYAQGoAQM%3D"
+         }
+        }
+       }
+      },
+      {
+       "optionSelectableItemRenderer": {
+        "text": {
+         "runs": [
+          {
+           "text": "Violent or repulsive content"
+          }
+         ]
+        },
+        "submitEndpoint": {
+         "flagEndpoint": {
+          "flagAction": "EAciDwoLWWRJSlc4UlRwdFVQBTILWWRJSlc4UlRwdFWQATaYAQGoAQM%3D"
+         }
+        }
+       }
+      },
+      {
+       "optionSelectableItemRenderer": {
+        "text": {
+         "runs": [
+          {
+           "text": "Hateful or abusive content"
+          }
+         ]
+        },
+        "submitEndpoint": {
+         "flagEndpoint": {
+          "flagAction": "EAciDwoLWWRJSlc4UlRwdFVQBTILWWRJSlc4UlRwdFWQARSYAQGoAQM%3D"
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "title": {
+    "runs": [
+     {
+      "text": "Report video"
+     }
+    ]
+   },
+   "submitButton": {
+    "buttonRenderer": {
+     "style": "STYLE_BRAND",
+     "isDisabled": true,
+     "text": {
+      "runs": [
+       {
+        "text": "Report"
+       }
+      ]
+     }
+    }
+   },
+   "cancelButton": {
+    "buttonRenderer": {
+     "style": "STYLE_TEXT",
+     "isDisabled": false,
+     "text": {
+      "runs": [
+       {
+        "text": "Cancel"
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "queueContextParams": "CAEaBFJEUE4gsZPJxMjAlwMqI1FQZjdqM09fUGl2LTdFWm1CXzJNX0hGNnZ1Q3lIeC0yaVhJMgtZZElKVzhSVHB0VUoLWWRJSlc4UlRwdFVQAFoECAAQAXgB"
+}

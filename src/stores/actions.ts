@@ -1,4 +1,4 @@
-import type { Item, Track } from "../api/types";
+import { isEpisode, type Item, type Track } from "../api/types";
 import { getAlbum, getArtist, getPlaylist } from "../api/ytm";
 import { prefetch } from "../hooks/useData";
 import { openItem } from "./nav";
@@ -6,9 +6,17 @@ import { usePlayer } from "./player";
 import { useToast } from "./toast";
 
 /** Card/row click: tracks start a radio, everything else navigates. */
+/**
+ * Plays a podcast episode on its own (never a song radio); when it ends, the player continues with the show's next
+ * episode or stops (Settings → Playback → After an episode).
+ */
+export function playEpisode(track: Track) {
+  usePlayer.getState().playQueue([track], 0, { title: track.show?.title ?? track.title });
+}
+
 export function activateItem(item: Item) {
   // Episodes play on their own (no song radio); everything else track-like starts a radio.
-  if (item.type === "track" && item.podcast) usePlayer.getState().playQueue([item], 0, { title: item.title });
+  if (isEpisode(item)) playEpisode(item as Track);
   else if (item.type === "track") usePlayer.getState().playRadio(item);
   else openItem(item);
 }
@@ -16,6 +24,7 @@ export function activateItem(item: Item) {
 /** Play overlay: plays an album/playlist from the top without navigating. */
 export async function playItem(item: Item) {
   try {
+    if (isEpisode(item)) return playEpisode(item as Track);
     if (item.type === "track") return usePlayer.getState().playRadio(item);
     if (item.type === "album") return usePlayer.getState().playQueue((await getAlbum(item.id)).tracks, 0, { title: item.title });
     if (item.type === "playlist")
