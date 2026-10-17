@@ -11,6 +11,7 @@ import VolumeControl from "../../components/VolumeControl";
 import { QueueChips } from "../../components/QueueChips";
 import Thumb from "../../components/Thumb";
 import { Byline } from "../../components/TrackByline";
+import { useTransportTitles } from "../../shortcuts/hint";
 import { UiStyleScope } from "../../components/UiStyle";
 import { useAsync } from "../../hooks/useData";
 import { Spring, useSwap } from "../../motion";
@@ -121,18 +122,19 @@ function BentoTransport() {
   );
   const { togglePlay, next, prev, toggleShuffle, cycleRepeat, skipBy } = usePlayer.getState();
   const playing = status === "playing";
+  const titles = useTransportTitles();
   const sq = "m3-btn m3-tonal bento-sq h-full min-w-0 flex-1 !px-0";
   return (
     <div className="bento-transport flex items-stretch gap-2" role="group" aria-label="Playback">
       {podcast ? <span className="flex flex-1 items-center justify-center"><SkipSeconds sec={-10} onClick={() => skipBy(-10)} /></span> : (
         <button className={sq} onClick={toggleShuffle} aria-label="Shuffle" aria-pressed={shuffle}><Shuffle size={22} /></button>
       )}
-      <button className={sq} onClick={prev} disabled={!hasTrack} aria-label="Previous"><SkipBack size={24} fill="currentColor" /></button>
+      <button className={sq} onClick={prev} disabled={!hasTrack} aria-label="Previous" title={titles.prev}><SkipBack size={24} fill="currentColor" /></button>
       <button className="m3-btn m3-filled m3-play bento-play h-full min-w-0 flex-[2] !px-0" onClick={togglePlay} disabled={!hasTrack}
-        data-selected={playing ? "" : undefined} aria-label={playing ? "Pause" : "Play"}>
+        data-selected={playing ? "" : undefined} aria-label={playing ? "Pause" : "Play"} title={titles.play(playing)}>
         {status === "loading" ? <PlayIcon status={status} size={28} /> : playing ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" />}
       </button>
-      <button className={sq} onClick={next} disabled={!hasTrack} aria-label="Next"><SkipForward size={24} fill="currentColor" /></button>
+      <button className={sq} onClick={next} disabled={!hasTrack} aria-label="Next" title={titles.next}><SkipForward size={24} fill="currentColor" /></button>
       {podcast ? <span className="flex flex-1 items-center justify-center"><SkipSeconds sec={30} onClick={() => skipBy(30)} /></span> : (
         <button className={sq} onClick={cycleRepeat} aria-label={repeatLabel[repeat]} aria-pressed={repeat !== "off"}>
           {repeat === "one" ? <Repeat1 size={22} /> : <Repeat size={22} />}

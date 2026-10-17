@@ -18,6 +18,7 @@ import Slider from "./Slider";
 import Thumb from "./Thumb";
 import { Byline } from "./TrackByline";
 import VolumeControl from "./VolumeControl";
+import { useTransportTitles } from "../shortcuts/hint";
 
 export const fmtTime = (s: number) => {
   if (!Number.isFinite(s) || s < 0) return "0:00";
@@ -98,12 +99,14 @@ function ClassicControls({ status, shuffle, repeat, hasTrack, podcast }: {
 }) {
   const { togglePlay, next, prev, toggleShuffle, cycleRepeat, skipBy } = usePlayer.getState();
   const playing = status === "playing";
+  const titles = useTransportTitles();
   const playButton = (
     <button
       className="flex h-10 w-10 items-center justify-center rounded-full bg-button text-on-button hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
       onClick={togglePlay}
       disabled={!hasTrack}
       aria-label={playing ? "Pause" : "Play"}
+      title={titles.play(playing)}
     >
       {status === "loading" ? <Loader2 size={20} className="animate-spin" /> : playing ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
     </button>
@@ -122,11 +125,11 @@ function ClassicControls({ status, shuffle, repeat, hasTrack, podcast }: {
       <button className={`icon-btn h-10 w-10 ${shuffle ? "!text-[var(--c-text)]" : ""}`} onClick={toggleShuffle} aria-label="Shuffle" aria-pressed={shuffle}>
         <Shuffle size={20} />
       </button>
-      <button className="icon-btn h-10 w-10" onClick={prev} disabled={!hasTrack} aria-label="Previous">
+      <button className="icon-btn h-10 w-10" onClick={prev} disabled={!hasTrack} aria-label="Previous" title={titles.prev}>
         <SkipBack size={24} fill="currentColor" />
       </button>
       {playButton}
-      <button className="icon-btn h-10 w-10" onClick={next} disabled={!hasTrack} aria-label="Next">
+      <button className="icon-btn h-10 w-10" onClick={next} disabled={!hasTrack} aria-label="Next" title={titles.next}>
         <SkipForward size={24} fill="currentColor" />
       </button>
       <button className={`icon-btn h-10 w-10 ${repeat !== "off" ? "!text-[var(--c-text)]" : ""}`} onClick={cycleRepeat} aria-label={repeatLabel[repeat]} aria-pressed={repeat !== "off"}>
@@ -152,6 +155,7 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
 }) {
   const { togglePlay, next, prev, toggleShuffle, cycleRepeat, skipBy } = usePlayer.getState();
   const playing = status === "playing";
+  const titles = useTransportTitles();
   const lg = size === "lg", md = size === "md";
   const side = lg ? "h-14 w-16" : md ? "h-12 w-14" : "h-10 w-12";
   // Half the height (h-14 / h-12 / h-10, in spacing steps so compact density follows): the outer corners' full
@@ -173,16 +177,16 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
   const group = (
       <div className="m3-connected flex items-center" role="group" aria-label="Playback">
         {!podcast && (
-          <button className={`m3-btn m3-tonal m3-cg-start ${side} !px-0`} style={pill} onClick={prev} disabled={!hasTrack} aria-label="Previous">
+          <button className={`m3-btn m3-tonal m3-cg-start ${side} !px-0`} style={pill} onClick={prev} disabled={!hasTrack} aria-label="Previous" title={titles.prev}>
             <SkipBack size={icon} fill="currentColor" />
           </button>
         )}
         <button className={`m3-btn m3-filled m3-play ${play} !px-0`} onClick={togglePlay} disabled={!hasTrack}
-          data-selected={playing ? "" : undefined} aria-label={playing ? "Pause" : "Play"}>
+          data-selected={playing ? "" : undefined} aria-label={playing ? "Pause" : "Play"} title={titles.play(playing)}>
           <PlayIcon status={status} size={lg ? 30 : md ? 26 : 22} />
         </button>
         {!podcast && (
-          <button className={`m3-btn m3-tonal m3-cg-end ${side} !px-0`} style={pill} onClick={next} disabled={!hasTrack} aria-label="Next">
+          <button className={`m3-btn m3-tonal m3-cg-end ${side} !px-0`} style={pill} onClick={next} disabled={!hasTrack} aria-label="Next" title={titles.next}>
             <SkipForward size={icon} fill="currentColor" />
           </button>
         )}
