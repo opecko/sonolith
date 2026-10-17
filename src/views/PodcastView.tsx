@@ -1,4 +1,4 @@
-import { Bookmark, BookmarkCheck, ChevronDown, Share2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, ChevronDown, Play, Share2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ShowChip } from "../api/podcast";
 import type { Page, Track } from "../api/types";
@@ -9,7 +9,7 @@ import { EmptyState, ErrorBox, Loading } from "../components/Status";
 import Thumb from "../components/Thumb";
 import { useAsync, usePaged } from "../hooks/useData";
 import { useNav } from "../stores/nav";
-import { usePlayer } from "../stores/player";
+import { playEpisode } from "../stores/actions";
 import { useToast } from "../stores/toast";
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -49,6 +49,7 @@ export default function PodcastView({ id }: { id: string }) {
   const [token, setToken] = useState<string | null>(null);
   const [filter, setFilter] = useState<string | null>(null);
   const [saved, setSaved] = useState<boolean | null>(null);
+  const [more, setMore] = useState(false);
   const s = show.data;
   const first = async (): Promise<Page<Track>> =>
     token ? getEpisodes(token) : { items: s!.episodes, loadMore: s!.next ? () => getEpisodes(s!.next!) : null };
@@ -57,7 +58,11 @@ export default function PodcastView({ id }: { id: string }) {
   if (show.error) return <ErrorBox error={show.error} onRetry={show.reload} />;
   if (!s) return <Loading variant="list" />;
   const isSaved = saved ?? s.saved;
-  const play = (t: Track) => usePlayer.getState().playQueue([t], 0, { title: s.title });
+  // Episodes from this page know their show (the player continues with the show's next episode, shows its name).
+  const ofShow = (t: Track): Track => (t.show ? t : { ...t, show: { id, title: s.title } });
+  const play = (t: Track) => playEpisode(ofShow(t));
+  // The page lists the newest first.
+  const newest = s.episodes[0];
 
   const toggleSave = () => {
     if (!s.playlistId) return;
@@ -74,8 +79,8 @@ export default function PodcastView({ id }: { id: string }) {
     );
 
   return (
-    <div className="flex gap-12">
-      <aside className="sticky top-0 flex w-[320px] shrink-0 flex-col items-center self-start text-center">
+    <div className="flex gap-12 max-lg:flex-col max-lg:gap-6">
+      <aside className="sticky top-0 flex w-[320px] shrink-0 flex-col items-center self-start text-center max-lg:static max-lg:w-full">
         {s.channel && (
           <button onClick={() => useNav.getState().go({ name: "channel", id: s.channel!.id })}
             className="mb-4 flex max-w-full items-center gap-2 text-sm text-[var(--c-text-muted)] hover:text-[var(--c-text)] hover:underline">
@@ -85,8 +90,18 @@ export default function PodcastView({ id }: { id: string }) {
         )}
         <Thumb src={s.thumbnail} className="aspect-square w-[272px] shadow-2xl" />
         <h1 className="mt-6 text-3xl font-bold tracking-tight">{s.title}</h1>
-        {s.description && <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm text-[var(--c-text-muted)]">{s.description}</p>}
-        <div className="mt-5 flex items-center gap-3">
+        {s.description && (
+          <>
+            <p className={`mt-3 select-text whitespace-pre-line text-sm text-[var(--c-text-muted)] ${more ? "" : "line-clamp-4"}`}>{s.description}</p>
+            <button className="mt-1 text-sm font-medium hover:underline" aria-expanded={more} onClick={() => setMore((m) => !m)}>{more ? "Less" : "More"}</button>
+          </>
+        )}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          {newest && (
+            <button className="m3-btn m3-filled flex h-10 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button" onClick={() => play(newest)} title={`Play the latest episode: ${newest.title}`}>
+              <Play size={18} fill="currentColor" aria-hidden /> Play latest
+            </button>
+          )}
           <button className="icon-btn h-10 w-10 bg-[var(--c-hover)]" onClick={() => void share()} aria-label="Share"><Share2 size={20} /></button>
           {s.playlistId && (
             <button onClick={toggleSave} aria-pressed={isSaved}

@@ -244,8 +244,12 @@ function PodcastSpeedSlot() {
   return podcast ? <PodcastSpeed /> : null;
 }
 
-/** "Artist • Album" for the player, whatever list the track came from; the list's own subtitle only as a fallback. */
+/**
+ * "Artist • Album" for the player, whatever list the track came from; an episode shows its show instead. The
+ * list's own subtitle only as a fallback.
+ */
 export function byline(t: Track): string {
+  if (t.podcast) return t.show?.title || t.subtitle || "";
   return [t.artists.join(", "), t.album?.title].filter(Boolean).join(" • ") || t.subtitle || "";
 }
 

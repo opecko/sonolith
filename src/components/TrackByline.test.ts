@@ -28,6 +28,11 @@ describe("bylineParts", () => {
     expect(bylineParts("Annie, Ann", t)).toEqual(["Annie, ", { kind: "artist", id: "UCa", text: "Ann" }]);
   });
 
+  it("links an episode's show", () => {
+    const t = track({ podcast: true, show: { id: "PLshow", title: "The Show" } });
+    expect(bylineParts("Dec 5, 2024 • The Show", t)).toEqual(["Dec 5, 2024 • ", { kind: "show", id: "PLshow", text: "The Show" }]);
+  });
+
   it("returns the text unchanged when nothing has an id", () => {
     expect(bylineParts("A • B", track({ artists: ["A"] }))).toEqual(["A • B"]);
     expect(bylineParts("", track({ artists: ["A"], artistIds: ["UC"] }))).toEqual([]);

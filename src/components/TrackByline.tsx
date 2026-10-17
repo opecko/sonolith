@@ -3,23 +3,26 @@ import type { Track } from "../api/types";
 import { useNav } from "../stores/nav";
 import { useUi } from "../stores/ui";
 
-export type BylinePart = string | { kind: "artist" | "album"; id: string; text: string };
+type LinkKind = "artist" | "album" | "show";
+export type BylinePart = string | { kind: LinkKind; id: string; text: string };
 
 const SEPARATORS = " ,&•·/";
 const boundary = (s: string, i: number) => i <= 0 || i >= s.length || SEPARATORS.includes(s[i - 1]) || SEPARATORS.includes(s[i]);
 
 /**
- * Splits a track's byline text into plain text and links: every artist with a browse id and the album (when it
- * has one) become links where their names appear as whole words. Text the track has no id for (a "Song" label,
+ * Splits a track's byline text into plain text and links: every artist with a browse id, the album and an
+ * episode's show (when they have one) become links where their names appear as whole words. Text the track has no id for (a "Song" label,
  * plays, a year) stays as it is, so the line reads exactly like before.
  */
 export function bylineParts(text: string, t: Track): BylinePart[] {
-  const links: { kind: "artist" | "album"; id: string; name: string }[] = [];
+  const links: { kind: LinkKind; id: string; name: string }[] = [];
   t.artists.forEach((name, i) => {
     const id = t.artistIds?.[i];
     if (id && name) links.push({ kind: "artist", id, name });
   });
   if (t.album?.id && t.album.title) links.push({ kind: "album", id: t.album.id, name: t.album.title });
+  // An episode's show opens the show page.
+  if (t.show?.id && t.show.title) links.push({ kind: "show", id: t.show.id, name: t.show.title });
   if (!links.length || !text) return text ? [text] : [];
   // Longest first, so "Simon & Garfunkel" wins over a "Simon" at the same spot.
   links.sort((a, b) => b.name.length - a.name.length);
@@ -57,12 +60,12 @@ function follow(e: MouseEvent | KeyboardEvent): boolean {
   const el = (e.target as Element).closest?.<HTMLElement>("[data-link]");
   const id = el?.dataset.id;
   const kind = el?.dataset.link;
-  if (!el || !id || (kind !== "artist" && kind !== "album") || !(e.currentTarget as Element).contains(el)) return false;
+  if (!el || !id || (kind !== "artist" && kind !== "album" && kind !== "show") || !(e.currentTarget as Element).contains(el)) return false;
   // Before anything else sees it: the row around the link must not also play the track.
   e.preventDefault();
   e.stopPropagation();
   useUi.getState().setNowPlaying(false);
-  useNav.getState().go({ name: kind, id });
+  useNav.getState().go(kind === "show" ? { name: "podcast", id } : { name: kind, id });
   return true;
 }
 
