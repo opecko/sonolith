@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { ticker, useSpring } from "../motion";
+import { playheadTime, useVisiblePlayhead } from "../playback/playhead";
 import { useSettings } from "../stores/settings";
 import { useUiStyle } from "./UiStyle";
 
@@ -23,15 +24,40 @@ interface SliderProps {
   size?: "xs" | "sm" | "seek";
   /** M3 "seek" only: the active track waves (playing); the wave flattens out when this turns false. */
   wavy?: boolean;
+  /**
+   * The seek bar: the fill and handle follow the smooth playhead every frame (straight to the DOM), `value` only
+   * keeps the accessible value and the keyboard steps current.
+   */
+  playhead?: boolean;
 }
 
 /** Pointer, keyboard and hover handling shared by both looks. */
-function useSliderInput({ value, max, onCommit, onChange, live = false, step, disabled }: SliderProps) {
+function useSliderInput({ value, max, onCommit, onChange, live = false, step, disabled, playhead }: SliderProps, onPct?: (pct: number) => void) {
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const shown = drag ?? value;
   const pct = max > 0 ? Math.min(100, Math.max(0, (shown / max) * 100)) : 0;
+
+  // The position is a CSS variable (--p 0–100, --f 0–1) on the root: React writes it on value changes, the playhead loop
+  // every frame; a drag always wins.
+  const state = useRef({ drag, max, onPct });
+  state.current = { drag, max, onPct };
+  const write = useCallback((p: number) => {
+    ref.current?.style.setProperty("--p", String(p));
+    ref.current?.style.setProperty("--f", String(p / 100));
+    state.current.onPct?.(p);
+  }, []);
+  const follow = useCallback((sec: number) => {
+    const { drag, max } = state.current;
+    if (drag === null) write(max > 0 ? Math.min(100, Math.max(0, (sec / max) * 100)) : 0);
+  }, [write]);
+  // After every render: the React value, or (a playhead between its frames) the playhead now.
+  useLayoutEffect(() => {
+    if (!playhead || drag !== null) write(pct);
+    else follow(playheadTime());
+  });
+  useVisiblePlayhead(ref, playhead && !disabled ? follow : null);
 
   const at = (e: PointerEvent) => {
     const r = ref.current!.getBoundingClientRect();
@@ -79,7 +105,7 @@ export default function Slider(props: SliderProps) {
 
 function ClassicSlider(props: SliderProps) {
   const { max, label, format, tooltip = "hover", disabled, className = "" } = props;
-  const { ref, drag, hover, shown, pct, handlers } = useSliderInput(props);
+  const { ref, drag, hover, shown, handlers } = useSliderInput(props);
   return (
     <div
       ref={ref}
@@ -97,11 +123,11 @@ function ClassicSlider(props: SliderProps) {
       <div className="relative h-1 w-full overflow-hidden rounded-full bg-[var(--c-slider-track)] group-hover:h-1.5">
         {hover !== null && max > 0 && <div className="absolute inset-0 origin-left bg-fg/20" style={{ transform: `scaleX(${hover / max})` }} />}
         {/* scaleX instead of width: no layout on every clock tick */}
-        <div className="absolute inset-0 origin-left bg-[var(--c-slider-fill)]" style={{ transform: `scaleX(${pct / 100})` }} />
+        <div className="absolute inset-0 origin-left bg-[var(--c-slider-fill)]" style={{ transform: "scaleX(var(--f))" }} />
       </div>
       <div
         className={`absolute h-3 w-3 -translate-x-1/2 rounded-full bg-[var(--c-accent)] shadow ${drag !== null ? "block" : "hidden group-hover:block group-focus-visible:block"}`}
-        style={{ left: `${pct}%` }}
+        style={{ left: "calc(var(--p) * 1%)" }}
       />
       {(hover !== null || drag !== null) && format && max > 0 && (
         <div className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded bg-[var(--c-surface-3)] px-2 py-1 text-xs tabular-nums shadow whitespace-nowrap"
@@ -122,7 +148,9 @@ const M3_SIZES = { xs: [16, 44, 8, 6], sm: [12, 32, 6, 4], seek: [4, 16, 2, 4] }
  */
 function M3Slider(props: SliderProps) {
   const { max, label, format, tooltip = "hover", disabled, className = "", size = "xs", wavy } = props;
-  const { ref, drag, hover, shown, pct, handlers } = useSliderInput(props);
+  // The wave is a canvas: it redraws when the position moves.
+  const wave = useRef<((pct: number) => void) | null>(null);
+  const { ref, drag, hover, shown, pct, handlers } = useSliderInput(props, (p) => wave.current?.(p));
   const [track, handle, corner, gap] = M3_SIZES[size];
   const dragging = drag !== null;
   // The handle narrows while held (M3 pressed state); the gap follows its edges.
@@ -148,16 +176,16 @@ function M3Slider(props: SliderProps) {
       {/* Inactive track, from the handle's right gap to the end, with the stop indicator at its end. The indicator is
           inside it, so the same clip hides it once the handle (and its gap) reaches it, at 100 %. */}
       <div className="absolute inset-x-0 bg-[var(--m3-secondary-container)]"
-        style={{ height: track, clipPath: `inset(0 0 0 calc(${pct}% + ${edge}px) round ${inner}px ${corner}px ${corner}px ${inner}px)` }}>
+        style={{ height: track, clipPath: `inset(0 0 0 calc(var(--p) * 1% + ${edge}px) round ${inner}px ${corner}px ${corner}px ${inner}px)` }}>
         {size !== "seek" && <div className="absolute rounded-full bg-[var(--m3-primary)]" style={{ width: 4, height: 4, right: (track - 4) / 2, top: (track - 4) / 2 }} />}
       </div>
       {wavy !== undefined && size === "seek" ? (
-        <Wave pct={pct} edge={edge} on={wavy} />
+        <Wave pct={pct} edge={edge} on={wavy} redraw={wave} />
       ) : (
         <div className="absolute inset-x-0 bg-[var(--m3-primary)]"
-          style={{ height: track, clipPath: `inset(0 calc(${100 - pct}% + ${edge}px) 0 0 round ${corner}px ${inner}px ${inner}px ${corner}px)` }} />
+          style={{ height: track, clipPath: `inset(0 calc((100 - var(--p)) * 1% + ${edge}px) 0 0 round ${corner}px ${inner}px ${inner}px ${corner}px)` }} />
       )}
-      <div className="absolute rounded-full bg-[var(--m3-primary)]" style={{ left: `calc(${pct}% - ${hw / 2}px)`, width: hw, height: handle }} />
+      <div className="absolute rounded-full bg-[var(--m3-primary)]" style={{ left: `calc(var(--p) * 1% - ${hw / 2}px)`, width: hw, height: handle }} />
       {showTip && (
         <div className="m3-tooltip pointer-events-none absolute -translate-x-1/2 whitespace-nowrap tabular-nums"
           style={{ left: `${((tooltip === "value" ? shown : hover ?? shown) / max) * 100}%`, bottom: handle + 4 }}>
@@ -178,13 +206,12 @@ const SPEED = 0.6;
  * playing and visible, at ~30 fps as the wave travels from the playhead toward the start. The amplitude springs to 0 when playback pauses; with
  * animations off it stays flat.
  */
-function Wave({ pct, edge, on: playing }: { pct: number; edge: number; on: boolean }) {
+function Wave({ pct, edge, on: playing, redraw }: { pct: number; edge: number; on: boolean; redraw: { current: ((pct: number) => void) | null } }) {
   // With animations off the track stays flat: a wave that can't move would only look broken.
   const animations = useSettings((s) => s.appearance.animations);
   const on = playing && animations;
   const ref = useRef<HTMLCanvasElement>(null);
   const st = useRef({ phase: 0, amp: on ? 1 : 0, pct, edge, color: "", w: 0, h: 0, acc: 0 });
-  st.current.pct = pct;
   st.current.edge = edge;
 
   const draw = () => {
@@ -232,6 +259,16 @@ function Wave({ pct, edge, on: playing }: { pct: number; edge: number; on: boole
     if (ref.current) st.current.color = getComputedStyle(ref.current).color;
     draw();
   }, [pct, edge]);
+  // The playhead moves it between renders: drawn at once unless the travelling wave draws anyway.
+  const travelling = useRef(on);
+  travelling.current = on;
+  useLayoutEffect(() => {
+    redraw.current = (p) => {
+      st.current.pct = p;
+      if (!travelling.current) draw();
+    };
+    return () => void (redraw.current = null);
+  });
   useSpring(on ? 1 : 0, "defaultSpatial", (a) => {
     st.current.amp = Math.max(0, a);
     draw();

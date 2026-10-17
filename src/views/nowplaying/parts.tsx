@@ -73,7 +73,7 @@ export function SeekBar({ className = "", times = "inline" }: { className?: stri
   const end = podcast && duration ? `−${fmtTime(Math.max(0, duration - position))}` : fmtTime(duration);
   return (
     <div className={className}>
-      <Slider value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" wavy={playing} />
+      <Slider value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" playhead wavy={playing} />
       {times === "split" ? (
         <p className="type-label-large mt-1 flex justify-between tabular-nums text-[var(--m3-on-surface-variant)]"><span>{fmtTime(position)}</span><span>{end}</span></p>
       ) : (

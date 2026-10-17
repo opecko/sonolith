@@ -9,6 +9,7 @@ import { autoplayTrigger, dedupeAutoplay, pushHistory } from "./autoplay";
 import { savedResume, savePosition } from "./episodeProgress";
 import { nextEpisode } from "./podcastQueue";
 import { pipelineStuck, reconcileStatus, toggleAction } from "./playState";
+import { bindPlayhead } from "../playback/playhead";
 import { useProgress } from "./progress";
 import { append, dedupe, insertNext, reorder } from "./queueOps";
 import { makeSnapshot, readSnapshot, SNAPSHOT_KEY } from "./queueSnapshot";
@@ -89,6 +90,7 @@ const DECODE_HINT = /Linux/.test(navigator.userAgent)
   : "This song couldn't be played. Try again in a moment.";
 
 const audio = new Audio();
+bindPlayhead(audio);
 
 /** Where playback really is, in seconds; unlike useProgress it keeps moving while the window is hidden. */
 export const playbackTime = () => audio.currentTime;
