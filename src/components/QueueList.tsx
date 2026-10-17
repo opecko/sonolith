@@ -1,17 +1,13 @@
 import { AudioLines, GripVertical, Pause, Play } from "lucide-react";
-import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useCallback, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { Track } from "../api/types";
 import { usePlayer } from "../stores/player";
 import ItemMenu from "./ItemMenu";
 import { fmtTime } from "./PlayerBar";
 import Thumb from "./Thumb";
 import { Byline, rowPlayClick } from "./TrackByline";
+import { useDragReorder } from "../hooks/useDragReorder";
 
-/** Pointer distance from the scroll box edge where dragging starts to auto-scroll, and the top speed (px/frame). */
-const EDGE = 48;
-const MAX_SPEED = 18;
-
-type Drop = { i: number; pos: "before" | "after" };
 
 interface RowProps {
   track: Track;
@@ -23,9 +19,10 @@ interface RowProps {
   drop: "before" | "after" | null;
   dragging: boolean;
   onHandleDown: (i: number, e: ReactPointerEvent<HTMLElement>) => void;
+  onHandleKey: (i: number, e: ReactKeyboardEvent<HTMLElement>) => void;
 }
 
-const Row = memo(function Row({ track, i, current, played, playing, drop, dragging, onHandleDown }: RowProps) {
+const Row = memo(function Row({ track, i, current, played, playing, drop, dragging, onHandleDown, onHandleKey }: RowProps) {
   return (
     <li
       data-index={i}
@@ -34,11 +31,14 @@ const Row = memo(function Row({ track, i, current, played, playing, drop, draggi
     >
       {drop && <span className={`pointer-events-none absolute inset-x-2 h-0.5 rounded bg-[var(--c-accent)] ${drop === "before" ? "-top-px" : "-bottom-px"}`} />}
       <span
-        aria-label={`Drag to reorder ${track.title}`}
-        title="Drag to reorder"
+        role="button"
+        tabIndex={0}
+        aria-label={`Reorder ${track.title} (drag, or Alt+Up / Alt+Down)`}
+        title="Drag to reorder (Alt+↑ / Alt+↓)"
         onPointerDown={(e) => onHandleDown(i, e)}
+        onKeyDown={(e) => onHandleKey(i, e)}
         data-no-play=""
-        className={`flex h-10 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center text-[var(--c-text-subtle)] hover:text-[var(--c-text)] active:cursor-grabbing group-hover:opacity-100 ${dragging ? "opacity-100" : "opacity-0"}`}
+        className={`flex h-10 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center text-[var(--c-text-subtle)] hover:text-[var(--c-text)] focus-visible:opacity-100 active:cursor-grabbing group-hover:opacity-100 ${dragging ? "opacity-100" : "opacity-0"}`}
       >
         <GripVertical size={16} aria-hidden />
       </span>
@@ -71,10 +71,12 @@ export default function QueueList({ autoScroll = false }: { autoScroll?: boolean
   const index = usePlayer((s) => s.index);
   const playing = usePlayer((s) => s.status === "playing");
   const loading = usePlayer((s) => s.chipLoading);
-  const ref = useRef<HTMLOListElement>(null);
+  // Drag to reorder (the shared pointer mechanism; Alt+↑ / Alt+↓ on a handle too).
+  const { ref, dropAt, dragFrom, onHandleDown, onHandleKey } = useDragReorder<HTMLOListElement>((from, to) => usePlayer.getState().moveTrack(from, to));
   const firstScroll = useRef(true);
-  const [dropAt, setDropAt] = useState<Drop | null>(null);
-  const [dragFrom, setDragFrom] = useState(-1);
+  const count = useRef(0);
+  count.current = queue.length;
+  const onRowKey = useCallback((i: number, e: ReactKeyboardEvent<HTMLElement>) => onHandleKey(i, count.current, e), [onHandleKey]);
   const currentId = queue[index]?.id;
 
   const indexRef = useRef(index);
@@ -100,75 +102,6 @@ export default function QueueList({ autoScroll = false }: { autoScroll?: boolean
     firstScroll.current = false;
   }, [autoScroll, currentId]);
 
-  const stopDrag = useRef<(() => void) | null>(null);
-  useEffect(() => () => stopDrag.current?.(), []);
-
-  // Pointer-driven reorder (native HTML5 drag is unreliable in WebKitGTK: no auto-scroll, flickering drop targets).
-  // The handle captures the pointer; the drop slot is computed from the row rects, and the list scrolls near the edges.
-  const onHandleDown = useCallback((from: number, e: ReactPointerEvent<HTMLElement>) => {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    const handle = e.currentTarget;
-    handle.setPointerCapture(e.pointerId);
-    const list = ref.current;
-    const box = list?.closest<HTMLElement>(".scroll-y");
-    if (!list || !box) return;
-    let y = e.clientY;
-    let target: Drop | null = null;
-    let raf = 0;
-
-    const locate = () => {
-      const rows = Array.from(list.querySelectorAll<HTMLElement>("li[data-index]"));
-      let next: Drop | null = null;
-      for (const row of rows) {
-        const r = row.getBoundingClientRect();
-        if (y < r.top + r.height / 2) {
-          next = { i: Number(row.dataset.index), pos: "before" };
-          break;
-        }
-      }
-      if (!next && rows.length) next = { i: Number(rows[rows.length - 1].dataset.index), pos: "after" };
-      if (next?.i !== target?.i || next?.pos !== target?.pos) {
-        target = next;
-        setDropAt(next);
-      }
-    };
-    const tick = () => {
-      const r = box.getBoundingClientRect();
-      const fromTop = y - r.top;
-      const fromBottom = r.bottom - y;
-      if (fromTop < EDGE) box.scrollTop -= MAX_SPEED * Math.min(1, (EDGE - fromTop) / EDGE);
-      else if (fromBottom < EDGE) box.scrollTop += MAX_SPEED * Math.min(1, (EDGE - fromBottom) / EDGE);
-      locate();
-      raf = requestAnimationFrame(tick);
-    };
-    const end = (commit: boolean) => {
-      cancelAnimationFrame(raf);
-      handle.removeEventListener("pointermove", move);
-      handle.removeEventListener("pointerup", up);
-      handle.removeEventListener("pointercancel", cancel);
-      if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
-      stopDrag.current = null;
-      setDropAt(null);
-      setDragFrom(-1);
-      if (!commit || !target) return;
-      // Insertion point in the original list, then account for the removed source row.
-      let to = target.pos === "before" ? target.i : target.i + 1;
-      if (from < to) to -= 1;
-      if (to !== from) usePlayer.getState().moveTrack(from, to);
-    };
-    const move = (ev: PointerEvent) => void (y = ev.clientY);
-    const up = () => end(true);
-    const cancel = () => end(false);
-    handle.addEventListener("pointermove", move);
-    handle.addEventListener("pointerup", up);
-    handle.addEventListener("pointercancel", cancel);
-    stopDrag.current = cancel;
-    setDragFrom(from);
-    locate();
-    raf = requestAnimationFrame(tick);
-  }, []);
-
   if (!queue.length) return <p className="px-2 text-sm text-[var(--c-text-subtle)]">Queue is empty. Play something to fill it.</p>;
   const firstAutoplay = queue.findIndex((t) => t.source === "autoplay");
   return (
@@ -185,6 +118,7 @@ export default function QueueList({ autoScroll = false }: { autoScroll?: boolean
             drop={dropAt?.i === i ? dropAt.pos : null}
             dragging={dragFrom === i}
             onHandleDown={onHandleDown}
+            onHandleKey={onRowKey}
           />
         </QueueRowWithDivider>
       ))}
