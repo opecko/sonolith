@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEFAULT_LYRICS_PROVIDERS, normalizeLyricsProviders, type ProviderSetting } from "../lyrics/providers";
 import { DEFAULT_SHORTCUTS, normalizeShortcuts, type ShortcutSettings } from "../shortcuts/keys";
 import { DEFAULT_APPEARANCE, normalizeAppearance, type Appearance } from "../theme/appearance";
 
@@ -22,6 +23,8 @@ export interface Settings {
   lastSeenVersion: string | null;
   /** The first-run welcome was finished or skipped (existing installs get it set silently, see onboarding/detect). */
   onboardingCompleted: boolean;
+  /** Lyrics providers, highest priority first, each on or off (Settings → Lyrics providers). */
+  lyricsProviders: ProviderSetting[];
   /** When a podcast episode ends with nothing queued after it: the show's next episode, or stop. */
   afterEpisode: "next" | "stop";
   /** In-window keyboard shortcuts (Settings → Keyboard shortcuts): on/off and the key for each action. */
@@ -29,7 +32,7 @@ export interface Settings {
 }
 
 const KEY = "settings";
-const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS };
+const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS };
 
 /** Stored JSON → Settings. Missing keys (older versions) get the defaults; normalizing drops malformed values. */
 export function parseSettings(stored: unknown): Settings {
@@ -45,6 +48,7 @@ export function parseSettings(stored: unknown): Settings {
     // Missing before shortcuts existed; unknown or broken bindings fall back to their defaults.
     shortcuts: normalizeShortcuts(s.shortcuts),
     afterEpisode: s.afterEpisode === "stop" ? "stop" : "next",
+    lyricsProviders: normalizeLyricsProviders(s.lyricsProviders),
   };
 }
 
@@ -64,8 +68,8 @@ function read(): Settings {
 
 function write() {
   try {
-    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode } = useSettings.getState();
-    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode }));
+    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders } = useSettings.getState();
+    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders }));
   } catch {
     /* storage unavailable */
   }
