@@ -43,7 +43,24 @@ function useSliderInput({ value, max, onCommit, onChange, live = false, step, di
   // every frame; a drag always wins.
   const state = useRef({ drag, max, onPct });
   state.current = { drag, max, onPct };
-  const write = useCallback((p: number) => {
+  // Snapped to whole device pixels and written only when that pixel changes: a song moves a seek bar a few px a
+  // second, so most frames write (and repaint) nothing.
+  const px = useRef({ w: 0, last: -1 });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      px.current.w = el.clientWidth * (window.devicePixelRatio || 1);
+      px.current.last = -1;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const write = useCallback((raw: number) => {
+    const { w } = px.current;
+    const p = w > 0 ? (Math.round((raw / 100) * w) / w) * 100 : raw;
+    if (p === px.current.last) return;
+    px.current.last = p;
     ref.current?.style.setProperty("--p", String(p));
     ref.current?.style.setProperty("--f", String(p / 100));
     state.current.onPct?.(p);
