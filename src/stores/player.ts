@@ -6,6 +6,7 @@ import type { QueueChip, Rating, Track } from "../api/types";
 import type { RadioSource } from "../api/queue";
 import { getChipTracks, getWatch, rate, startRadio } from "../api/ytm";
 import { autoplayTrigger, dedupeAutoplay, pushHistory } from "./autoplay";
+import { pipelineStuck, reconcileStatus, toggleAction } from "./playState";
 import { useProgress } from "./progress";
 import { append, dedupe, insertNext, reorder } from "./queueOps";
 import { makeSnapshot, readSnapshot, SNAPSHOT_KEY } from "./queueSnapshot";
@@ -61,6 +62,8 @@ interface PlayerState {
   selectChip: (id: string) => void;
   playQueue: (tracks: Track[], index?: number, context?: QueueContext) => void;
   togglePlay: () => void;
+  /** Play or pause outright (MPRIS / media session Play and Pause), whatever the shown status says. */
+  setPlaying: (on: boolean) => void;
   next: () => void;
   prev: () => void;
   seek: (sec: number) => void;
@@ -193,6 +196,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
   function start(index: number) {
     retries = 0;
+    stuckRecoveries = 0;
+    pausedAt = null;
     prefetchedFor = -1;
     void load(index);
     const id = get().queue[index]?.id;
@@ -354,7 +359,37 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
   audio.addEventListener("playing", () => set({ status: "playing" }));
   audio.addEventListener("pause", () => {
+    pausedAt = audio.currentTime;
     if (!audio.ended && get().status === "playing") set({ status: "paused" });
+  });
+  audio.addEventListener("play", () => {
+    pausedAt = null;
+    syncStatus();
+  });
+  // Pause / play / seek events can come late or out of order (WebKitGTK); the element is the truth. Checked on every
+  // playback event, so a status that drifted (shown paused while it plays) comes right within a fraction of a second.
+  function syncStatus() {
+    const next = reconcileStatus(get().status, audio);
+    if (next) set({ status: next });
+  }
+  // Where a paused element stood; time moving away from it means the media pipeline didn't actually stop.
+  let pausedAt: number | null = null;
+  let stuckRecoveries = 0;
+  function checkStuck() {
+    if (pausedAt === null || audio.seeking || !pipelineStuck(audio, audio.currentTime - pausedAt)) return;
+    const t = audio.currentTime;
+    const id = get().queue[get().index]?.id ?? "?";
+    logPlayback(`${id} paused element kept playing (moved ${(t - pausedAt).toFixed(1)} s); reloading the source at ${t.toFixed(1)} s`);
+    pausedAt = null;
+    // A fresh pipeline on the same stream, at the same spot, paused (as the user asked). Once per track: if even
+    // that keeps playing, the status at least shows the truth (syncStatus).
+    if (stuckRecoveries++ > 0 || !audio.currentSrc) return;
+    audio.addEventListener("loadedmetadata", () => (audio.currentTime = t), { once: true });
+    audio.src = audio.currentSrc;
+    set({ status: "paused" });
+  }
+  audio.addEventListener("seeking", () => {
+    if (audio.paused) pausedAt = audio.currentTime;
   });
   audio.addEventListener("durationchange", () => {
     if (Number.isFinite(audio.duration)) useProgress.setState({ duration: audio.duration });
@@ -372,9 +407,12 @@ export const usePlayer = create<PlayerState>((set, get) => {
   audio.addEventListener("seeked", () => {
     shownSecond = -1;
     pushClock();
+    syncStatus();
   });
   audio.addEventListener("timeupdate", () => {
     if (!document.hidden) pushClock();
+    syncStatus();
+    checkStuck();
     for (const fn of tickListeners) fn();
     const { index } = get();
     if (prefetchedFor !== index && audio.currentTime > Math.min(30, audio.duration / 2 || 30)) {
@@ -532,11 +570,20 @@ export const usePlayer = create<PlayerState>((set, get) => {
       }
     },
     togglePlay: () => {
-      const { status } = get();
-      if (status === "playing") audio.pause();
-      else if (status === "paused") void audio.play();
-      // "error", or "idle" with a restored queue: (re)start the current track from the beginning.
-      else if ((status === "error" || status === "idle") && get().index >= 0) start(get().index);
+      switch (toggleAction(get().status, audio, get().index >= 0)) {
+        case "play":
+          // A rejection (interrupted by a pause, no source) leaves the element paused; the events say so.
+          audio.play().catch(() => syncStatus());
+          break;
+        case "pause":
+          audio.pause();
+          break;
+        case "restart":
+          start(get().index);
+      }
+    },
+    setPlaying: (on) => {
+      if (on ? audio.paused || get().status === "error" || get().status === "idle" : !audio.paused) get().togglePlay();
     },
     next: () => void advance(false),
     prev: () => {
@@ -672,8 +719,8 @@ if (nativeMpris && "mediaSession" in navigator) {
   navigator.mediaSession.metadata = new MediaMetadata({ title: "" });
 } else if ("mediaSession" in navigator) {
   const s = () => usePlayer.getState();
-  navigator.mediaSession.setActionHandler("play", () => s().togglePlay());
-  navigator.mediaSession.setActionHandler("pause", () => s().togglePlay());
+  navigator.mediaSession.setActionHandler("play", () => s().setPlaying(true));
+  navigator.mediaSession.setActionHandler("pause", () => s().setPlaying(false));
   navigator.mediaSession.setActionHandler("nexttrack", () => s().next());
   navigator.mediaSession.setActionHandler("previoustrack", () => s().prev());
   navigator.mediaSession.setActionHandler("seekto", (d) => d.seekTime !== undefined && s().seek(d.seekTime));

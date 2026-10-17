@@ -21,10 +21,9 @@ export async function initMpris() {
 
   await listen<{ action: string; value: unknown }>("mpris", ({ payload: { action, value } }) => {
     const s = p();
-    const playing = s.status === "playing" || s.status === "loading";
     switch (action) {
-      case "play": if (!playing) s.togglePlay(); break;
-      case "pause": case "stop": if (playing) s.togglePlay(); break;
+      case "play": s.setPlaying(true); break;
+      case "pause": case "stop": s.setPlaying(false); break;
       case "playpause": s.togglePlay(); break;
       case "next": s.next(); break;
       case "previous": s.prev(); break;
