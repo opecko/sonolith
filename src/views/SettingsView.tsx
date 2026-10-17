@@ -208,6 +208,26 @@ function CreditLink({ name, children }: { name: string; children: React.ReactNod
   );
 }
 
+/** What happens when a podcast episode ends with nothing queued after it (never a music radio). */
+function AfterEpisodeSetting() {
+  const value = useSettings((s) => s.afterEpisode);
+  const seg = (on: boolean) => `m3-seg rounded-full px-3 py-1 text-sm ${on ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`;
+  const opts: ["next" | "stop", string][] = [["next", "Play next episode"], ["stop", "Stop"]];
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-sm">After a podcast episode</p>
+        <p className="text-sm text-[var(--c-text-muted)]">When nothing else is queued: the show's next episode, or stop.</p>
+      </div>
+      <div className="m3-segmented flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="After a podcast episode">
+        {opts.map(([v, label]) => (
+          <button key={v} type="button" aria-pressed={value === v} className={seg(value === v)} onClick={() => useSettings.getState().set({ afterEpisode: v })}>{label}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function About() {
   const [version, setVersion] = useState("");
   const [changelog, setChangelog] = useState(false);
@@ -256,6 +276,7 @@ export default function SettingsView() {
           <AutoplayToggle withLabel={false} />
         </div>
         <HistorySetting />
+        <AfterEpisodeSetting />
       </section>
       <ShortcutSettings />
       <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">

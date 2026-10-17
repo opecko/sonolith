@@ -4,9 +4,10 @@ import type { NextResult } from "../api/queue";
 import { getStreamUrl, logPlayback, prefetchStream, probeStream, UnsupportedCodecError, viaProxy, type Stream } from "../api/stream";
 import type { QueueChip, Rating, Track } from "../api/types";
 import type { RadioSource } from "../api/queue";
-import { getChipTracks, getWatch, rate, startRadio } from "../api/ytm";
+import { getChipTracks, getPodcastShow, getWatch, rate, startRadio } from "../api/ytm";
 import { autoplayTrigger, dedupeAutoplay, pushHistory } from "./autoplay";
 import { savedResume, savePosition } from "./episodeProgress";
+import { nextEpisode } from "./podcastQueue";
 import { pipelineStuck, reconcileStatus, toggleAction } from "./playState";
 import { useProgress } from "./progress";
 import { append, dedupe, insertNext, reorder } from "./queueOps";
@@ -336,8 +337,28 @@ export const usePlayer = create<PlayerState>((set, get) => {
       await autoplayInflight; // autoplay fetch for the end of the queue is still running
       target = peekNext();
     }
+    if (target === null && auto && (await queueNextEpisode())) target = peekNext();
     if (target !== null) start(target);
     else if (auto) set({ status: "paused" });
+  }
+
+  /**
+   * An episode ended with nothing after it: with "After an episode: Play next episode", the show's next (newer)
+   * episode joins the queue. Never a music radio (autoplay skips episodes).
+   */
+  async function queueNextEpisode(): Promise<boolean> {
+    const cur = get().queue[get().index];
+    if (!cur?.podcast || !cur.show || useSettings.getState().afterEpisode !== "next") return false;
+    try {
+      const show = await getPodcastShow(cur.show.id);
+      if (get().queue[get().index]?.id !== cur.id) return false;
+      const next = nextEpisode(show.episodes, cur.id);
+      if (!next) return false;
+      return appendTracks([{ ...next, show: cur.show }]) > 0;
+    } catch (e) {
+      console.warn("next episode failed:", e);
+      return false;
+    }
   }
 
   /** Appends the next page of the queue's continuation (radio / long playlist). */

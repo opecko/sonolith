@@ -35,6 +35,12 @@ describe("settings migration", () => {
     expect(s.shortcuts.bindings.prev).toEqual(DEFAULT_SHORTCUTS.bindings.prev);
   });
 
+  it("afterEpisode: play the next episode unless stop was chosen", () => {
+    expect(parseSettings({}).afterEpisode).toBe("next");
+    expect(parseSettings({ afterEpisode: "stop" }).afterEpisode).toBe("stop");
+    expect(parseSettings({ afterEpisode: "radio" }).afterEpisode).toBe("next");
+  });
+
   it("garbage falls back to the defaults", () => {
     expect(parseSettings(null).appearance).toEqual(DEFAULT_APPEARANCE);
     expect(parseSettings("x").updateCheck).toBe(true);
