@@ -11,6 +11,7 @@ import { ErrorBox, Loading } from "../components/Status";
 import { useAsync } from "../hooks/useData";
 import { rerunOnboarding } from "../onboarding/store";
 import ShortcutSettings from "../shortcuts/ShortcutSettings";
+import LyricsProviderSettings from "../lyrics/LyricsProviderSettings";
 import { useSettings } from "../stores/settings";
 import { useUpdate } from "../stores/update";
 // Shipped with the font, as the OFL asks.
@@ -278,6 +279,7 @@ export default function SettingsView() {
         <HistorySetting />
         <AfterEpisodeSetting />
       </section>
+      <LyricsProviderSettings />
       <ShortcutSettings />
       <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
         <h2 className="mb-1 text-lg font-semibold">Performance</h2>
