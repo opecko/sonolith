@@ -1,22 +1,29 @@
 import { useLayoutEffect, useRef } from "react";
 import { EmptyState, Loading } from "../components/Status";
-import { Spring, ticker } from "../motion";
-import { onPlaybackTick, playbackTime, usePlayer } from "../stores/player";
+import { Spring } from "../motion";
+import { onPlayhead } from "../playback/playhead";
+import { usePlayer } from "../stores/player";
+import { useSettings } from "../stores/settings";
+import { createKaraoke, type KaraokeStyle } from "./karaoke";
 import { PROVIDER_NAMES } from "./providers";
-import { lineAt, type LyricLine, type LyricsData } from "./pick";
+import type { LyricLine, LyricsData } from "./pick";
 import { useLyrics } from "./store";
 
 /** After the user scrolls the lyrics, auto-scroll waits this long before following the song again. */
 const MANUAL_SCROLL_MS = 4000;
 
 /**
- * Synced lyrics: the current line lights up (words too, when the provider times them), the list scrolls to keep
- * it in view unless the user is scrolling, and a click on a line seeks there. React renders the lines once; the
- * highlight is class flips on the playback clock (every frame with animations on, a few times a second without),
- * the scroll a spring on the scroller (instant with animations off).
+ * Synced lyrics: the current line lights up (words too, in the chosen karaoke style, when the provider times them),
+ * the list scrolls to keep it in view unless the user is scrolling, and a click on a line seeks there. React renders
+ * the lines once; the karaoke driver (karaoke.ts) writes the highlight on the playhead (every frame while playing
+ * with animations on, a few times a second without), the scroll is a spring on the scroller (instant with
+ * animations off).
  */
 function SyncedLines({ lines, size }: { lines: LyricLine[]; size: "full" | "preview" }) {
   const list = useRef<HTMLOListElement>(null);
+  const chosen = useSettings((s) => s.karaokeStyle);
+  const animations = useSettings((s) => s.appearance.animations);
+  const style: KaraokeStyle = animations ? chosen : "simple";
   // Before paint: an upgrade (line-synced → word-synced) swaps the lines with the current one already lit.
   useLayoutEffect(() => {
     const ol = list.current;
@@ -24,15 +31,13 @@ function SyncedLines({ lines, size }: { lines: LyricLine[]; size: "full" | "prev
     // The nearest scrolling ancestor (the panel / tile around the lyrics).
     let scroller: HTMLElement | null = ol.parentElement;
     while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
-    const items = [...ol.children] as HTMLElement[];
-    let active = -2;
     let userUntil = 0;
     const spring = scroller ? new Spring(scroller.scrollTop, "slowSpatial", (v) => (scroller!.scrollTop = v), { precision: 0.5 }) : null;
     // New lines in a scroller already showing lyrics (an upgrade): land on the current line without a glide.
     let instant = scroller ? scroller.scrollTop > 0 : false;
     const follow = (i: number) => {
-      if (!scroller || !spring || i < 0 || Date.now() < userUntil) return;
-      const li = items[i];
+      const li = ol.querySelector<HTMLElement>(`:scope > li[data-i="${i}"]`);
+      if (!scroller || !spring || !li || Date.now() < userUntil) return;
       const target = li.offsetTop - ol.offsetTop - scroller.clientHeight * (size === "preview" ? 0.15 : 0.35) + li.offsetHeight / 2;
       const to = Math.max(0, Math.min(target, scroller.scrollHeight - scroller.clientHeight));
       if (instant) {
@@ -44,22 +49,9 @@ function SyncedLines({ lines, size }: { lines: LyricLine[]; size: "full" | "prev
       spring.set(scroller.scrollTop);
       spring.to(to);
     };
-    const update = () => {
-      const ms = playbackTime() * 1000;
-      const i = lineAt(lines, ms);
-      if (i !== active) {
-        items.forEach((li, k) => {
-          li.toggleAttribute("data-active", k === i);
-          li.toggleAttribute("data-past", k < i);
-        });
-        active = i;
-        follow(i);
-      }
-      // Word timings: the words sung so far on the current line.
-      const words = i >= 0 ? lines[i].words : undefined;
-      if (words) items[i].querySelectorAll<HTMLElement>("[data-w]").forEach((w, k) => w.toggleAttribute("data-on", words[k].start <= ms));
-    };
-    update();
+    // One loop with the seek bars (playback/playhead.ts): every frame while playing, else on seeks and pauses.
+    const karaoke = createKaraoke(ol, lines, style, follow);
+    const stop = onPlayhead((sec) => karaoke.update(sec * 1000));
     const manual = () => {
       userUntil = Date.now() + MANUAL_SCROLL_MS;
       spring?.stop();
@@ -67,20 +59,15 @@ function SyncedLines({ lines, size }: { lines: LyricLine[]; size: "full" | "prev
     scroller?.addEventListener("wheel", manual, { passive: true });
     scroller?.addEventListener("touchstart", manual, { passive: true });
     scroller?.addEventListener("keydown", manual);
-    const stopTick = onPlaybackTick(update);
-    const stopFrames = ticker(() => usePlayer.getState().status === "playing" && update());
-    // A seek moves the clock without playing: show it at once.
-    const stopSeek = usePlayer.subscribe(() => update());
     return () => {
-      stopTick();
-      stopFrames();
-      stopSeek();
+      stop();
+      karaoke.dispose();
       spring?.stop();
       scroller?.removeEventListener("wheel", manual);
       scroller?.removeEventListener("touchstart", manual);
       scroller?.removeEventListener("keydown", manual);
     };
-  }, [lines, size]);
+  }, [lines, size, style]);
 
   return (
     <ol ref={list} className={`lyrics-synced ${size === "preview" ? "lyrics-preview" : ""}`}

@@ -1,5 +1,6 @@
 import { GripVertical, RotateCcw } from "lucide-react";
 import Switch from "../components/Switch";
+import KaraokeSetting from "./KaraokeSetting";
 import { moveItem, useDragReorder } from "../hooks/useDragReorder";
 import { useSettings } from "../stores/settings";
 import { DEFAULT_LYRICS_PROVIDERS, PROVIDER_NAMES, type ProviderSetting } from "./providers";
@@ -42,6 +43,7 @@ export default function LyricsProviderSettings() {
           ))}
         </ol>
       </div>
+      <KaraokeSetting />
       <p className="mt-3 text-sm text-[var(--c-text-muted)]">
         {allOff ? "Lyrics are hidden. " : ""}Enabled providers receive the title, artist, album and length of the song that plays; podcast episodes are never sent.
       </p>
