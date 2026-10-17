@@ -175,7 +175,7 @@ const SPEED = 0.6;
 
 /**
  * Wavy active track (M3 Expressive progress): a stroked sine on a canvas, drawn only on value changes and, while
- * playing and visible, at ~30 fps as the wave travels. The amplitude springs to 0 when playback pauses; with
+ * playing and visible, at ~30 fps as the wave travels from the playhead toward the start. The amplitude springs to 0 when playback pauses; with
  * animations off it stays flat.
  */
 function Wave({ pct, edge, on: playing }: { pct: number; edge: number; on: boolean }) {
@@ -201,7 +201,8 @@ function Wave({ pct, edge, on: playing }: { pct: number; edge: number; on: boole
     for (let x = 2; x <= end; x += 1.5) {
       // The wave grows in over the first half wavelength so the start stays on the track's line.
       const ramp = Math.min(1, (x - 2) / (WAVELENGTH / 2));
-      ctx.lineTo(x, mid + AMPLITUDE * s.amp * ramp * Math.sin((2 * Math.PI * x) / WAVELENGTH - s.phase));
+      // + phase: the crests travel leftward, out of the playhead toward the start (as on Android).
+      ctx.lineTo(x, mid + AMPLITUDE * s.amp * ramp * Math.sin((2 * Math.PI * x) / WAVELENGTH + s.phase));
     }
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
