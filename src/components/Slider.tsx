@@ -250,21 +250,43 @@ function Wave({ pct, edge, on: playing }: { pct: number; edge: number; on: boole
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  // The amplitude scales the wave's height inside the SVG; the stroke keeps its width.
-  useSpring(on ? 1 : 0, "defaultSpatial", (a) => g.current?.setAttribute("transform", `translate(0 ${h / 2}) scale(1 ${Math.max(FLAT, a * AMPLITUDE).toFixed(3)})`));
-  // Each cap bobs up and down with the wave under it (an eased alternate ≈ a sine): its animation's time is set
-  // from the wave's own, so they stay in step wherever the cut is; on a flat wave the cap rests in the middle.
-  useLayoutEffect(() => {
+  // Each cap bobs with the wave under it: an eased alternate (≈ a sine, -3 → +3 px over half a period). Settled at
+  // full height, its animation runs on the compositor with its time set from the wave's, so they stay in step
+  // wherever the cut is. While the height springs (play / pause) the cap animation is held and its time set every
+  // frame to the pose of the wave at that height, so the caps rise and settle with it.
+  const live = useRef({ amp: on ? 1 : 0, travel, xs: [0, 0] });
+  live.current.travel = travel;
+  live.current.xs = [startX, endX];
+  const syncCaps = () => {
+    const { amp, travel, xs } = live.current;
     const wave = svg.current?.getAnimations?.()[0];
     const t = Number(wave?.currentTime ?? 0);
-    [startX, endX].forEach((x, i) => {
-      const cap = caps.current[i]?.getAnimations?.()[0];
-      if (!cap) return;
-      const offset = ((((x / WAVELENGTH - 0.25) % 1) + 1) % 1) * PERIOD * 1000;
-      cap.currentTime = on ? t + offset : (PERIOD * 1000) / 4;
+    const full = PERIOD * 1000;
+    xs.forEach((x, i) => {
+      const el = caps.current[i];
+      const cap = el?.getAnimations?.()[0];
+      if (!el || !cap) return;
+      const settled = amp >= 0.999;
+      el.style.animationPlayState = settled && travel ? "running" : "paused";
+      if (settled) {
+        cap.currentTime = t + ((((x / WAVELENGTH - 0.25) % 1) + 1) % 1) * full;
+        return;
+      }
+      // The wave's height here, as a fraction of the cap's full swing, turned into the time of that pose.
+      const y = -amp * Math.sin((2 * Math.PI * x) / WAVELENGTH + (2 * Math.PI * t) / full);
+      cap.currentTime = (full / (2 * Math.PI)) * Math.acos(Math.max(-1, Math.min(1, -y)));
     });
+  };
+  // The amplitude scales the wave's height inside the SVG; the stroke keeps its width.
+  useSpring(on ? 1 : 0, "defaultSpatial", (a) => {
+    g.current?.setAttribute("transform", `translate(0 ${h / 2}) scale(1 ${Math.max(FLAT, a * AMPLITUDE).toFixed(3)})`);
+    live.current.amp = Math.max(0, a);
+    syncCaps();
   });
-  const capStyle = (x: number) => ({ left: x - 2, top: "calc(50% - 2px)", animationDuration: `${PERIOD / 2}s`, animationPlayState: travel ? "running" : "paused" });
+  useLayoutEffect(syncCaps);
+  // No caps until some wave shows past the start cut (the first seconds of a long song).
+  const shown = endX > startX + 2;
+  const capStyle = (x: number) => ({ left: x - 2, top: "calc(50% - 2px)", animationDuration: `${PERIOD / 2}s` });
   return (
     <>
       <div ref={box} className="pointer-events-none absolute left-0 w-full overflow-hidden text-[var(--m3-primary)]" aria-hidden
@@ -277,7 +299,7 @@ function Wave({ pct, edge, on: playing }: { pct: number; edge: number; on: boole
       </div>
       {[startX, endX].map((x, i) => (
         <span key={i} ref={(el) => void (caps.current[i] = el)} aria-hidden
-          className={`m3-wave-cap pointer-events-none absolute h-1 w-1 rounded-full bg-[var(--m3-primary)] ${x > startX + 2 || i === 0 ? "" : "invisible"}`}
+          className={`m3-wave-cap pointer-events-none absolute h-1 w-1 rounded-full bg-[var(--m3-primary)] ${shown ? "" : "invisible"}`}
           style={capStyle(x)} />
       ))}
     </>
