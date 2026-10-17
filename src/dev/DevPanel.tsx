@@ -1,8 +1,12 @@
 import { getVersion } from "@tauri-apps/api/app";
+import { invoke } from "@tauri-apps/api/core";
 import { Download, Hand, RotateCcw, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { confirmAction } from "../components/ConfirmDialog";
 import Switch from "../components/Switch";
+import { PROVIDER_NAMES } from "../lyrics/providers";
+import { lyricsRequest, type LyricsResponse } from "../lyrics/store";
+import { usePlayer } from "../stores/player";
 import { previewOnboarding } from "../onboarding/store";
 import { flush, setAppearance, useSettings } from "../stores/settings";
 import { useUpdate, type UpdateInfo } from "../stores/update";
@@ -49,6 +53,51 @@ async function simulateFreshInstall() {
   localStorage.setItem("settings", JSON.stringify(stored));
   localStorage.setItem("dev:simulateFresh", "1");
   location.reload();
+}
+
+/**
+ * Asks every lyrics provider (in the user's order, disabled ones too) for the current track, without the cache and
+ * without stopping at the winner, and shows each one's result and time, and which would win with the current setup.
+ */
+function LyricsDebug() {
+  const track = usePlayer((s) => s.queue[s.index]);
+  const providers = useSettings((s) => s.lyricsProviders);
+  const [run, setRun] = useState<{ id: string; res: LyricsResponse | null; error?: string; busy: boolean } | null>(null);
+  const go = () => {
+    if (!track) return;
+    setRun({ id: track.id, res: null, busy: true });
+    invoke<LyricsResponse>("lyrics_get", lyricsRequest(track, providers.map((p) => p.id), true)).then(
+      (res) => setRun({ id: track.id, res, busy: false }),
+      (e) => setRun({ id: track.id, res: null, error: String(e), busy: false }),
+    );
+  };
+  // Who wins with the enabled ones, in order: the first synced, else the first unsynced.
+  const enabled = new Set(providers.filter((p) => p.enabled).map((p) => p.id));
+  const tried = run?.res?.attempts.filter((a) => enabled.has(a.provider)) ?? [];
+  const winner = tried.find((a) => a.status === "synced") ?? tried.find((a) => a.status === "unsynced");
+  return (
+    <>
+      <p className="type-body-medium truncate">{track ? `${track.title} — ${track.artists.join(", ") || track.subtitle}` : "Nothing playing"}{track?.podcast ? " (episode: never asked)" : ""}</p>
+      <div className="flex flex-wrap gap-2">
+        <button className="m3-btn m3-tonal h-10" disabled={!track || run?.busy} onClick={go}>{run?.busy ? "Asking…" : "Ask every provider"}</button>
+        <button className="m3-btn m3-outlined h-10" onClick={() => void invoke("lyrics_clear_cache")}>Clear lyrics cache</button>
+      </div>
+      {run?.error && <p className="type-body-small text-[var(--m3-error)]">{run.error}</p>}
+      {run?.res && (
+        <table className="type-body-small w-full">
+          <tbody>
+            {run.res.attempts.map((a) => (
+              <tr key={a.provider} className={a === winner ? "font-bold text-[var(--m3-primary)]" : enabled.has(a.provider) ? "" : "opacity-50"}>
+                <td>{PROVIDER_NAMES[a.provider]}{a === winner ? " ← wins" : ""}</td>
+                <td>{a.status}{a.error ? ` (${a.error})` : ""}</td>
+                <td className="text-right tabular-nums">{a.ms} ms</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -112,6 +161,9 @@ export default function DevPanel({ onClose }: { onClose: () => void }) {
             <p className="type-body-medium">lastSeenVersion: <code className="font-mono">{String(settings.lastSeenVersion)}</code></p>
             <button className="m3-btn m3-outlined h-10" onClick={() => settings.set({ lastSeenVersion: null })}><RotateCcw size={16} aria-hidden /> Reset</button>
           </div>
+        </Section>
+        <Section title="Lyrics debug">
+          <LyricsDebug />
         </Section>
         <Section title="Onboarding">
           <p className="type-body-medium">onboardingCompleted: <code className="font-mono">{String(settings.onboardingCompleted)}</code></p>
