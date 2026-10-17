@@ -486,3 +486,6 @@
 /* Wavy seek bar (Slider.tsx Wave): an endless slide by one wavelength on its own compositor layer. */
 .m3-wave { display: block; will-change: transform; animation: m3-wave linear infinite; }
 @keyframes m3-wave { from { transform: translateX(0); } to { transform: translateX(-40px); } }
+/* Round caps on the wave's cut ends: bob ±3 px like the wave under them (Slider.tsx keeps their time in step). */
+.m3-wave-cap { will-change: transform; animation: m3-wave-cap ease-in-out infinite alternate; animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
+@keyframes m3-wave-cap { from { transform: translateY(-3px); } to { transform: translateY(3px); } }

@@ -135,7 +135,7 @@ const M3_SIZES = { xs: [16, 44, 8, 6], sm: [12, 32, 6, 4], seek: [4, 16, 2, 4] }
  */
 function M3Slider(props: SliderProps) {
   const { max, label, format, tooltip = "hover", disabled, className = "", size = "xs", wavy } = props;
-  const { ref, drag, hover, shown, handlers } = useSliderInput(props);
+  const { ref, drag, hover, shown, pct, handlers } = useSliderInput(props);
   const [track, handle, corner, gap] = M3_SIZES[size];
   const dragging = drag !== null;
   // The handle narrows while held (M3 pressed state); the gap follows its edges.
@@ -165,7 +165,7 @@ function M3Slider(props: SliderProps) {
         {size !== "seek" && <div className="absolute rounded-full bg-[var(--m3-primary)]" style={{ width: 4, height: 4, right: (track - 4) / 2, top: (track - 4) / 2 }} />}
       </div>
       {wavy !== undefined && size === "seek" ? (
-        <Wave edge={edge} on={wavy} />
+        <Wave pct={pct} edge={edge} on={wavy} />
       ) : (
         <div className="absolute inset-x-0 bg-[var(--m3-primary)]"
           style={{ height: track, clipPath: `inset(0 calc((100 - var(--p)) * 1% + ${edge}px) 0 0 round ${corner}px ${inner}px ${inner}px ${corner}px)` }} />
@@ -227,25 +227,59 @@ function useGpu() {
  * pauses). It moves only while playing with the window focused and GPU rendering on; the amplitude springs to 0
  * when playback pauses, and with animations off it stays flat.
  */
-function Wave({ edge, on: playing }: { edge: number; on: boolean }) {
+function Wave({ pct, edge, on: playing }: { pct: number; edge: number; on: boolean }) {
   // With animations off the track stays flat: a wave that can't move would only look broken.
   const animations = useSettings((s) => s.appearance.animations);
   const on = playing && animations;
   const focused = useWindowFocused();
   const gpuOn = useGpu();
   const travel = on && focused && gpuOn;
+  const box = useRef<HTMLDivElement>(null);
+  const svg = useRef<SVGSVGElement>(null);
   const g = useRef<SVGGElement>(null);
+  const caps = useRef<(HTMLSpanElement | null)[]>([]);
+  const [width, setWidth] = useState(0);
   const h = AMPLITUDE * 2 + 6;
+  // The wave is cut 2 px inside its ends; a round cap sits on each cut.
+  const startX = 2;
+  const endX = (width * pct) / 100 - edge - 2;
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   // The amplitude scales the wave's height inside the SVG; the stroke keeps its width.
   useSpring(on ? 1 : 0, "defaultSpatial", (a) => g.current?.setAttribute("transform", `translate(0 ${h / 2}) scale(1 ${Math.max(FLAT, a * AMPLITUDE).toFixed(3)})`));
+  // Each cap bobs up and down with the wave under it (an eased alternate ≈ a sine): its animation's time is set
+  // from the wave's own, so they stay in step wherever the cut is; on a flat wave the cap rests in the middle.
+  useLayoutEffect(() => {
+    const wave = svg.current?.getAnimations?.()[0];
+    const t = Number(wave?.currentTime ?? 0);
+    [startX, endX].forEach((x, i) => {
+      const cap = caps.current[i]?.getAnimations?.()[0];
+      if (!cap) return;
+      const offset = ((((x / WAVELENGTH - 0.25) % 1) + 1) % 1) * PERIOD * 1000;
+      cap.currentTime = on ? t + offset : (PERIOD * 1000) / 4;
+    });
+  });
+  const capStyle = (x: number) => ({ left: x - 2, top: "calc(50% - 2px)", animationDuration: `${PERIOD / 2}s`, animationPlayState: travel ? "running" : "paused" });
   return (
-    <div className="pointer-events-none absolute left-0 w-full overflow-hidden text-[var(--m3-primary)]" aria-hidden
-      style={{ height: h, clipPath: `inset(0 calc((100 - var(--p)) * 1% + ${edge + 2}px) 0 0)` }}>
-      <svg className="m3-wave" width={WAVE_WIDTH + WAVELENGTH} height={h} style={{ animationDuration: `${PERIOD}s`, animationPlayState: travel ? "running" : "paused" }}>
-        <g ref={g} transform={`translate(0 ${h / 2}) scale(1 ${on ? AMPLITUDE : FLAT})`}>
-          <path d={WAVE_PATH} fill="none" stroke="currentColor" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-        </g>
-      </svg>
-    </div>
+    <>
+      <div ref={box} className="pointer-events-none absolute left-0 w-full overflow-hidden text-[var(--m3-primary)]" aria-hidden
+        style={{ height: h, clipPath: `inset(0 calc((100 - var(--p)) * 1% + ${edge + 2}px) 0 ${startX}px)` }}>
+        <svg ref={svg} className="m3-wave" width={WAVE_WIDTH + WAVELENGTH} height={h} style={{ animationDuration: `${PERIOD}s`, animationPlayState: travel ? "running" : "paused" }}>
+          <g ref={g} transform={`translate(0 ${h / 2}) scale(1 ${on ? AMPLITUDE : FLAT})`}>
+            <path d={WAVE_PATH} fill="none" stroke="currentColor" strokeWidth={4} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          </g>
+        </svg>
+      </div>
+      {[startX, endX].map((x, i) => (
+        <span key={i} ref={(el) => void (caps.current[i] = el)} aria-hidden
+          className={`m3-wave-cap pointer-events-none absolute h-1 w-1 rounded-full bg-[var(--m3-primary)] ${x > startX + 2 || i === 0 ? "" : "invisible"}`}
+          style={capStyle(x)} />
+      ))}
+    </>
   );
 }
