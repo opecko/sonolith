@@ -1,8 +1,6 @@
 import { Maximize2, Minimize2, MicVocal, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward } from "lucide-react";
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { getLyrics } from "../../api/ytm";
-import type { BrowseRef } from "../../api/types";
 import AutoplayToggle from "../../components/AutoplayToggle";
 import PlaybackError from "../../components/PlaybackError";
 import { PlayIcon, SkipSeconds } from "../../components/PlayerBar";
@@ -13,10 +11,10 @@ import Thumb from "../../components/Thumb";
 import { Byline } from "../../components/TrackByline";
 import { useTransportTitles } from "../../shortcuts/hint";
 import { UiStyleScope } from "../../components/UiStyle";
-import { useAsync } from "../../hooks/useData";
 import { Spring, useSwap } from "../../motion";
 import { usePlayer, type Repeat as RepeatMode } from "../../stores/player";
 import { CloseNowPlaying, CoverArt, PodcastMode, SeekBar, TrackActions, TrackLinks, useCurrentTrack } from "./parts";
+import LyricsView from "../../lyrics/LyricsView";
 import { LyricsTab, RelatedTab, UpNextTab, useTrackExtras } from "./shared";
 
 function Tile({ area, className = "", children, label }: { area: string; className?: string; children: ReactNode; label?: string }) {
@@ -98,15 +96,12 @@ function QueuePreview() {
   );
 }
 
-/** The first lines of the lyrics, as many as the tile has room for, fading out; the full text opens in the big tile. */
-function LyricsPreview({ videoId, target }: { videoId: string; target: BrowseRef }) {
-  const { data } = useAsync(`lyrics:${videoId}`, () => getLyrics(target));
-  if (data === undefined) return <p className="type-body-medium text-[var(--m3-on-surface-variant)]">Loading lyrics…</p>;
-  if (!data) return <p className="type-body-medium text-[var(--m3-on-surface-variant)]">Lyrics aren't available for this song.</p>;
+/** The lyrics in a tile: synced ones follow the song (the current line near the top), plain ones fade out. */
+function LyricsPreview() {
   return (
-    <p className="bento-lyrics-text type-body-large min-h-0 flex-1 overflow-hidden whitespace-pre-line" style={{ maskImage: "linear-gradient(180deg, #000 55%, transparent)" }}>
-      {data.text.split("\n").slice(0, 40).join("\n")}
-    </p>
+    <div className="bento-lyrics-text no-scrollbar min-h-0 flex-1 overflow-y-auto" style={{ maskImage: "linear-gradient(180deg, #000 55%, transparent)" }}>
+      <LyricsView size="preview" />
+    </div>
   );
 }
 
@@ -154,7 +149,7 @@ function Expanded({ onClose }: { onClose: () => void }) {
         <h2 className="type-title-large-em">{title}</h2>
         <button className="m3-btn m3-tonal h-10" onClick={onClose}><Minimize2 size={18} aria-hidden /> Collapse</button>
       </header>
-      {videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} videoId={videoId} target={lyrics} /></div>}
+      {videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} /></div>}
     </section>
   );
 }
@@ -294,7 +289,7 @@ export default function BentoLayout() {
               </Tile>
               {lyrics && videoId && (
                 <Tile area="lyrics" label="Lyrics" className="flex min-h-0 flex-col gap-3">
-                  <LyricsPreview videoId={videoId} target={lyrics} />
+                  <LyricsPreview />
                   <button className="m3-btn m3-tonal h-10 shrink-0 self-start" onClick={() => setBig(true)}><MicVocal size={18} aria-hidden /> Lyrics</button>
                 </Tile>
               )}

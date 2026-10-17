@@ -107,7 +107,7 @@ export default function MaterialLayout() {
             </header>
             <div className="flex min-h-0 flex-1 flex-col px-3 pb-3">
               {tab === "upnext" && <div className="flex min-h-0 flex-1 flex-col pt-2"><UpNextTab /></div>}
-              {tab === "lyrics" && videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} videoId={videoId} target={lyrics} /></div>}
+              {tab === "lyrics" && videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} /></div>}
               {tab === "related" && videoId && related && <div className="scroll-y min-h-0 flex-1 pr-1"><RelatedTab key={videoId} videoId={videoId} target={related} /></div>}
             </div>
           </div>

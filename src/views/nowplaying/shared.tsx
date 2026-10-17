@@ -1,21 +1,26 @@
 import type { BrowseRef } from "../../api/types";
-import { getLyrics, getRelated } from "../../api/ytm";
+import { getRelated } from "../../api/ytm";
 import AutoplayToggle from "../../components/AutoplayToggle";
 import { QueueChips } from "../../components/QueueChips";
 import QueueList from "../../components/QueueList";
 import { Shelves } from "../../components/Shelves";
 import { EmptyState, ErrorBox, Loading } from "../../components/Status";
 import { useAsync } from "../../hooks/useData";
+import LyricsView from "../../lyrics/LyricsView";
+import { useLyrics } from "../../lyrics/store";
 import { usePlayer } from "../../stores/player";
 
 /** Now Playing panels shared by every layout: the queue, lyrics and related music of the current track. */
 export type Tab = "upnext" | "related" | "lyrics";
 
-/** The lyrics / related browse targets of the current track, once /next has them (undefined = not available). */
+/**
+ * The current track's related-music target, once /next has it (undefined = none), and whether it has lyrics (from
+ * any enabled provider or YouTube Music's own, lyrics/store.ts).
+ */
 export function useTrackExtras() {
   const videoId = usePlayer((s) => s.queue[s.index]?.id);
   const related = usePlayer((s) => (s.watch?.videoId === videoId ? s.watch?.related : undefined));
-  const lyrics = usePlayer((s) => (s.watch?.videoId === videoId ? s.watch?.lyrics : undefined));
+  const lyrics = useLyrics((s) => s.id === videoId && !!s.data);
   return { videoId, related, lyrics };
 }
 
@@ -50,16 +55,6 @@ export function RelatedTab({ videoId, target }: { videoId: string; target: Brows
   return <Shelves shelves={data} />;
 }
 
-export function LyricsTab({ videoId, target }: { videoId: string; target: BrowseRef }) {
-  const { data, error, reload } = useAsync(`lyrics:${videoId}`, () => getLyrics(target));
-  if (error) return <ErrorBox error={error} onRetry={reload} />;
-  if (data === undefined) return <Loading variant="list" label="Loading lyrics" />;
-  if (!data) return <EmptyState title="Lyrics aren't available" />;
-  return (
-    <div className="px-2">
-      <p className="select-text whitespace-pre-wrap text-lg leading-8">{data.text}</p>
-      {data.source && <p className="mt-6 text-xs text-[var(--c-text-subtle)]">{data.source}</p>}
-    </div>
-  );
-}
+/** The lyrics tab / panel: synced when a provider has them. */
+export const LyricsTab = LyricsView;
 

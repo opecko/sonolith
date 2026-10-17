@@ -65,7 +65,7 @@ function SidePanel() {
       <div role="tabpanel" className={`min-h-0 flex-1 will-change-transform ${active === "upnext" ? "flex flex-col" : "scroll-y pr-1"}`}>
         {active === "upnext" && <UpNextTab />}
         {active === "related" && videoId && related && <RelatedTab key={videoId} videoId={videoId} target={related} />}
-        {active === "lyrics" && videoId && lyrics && <LyricsTab key={videoId} videoId={videoId} target={lyrics} />}
+        {active === "lyrics" && videoId && lyrics && <LyricsTab key={videoId} />}
       </div>
     </section>
   );

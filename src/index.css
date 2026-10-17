@@ -98,6 +98,20 @@ button:disabled { cursor: default; }
 .row-hit:focus-visible { outline: none; }
 :root[data-keyboard-nav] .row-hit:focus-visible::after { outline: 2px solid var(--c-focus); outline-offset: -2px; }
 .row-above .track-link { position: relative; }
+/* Synced lyrics (lyrics/LyricsView): lines dim, the current one bright, sung words bright on word-synced lines.
+   Only colors change, with no transition (WebKitGTK); the scroll is a spring on the scroller. */
+.lyrics-synced { display: flex; flex-direction: column; gap: 0.55em; font-size: 1.5rem; line-height: 1.3; font-weight: 700; }
+.lyrics-synced li { color: var(--c-text-subtle); cursor: pointer; border-radius: var(--radius); }
+.lyrics-synced li:hover { color: var(--c-text-muted); }
+.lyrics-synced li[data-past] { color: color-mix(in srgb, var(--c-text-subtle) 80%, transparent); }
+.lyrics-synced li[data-active] { color: var(--c-text); }
+.lyrics-synced li[data-active] [data-w] { color: var(--c-text-subtle); }
+.lyrics-synced li[data-active] [data-w][data-on] { color: var(--c-text); }
+.lyrics-synced.lyrics-preview { font-size: 1.125rem; gap: 0.4em; padding-bottom: 50%; }
+[data-ui-style="m3"] .lyrics-synced li { color: color-mix(in srgb, var(--m3-on-surface) 38%, transparent); }
+[data-ui-style="m3"] .lyrics-synced li[data-active],
+[data-ui-style="m3"] .lyrics-synced li[data-active] [data-w][data-on] { color: var(--m3-on-surface); }
+[data-ui-style="m3"] .lyrics-synced li[data-active] [data-w] { color: color-mix(in srgb, var(--m3-on-surface) 38%, transparent); }
 /* Artist / album names in a byline (TrackByline). */
 .track-link { cursor: pointer; border-radius: 2px; }
 .track-link:hover { text-decoration: underline; }
