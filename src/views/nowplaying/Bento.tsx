@@ -1,5 +1,5 @@
 import { Maximize2, Minimize2, MicVocal, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward } from "lucide-react";
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { getLyrics } from "../../api/ytm";
 import type { BrowseRef } from "../../api/types";
@@ -159,6 +159,58 @@ function Expanded({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** The queue's two panes, memoized: switching Up next ↔ Related re-renders neither. */
+const UpNextPane = memo(function UpNextPane({ open }: { open: boolean }) {
+  return open ? <div className="flex min-h-0 flex-1 flex-col"><UpNextTab /></div> : <div className="min-h-0 flex-1 overflow-hidden"><QueuePreview /></div>;
+});
+const RelatedPane = memo(RelatedTab);
+
+/**
+ * Up next | Related in one tile. Its own component, so a switch re-renders only this tile's header. Both panes stay
+ * mounted once shown and only their visibility flips (stacked in one grid cell: a switch lays nothing out and
+ * mounts nothing); Related (whole shelves of cards) mounts hidden first and the switch waits two frames, so that
+ * work never lands in the animation's frames.
+ */
+const QueueTile = memo(function QueueTile({ open, onToggle, tileRef }: { open: boolean; onToggle: () => void; tileRef: RefObject<HTMLElement | null> }) {
+  const { videoId, related } = useTrackExtras();
+  const queueLeft = usePlayer((s) => Math.max(0, s.queue.length - s.index - 1));
+  const [tab, setTab] = useState<"upnext" | "related">("upnext");
+  const view = tab === "related" && !related ? "upnext" : tab;
+  const swap = useSwap(view, view === "related" ? 1 : -1);
+  const [relatedMounted, setRelatedMounted] = useState(false);
+  const setView = (v: "upnext" | "related") => {
+    if (v === "related" && !relatedMounted) {
+      setRelatedMounted(true);
+      requestAnimationFrame(() => requestAnimationFrame(() => setTab("related")));
+    } else setTab(v);
+  };
+  return (
+    <section ref={tileRef} aria-label={view === "related" ? "Related" : "Up next"} className={`bento-tile np-glass bento-queue flex min-h-0 flex-col overflow-hidden ${open ? "bento-queue-open" : ""}`}>
+      <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
+        <div className="m3-segmented flex" role="tablist" aria-label="Up next or related">
+          <button role="tab" className="m3-seg" aria-pressed={view === "upnext"} aria-selected={view === "upnext"} onClick={() => setView("upnext")}>
+            Up next{queueLeft ? <span className="opacity-70">{queueLeft}</span> : null}
+          </button>
+          {related && <button role="tab" className="m3-seg" aria-pressed={view === "related"} aria-selected={view === "related"} onClick={() => setView("related")}>Related</button>}
+        </div>
+        <button className="icon-btn m3-icon-tonal h-10 w-10" onClick={onToggle} aria-expanded={open} aria-label={open ? "Collapse" : "Show all"} title={open ? "Collapse" : "Show all"}>
+          {open ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+        </button>
+      </header>
+      <div ref={swap} role="tabpanel" className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] [&>*]:[grid-area:1/1]">
+        <div className={`flex min-h-0 flex-col ${view === "upnext" ? "" : "invisible"}`} inert={view !== "upnext"}>
+          <UpNextPane open={open} />
+        </div>
+        {relatedMounted && videoId && related && (
+          <div className={`scroll-y min-h-0 pr-1 ${view === "related" ? "" : "invisible"}`} inert={view !== "related"}>
+            <RelatedPane key={videoId} videoId={videoId} target={related} />
+          </div>
+        )}
+      </div>
+    </section>
+  );
+});
+
 /**
  * Bento layout: M3 surface-container tiles. The cover, square and as tall as the view; beside it a column with the
  * track info (big title, artist · album, like/dislike/⋮, playback errors) and the controls (seek bar, the five
@@ -170,23 +222,21 @@ function Expanded({ onClose }: { onClose: () => void }) {
  */
 export default function BentoLayout() {
   const track = useCurrentTrack();
-  const { videoId, related, lyrics } = useTrackExtras();
+  const { videoId, lyrics } = useTrackExtras();
   const { contextTitle, status, error, podcast } = usePlayer(
     useShallow((s) => ({ contextTitle: s.context.title || s.watch?.header?.subtitle, status: s.status, error: s.error, podcast: !!s.queue[s.index]?.podcast })),
   );
   // Full lyrics in the big tile; Up next and Related share the right column's first tile.
   const [big, setBig] = useState(false);
   const expanded = big && !!lyrics;
-  const [tab, setView] = useState<"upnext" | "related">("upnext");
-  const view = tab === "related" && !related ? "upnext" : tab;
-  const swap = useSwap(view, view === "related" ? 1 : -1);
   const [queueOpen, setQueueOpen] = useState(false);
   const queueTile = useHeightSpring<HTMLElement>(queueOpen);
-  const queueLeft = usePlayer((s) => Math.max(0, s.queue.length - s.index - 1));
-  const toggleQueue = () => {
+  // Stable, so the memoized queue tile doesn't re-render with the rest of the layout.
+  const toggleQueue = useCallback(() => {
     queueTile.before();
     setQueueOpen((o) => !o);
-  };
+  }, []);
+
   return (
     <UiStyleScope value="m3" className="np-bento relative flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="scroll-y min-h-0 flex-1 px-6 pt-6">
@@ -225,24 +275,7 @@ export default function BentoLayout() {
                   {podcast && <PodcastSpeed />}
                 </div>
               </Tile>
-              <section ref={queueTile.ref} aria-label={view === "related" ? "Related" : "Up next"} className={`bento-tile np-glass bento-queue flex min-h-0 flex-col overflow-hidden ${queueOpen ? "bento-queue-open" : ""}`}>
-                <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
-                  <div className="m3-segmented flex" role="tablist" aria-label="Up next or related">
-                    <button role="tab" className="m3-seg" aria-pressed={view === "upnext"} aria-selected={view === "upnext"} onClick={() => setView("upnext")}>
-                      Up next{queueLeft ? <span className="opacity-70">{queueLeft}</span> : null}
-                    </button>
-                    {related && <button role="tab" className="m3-seg" aria-pressed={view === "related"} aria-selected={view === "related"} onClick={() => setView("related")}>Related</button>}
-                  </div>
-                  <button className="icon-btn m3-icon-tonal h-10 w-10" onClick={toggleQueue} aria-expanded={queueOpen} aria-label={queueOpen ? "Collapse" : "Show all"} title={queueOpen ? "Collapse" : "Show all"}>
-                    {queueOpen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                  </button>
-                </header>
-                <div ref={swap} role="tabpanel" className="flex min-h-0 flex-1 flex-col">
-                  {view === "related" && videoId && related ? (
-                    <div className="scroll-y min-h-0 flex-1 pr-1"><RelatedTab key={videoId} videoId={videoId} target={related} /></div>
-                  ) : queueOpen ? <div className="flex min-h-0 flex-1 flex-col"><UpNextTab /></div> : <div className="min-h-0 flex-1 overflow-hidden"><QueuePreview /></div>}
-                </div>
-              </section>
+              <QueueTile open={queueOpen} onToggle={toggleQueue} tileRef={queueTile.ref} />
             </div>
           )}
           {expanded && <Expanded onClose={() => setBig(false)} />}
