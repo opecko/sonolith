@@ -26,6 +26,8 @@ export interface Settings {
   onboardingCompleted: boolean;
   /** Lyrics providers, highest priority first, each on or off (Settings → Lyrics providers). */
   lyricsProviders: ProviderSetting[];
+  /** Lyrics on at all (Settings → Lyrics): off hides them everywhere and asks no provider. */
+  lyricsEnabled: boolean;
   /** How word-synced lyrics show the sung words (Settings → Lyrics); Simple whenever animations are off. */
   karaokeStyle: KaraokeStyle;
   /** When a podcast episode ends with nothing queued after it: the show's next episode, or stop. */
@@ -35,7 +37,7 @@ export interface Settings {
 }
 
 const KEY = "settings";
-const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS, karaokeStyle: "sweep" };
+const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS, karaokeStyle: "sweep", lyricsEnabled: true };
 
 /** Stored JSON → Settings. Missing keys (older versions) get the defaults; normalizing drops malformed values. */
 export function parseSettings(stored: unknown): Settings {
@@ -53,6 +55,7 @@ export function parseSettings(stored: unknown): Settings {
     afterEpisode: s.afterEpisode === "stop" ? "stop" : "next",
     lyricsProviders: normalizeLyricsProviders(s.lyricsProviders),
     karaokeStyle: normalizeKaraoke(s.karaokeStyle),
+    lyricsEnabled: s.lyricsEnabled !== false,
   };
 }
 
@@ -72,8 +75,8 @@ function read(): Settings {
 
 function write() {
   try {
-    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle } = useSettings.getState();
-    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle }));
+    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled } = useSettings.getState();
+    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled }));
   } catch {
     /* storage unavailable */
   }

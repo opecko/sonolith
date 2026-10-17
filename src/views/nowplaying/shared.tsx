@@ -8,6 +8,7 @@ import { EmptyState, ErrorBox, Loading } from "../../components/Status";
 import { useAsync } from "../../hooks/useData";
 import LyricsView from "../../lyrics/LyricsView";
 import { useLyrics } from "../../lyrics/store";
+import { useSettings } from "../../stores/settings";
 import { usePlayer } from "../../stores/player";
 
 /** Now Playing panels shared by every layout: the queue, lyrics and related music of the current track. */
@@ -20,7 +21,8 @@ export type Tab = "upnext" | "related" | "lyrics";
 export function useTrackExtras() {
   const videoId = usePlayer((s) => s.queue[s.index]?.id);
   const related = usePlayer((s) => (s.watch?.videoId === videoId ? s.watch?.related : undefined));
-  const lyrics = useLyrics((s) => s.id === videoId && !!s.data);
+  const on = useSettings((s) => s.lyricsEnabled);
+  const lyrics = useLyrics((s) => s.id === videoId && !!s.data) && on;
   return { videoId, related, lyrics };
 }
 

@@ -94,7 +94,7 @@ function waitForWatch(id: string): Promise<import("../api/types").BrowseRef | un
 
 /**
  * Lyrics follow the playing track while Now Playing is open and the window is visible (nothing is fetched for a
- * hidden window or a closed Now Playing); podcast episodes have none. Changing the providers fetches again.
+ * hidden window, a closed Now Playing or lyrics turned off); podcast episodes have none. Changing the providers fetches again.
  */
 function ensure(force = false) {
   const track = usePlayer.getState().queue[usePlayer.getState().index];
@@ -103,7 +103,7 @@ function ensure(force = false) {
     if (useLyrics.getState().id !== track.id) useLyrics.setState({ id: track.id, status: "done", data: null });
     return;
   }
-  if (!useUi.getState().nowPlaying || document.hidden) return;
+  if (!useUi.getState().nowPlaying || document.hidden || !useSettings.getState().lyricsEnabled) return;
   const s = useLyrics.getState();
   if (!force && s.id === track.id && s.status !== "idle") return;
   void load(track);
@@ -122,6 +122,8 @@ export function initLyrics() {
   });
   useUi.subscribe((s, p) => s.nowPlaying !== p.nowPlaying && ensure());
   useSettings.subscribe((s, p) => {
+    // Turned back on: fetched now (or when Now Playing next opens).
+    if (s.lyricsEnabled !== p.lyricsEnabled) return void (s.lyricsEnabled && ensure());
     if (s.lyricsProviders === p.lyricsProviders) return;
     // Another order or set of providers: fetched again (now, or when Now Playing next opens).
     useLyrics.setState({ status: "idle" });
