@@ -11,13 +11,13 @@ describe("search", () => {
     expect(res.top[0].art).toBe("round");
   });
 
-  it("groups loose single-item sections by item type, not locale labels", () => {
+  it("groups loose single-item sections by item type, not locale labels, in the response's order", () => {
     expect(res.groups.map((g) => [g.id, g.items.map((i) => i.id)])).toEqual([
-      ["songs", ["vid0000000M"]],
       ["albums", ["MPREcur"]],
+      ["songs", ["vid0000000M"]],
       ["videos", ["vid0000000V"]],
     ]);
-    expect(res.groups[0].items[0]).toMatchObject({ kind: "Skladba", artists: ["Tame Impala"] });
+    expect(res.groups.find((g) => g.id === "songs")!.items[0]).toMatchObject({ kind: "Skladba", artists: ["Tame Impala"] });
     expect(res.shelves).toEqual([]);
   });
 
