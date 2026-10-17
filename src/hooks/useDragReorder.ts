@@ -88,7 +88,12 @@ export function useDragReorder<T extends HTMLElement>(onMove: (from: number, to:
       if (to !== from) move.current(from, to);
     };
     const pmove = (ev: PointerEvent) => void (y = ev.clientY);
-    const up = () => end(true);
+    // The slot where the pointer is let go, even if no frame ran since it last moved (a quick flick).
+    const up = (ev: PointerEvent) => {
+      y = ev.clientY;
+      locate();
+      end(true);
+    };
     const cancel = () => end(false);
     handle.addEventListener("pointermove", pmove);
     handle.addEventListener("pointerup", up);
