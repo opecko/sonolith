@@ -1,5 +1,6 @@
 // Raw InnerTube calls shared by the app (ytm.ts) and scripts/dbg.ts.
 import { bestThumb, flattenPage, mapRawItem, parseBrowse, runsText } from "./raw";
+import { isPodcastSearch, podcastsFirst } from "./searchOrder";
 import type {
   BrowsePage, BrowseRef, Continuation, Item, LibrarySection, SearchGroup, SearchResults, Suggestions,
 } from "./types";
@@ -34,7 +35,6 @@ export async function libraryPage(exec: Exec, section: LibrarySection, next?: Co
   return { ...flat, next: flat.next && flat.next !== next ? flat.next : null };
 }
 
-const GROUP_ORDER: SearchGroup[] = ["songs", "albums", "artists", "playlists", "videos", "podcasts", "episodes"];
 
 export function groupOf(i: Item): SearchGroup {
   switch (i.type) {
@@ -49,7 +49,8 @@ export function groupOf(i: Item): SearchGroup {
   }
 }
 
-export function toSearchResults(page: BrowsePage): SearchResults {
+/** Search results; with the query, a podcast search gets its podcast groups first (searchOrder.ts). */
+export function toSearchResults(page: BrowsePage, query = ""): SearchResults {
   const top = page.shelves.filter((s) => s.layout === "card").flatMap((s) => s.items);
   const topActions = page.shelves.find((s) => s.layout === "card")?.actions ?? [];
   const shelves = page.shelves.filter((s) => s.layout !== "card" && s.title && s.items.length);
@@ -57,11 +58,16 @@ export function toSearchResults(page: BrowsePage): SearchResults {
   const buckets = new Map<SearchGroup, Item[]>();
   for (const i of loose) buckets.set(groupOf(i), [...(buckets.get(groupOf(i)) ?? []), i]);
   const next = page.shelves.find((s) => s.next)?.next ?? page.next;
+  // In YouTube Music's order (the order the groups first appear), unless it's a search for a podcast.
+  const inOrder = [...buckets.keys()].map((id) => ({ id, items: buckets.get(id)! }));
+  const podcastFirst = isPodcastSearch(query, top, inOrder);
+  const groups = podcastFirst ? podcastsFirst(inOrder) : inOrder;
   return {
     top,
     topActions,
     shelves,
-    groups: GROUP_ORDER.filter((g) => buckets.has(g)).map((id) => ({ id, items: buckets.get(id)! })),
+    groups,
+    podcastFirst,
     chips: page.chips,
     messages: page.messages,
     next: next ?? null,
@@ -70,7 +76,7 @@ export function toSearchResults(page: BrowsePage): SearchResults {
 
 export async function searchPage(exec: Exec, query: string, params?: string, next?: Continuation): Promise<SearchResults> {
   const body = next ? { continuation: next } : { query, ...(params ? { params } : {}) };
-  const res = toSearchResults(parseBrowse(await exec("/search", body)));
+  const res = toSearchResults(parseBrowse(await exec("/search", body)), query);
   // Only filtered (single-type) results page; the mixed overview is complete as returned.
   return { ...res, next: params && res.next && res.next !== next ? res.next : null };
 }

@@ -144,6 +144,8 @@ export interface SearchResults {
   /** Server-titled shelves (e.g. "Poslechnout znovu"). */
   shelves: Shelf[];
   groups: { id: SearchGroup; items: Item[] }[];
+  /** A search for a podcast: its groups come first and show above everything else (searchOrder.ts). */
+  podcastFirst?: boolean;
   chips: Chip[];
   messages: string[];
   next: Continuation | null;

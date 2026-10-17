@@ -2,6 +2,7 @@ import { ListPlus, Play, Radio, Shuffle } from "lucide-react";
 import { useState } from "react";
 import type { CardAction, Chip, Item, Page, SearchGroup, SearchResults, Track } from "../api/types";
 import { search } from "../api/ytm";
+import { EpisodeRow } from "../components/Episode";
 import ItemMenu, { playlistEntries } from "../components/ItemMenu";
 import LoadMore from "../components/LoadMore";
 import Menu from "../components/Menu";
@@ -11,7 +12,7 @@ import Thumb from "../components/Thumb";
 import TrackList from "../components/TrackList";
 import { Byline } from "../components/TrackByline";
 import { useAsync, usePaged } from "../hooks/useData";
-import { activateItem } from "../stores/actions";
+import { activateItem, playEpisode } from "../stores/actions";
 import { usePlayer } from "../stores/player";
 
 const GROUP_TITLE: Record<SearchGroup, string> = {
@@ -102,11 +103,33 @@ function TopResult({ items, actions }: { items: Item[]; actions: CardAction[] })
   );
 }
 
+function Group({ g }: { g: SearchResults["groups"][number] }) {
+  // Episodes get episode rows (date, length, progress) and play on their own, never as a song radio.
+  if (g.id === "episodes")
+    return (
+      <section className="mb-8">
+        <h2 className="mb-4 text-xl font-bold">{GROUP_TITLE[g.id]}</h2>
+        <ol>{(g.items as Track[]).map((t, i) => <EpisodeRow key={`${t.id}:${i}`} track={t} onPlay={() => playEpisode(t)} />)}</ol>
+      </section>
+    );
+  if (g.id === "songs" || g.id === "videos")
+    return (
+      <section className="mb-8">
+        <h2 className="mb-4 text-xl font-bold">{GROUP_TITLE[g.id]}</h2>
+        <TrackList tracks={g.items as Track[]} radio />
+      </section>
+    );
+  return <ShelfRow shelf={{ title: GROUP_TITLE[g.id], items: g.items, layout: "carousel" }} />;
+}
+
 function Overview({ res }: { res: SearchResults }) {
   const empty = !res.top.length && !res.shelves.length && !res.groups.length;
   if (empty) return <EmptyState title="No results" detail={res.messages.join(" ") || "Try a different search."} />;
+  // A search for a podcast: its shows and episodes come first, above everything else.
+  const lead = res.podcastFirst && !res.top.length ? res.groups.filter((g) => g.id === "podcasts" || g.id === "episodes") : [];
   return (
     <>
+      {lead.map((g) => <Group key={g.id} g={g} />)}
       <TopResult items={res.top} actions={res.topActions} />
       {res.shelves.map((s, i) => (
         <section key={`${s.title}:${i}`} className="mb-8">
@@ -114,16 +137,7 @@ function Overview({ res }: { res: SearchResults }) {
           {s.items.every(isTrack) ? <TrackList tracks={s.items as Track[]} radio /> : <ShelfRow shelf={{ ...s, title: "" }} />}
         </section>
       ))}
-      {res.groups.map((g) =>
-        g.id === "songs" || g.id === "videos" || g.id === "episodes" ? (
-          <section key={g.id} className="mb-8">
-            <h2 className="mb-4 text-xl font-bold">{GROUP_TITLE[g.id]}</h2>
-            <TrackList tracks={g.items as Track[]} radio />
-          </section>
-        ) : (
-          <ShelfRow key={g.id} shelf={{ title: GROUP_TITLE[g.id], items: g.items, layout: "carousel" }} />
-        ),
-      )}
+      {res.groups.filter((g) => !lead.includes(g)).map((g) => <Group key={g.id} g={g} />)}
     </>
   );
 }
