@@ -1,5 +1,6 @@
 //! Synced lyrics from several providers (YouTube Music, Better Lyrics, Unison, LyricsPlus, KuGou, LRCLIB): all
-//! enabled ones are asked in parallel (4 s each, KuGou 7 s), the user's order decides (select.rs), results are cached per
+//! enabled ones are asked in parallel (4 s each, KuGou 7 s); the best answer so far goes out as it arrives (word-synced,
+//! then line-synced, then unsynced; the user's order within a tier, select.rs), results are cached per
 //! video id (cache.rs). Requests come from here, not the webview: no CORS, one HTTP client.
 
 mod cache;
@@ -11,9 +12,10 @@ mod select;
 
 use cache::{Cache, Cached};
 use model::{Lyrics, Request};
-use select::{decide, Decision, Outcome};
+use select::{decide, Outcome};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
+use tauri::ipc::Channel;
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_http::reqwest::Client;
 use tokio::task::JoinSet;
@@ -48,14 +50,14 @@ pub struct GetArgs {
 #[serde(rename_all = "camelCase")]
 pub struct Attempt {
     provider: String,
-    /// synced | unsynced | none | error | timeout | skipped (a higher one had already won)
+    /// word-synced | line-synced | unsynced | none | error | timeout | skipped (the answer was settled without it)
     status: String,
     ms: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LyricsResponse {
     provider: Option<String>,
@@ -67,7 +69,7 @@ pub struct LyricsResponse {
 }
 
 #[tauri::command]
-pub async fn lyrics_get(state: State<'_, LyricsState>, args: GetArgs) -> Result<LyricsResponse, String> {
+pub async fn lyrics_get(state: State<'_, LyricsState>, args: GetArgs, on_update: Channel<LyricsResponse>) -> Result<LyricsResponse, String> {
     let sources: Vec<_> = args.providers.iter().filter_map(|id| providers::source(id)).collect();
     let setup = sources.iter().map(|s| s.id()).collect::<Vec<_>>().join(",");
     if sources.is_empty() || args.req.video_id.is_empty() {
@@ -90,22 +92,32 @@ pub async fn lyrics_get(state: State<'_, LyricsState>, args: GetArgs) -> Result<
     }
     let mut results: Vec<Option<Outcome>> = vec![None; sources.len()];
     let mut times: Vec<Option<u64>> = vec![None; sources.len()];
-    let mut decision = Decision::Wait;
+    let mut shown: Option<usize> = None;
+    let answer = |i: usize, results: &[Option<Outcome>]| match &results[i] {
+        Some(Outcome::Found { lyrics, source }) => (Some(sources[i].id().to_string()), Some(lyrics.clone()), source.clone()),
+        _ => (None, None, None),
+    };
     while let Some(joined) = set.join_next().await {
         let Ok((i, out, ms)) = joined else { continue };
         results[i] = Some(out);
         times[i] = Some(ms);
-        decision = decide(&results.iter().map(Option::as_ref).collect::<Vec<_>>());
-        // The winner is known: lower providers can stop (the debug view waits for everyone).
-        if !args.debug && decision != Decision::Wait {
+        let d = decide(&results.iter().map(Option::as_ref).collect::<Vec<_>>());
+        // A better answer than the one already sent: the view upgrades in place.
+        if d.best != shown {
+            if let Some(b) = d.best {
+                let (provider, lyrics, source) = answer(b, &results);
+                let _ = on_update.send(LyricsResponse { provider, lyrics, source, cached: false, attempts: Vec::new() });
+            }
+            shown = d.best;
+        }
+        // Nothing still running can beat the best: lower providers can stop (the debug view waits for everyone).
+        if !args.debug && d.settled {
             set.abort_all();
             break;
         }
     }
-    if decision == Decision::Wait {
-        decision = decide(&results.iter().map(|r| Some(r.as_ref().unwrap_or(&Outcome::Timeout))).collect::<Vec<_>>());
-    }
 
+    let best = decide(&results.iter().map(|r| Some(r.as_ref().unwrap_or(&Outcome::Timeout))).collect::<Vec<_>>()).best;
     let attempts = sources
         .iter()
         .enumerate()
@@ -119,13 +131,7 @@ pub async fn lyrics_get(state: State<'_, LyricsState>, args: GetArgs) -> Result<
             },
         })
         .collect();
-    let (provider, lyrics, source) = match decision {
-        Decision::Pick(i) => match results[i].take() {
-            Some(Outcome::Found { lyrics, source }) => (Some(sources[i].id().to_string()), Some(lyrics), source),
-            _ => (None, None, None),
-        },
-        _ => (None, None, None),
-    };
+    let (provider, lyrics, source) = best.map_or((None, None, None), |b| answer(b, &results));
     // Errors and timeouts aren't "not found": only cache what every provider actually answered.
     let all_answered = results.iter().all(|r| matches!(r, None | Some(Outcome::Found { .. }) | Some(Outcome::NotFound)));
     if !args.debug && (lyrics.is_some() || all_answered) {

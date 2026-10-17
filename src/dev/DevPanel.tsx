@@ -4,6 +4,7 @@ import { Download, Hand, RotateCcw, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { confirmAction } from "../components/ConfirmDialog";
 import Switch from "../components/Switch";
+import { pickWinner } from "../lyrics/pick";
 import { PROVIDER_NAMES } from "../lyrics/providers";
 import { lyricsRequest, type LyricsResponse } from "../lyrics/store";
 import { usePlayer } from "../stores/player";
@@ -71,10 +72,11 @@ function LyricsDebug() {
       (e) => setRun({ id: track.id, res: null, error: String(e), busy: false }),
     );
   };
-  // Who wins with the enabled ones, in order: the first synced, else the first unsynced.
+  // Who wins with the enabled ones: the highest tier, then the order.
   const enabled = new Set(providers.filter((p) => p.enabled).map((p) => p.id));
   const tried = run?.res?.attempts.filter((a) => enabled.has(a.provider)) ?? [];
-  const winner = tried.find((a) => a.status === "synced") ?? tried.find((a) => a.status === "unsynced");
+  const pick = pickWinner(tried);
+  const winner = pick ? tried[pick.index] : undefined;
   return (
     <>
       <p className="type-body-medium truncate">{track ? `${track.title} — ${track.artists.join(", ") || track.subtitle}` : "Nothing playing"}{track?.podcast ? " (episode: never asked)" : ""}</p>
@@ -96,6 +98,7 @@ function LyricsDebug() {
           </tbody>
         </table>
       )}
+      {run?.res && <p className="type-body-small text-[var(--m3-on-surface-variant)]">{winner ? `${PROVIDER_NAMES[winner.provider]} wins: ${pick!.reason}.` : "No enabled provider has lyrics."}</p>}
     </>
   );
 }

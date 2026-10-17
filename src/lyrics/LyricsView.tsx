@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { EmptyState, Loading } from "../components/Status";
 import { Spring, ticker } from "../motion";
 import { onPlaybackTick, playbackTime, usePlayer } from "../stores/player";
@@ -17,7 +17,8 @@ const MANUAL_SCROLL_MS = 4000;
  */
 function SyncedLines({ lines, size }: { lines: LyricLine[]; size: "full" | "preview" }) {
   const list = useRef<HTMLOListElement>(null);
-  useEffect(() => {
+  // Before paint: an upgrade (line-synced → word-synced) swaps the lines with the current one already lit.
+  useLayoutEffect(() => {
     const ol = list.current;
     if (!ol) return;
     // The nearest scrolling ancestor (the panel / tile around the lyrics).
@@ -27,12 +28,21 @@ function SyncedLines({ lines, size }: { lines: LyricLine[]; size: "full" | "prev
     let active = -2;
     let userUntil = 0;
     const spring = scroller ? new Spring(scroller.scrollTop, "slowSpatial", (v) => (scroller!.scrollTop = v), { precision: 0.5 }) : null;
+    // New lines in a scroller already showing lyrics (an upgrade): land on the current line without a glide.
+    let instant = scroller ? scroller.scrollTop > 0 : false;
     const follow = (i: number) => {
       if (!scroller || !spring || i < 0 || Date.now() < userUntil) return;
       const li = items[i];
       const target = li.offsetTop - ol.offsetTop - scroller.clientHeight * (size === "preview" ? 0.15 : 0.35) + li.offsetHeight / 2;
+      const to = Math.max(0, Math.min(target, scroller.scrollHeight - scroller.clientHeight));
+      if (instant) {
+        instant = false;
+        spring.set(to);
+        scroller.scrollTop = to;
+        return;
+      }
       spring.set(scroller.scrollTop);
-      spring.to(Math.max(0, Math.min(target, scroller.scrollHeight - scroller.clientHeight)));
+      spring.to(to);
     };
     const update = () => {
       const ms = playbackTime() * 1000;

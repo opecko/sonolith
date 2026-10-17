@@ -25,7 +25,7 @@ export default function LyricsProviderSettings() {
       </div>
       <div className="m3-surface-card mt-3 rounded-[var(--radius)] border border-[var(--c-outline)] p-4">
         <p className="text-sm font-medium">Drag to reorder</p>
-        <p className="mb-3 text-sm text-[var(--c-text-muted)]">Higher providers take priority. Turn all off to hide lyrics.</p>
+        <p className="mb-3 text-sm text-[var(--c-text-muted)]">Word-synced lyrics win, then line-synced; within each, higher providers first. Turn all off to hide lyrics.</p>
         <ol ref={ref} className={dragFrom >= 0 ? "select-none" : ""}>
           {list.map((p, i) => (
             <li key={p.id} data-index={i}

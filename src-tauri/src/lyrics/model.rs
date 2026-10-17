@@ -48,7 +48,6 @@ impl Lyrics {
     }
 
     /// Has word timings on at least one line.
-    #[cfg_attr(not(test), allow(dead_code))]
     pub fn word_synced(&self) -> bool {
         self.lines.iter().any(|l| !l.words.is_empty())
     }

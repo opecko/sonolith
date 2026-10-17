@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import type { Track } from "../api/types";
 import { getLyrics } from "../api/ytm";
@@ -29,9 +29,13 @@ interface LyricsState {
 
 export const useLyrics = create<LyricsState>(() => ({ id: null, status: "idle", data: null }));
 
-export function lyricsRequest(t: Track, providers: LyricsProviderId[], debug = false) {
+/** `lyrics_get`'s arguments; `onUpdate` gets the best answer so far each time a better one arrives. */
+export function lyricsRequest(t: Track, providers: LyricsProviderId[], debug = false, onUpdate?: (r: LyricsResponse) => void) {
   const duration = t.durationSec ?? (useProgress.getState().duration || undefined);
+  const channel = new Channel<LyricsResponse>();
+  if (onUpdate) channel.onmessage = onUpdate;
   return {
+    onUpdate: channel,
     args: { videoId: t.id, title: t.title, artist: t.artists.join(", ") || t.subtitle, album: t.album?.title ?? null, durationSec: duration ?? null, providers, debug },
   };
 }
@@ -46,8 +50,15 @@ async function load(track: Track) {
   const mine = ++gen;
   const order = enabledProviders(useSettings.getState().lyricsProviders);
   useLyrics.setState({ id: track.id, status: "loading", data: null });
+  // The best answer so far is shown at once and upgraded in place (line-synced → word-synced).
+  const show = (d: LyricsData | null) => {
+    if (mine !== gen || !d) return;
+    const now = useLyrics.getState().data;
+    if (now && now.provider === d.provider && now.synced === d.synced) return;
+    useLyrics.setState({ status: "done", data: d });
+  };
   const fromProviders = order.length
-    ? await invoke<LyricsResponse>("lyrics_get", lyricsRequest(track, order)).then(toData, () => null)
+    ? await invoke<LyricsResponse>("lyrics_get", lyricsRequest(track, order, false, (r) => r.lyrics?.synced && show(toData(r)))).then(toData, () => null)
     : null;
   if (mine !== gen) return;
   let youtube: LyricsData | null = null;
@@ -57,7 +68,11 @@ async function load(track: Track) {
     if (ref) youtube = await getLyrics(ref).then((l) => (l?.text ? { provider: "youtube" as const, synced: false, lines: [], plain: l.text, source: l.source?.replace(/^Source:\s*/, "") } : null), () => null);
   }
   if (mine !== gen) return;
-  useLyrics.setState({ id: track.id, status: "done", data: chooseLyrics(fromProviders, youtube, order) });
+  const chosen = chooseLyrics(fromProviders, youtube, order);
+  const now = useLyrics.getState().data;
+  // The same answer the view already shows: keep the object, nothing re-renders.
+  if (now && chosen && now.provider === chosen.provider && now.synced === chosen.synced) useLyrics.setState({ status: "done" });
+  else useLyrics.setState({ id: track.id, status: "done", data: chosen });
 }
 
 function waitForWatch(id: string): Promise<import("../api/types").BrowseRef | undefined> {
