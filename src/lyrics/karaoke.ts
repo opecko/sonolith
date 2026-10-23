@@ -62,10 +62,9 @@ export function gapsOf(lines: LyricLine[], min = GAP_MS): [number, number, numbe
   return out;
 }
 
-// Break dots, after Apple Music's: they pop in, breathe slowly while lighting up one by one, then swell once and
-// vanish just before the next line.
-const GAP_IN_MS = 400;
-const GAP_FADE_IN_MS = 160;
+// Break dots, after Apple Music's: from rest they ease into a slow breath while lighting up one by one, then swell
+// once and vanish just before the next line (and stay hidden once played).
+const GAP_IN_MS = 600;
 const GAP_OUT_MS = 450;
 /** Half a breath (small → big). */
 const GAP_BREATH_MS = 2500;
@@ -76,7 +75,6 @@ const GAP_SWELL = 1.2;
 const GAP_SWELL_SHARE = 0.35;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t));
 const smooth = (t: number) => t * t * (3 - 2 * t);
 
 /**
@@ -86,7 +84,7 @@ const smooth = (t: number) => t * t * (3 - 2 * t);
 export function gapPose(from: number, to: number, ms: number, breathe: boolean): { dots: number[]; scale: number; opacity: number } {
   const t = ms - from;
   const length = Math.max(1, to - from);
-  // Short breaks keep at least the pop-in before the exit.
+  // Short breaks keep at least the easing in before the exit.
   const exitAt = Math.max(Math.min(GAP_IN_MS, length), length - GAP_OUT_MS);
   const lit = clamp01(t / exitAt);
   const dots = [0, 1, 2].map((k) => clamp01(lit * 3 - k));
@@ -100,7 +98,8 @@ export function gapPose(from: number, to: number, ms: number, breathe: boolean):
   // The breath is timed backwards from the exit, so it is at its smallest when the swell starts.
   const mix = (1 + Math.cos((Math.PI * (exitAt - t)) / GAP_BREATH_MS)) / 2;
   const breath = GAP_SMALL + (GAP_BIG - GAP_SMALL) * mix;
-  return { dots, scale: breath * easeOutExpo(clamp01(t / GAP_IN_MS)), opacity: clamp01(t / GAP_FADE_IN_MS) };
+  // The dots are on screen at rest (scale 1) before the break: start from there, no jump.
+  return { dots, scale: 1 + (breath - 1) * smooth(clamp01(t / GAP_IN_MS)), opacity: 1 };
 }
 
 const round = (v: number, step: number) => Math.round(v / step) * step;
@@ -187,9 +186,12 @@ export function createKaraoke(ol: HTMLElement, lines: LyricLine[], style: Karaok
         });
         for (const g of gaps) {
           g.el.toggleAttribute("data-active", g === gap);
-          // A break left (or not reached yet) shows its dots at rest, not where its exit stopped.
+          // A played break stays gone (its exit ended there); one not reached yet shows its dots at rest.
           if (g !== gap) {
-            resetGap(g.el);
+            if (ms >= g.to) {
+              g.el.style.transform = "";
+              g.el.style.opacity = "0";
+            } else resetGap(g.el);
             written.delete(g.el);
           }
         }

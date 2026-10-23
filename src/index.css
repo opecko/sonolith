@@ -108,12 +108,14 @@ button:disabled { cursor: default; }
 /* Synced lyrics (lyrics/LyricsView): lines dim, the current one bright, sung words bright on word-synced lines.
    Only colors change, with no transition (WebKitGTK); the scroll is a spring on the scroller. */
 .lyrics-synced { display: flex; flex-direction: column; gap: 0.55em; font-size: 1.5rem; line-height: 1.3; font-weight: 700;
-  --ly-on: var(--c-text); --ly-off: var(--c-text-subtle); --ly-glow: color-mix(in srgb, var(--c-accent) 60%, transparent); }
+  --ly-on: var(--c-text); --ly-off: var(--c-text-subtle); --ly-glow: color-mix(in srgb, var(--c-accent) 60%, transparent);
+  --ly-past: color-mix(in srgb, var(--c-accent) 60%, transparent); }
 [data-ui-style="m3"] .lyrics-synced { --ly-on: var(--m3-on-surface); --ly-off: color-mix(in srgb, var(--m3-on-surface) 38%, transparent);
-  --ly-glow: color-mix(in srgb, var(--m3-primary) 60%, transparent); }
+  --ly-glow: color-mix(in srgb, var(--m3-primary) 60%, transparent); --ly-past: color-mix(in srgb, var(--m3-primary) 62%, transparent); }
 .lyrics-synced li { color: var(--ly-off); cursor: pointer; border-radius: var(--radius); }
 .lyrics-synced li:hover { color: var(--c-text-muted); }
-.lyrics-synced li[data-past] { color: color-mix(in srgb, var(--ly-off) 80%, transparent); }
+/* Sung lines in the accent, apart from both the current line and the ones still to come. */
+.lyrics-synced li[data-past] { color: var(--ly-past); }
 .lyrics-synced li[data-active] { color: var(--ly-on); }
 .lyrics-synced li[data-active] [data-w] { color: var(--ly-off); }
 .lyrics-synced li[data-active] [data-w][data-on] { color: var(--ly-on); }
@@ -138,7 +140,8 @@ button:disabled { cursor: default; }
 }
 .lyrics-synced[data-k="glow"] li[data-active] [data-bw][data-g] { text-shadow: 0 0 calc(var(--g) * 10px) var(--ly-glow); }
 /* Instrumental break: three dots that light up across it (karaoke.ts sets --d and a breathing scale). */
-.lyrics-synced .lyrics-gap { display: flex; gap: 0.3em; height: 1.3em; align-items: center; cursor: default; transform-origin: left center; }
+/* Scaled about the middle of the three dots (3 × 0.4em + 2 × 0.3em wide), not the row's left edge. */
+.lyrics-synced .lyrics-gap { display: flex; gap: 0.3em; height: 1.3em; align-items: center; cursor: default; transform-origin: 0.9em center; }
 .lyrics-synced .lyrics-gap [data-d] { width: 0.4em; height: 0.4em; border-radius: 9999px; background: var(--ly-on); opacity: 0.3; }
 .lyrics-synced .lyrics-gap[data-active] [data-d] { opacity: calc(0.3 + var(--d, 0) * 0.7); }
 /* Artist / album names in a byline (TrackByline). */

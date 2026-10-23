@@ -50,10 +50,10 @@ describe("instrumental breaks", () => {
     expect(gapPose(0, 6000, 5550, true).dots).toEqual([1, 1, 1]);
     expect(gapPose(0, 6000, 6000, false)).toEqual({ dots: [1, 1, 1], scale: 1, opacity: 1 });
   });
-  it("pop in, breathe, swell and vanish", () => {
+  it("ease in from rest, breathe, swell and vanish", () => {
     const at = (ms: number) => gapPose(0, 6000, ms, true);
-    expect(at(0)).toMatchObject({ scale: 0, opacity: 0 });
-    expect(at(400).opacity).toBe(1);
+    expect(at(0)).toMatchObject({ scale: 1, opacity: 1 });
+    expect(Math.abs(at(16).scale - 1)).toBeLessThan(0.01);
     // Smallest breath right where the exit starts, then the swell, then gone.
     expect(at(5550).scale).toBeCloseTo(0.85, 5);
     expect(at(5550 + 0.35 * 450).scale).toBeCloseTo(1.2, 5);
