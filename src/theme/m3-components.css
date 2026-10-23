@@ -495,3 +495,12 @@
 /* Round caps on the wave's cut ends: bob ±3 px like the wave under them (Slider.tsx keeps their time in step). */
 .m3-wave-cap { will-change: transform; animation: m3-wave-cap ease-in-out infinite alternate; animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
 @keyframes m3-wave-cap { from { transform: translateY(-3px); } to { transform: translateY(3px); } }
+
+/* ---------- Settings ---------- */
+[data-ui-style="m3"] .settings-cats { border-radius: var(--m3-corner-xl); }
+[data-ui-style="m3"] .settings-cat { background: var(--m3-surface-container-low); }
+[data-ui-style="m3"] .settings-cat:hover { background: var(--m3-surface-container); }
+[data-ui-style="m3"] .settings-cat[aria-current="page"] { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+@container (min-width: 48rem) { [data-ui-style="m3"] .settings-cat[data-fallback] { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); } }
+[data-ui-style="m3"] .settings-card > * + * { border-top-color: var(--m3-outline-variant); }
+[data-ui-style="m3"] [data-setting][data-focused] { background: var(--m3-primary-container); }

@@ -1,6 +1,7 @@
 import { GripVertical, RotateCcw } from "lucide-react";
 import Switch from "../components/Switch";
-import KaraokeSetting from "./KaraokeSetting";
+import { KaraokeChoices } from "./KaraokeSetting";
+import { SettingCard, SettingRow } from "../views/settings/kit";
 import { moveItem, useDragReorder } from "../hooks/useDragReorder";
 import { useSettings } from "../stores/settings";
 import { DEFAULT_LYRICS_PROVIDERS, PROVIDER_NAMES, type ProviderSetting } from "./providers";
@@ -14,28 +15,31 @@ const save = (lyricsProviders: ProviderSetting[]) => useSettings.getState().set(
 export default function LyricsProviderSettings() {
   const list = useSettings((s) => s.lyricsProviders);
   const on = useSettings((s) => s.lyricsEnabled);
+  const animations = useSettings((s) => s.appearance.animations);
   const { ref, dropAt, dragFrom, onHandleDown, onHandleKey } = useDragReorder<HTMLOListElement>((from, to) => save(moveItem(useSettings.getState().lyricsProviders, from, to)));
   const isDefault = JSON.stringify(list) === JSON.stringify(DEFAULT_LYRICS_PROVIDERS);
   const allOff = list.every((p) => !p.enabled);
   return (
-    <section id="settings-lyrics" className="m3-section mb-6 scroll-mt-4 rounded-lg bg-[var(--c-surface)] p-6">
-      <div className="mb-1 flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Lyrics</h2>
-          <p className="text-sm text-[var(--c-text-muted)]">Lyrics in Now Playing. Off hides them and asks no provider.</p>
-        </div>
-        <Switch on={on} onChange={(lyricsEnabled) => useSettings.getState().set({ lyricsEnabled })} label="Lyrics" />
-      </div>
-      <div className={on ? "" : "pointer-events-none opacity-50"} aria-disabled={!on}>
-        <div className="mt-4 flex items-center justify-between gap-4">
-          <p className="text-sm font-medium">Lyrics providers</p>
-          <button className="icon-btn h-9 w-9" disabled={isDefault} onClick={() => save(DEFAULT_LYRICS_PROVIDERS)} aria-label="Reset lyrics providers" title="Default order, all on">
-            <RotateCcw size={18} />
-          </button>
-        </div>
-        <div className="m3-surface-card mt-3 rounded-[var(--radius)] border border-[var(--c-outline)] p-4">
-          <p className="text-sm font-medium">Drag to reorder</p>
-          <p className="mb-3 text-sm text-[var(--c-text-muted)]">Word-synced lyrics win, then line-synced; within each, higher providers first.</p>
+    <>
+      <SettingCard title="Lyrics">
+        <SettingRow id="lyricsEnabled" title="Show lyrics" detail="In Now Playing. Off hides them and asks no provider.">
+          <Switch on={on} onChange={(lyricsEnabled) => useSettings.getState().set({ lyricsEnabled })} label="Show lyrics" />
+        </SettingRow>
+        <SettingRow id="karaoke" title="Karaoke style" detail={`How word-synced lyrics light up as they're sung.${animations ? "" : " Animations are off, so every style shows as Simple."}`} stacked disabled={!on}>
+          <KaraokeChoices
+            card={(sel) => `m3-choice rounded-[var(--radius)] border p-3 text-left ${sel ? "border-[var(--c-accent)]" : "border-[var(--c-outline)] hover:bg-[var(--c-hover)]"}`}
+            label={(sel) => `mb-1 text-sm ${sel ? "font-semibold" : ""}`} />
+        </SettingRow>
+      </SettingCard>
+      <SettingCard title="Where lyrics come from">
+        <SettingRow id="lyricsProviders" title="Providers" disabled={!on} stacked
+          detail="Drag to set the order. Word-synced lyrics win, then line-synced; within each, higher providers first.">
+          <div className="mb-2 flex justify-end">
+            <button className="m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)] disabled:opacity-50"
+              disabled={isDefault} onClick={() => save(DEFAULT_LYRICS_PROVIDERS)} title="Default order, all on">
+              <RotateCcw size={16} aria-hidden /> Reset order
+            </button>
+          </div>
           <ol ref={ref} className={dragFrom >= 0 ? "select-none" : ""}>
             {list.map((p, i) => (
               <li key={p.id} data-index={i}
@@ -51,12 +55,11 @@ export default function LyricsProviderSettings() {
               </li>
             ))}
           </ol>
-        </div>
-        <KaraokeSetting />
-        <p className="mt-3 text-sm text-[var(--c-text-muted)]">
-          {allOff ? "Lyrics are hidden. " : ""}Enabled providers receive the title, artist, album and length of the song that plays; podcast episodes are never sent.
-        </p>
-      </div>
-    </section>
+          <p className="mt-3 text-sm text-[var(--c-text-muted)]">
+            {allOff ? "Lyrics are hidden. " : ""}Enabled providers receive the title, artist, album and length of the song that plays; podcast episodes are never sent.
+          </p>
+        </SettingRow>
+      </SettingCard>
+    </>
   );
 }

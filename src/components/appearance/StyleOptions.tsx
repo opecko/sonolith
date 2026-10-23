@@ -1,6 +1,7 @@
 import { RotateCcw } from "lucide-react";
 import { setAppearance, useSettings } from "../../stores/settings";
 import type { NowPlayingLayout, UiStyle } from "../../theme/appearance";
+import { Segmented } from "../../views/settings/kit";
 import Switch from "../Switch";
 
 export const STYLES: { id: UiStyle; label: string; detail: string }[] = [
@@ -50,56 +51,42 @@ export function LayoutPreview({ id }: { id: NowPlayingLayout }) {
   );
 }
 
-function Row({ title, detail, children }: { title: string; detail?: string; children: React.ReactNode }) {
+/** The Style choice (Material 3 Expressive / Classic). */
+export function StylePicker() {
+  const uiStyle = useSettings((s) => s.appearance.uiStyle);
+  return <Segmented value={uiStyle} options={STYLES.map((s) => [s.id, s.label] as const)} onChange={(id) => setAppearance({ uiStyle: id })} label="Style" />;
+}
+
+export const styleDetail = (id: UiStyle) => STYLES.find((s) => s.id === id)!.detail;
+
+/** The Now Playing layout cards, each with a schematic. */
+export function LayoutPicker() {
+  const layout = useSettings((s) => s.appearance.nowPlayingLayout);
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 py-2">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm">{title}</p>
-        {detail && <p className="text-sm text-[var(--c-text-muted)]">{detail}</p>}
-      </div>
-      <div className="flex shrink-0 items-center gap-3">{children}</div>
+    <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Now Playing layout">
+      {LAYOUTS.map((l) => (
+        <button key={l.id} type="button" role="radio" aria-checked={layout === l.id} onClick={() => setAppearance({ nowPlayingLayout: l.id })}
+          className={`m3-choice flex w-40 flex-col overflow-hidden rounded-[var(--radius)] border text-left ${layout === l.id ? "border-[var(--c-accent)]" : "border-[var(--c-outline)] hover:bg-[var(--c-hover)]"}`}>
+          <span className="block h-20 bg-[var(--c-bg)]" aria-hidden><LayoutPreview id={l.id} /></span>
+          <span className={`px-3 py-2 text-sm ${layout === l.id ? "font-semibold" : ""}`}>{l.label}</span>
+        </button>
+      ))}
     </div>
   );
 }
 
-/** Style, Now Playing layout and animations (top of Settings → Appearance). */
-export default function StyleOptions() {
-  const uiStyle = useSettings((s) => s.appearance.uiStyle);
-  const layout = useSettings((s) => s.appearance.nowPlayingLayout);
+export function AnimationsSwitch() {
   const animations = useSettings((s) => s.appearance.animations);
-  const seg = (on: boolean) => `m3-seg rounded-full px-3 py-1 text-sm ${on ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`;
-  const classic = uiStyle === "classic" && layout === "classic";
+  return <Switch on={animations} onChange={(on) => setAppearance({ animations: on })} label="Animations" />;
+}
+
+/** Back to the pre-2.0 look: Classic style and the Classic Now Playing. */
+export function ResetToClassic() {
+  const classic = useSettings((s) => s.appearance.uiStyle === "classic" && s.appearance.nowPlayingLayout === "classic");
   return (
-    <div className="mb-6 border-b border-[var(--c-outline)] pb-6" id="appearance-style">
-      <Row title="Style" detail={STYLES.find((s) => s.id === uiStyle)!.detail}>
-        <div className="m3-segmented flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Style">
-          {STYLES.map((s) => (
-            <button key={s.id} type="button" aria-pressed={uiStyle === s.id} className={seg(uiStyle === s.id)} onClick={() => setAppearance({ uiStyle: s.id })}>{s.label}</button>
-          ))}
-        </div>
-      </Row>
-      <div className="py-2">
-        <p className="text-sm">Now Playing layout</p>
-        <p className="mb-3 text-sm text-[var(--c-text-muted)]">Works with either style. Material and Bento have the queue, lyrics and related music built in.</p>
-        <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Now Playing layout">
-          {LAYOUTS.map((l) => (
-            <button key={l.id} type="button" role="radio" aria-checked={layout === l.id} onClick={() => setAppearance({ nowPlayingLayout: l.id })}
-              className={`m3-choice flex w-40 flex-col overflow-hidden rounded-[var(--radius)] border text-left ${layout === l.id ? "border-[var(--c-accent)]" : "border-[var(--c-outline)] hover:bg-[var(--c-hover)]"}`}>
-              <span className="block h-20 bg-[var(--c-bg)]" aria-hidden><LayoutPreview id={l.id} /></span>
-              <span className={`px-3 py-2 text-sm ${layout === l.id ? "font-semibold" : ""}`}>{l.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      <Row title="Animations" detail="Springs, shape changes and slides. Turn off to reduce motion; by default this follows your system's reduce motion setting.">
-        <Switch on={animations} onChange={(on) => setAppearance({ animations: on })} label="Animations" />
-      </Row>
-      <div className="pt-2">
-        <button className="m3-btn m3-text flex h-9 items-center gap-2 rounded-full px-3 text-sm text-[var(--c-text-muted)] hover:bg-[var(--c-hover)] disabled:opacity-50"
-          disabled={classic} onClick={() => setAppearance({ uiStyle: "classic", nowPlayingLayout: "classic" })}>
-          <RotateCcw size={16} aria-hidden /> Reset to classic ytdesk
-        </button>
-      </div>
-    </div>
+    <button className="m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)] disabled:opacity-50"
+      disabled={classic} onClick={() => setAppearance({ uiStyle: "classic", nowPlayingLayout: "classic" })}>
+      <RotateCcw size={16} aria-hidden /> Reset
+    </button>
   );
 }

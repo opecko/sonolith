@@ -36,13 +36,19 @@ export const useNav = create<NavState>((set) => ({
     }),
 }));
 
-/** Settings, scrolled to one of its sections once it has rendered. */
-export type SettingsSection = "appearance" | "lyrics" | "shortcuts" | "about";
+/** Settings categories (SettingsView's list, in this order). */
+export const SETTINGS_SECTIONS = ["look", "colors", "nowplaying", "playback", "lyrics", "shortcuts", "discord", "system", "about"] as const;
+export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
-export function openSettings(section?: SettingsSection) {
+/**
+ * Which category Settings shows (null: none picked yet; a wide window then shows the first, a narrow one the list)
+ * and a setting to bring into view and highlight once it has rendered (`data-setting` on its row).
+ */
+export const useSettingsNav = create<{ section: SettingsSection | null; focus: string | null }>(() => ({ section: null, focus: null }));
+
+export function openSettings(section?: SettingsSection, focus?: string) {
+  useSettingsNav.setState({ section: section ?? null, focus: focus ?? null });
   useNav.getState().go({ name: "settings" });
-  if (section)
-    requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(`settings-${section}`)?.scrollIntoView({ block: "start" })));
 }
 
 export const openSearch = (query: string) => {

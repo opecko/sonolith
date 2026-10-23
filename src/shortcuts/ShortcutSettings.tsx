@@ -2,6 +2,7 @@ import { AppWindow, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import Switch from "../components/Switch";
 import { useSettings } from "../stores/settings";
+import { SettingCard, SettingRow } from "../views/settings/kit";
 import {
   ACTION_LABELS, bindingFromEvent, DEFAULT_BINDINGS, usesSuper, findConflict, formatBinding, rebind, sameBinding, SHORTCUT_ACTIONS,
   type Bindings, type KeyBinding, type ShortcutAction,
@@ -58,19 +59,18 @@ export default function ShortcutSettings() {
   const allDefault = SHORTCUT_ACTIONS.every((a) => sameBinding(bindings[a], DEFAULT_BINDINGS[a]));
 
   return (
-    <section id="settings-shortcuts" className="m3-section mb-6 scroll-mt-4 rounded-lg bg-[var(--c-surface)] p-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="mb-1 text-lg font-semibold">Keyboard shortcuts</h2>
-          <p className="text-sm text-[var(--c-text-muted)]">Keys for the player while you're in the app.</p>
-        </div>
-        <Switch on={enabled} onChange={(on) => setShortcuts({ enabled: on })} label="Keyboard shortcuts" />
-      </div>
-      <p className="m3-surface-card mt-3 flex items-start gap-3 rounded-[var(--radius)] border border-[var(--c-outline)] p-3 text-sm">
-        <AppWindow size={18} className="mt-0.5 shrink-0 text-[var(--c-accent)]" aria-hidden />
-        <span><strong className="font-semibold">Only inside ytdesk:</strong> these keys work while the ytdesk window is focused, not system-wide. Your keyboard's media keys control playback everywhere.</span>
-      </p>
-      <ul className={`mt-4 flex flex-col ${enabled ? "" : "pointer-events-none opacity-50"}`} aria-disabled={!enabled}>
+    <>
+      <SettingCard title="Keyboard shortcuts">
+        <SettingRow id="shortcutsEnabled" title="Use keyboard shortcuts" detail="Keys for the player while ytdesk's window is focused.">
+          <Switch on={enabled} onChange={(on) => setShortcuts({ enabled: on })} label="Use keyboard shortcuts" />
+        </SettingRow>
+        <p className="mx-5 mb-4 flex items-start gap-3 text-sm text-[var(--c-text-muted)]">
+          <AppWindow size={18} className="mt-0.5 shrink-0 text-[var(--c-accent)]" aria-hidden />
+          <span><strong className="font-semibold text-[var(--c-text)]">Only inside ytdesk:</strong> not system-wide. Your keyboard's media keys control playback everywhere.</span>
+        </p>
+      </SettingCard>
+      <SettingCard title="Keys">
+      <ul className={`flex flex-col px-5 py-2 ${enabled ? "" : "pointer-events-none opacity-50"}`} aria-disabled={!enabled}>
         {SHORTCUT_ACTIONS.map((a) => {
           const isDefault = sameBinding(bindings[a], DEFAULT_BINDINGS[a]);
           return (
@@ -114,12 +114,15 @@ export default function ShortcutSettings() {
           );
         })}
       </ul>
-      <div className="mt-3">
-        <button className="m3-btn m3-text flex h-9 items-center gap-2 rounded-full px-3 text-sm text-[var(--c-text-muted)] hover:bg-[var(--c-hover)] disabled:opacity-50"
-          disabled={!enabled || allDefault} onClick={() => setShortcuts({ bindings: DEFAULT_BINDINGS })}>
-          <RotateCcw size={16} aria-hidden /> Reset all to defaults
-        </button>
-      </div>
-    </section>
+      </SettingCard>
+      <SettingCard>
+        <SettingRow id="shortcutsReset" title="Reset all keys" detail="Every shortcut back to its default key." disabled={!enabled}>
+          <button className="m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)] disabled:opacity-50"
+            disabled={allDefault} onClick={() => setShortcuts({ bindings: DEFAULT_BINDINGS })}>
+            <RotateCcw size={16} aria-hidden /> Reset
+          </button>
+        </SettingRow>
+      </SettingCard>
+    </>
   );
 }

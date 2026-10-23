@@ -54,19 +54,3 @@ export function KaraokeChoices({ card, label, className = "" }: { card: (on: boo
     </div>
   );
 }
-
-/** Settings → Lyrics: how word-synced lyrics show the sung words, each option with a live preview. */
-export default function KaraokeSetting() {
-  const animations = useSettings((s) => s.appearance.animations);
-  return (
-    <div className="mt-4">
-      <p className="text-sm font-medium">Karaoke style</p>
-      <p className="mb-3 text-sm text-[var(--c-text-muted)]">
-        For word-synced lyrics.{animations ? "" : " Animations are off, so every style shows as Simple."}
-      </p>
-      <KaraokeChoices
-        card={(on) => `m3-choice rounded-[var(--radius)] border p-3 text-left ${on ? "border-[var(--c-accent)]" : "border-[var(--c-outline)] hover:bg-[var(--c-hover)]"}`}
-        label={(on) => `mb-1 text-sm ${on ? "font-semibold" : ""}`} />
-    </div>
-  );
-}

@@ -1,9 +1,12 @@
-import { ChevronDown, Download, ExternalLink, Hand, RefreshCw, ScrollText } from "lucide-react";
+import {
+  ArrowLeft, ChevronDown, ChevronRight, Cpu, Disc3, Download, ExternalLink, Hand, Info, Keyboard, MessageCircle, MicVocal, Paintbrush, Palette, Play,
+  RefreshCw, ScrollText, type LucideIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { ytdlpInstall, ytdlpSetPath, ytdlpStatus, ytdlpUpdate } from "../api/ytdlp";
 import { invoke } from "@tauri-apps/api/core";
-import AppearanceSettings from "../components/appearance/AppearanceSettings";
+import { ColorSettings, LookSettings, NowPlayingSettings } from "../components/appearance/AppearanceSettings";
 import AutoplayToggle from "../components/AutoplayToggle";
 import ChangelogDialog from "../components/ChangelogDialog";
 import Switch from "../components/Switch";
@@ -12,8 +15,10 @@ import { useAsync } from "../hooks/useData";
 import { rerunOnboarding } from "../onboarding/store";
 import ShortcutSettings from "../shortcuts/ShortcutSettings";
 import LyricsProviderSettings from "../lyrics/LyricsProviderSettings";
+import { useSettingsNav, type SettingsSection } from "../stores/nav";
 import { useSettings } from "../stores/settings";
 import { useUpdate } from "../stores/update";
+import { Segmented, SettingCard, SettingRow } from "./settings/kit";
 // Shipped with the font, as the OFL asks.
 import fontLicense from "../assets/fonts/GoogleSansFlex-OFL.txt?raw";
 
@@ -26,6 +31,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
+/** A switch kept by the Rust side (config.json), read and written through commands. */
 function FlagSetting({ id, get, set, title, detail }: { id: string; get: string; set: string; title: string; detail: string }) {
   const flag = useAsync(id, () => invoke<boolean>(get));
   const [busy, setBusy] = useState(false);
@@ -39,17 +45,13 @@ function FlagSetting({ id, get, set, title, detail }: { id: string; get: string;
     }
   };
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div>
-        <p className="text-sm">{title}</p>
-        <p className="text-sm text-[var(--c-text-muted)]">{detail}</p>
-      </div>
+    <SettingRow id={id} title={title} detail={detail}>
       <Switch on={flag.data ?? true} onChange={(v) => void change(v)} label={title} disabled={busy || flag.data === undefined} />
-    </div>
+    </SettingRow>
   );
 }
 
-/** yt-dlp fallback settings; mounted only when the Advanced section is open, so its status isn't probed otherwise. */
+/** yt-dlp fallback settings; mounted only when its row is opened, so its status isn't probed otherwise. */
 function YtdlpSettings() {
   const status = useAsync("ytdlp-status", ytdlpStatus);
   const [path, setPath] = useState<string | null>(null);
@@ -73,10 +75,6 @@ function YtdlpSettings() {
   const s = status.data;
   return (
     <div>
-      <h3 className="mb-1 text-base font-semibold">yt-dlp</h3>
-      <p className="mb-4 text-sm text-[var(--c-text-muted)]">
-        Fallback for resolving audio streams. The app keeps its own up-to-date copy unless you set a path.
-      </p>
       {status.error ? <ErrorBox error={status.error} onRetry={status.reload} /> : !s ? <Loading variant="list" /> : (
         <>
           <Row label="Binary">{s.path}{s.managed && <span className="ml-2 text-xs text-[var(--c-text-subtle)]">(managed)</span>}</Row>
@@ -107,47 +105,45 @@ function YtdlpSettings() {
   );
 }
 
-function HistorySetting() {
-  const { saveHistory, set } = useSettings();
+function PlaybackSettings() {
+  const { saveHistory, afterEpisode, set } = useSettings();
   return (
-    <div className="mt-4 flex items-center justify-between gap-4">
-      <p className="text-sm text-[var(--c-text-muted)]">Save played songs to your YouTube Music history (also improves recommendations).</p>
-      <Switch on={saveHistory} onChange={(v) => set({ saveHistory: v })} label="Save listening history" />
-    </div>
+    <>
+      <SettingCard title="Music">
+        <SettingRow id="autoplay" title="Autoplay" detail="When a song, playlist or album ends, keep playing similar music.">
+          <AutoplayToggle withLabel={false} />
+        </SettingRow>
+        <SettingRow id="saveHistory" title="Save listening history" detail="Played songs go to your YouTube Music history, which also improves recommendations. Needs you to be signed in.">
+          <Switch on={saveHistory} onChange={(v) => set({ saveHistory: v })} label="Save listening history" />
+        </SettingRow>
+      </SettingCard>
+      <SettingCard title="Podcasts">
+        <SettingRow id="afterEpisode" title="After an episode" detail="When nothing else is queued: play the show's next episode, or stop.">
+          <Segmented value={afterEpisode} options={[["next", "Next episode"], ["stop", "Stop"]]} onChange={(v) => set({ afterEpisode: v })} label="After an episode" />
+        </SettingRow>
+      </SettingCard>
+    </>
   );
 }
 
 function DiscordSettings() {
   const { discordRpc, discordButton, discordPodcasts, set } = useSettings();
   return (
-    <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
-      <h2 className="mb-1 text-lg font-semibold">Discord</h2>
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm">Rich Presence</p>
-          <p className="text-sm text-[var(--c-text-muted)]">Show what you're listening to on your Discord profile: song, artist, album, cover and progress.</p>
-        </div>
+    <SettingCard title="Discord status">
+      <SettingRow id="discordRpc" title="Show what you're playing" detail="Song, artist, album, cover and progress on your Discord profile (Rich Presence).">
         <Switch on={discordRpc} onChange={(v) => set({ discordRpc: v })} label="Discord Rich Presence" />
-      </div>
-      <div className="mt-4 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm">"Listen on YouTube Music" button</p>
-          <p className="text-sm text-[var(--c-text-muted)]">Lets others open the song you're playing.</p>
-        </div>
-        <Switch on={discordButton} onChange={(v) => set({ discordButton: v })} label="Listen on YouTube Music button" disabled={!discordRpc} />
-      </div>
-      <div className="mt-4 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm">Show podcasts</p>
-          <p className="text-sm text-[var(--c-text-muted)]">Also show podcast episodes you're listening to. Off by default.</p>
-        </div>
-        <Switch on={discordPodcasts} onChange={(v) => set({ discordPodcasts: v })} label="Show podcasts on Discord" disabled={!discordRpc} />
-      </div>
-    </section>
+      </SettingRow>
+      <SettingRow id="discordButton" title={'"Listen on YouTube Music" button'} detail="Lets others open the song you're playing." disabled={!discordRpc}>
+        <Switch on={discordButton} onChange={(v) => set({ discordButton: v })} label="Listen on YouTube Music button" />
+      </SettingRow>
+      <SettingRow id="discordPodcasts" title="Show podcasts too" detail="Also show podcast episodes you're listening to." disabled={!discordRpc}>
+        <Switch on={discordPodcasts} onChange={(v) => set({ discordPodcasts: v })} label="Show podcasts on Discord" />
+      </SettingRow>
+    </SettingCard>
   );
 }
 
-function UpdateSettings() {
+function UpdatesCard() {
   const { updateCheck, set } = useSettings();
   const [state, setState] = useState<{ busy: boolean; text?: string; error?: boolean }>({ busy: false });
   const checkNow = async () => {
@@ -163,40 +159,41 @@ function UpdateSettings() {
     }
   };
   return (
-    <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
-      <h2 className="mb-1 text-lg font-semibold">Updates</h2>
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm">Check for updates on startup</p>
-          <p className="text-sm text-[var(--c-text-muted)]">Looks for a new ytdesk release on GitHub when the app starts.</p>
-        </div>
+    <SettingCard title="Updates">
+      <SettingRow id="updateCheck" title="Check for updates on startup" detail="Looks for a new ytdesk release on GitHub when the app starts.">
         <Switch on={updateCheck} onChange={(v) => set({ updateCheck: v })} label="Check for updates on startup" />
-      </div>
-      <div className="mt-4 flex items-center gap-4">
+      </SettingRow>
+      <SettingRow id="checkNow" title="Check now" detail={state.text ? <span className={state.error ? "text-[var(--c-error)]" : ""}>{state.text}</span> : "Look for a new version right away."}>
         <button onClick={() => void checkNow()} disabled={state.busy}
           className="m3-btn m3-tonal flex h-9 shrink-0 items-center gap-2 rounded-full bg-[var(--c-hover)] px-4 text-sm font-medium hover:bg-[var(--c-active)] disabled:opacity-60">
-          <RefreshCw size={16} className={state.busy ? "animate-spin" : ""} aria-hidden /> Check now
+          <RefreshCw size={16} className={state.busy ? "animate-spin" : ""} aria-hidden /> Check
         </button>
-        {state.text && <p className={`select-text text-sm ${state.error ? "text-[var(--c-error)]" : "text-[var(--c-text-muted)]"}`}>{state.text}</p>}
-      </div>
-    </section>
+      </SettingRow>
+    </SettingCard>
   );
 }
 
-function Advanced() {
-  const [open, setOpen] = useState(false);
+function SystemSettings() {
+  const [ytdlp, setYtdlp] = useState(false);
   return (
-    <section className="m3-section rounded-lg bg-[var(--c-surface)]">
-      <button onClick={() => setOpen((o) => !o)} aria-expanded={open}
-        className="m3-section-toggle flex w-full items-center justify-between rounded-lg p-6 text-left hover:bg-[var(--c-hover)]">
-        <span>
-          <span className="block text-lg font-semibold">Advanced</span>
-          <span className="block text-sm text-[var(--c-text-muted)]">Playback fallback (yt-dlp)</span>
-        </span>
-        <ChevronDown size={20} className={open ? "rotate-180" : ""} aria-hidden />
-      </button>
-      {open && <div className="px-6 pb-6"><YtdlpSettings /></div>}
-    </section>
+    <>
+      <SettingCard title="Window">
+        <FlagSetting id="closeToTray" get="render_get_close_to_tray" set="render_set_close_to_tray" title="Close to tray"
+          detail="The close button hides ytdesk to the system tray and music keeps playing. Quit from the tray menu." />
+        <FlagSetting id="gpu" get="render_get_gpu" set="render_set_gpu" title="Use the graphics card"
+          detail="Off keeps ytdesk off the GPU (handy while gaming) and uses more CPU instead. On most machines, leave it on." />
+      </SettingCard>
+      <UpdatesCard />
+      <SettingCard title="Playback engine">
+        <SettingRow id="ytdlp" title="yt-dlp" detail="The fallback that finds audio streams. ytdesk keeps its own up-to-date copy unless you set a path.">
+          <button className="m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]"
+            onClick={() => setYtdlp((o) => !o)} aria-expanded={ytdlp}>
+            {ytdlp ? "Hide" : "Details"} <ChevronDown size={16} className={ytdlp ? "rotate-180" : ""} aria-hidden />
+          </button>
+        </SettingRow>
+        {ytdlp && <div className="px-5 pb-5"><YtdlpSettings /></div>}
+      </SettingCard>
+    </>
   );
 }
 
@@ -209,26 +206,6 @@ function CreditLink({ name, children }: { name: string; children: React.ReactNod
   );
 }
 
-/** What happens when a podcast episode ends with nothing queued after it (never a music radio). */
-function AfterEpisodeSetting() {
-  const value = useSettings((s) => s.afterEpisode);
-  const seg = (on: boolean) => `m3-seg rounded-full px-3 py-1 text-sm ${on ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`;
-  const opts: ["next" | "stop", string][] = [["next", "Play next episode"], ["stop", "Stop"]];
-  return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-      <div className="min-w-0">
-        <p className="text-sm">After a podcast episode</p>
-        <p className="text-sm text-[var(--c-text-muted)]">When nothing else is queued: the show's next episode, or stop.</p>
-      </div>
-      <div className="m3-segmented flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="After a podcast episode">
-        {opts.map(([v, label]) => (
-          <button key={v} type="button" aria-pressed={value === v} className={seg(value === v)} onClick={() => useSettings.getState().set({ afterEpisode: v })}>{label}</button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function About() {
   const [version, setVersion] = useState("");
   const [changelog, setChangelog] = useState(false);
@@ -237,73 +214,129 @@ function About() {
     getVersion().then(setVersion, () => {});
   }, []);
   return (
-    <section id="settings-about" className="m3-section mt-6 scroll-mt-4 rounded-lg bg-[var(--c-surface)] p-6">
-      <h2 className="mb-1 text-lg font-semibold">About</h2>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-[var(--c-text-muted)]">
-          <CreditLink name="ytdesk">ytdesk</CreditLink> {version}, MIT license.
-          <br />
-          Font (Material 3 style): <CreditLink name="google-sans-flex">Google Sans Flex</CreditLink> by Google,{" "}
-          <CreditLink name="ofl">SIL Open Font License 1.1</CreditLink>.
-        </p>
-        <button className="chip inline-flex items-center gap-2" onClick={() => setChangelog(true)}>
-          <ScrollText size={16} aria-hidden /> Changelog
-        </button>
-      </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-[var(--c-text-muted)]">Walk through the welcome setup again.</p>
-        <button className="chip inline-flex items-center gap-2" onClick={rerunOnboarding}>
-          <Hand size={16} aria-hidden /> Run setup again
-        </button>
-      </div>
-      <details className="mt-3 text-sm text-[var(--c-text-muted)]">
-        <summary className="cursor-pointer select-none">Google Sans Flex license</summary>
-        <pre className="mt-2 max-h-64 select-text overflow-auto whitespace-pre-wrap font-[ui-monospace,monospace] text-xs">{fontLicense}</pre>
-      </details>
+    <>
+      <SettingCard title="ytdesk">
+        <SettingRow id="version" title={`Version ${version}`} detail={<><CreditLink name="ytdesk">ytdesk</CreditLink> is open source, MIT license.</>}>
+          <button className="chip inline-flex items-center gap-2" onClick={() => setChangelog(true)}>
+            <ScrollText size={16} aria-hidden /> Changelog
+          </button>
+        </SettingRow>
+        <SettingRow id="rerunSetup" title="Run setup again" detail="Walk through the welcome setup again; it starts from your current settings.">
+          <button className="chip inline-flex items-center gap-2" onClick={rerunOnboarding}>
+            <Hand size={16} aria-hidden /> Run setup
+          </button>
+        </SettingRow>
+      </SettingCard>
+      <SettingCard title="Credits">
+        <SettingRow id="fontCredit" title="Google Sans Flex" detail={<>The Material 3 style's font, by Google, <CreditLink name="ofl">SIL Open Font License 1.1</CreditLink>.</>} stacked>
+          <details className="text-sm text-[var(--c-text-muted)]">
+            <summary className="cursor-pointer select-none">Show the license</summary>
+            <pre className="mt-2 max-h-64 select-text overflow-auto whitespace-pre-wrap font-[ui-monospace,monospace] text-xs">{fontLicense}</pre>
+          </details>
+        </SettingRow>
+      </SettingCard>
       {changelog && <ChangelogDialog current={version} onClose={closeChangelog} />}
-    </section>
+    </>
   );
 }
 
-export default function SettingsView() {
+interface Category { id: SettingsSection; title: string; detail: string; icon: LucideIcon; page: () => React.ReactNode }
+
+/** The list, in groups; each group's icons share a color. */
+const GROUPS: { tone: string; items: Category[] }[] = [
+  { tone: "blue", items: [
+    { id: "look", title: "Look", detail: "Style, animations, size, font", icon: Paintbrush, page: () => <LookSettings /> },
+    { id: "colors", title: "Colors", detail: "Palette, album art colors", icon: Palette, page: () => <ColorSettings /> },
+    { id: "nowplaying", title: "Now Playing", detail: "Layout, ambient light", icon: Disc3, page: () => <NowPlayingSettings /> },
+  ] },
+  { tone: "green", items: [
+    { id: "playback", title: "Playback", detail: "Autoplay, history, podcasts", icon: Play, page: () => <PlaybackSettings /> },
+    { id: "lyrics", title: "Lyrics", detail: "Karaoke style, providers", icon: MicVocal, page: () => <LyricsProviderSettings /> },
+  ] },
+  { tone: "orange", items: [
+    { id: "shortcuts", title: "Keyboard shortcuts", detail: "Keys inside ytdesk", icon: Keyboard, page: () => <ShortcutSettings /> },
+    { id: "discord", title: "Discord", detail: "Show what you're playing", icon: MessageCircle, page: () => <DiscordSettings /> },
+  ] },
+  { tone: "pink", items: [
+    { id: "system", title: "System", detail: "Tray, graphics, updates, yt-dlp", icon: Cpu, page: () => <SystemSettings /> },
+  ] },
+  { tone: "teal", items: [
+    { id: "about", title: "About", detail: "Version, changelog, setup", icon: Info, page: () => <About /> },
+  ] },
+];
+const CATEGORIES = GROUPS.flatMap((g) => g.items.map((c) => ({ ...c, tone: g.tone })));
+
+function pick(id: SettingsSection) {
+  useSettingsNav.setState({ section: id, focus: null });
+  document.querySelector("main")?.scrollTo(0, 0);
+}
+
+/** `current`: the picked category; `fallback`: the one a wide window shows when none is picked (lit only there). */
+function CategoryList({ current, fallback }: { current: SettingsSection | null; fallback: SettingsSection }) {
   return (
-    <div className="max-w-2xl select-text">
-      <h1 className="mb-6 text-2xl font-bold">Settings</h1>
-      <AppearanceSettings />
-      <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
-        <h2 className="mb-1 text-lg font-semibold">Playback</h2>
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-[var(--c-text-muted)]">Autoplay similar music when a song, playlist or album ends.</p>
-          <AutoplayToggle withLabel={false} />
+    <div className="flex flex-col gap-3">
+      {GROUPS.map((g) => (
+        <ul key={g.tone} className="settings-cats">
+          {g.items.map(({ id, title, detail, icon: Icon }) => (
+            <li key={id}>
+              <button type="button" onClick={() => pick(id)} aria-current={current === id ? "page" : undefined} data-fallback={!current && fallback === id ? "" : undefined}
+                className="settings-cat flex w-full items-center gap-4 px-4 py-3 text-left">
+                <span className="settings-icon" data-tone={g.tone} aria-hidden><Icon size={20} /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-base font-medium">{title}</span>
+                  <span className="block truncate text-sm text-[var(--c-text-muted)]">{detail}</span>
+                </span>
+                <ChevronRight size={18} className="shrink-0 text-[var(--c-text-subtle)] @3xl:hidden" aria-hidden />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Settings: the categories on the left, the picked one on the right. A narrow window shows one at a time: the list,
+ * or a category with a way back to it. A link (What's new, onboarding) can open a category and highlight one setting.
+ */
+export default function SettingsView() {
+  const section = useSettingsNav((s) => s.section);
+  const focus = useSettingsNav((s) => s.focus);
+  const current = CATEGORIES.find((c) => c.id === (section ?? "look"))!;
+  useEffect(() => {
+    if (!focus) return;
+    // Two frames: the category's page has rendered and laid out.
+    let a = requestAnimationFrame(() => {
+      a = requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>(`[data-setting="${CSS.escape(focus)}"]`);
+        useSettingsNav.setState({ focus: null });
+        if (!el) return;
+        el.scrollIntoView({ block: "center" });
+        el.setAttribute("data-focused", "");
+        window.setTimeout(() => el.removeAttribute("data-focused"), 1800);
+      });
+    });
+    return () => cancelAnimationFrame(a);
+  }, [focus, section]);
+
+  return (
+    <div className="@container select-text">
+      <div className="flex items-start gap-8">
+        <nav aria-label="Settings categories" className={`w-full @3xl:sticky @3xl:top-0 @3xl:w-80 @3xl:shrink-0 ${section ? "@max-3xl:hidden" : ""}`}>
+          <h1 className="mb-6 text-2xl font-bold">Settings</h1>
+          <CategoryList current={section} fallback={current.id} />
+        </nav>
+        <div className={`min-w-0 max-w-2xl flex-1 ${section ? "" : "@max-3xl:hidden"}`}>
+          <div className="mb-6 flex items-center gap-2">
+            <button className="icon-btn -ml-2 h-10 w-10 @3xl:hidden" onClick={() => useSettingsNav.setState({ section: null })} aria-label="All settings">
+              <ArrowLeft size={20} />
+            </button>
+            <h2 className="text-2xl font-bold">{current.title}</h2>
+          </div>
+          {current.page()}
         </div>
-        <HistorySetting />
-        <AfterEpisodeSetting />
-      </section>
-      <LyricsProviderSettings />
-      <ShortcutSettings />
-      <section className="m3-section mb-6 rounded-lg bg-[var(--c-surface)] p-6">
-        <h2 className="mb-1 text-lg font-semibold">Performance</h2>
-        <FlagSetting
-          id="render-gpu"
-          get="render_get_gpu"
-          set="render_set_gpu"
-          title="Use GPU for rendering"
-          detail="Turn off to keep ytdesk off the graphics card. Uses more CPU instead; on most machines leave it on."
-        />
-        <div className="mt-4">
-          <FlagSetting
-            id="close-to-tray"
-            get="render_get_close_to_tray"
-            set="render_set_close_to_tray"
-            title="Close to tray"
-            detail="The close button hides ytdesk to the system tray and music keeps playing. Quit from the tray menu."
-          />
-        </div>
-      </section>
-      <DiscordSettings />
-      <UpdateSettings />
-      <Advanced />
-      <About />
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { prefetchItem } from "../stores/actions";
 import { useAuth } from "../stores/auth";
 import { useLibrary } from "../stores/library";
 import ItemMenu from "./ItemMenu";
-import { useNav, type Route } from "../stores/nav";
+import { openSettings, useNav, type Route } from "../stores/nav";
 import { useToast } from "../stores/toast";
 
 const items: { label: string; route: Route; icon: ReactNode }[] = [
@@ -122,7 +122,7 @@ export default function Sidebar() {
           </div>
         </div>
       )}
-      <button onClick={() => go({ name: "settings" })} aria-current={current === "settings" ? "page" : undefined} title="Settings"
+      <button onClick={() => openSettings()} aria-current={current === "settings" ? "page" : undefined} title="Settings"
         className="m3-nav-item mx-2 mb-3 mt-auto flex h-10 items-center gap-6 rounded-[var(--radius)] px-4 text-sm text-[var(--c-text-muted)] hover:bg-[var(--c-hover)] max-lg:justify-center max-lg:px-0">
         <Settings size={20} aria-hidden /> <span className="max-lg:sr-only">Settings</span>
       </button>

@@ -19,7 +19,7 @@ export function runWhatsNewAction(a: WhatsNewAction) {
   switch (a.type) {
     case "openSettings":
       useUi.getState().setNowPlaying(false);
-      openSettings(a.section);
+      openSettings(a.section, a.focus);
       break;
     case "setStyle":
       setAppearance({ uiStyle: a.style });

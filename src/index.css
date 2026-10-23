@@ -180,3 +180,24 @@ button:disabled { cursor: default; }
     border-radius: var(--radius);
   }
 }
+
+/* ---------- Settings: grouped category list, cards of rows ---------- */
+/* A group is one rounded block; its items sit 2px apart. */
+.settings-cats { display: flex; flex-direction: column; gap: 2px; overflow: hidden; border-radius: calc(var(--radius) * 2.5); }
+.settings-cat { background: var(--c-surface); transition: background-color 150ms; }
+.settings-cat:hover { background: color-mix(in srgb, var(--c-text) 6%, var(--c-surface)); }
+.settings-cat[aria-current="page"] { background: color-mix(in srgb, var(--c-accent) 18%, var(--c-surface)); }
+/* Nothing picked yet: a wide Settings shows its first category, so that one is lit; the narrow list lights none. */
+@container (min-width: 48rem) { .settings-cat[data-fallback] { background: color-mix(in srgb, var(--c-accent) 18%, var(--c-surface)); } }
+/* Pastel circles, one hue per group, the same in every palette (like the system settings they're modeled on). */
+.settings-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 9999px; color: #1b1b1f; background: var(--tone); }
+.settings-icon[data-tone="blue"] { --tone: #a8c7fa; }
+.settings-icon[data-tone="green"] { --tone: #a6d6a0; }
+.settings-icon[data-tone="orange"] { --tone: #f5c58a; }
+.settings-icon[data-tone="pink"] { --tone: #f4b2c8; }
+.settings-icon[data-tone="teal"] { --tone: #8fd5c6; }
+.settings-card { overflow: hidden; }
+.settings-card > * + * { border-top: 1px solid var(--c-outline); }
+/* A setting a link pointed at: lit up, then fading back. */
+[data-setting] { transition: background-color 700ms; }
+[data-setting][data-focused] { background: color-mix(in srgb, var(--c-accent) 18%, transparent); transition: none; }

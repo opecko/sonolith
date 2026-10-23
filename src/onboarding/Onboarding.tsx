@@ -117,7 +117,7 @@ export default function Onboarding() {
             {STEPS[step].id === "welcome" && <Welcome />}
             {STEPS[step].id === "signin" && <SignIn busy={signingIn} onSignIn={signIn} onContinue={() => go(step + 1)} />}
             {STEPS[step].id === "style" && <StyleStep />}
-            {STEPS[step].id === "colors" && <ColorsStep onMore={() => close(() => openSettings("appearance"))} />}
+            {STEPS[step].id === "colors" && <ColorsStep onMore={() => close(() => openSettings("colors", "palette"))} />}
             {STEPS[step].id === "nowplaying" && <NowPlayingStep />}
             {STEPS[step].id === "lyrics" && <LyricsStep />}
             {STEPS[step].id === "done" && <Done />}

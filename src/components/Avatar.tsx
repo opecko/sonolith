@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { getAccount } from "../api/ytm";
 import { useAsync } from "../hooks/useData";
 import { useAuth } from "../stores/auth";
-import { useNav } from "../stores/nav";
+import { openSettings, useNav } from "../stores/nav";
 
 export default function Avatar() {
   const signedIn = useAuth((s) => s.status === "signedIn");
@@ -38,7 +38,7 @@ export default function Avatar() {
           <button onClick={() => { setOpen(false); useNav.getState().go({ name: "history" }); }} role="menuitem" className="m3-menu-item mt-1 flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-[var(--c-hover)]">
             <span aria-hidden><History size={18} /></span> History
           </button>
-          <button onClick={() => { setOpen(false); useNav.getState().go({ name: "settings" }); }} role="menuitem" className="m3-menu-item flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-[var(--c-hover)]">
+          <button onClick={() => { setOpen(false); openSettings(); }} role="menuitem" className="m3-menu-item flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-[var(--c-hover)]">
             <span aria-hidden><Settings size={18} /></span> Settings
           </button>
           <button onClick={() => { setOpen(false); logout(); }} role="menuitem" className="m3-menu-item flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-[var(--c-hover)]">

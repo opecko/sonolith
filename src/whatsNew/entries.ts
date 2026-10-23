@@ -1,4 +1,4 @@
-import { Clapperboard, Keyboard, LayoutDashboard, LogIn, MicVocal, Palette, Podcast, Sparkles } from "lucide-react";
+import { Clapperboard, Keyboard, LayoutDashboard, LogIn, MicVocal, Palette, Podcast, Settings2, Sparkles } from "lucide-react";
 import type { WhatsNewEntry } from "./types";
 
 /**
@@ -7,8 +7,8 @@ import type { WhatsNewEntry } from "./types";
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
-    version: "2.1.1",
-    title: "ytdesk 2.1.1: no account needed",
+    version: "2.2.0",
+    title: "ytdesk 2.2: no account needed",
     highlights: [
       {
         icon: LogIn,
@@ -18,17 +18,22 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       {
         icon: Palette,
         title: "Now Playing in its cover's colors",
-        text: "Colors from album art can now theme just Now Playing and leave the rest of ytdesk in your palette. Pick it in Settings → Appearance.",
+        text: "Colors from album art can now theme just Now Playing and leave the rest of ytdesk in your palette.",
       },
       {
         icon: MicVocal,
         title: "Improvements to lyrics",
         text: "Instrumental breaks get breathing dots that swell into the next line, sung lines take a color of their own, and word-by-word lyrics are found for more songs.",
       },
+      {
+        icon: Settings2,
+        title: "Clearer settings",
+        text: "Settings are sorted into categories, each on its own page, and every option says what it does.",
+      },
     ],
     actions: [
-      { label: "Colors from album art", action: { type: "openSettings", section: "appearance" } },
-      { label: "Lyrics settings", action: { type: "openSettings", section: "lyrics" } },
+      { label: "Colors from album art", action: { type: "openSettings", section: "colors", focus: "coverColors" } },
+      { label: "Explore the settings", action: { type: "openSettings", section: "look" } },
     ],
     // The lyrics cached by 2.1.0 include ones picked without the track's length: look them all up again.
     onShow: ["clearLyricsCache"],
@@ -80,7 +85,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     ],
     actions: [
       { label: "Try the new Now Playing", action: { type: "setNowPlayingLayout", layout: "material", open: true, tryCard: true } },
-      { label: "Appearance settings", action: { type: "openSettings", section: "appearance" } },
+      { label: "Appearance settings", action: { type: "openSettings", section: "look" } },
       { label: "Prefer the old look? Switch to Classic", action: { type: "setStyle", style: "classic" } },
     ],
   },

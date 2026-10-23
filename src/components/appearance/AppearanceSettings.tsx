@@ -8,81 +8,82 @@ import { effectiveTokens } from "../../theme/index";
 import { getPalette, hasMode, PALETTES } from "../../theme/palettes";
 import { searchPalettes } from "../../theme/search";
 import type { Mode } from "../../theme/types";
+import { Segmented, SettingCard, SettingRow } from "../../views/settings/kit";
 import Select from "../Select";
 import Slider from "../Slider";
 import Switch from "../Switch";
 import ColorEditor, { ContrastWarnings, type EditorView } from "./ColorEditor";
 import FontPicker from "./FontPicker";
 import PaletteGallery, { ModeToggle, PaletteGrid, SearchField } from "./PaletteGallery";
-import StyleOptions from "./StyleOptions";
+import { AnimationsSwitch, LayoutPicker, ResetToClassic, StylePicker, styleDetail } from "./StyleOptions";
 import ThemeTransfer from "./ThemeTransfer";
 
 const FEATURED_PALETTES = FEATURED.map((id) => PALETTES.find((p) => p.id === id)).filter((p) => !!p);
 
-function OptionRow({ title, detail, children }: { title: string; detail?: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-2">
-      <div className="min-w-0">
-        <p className="text-sm">{title}</p>
-        {detail && <p className="text-sm text-[var(--c-text-muted)]">{detail}</p>}
-      </div>
-      <div className="flex shrink-0 items-center gap-3">{children}</div>
-    </div>
-  );
-}
-
-const FONT_OPTIONS: [FontKind, string][] = [["app", "ytdesk"], ["system", "System"], ["mono", "Monospace"], ["custom", "Installed"]];
+const FONT_OPTIONS: readonly (readonly [FontKind, string])[] = [["app", "ytdesk"], ["system", "System"], ["mono", "Monospace"], ["custom", "Installed"]];
 
 const pct = (v: number) => `${Math.round(v * 100)} %`;
 
-/** Now Playing ambient, artwork accent, corners, density and UI size. */
-function DisplayOptions() {
+const outlineBtn = "m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]";
+
+/** Settings → Look: the style, motion, shapes, size and font. */
+export function LookSettings() {
   const a = useSettings((s) => s.appearance);
-  const seg = (on: boolean) => `m3-seg rounded-full px-3 py-1 text-sm ${on ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`;
   return (
-    <div className="mt-6 border-t border-[var(--c-outline)] pt-4">
-      <OptionRow title="Ambient light in Now Playing" detail="Soft glow from the artwork behind Now Playing.">
-        <Switch on={a.ambient} onChange={(ambient) => setAppearance({ ambient })} label="Ambient light in Now Playing" />
-      </OptionRow>
-      {a.ambient && (
-        <>
-          <OptionRow title="Ambient intensity">
-            <Slider className="w-40" value={a.ambientIntensity} max={1} step={0.05} live onCommit={(ambientIntensity) => setAppearance({ ambientIntensity })} label="Ambient intensity" tooltip="value" format={pct} />
-          </OptionRow>
-          <OptionRow title="Ambient quality" detail="Higher is smoother. It's drawn once per song, only while Now Playing is open.">
-            <div className="m3-segmented flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Ambient quality">
-              {AMBIENT_QUALITIES.map((q) => (
-                <button key={q} type="button" aria-pressed={a.ambientQuality === q} className={`${seg(a.ambientQuality === q)} capitalize`} onClick={() => setAppearance({ ambientQuality: q })}>{q}</button>
-              ))}
-            </div>
-          </OptionRow>
-        </>
-      )}
-      <OptionRow title="Colors from album art" detail="The color scheme comes from the playing track's cover, for the whole app or only Now Playing. Your custom colors still apply on top; without a cover the palette is used.">
-        <Select value={a.coverColors} options={COVER_COLOR_OPTIONS} onChange={(coverColors) => setAppearance({ coverColors })} label="Colors from album art" />
-      </OptionRow>
-      <OptionRow title="Corner radius">
-        <Slider className="w-40" value={a.radius} max={24} step={1} live onCommit={(radius) => setAppearance({ radius: Math.round(radius) })} label="Corner radius" tooltip="value" format={(v) => `${Math.round(v)} px`} />
-      </OptionRow>
-      <OptionRow title="Density">
-        <div className="m3-segmented flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Density">
-          <button type="button" aria-pressed={a.density === "normal"} className={seg(a.density === "normal")} onClick={() => setAppearance({ density: "normal" })}>Normal</button>
-          <button type="button" aria-pressed={a.density === "compact"} className={seg(a.density === "compact")} onClick={() => setAppearance({ density: "compact" })}>Compact</button>
-        </div>
-      </OptionRow>
-      <OptionRow title="Interface size">
-        {/* Slider covers 90–125 %; it works on the offset so the track starts at 90. */}
-        <Slider className="w-40" value={a.zoom - 0.9} max={0.35} step={0.05} onCommit={(v) => setAppearance({ zoom: Math.round((0.9 + v) * 20) / 20 })} label="Interface size" tooltip="value" format={(v) => pct(0.9 + v)} />
-      </OptionRow>
-      <OptionRow title="Font" detail={a.font === "custom" && !a.fontFamily ? "Pick one of your installed fonts below." : undefined}>
-        <div className="m3-segmented flex rounded-full bg-fg/5 p-0.5" role="group" aria-label="Font">
-          {FONT_OPTIONS.map(([kind, label]) => (
-            <button key={kind} type="button" aria-pressed={a.font === kind} className={seg(a.font === kind)} onClick={() => setAppearance({ font: kind })}>{label}</button>
-          ))}
-        </div>
-      </OptionRow>
-      {a.font === "custom" && <FontPicker value={a.fontFamily} onChange={(fontFamily) => setAppearance({ fontFamily })} />}
-    </div>
+    <>
+      <SettingCard title="Style">
+        <SettingRow id="style" title="Style" detail={styleDetail(a.uiStyle)}><StylePicker /></SettingRow>
+        <SettingRow id="animations" title="Animations" detail="Springs, shape changes and slides. Off reduces motion; by default it follows your system's setting.">
+          <AnimationsSwitch />
+        </SettingRow>
+        <SettingRow id="classic" title="Classic ytdesk" detail="Back to the look from before 2.0: Classic style and the Classic Now Playing.">
+          <ResetToClassic />
+        </SettingRow>
+      </SettingCard>
+      <SettingCard title="Size and shape">
+        <SettingRow id="zoom" title="Interface size" detail="Scales everything: text, buttons and pictures.">
+          {/* Slider covers 90–125 %; it works on the offset so the track starts at 90. */}
+          <Slider className="w-40" value={a.zoom - 0.9} max={0.35} step={0.05} onCommit={(v) => setAppearance({ zoom: Math.round((0.9 + v) * 20) / 20 })} label="Interface size" tooltip="value" format={(v) => pct(0.9 + v)} />
+        </SettingRow>
+        <SettingRow id="density" title="Density" detail="Compact fits more on screen with less space around things.">
+          <Segmented value={a.density} options={[["normal", "Normal"], ["compact", "Compact"]]} onChange={(density) => setAppearance({ density })} label="Density" />
+        </SettingRow>
+        <SettingRow id="radius" title="Corner radius" detail="How round buttons, cards and covers are.">
+          <Slider className="w-40" value={a.radius} max={24} step={1} live onCommit={(radius) => setAppearance({ radius: Math.round(radius) })} label="Corner radius" tooltip="value" format={(v) => `${Math.round(v)} px`} />
+        </SettingRow>
+      </SettingCard>
+      <SettingCard title="Text">
+        <SettingRow id="font" title="Font" detail={a.font === "custom" && !a.fontFamily ? "Pick one of your installed fonts below." : "ytdesk's own font, your system's, or any font you have installed."}>
+          <Segmented value={a.font} options={FONT_OPTIONS} onChange={(font) => setAppearance({ font })} label="Font" />
+        </SettingRow>
+        {a.font === "custom" && <div className="px-5 pb-4"><FontPicker value={a.fontFamily} onChange={(fontFamily) => setAppearance({ fontFamily })} /></div>}
+      </SettingCard>
+    </>
+  );
+}
+
+/** Settings → Now Playing: its layout and the ambient light behind it. */
+export function NowPlayingSettings() {
+  const a = useSettings((s) => s.appearance);
+  return (
+    <>
+      <SettingCard title="Layout">
+        <SettingRow id="layout" title="Now Playing layout" detail="Material and Bento have the queue, lyrics and related music built in. All three work with either style." stacked>
+          <LayoutPicker />
+        </SettingRow>
+      </SettingCard>
+      <SettingCard title="Ambient light">
+        <SettingRow id="ambient" title="Ambient light" detail="A soft glow from the cover behind Now Playing.">
+          <Switch on={a.ambient} onChange={(ambient) => setAppearance({ ambient })} label="Ambient light" />
+        </SettingRow>
+        <SettingRow id="ambientIntensity" title="Intensity" disabled={!a.ambient}>
+          <Slider className="w-40" value={a.ambientIntensity} max={1} step={0.05} live onCommit={(ambientIntensity) => setAppearance({ ambientIntensity })} label="Ambient intensity" tooltip="value" format={pct} />
+        </SettingRow>
+        <SettingRow id="ambientQuality" title="Quality" detail="Higher is smoother. It's drawn once per song, only while Now Playing is open." disabled={!a.ambient}>
+          <Segmented value={a.ambientQuality} options={AMBIENT_QUALITIES.map((q) => [q, q[0].toUpperCase() + q.slice(1)] as const)} onChange={(ambientQuality) => setAppearance({ ambientQuality })} label="Ambient quality" />
+        </SettingRow>
+      </SettingCard>
+    </>
   );
 }
 
@@ -95,9 +96,8 @@ function readView(): EditorView {
   }
 }
 
-const outlineBtn = "m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]";
-
-export default function AppearanceSettings() {
+/** Settings → Colors: palette, light or dark, colors from album art, custom colors, theme files. */
+export function ColorSettings() {
   const appearance = useSettings((s) => s.appearance);
   const { palette, mode, overrides } = appearance;
   const [query, setQuery] = useState("");
@@ -129,74 +129,71 @@ export default function AppearanceSettings() {
   const customCount = Object.keys(overrides).length;
 
   return (
-    <section id="settings-appearance" className="m3-section mb-6 scroll-mt-4 rounded-lg bg-[var(--c-surface)] p-6">
-      <h2 className="mb-1 text-lg font-semibold">Appearance</h2>
-      <p className="mb-4 text-sm text-[var(--c-text-muted)]">Style, Now Playing layout, color palette, custom colors and other visual options.</p>
-      <StyleOptions />
+    <>
+      <SettingCard title="Palette">
+        <SettingRow id="mode" title="Dark or light" detail={hasMode(selected, mode) ? `${selected.name} is the palette in use.` : `${selected.name} has no ${mode} variant, so its other variant is used.`}>
+          <ModeToggle mode={mode} onChange={setMode} />
+        </SettingRow>
+        <SettingRow id="palette" title="Palette" detail="The colors of the whole app. Search by name or pick a popular one." stacked>
+          <SearchField value={query} onChange={setQuery} />
+          <h4 className="mb-2 mt-4 text-sm font-medium text-[var(--c-text-muted)]">{query.trim() ? `${shown.length} found` : "Popular"}</h4>
+          <PaletteGrid palettes={shown} mode={mode} selected={selected.id} onSelect={select} />
+          <button className={`${outlineBtn} mt-4`} onClick={() => setGallery(true)}>
+            <LayoutGrid size={16} aria-hidden /> Show all {PALETTES.length} palettes
+          </button>
+        </SettingRow>
+      </SettingCard>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <SearchField value={query} onChange={setQuery} />
-        <ModeToggle mode={mode} onChange={setMode} />
-      </div>
-      {!hasMode(selected, mode) && (
-        <p className="mb-3 text-sm text-[var(--c-text-muted)]">{selected.name} has no {mode} variant, so its other variant is used.</p>
-      )}
-      <h3 className="mb-2 text-sm font-medium text-[var(--c-text-muted)]">{query.trim() ? `${shown.length} found` : "Popular"}</h3>
-      <PaletteGrid palettes={shown} mode={mode} selected={selected.id} onSelect={select} />
-      <button className={`${outlineBtn} mt-4`} onClick={() => setGallery(true)}>
-        <LayoutGrid size={16} aria-hidden /> Show all {PALETTES.length} palettes
-      </button>
+      <SettingCard title="From the music">
+        <SettingRow id="coverColors" title="Colors from album art" detail="Colors from the playing track's cover, for the whole app or only Now Playing. Without a cover the palette is used; your custom colors still apply on top.">
+          <Select value={appearance.coverColors} options={COVER_COLOR_OPTIONS} onChange={(coverColors) => setAppearance({ coverColors })} label="Colors from album art" />
+        </SettingRow>
+      </SettingCard>
 
-      <div className="mt-6 border-t border-[var(--c-outline)] pt-4">
-        <button className="flex w-full items-center justify-between text-left" onClick={() => setEditor((v) => !v)} aria-expanded={editor}>
-          <span>
-            <span className="block font-medium">Custom colors</span>
-            <span className="text-sm text-[var(--c-text-muted)]">
-              {customCount ? `${customCount} custom ${customCount === 1 ? "color" : "colors"}, kept when you switch palettes.` : "Fine-tune any color on top of the palette."}
+      <SettingCard title="Your own colors">
+        <div data-setting="customColors" className="px-5 py-4">
+          <button className="flex w-full items-center justify-between gap-4 text-left" onClick={() => setEditor((v) => !v)} aria-expanded={editor}>
+            <span>
+              <span className="block text-sm font-medium">Custom colors</span>
+              <span className="text-sm text-[var(--c-text-muted)]">
+                {customCount ? `${customCount} custom ${customCount === 1 ? "color" : "colors"}, kept when you switch palettes.` : "Fine-tune any color on top of the palette."}
+              </span>
             </span>
-          </span>
-          <ChevronDown size={20} className={`shrink-0 ${editor ? "rotate-180" : ""}`} aria-hidden />
-        </button>
-        <div className="mt-3">
-          <ContrastWarnings tokens={tokens} />
-        </div>
-        {editor && (
-          <>
-            <div className="mb-2 flex items-center justify-between gap-4">
-              <p className="text-sm text-[var(--c-text-muted)]">
-                {view === "simple" ? "The main colors; related shades follow them." : "Every color the app uses."}
-              </p>
-              <div className="m3-segmented flex shrink-0 rounded-full bg-fg/5 p-0.5" role="group" aria-label="Editor view">
-                {(["simple", "advanced"] as const).map((v) => (
-                  <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}
-                    className={`m3-seg rounded-full px-3 py-1 text-sm capitalize ${view === v ? "bg-fg/15 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
-                    {v}
-                  </button>
-                ))}
+            <ChevronDown size={20} className={`shrink-0 ${editor ? "rotate-180" : ""}`} aria-hidden />
+          </button>
+          <div className="mt-3">
+            <ContrastWarnings tokens={tokens} />
+          </div>
+          {editor && (
+            <>
+              <div className="mb-2 flex items-center justify-between gap-4">
+                <p className="text-sm text-[var(--c-text-muted)]">
+                  {view === "simple" ? "The main colors; related shades follow them." : "Every color the app uses."}
+                </p>
+                <Segmented value={view} options={[["simple", "Simple"], ["advanced", "Advanced"]]} onChange={setView} label="Editor view" />
               </div>
-            </div>
-            <ColorEditor view={view} tokens={tokens} overrides={overrides} onChange={(o) => setAppearance({ overrides: o })} />
-            <button className={`${outlineBtn} mt-4`} disabled={!customCount} onClick={() => setAppearance({ overrides: {} })}>
-              <RotateCcw size={16} aria-hidden /> Discard all custom colors
-            </button>
-          </>
-        )}
-      </div>
-
-      <DisplayOptions />
-
-      <div className="mt-6 flex flex-wrap gap-2 border-t border-[var(--c-outline)] pt-4">
-        <button className={outlineBtn} onClick={() => setTransfer("import")}><Upload size={16} aria-hidden /> Import theme</button>
-        <button className={outlineBtn} onClick={() => setTransfer("export")}><Download size={16} aria-hidden /> Export theme</button>
-        <button className={`${outlineBtn} ml-auto`} onClick={() => useSettings.getState().set({ appearance: DEFAULT_APPEARANCE })}>
-          <RotateCcw size={16} aria-hidden /> Restore default appearance
-        </button>
-      </div>
+              <ColorEditor view={view} tokens={tokens} overrides={overrides} onChange={(o) => setAppearance({ overrides: o })} />
+              <button className={`${outlineBtn} mt-4`} disabled={!customCount} onClick={() => setAppearance({ overrides: {} })}>
+                <RotateCcw size={16} aria-hidden /> Discard all custom colors
+              </button>
+            </>
+          )}
+        </div>
+        <SettingRow id="themeFile" title="Theme file" detail="Share your look or bring in someone else's: palette, custom colors and the other appearance settings.">
+          <button className={outlineBtn} onClick={() => setTransfer("import")}><Upload size={16} aria-hidden /> Import</button>
+          <button className={outlineBtn} onClick={() => setTransfer("export")}><Download size={16} aria-hidden /> Export</button>
+        </SettingRow>
+        <SettingRow id="restoreAppearance" title="Restore default appearance" detail="Every Look, Colors and Now Playing setting back to how ytdesk comes.">
+          <button className={outlineBtn} onClick={() => useSettings.getState().set({ appearance: DEFAULT_APPEARANCE })}>
+            <RotateCcw size={16} aria-hidden /> Restore
+          </button>
+        </SettingRow>
+      </SettingCard>
 
       {gallery && <PaletteGallery mode={mode} selected={selected.id} onSelect={select} onMode={setMode} onClose={closeGallery} />}
       {transfer && (
         <ThemeTransfer kind={transfer} current={appearance} onImport={(a) => useSettings.getState().set({ appearance: { ...a, animations: appearance.animations } })} onClose={() => setTransfer(null)} />
       )}
-    </section>
+    </>
   );
 }
