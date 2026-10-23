@@ -218,7 +218,8 @@ function mapResponsive(n: R): Item | null {
     const fixed = runsText(n.fixedColumns?.[0]?.musicResponsiveListItemFixedColumnRenderer?.text);
     const musicVideoType = titleRuns[0]?.navigationEndpoint?.watchEndpoint?.watchEndpointMusicSupportedConfigs?.watchEndpointMusicConfig?.musicVideoType ?? "";
     const isSongish = /ATV|OFFICIAL_SOURCE_MUSIC|PRIVATELY_OWNED/.test(musicVideoType) || !musicVideoType;
-    const durationSec = parseDuration(fixed) ?? parseDuration(restRuns[restRuns.length - 1]?.text ?? "");
+    // The length is the fixed column, or a run of its own: last in lists, before "11M plays" in search results.
+    const durationSec = parseDuration(fixed) ?? restRuns.map((r: R) => parseDuration(r?.text ?? "")).reverse().find((d) => d !== undefined);
     const artists = info.artists.length ? info.artists : [runsText({ runs: flexRuns(n, 1) }).split(SEP)[0]].filter(Boolean);
     const t: Track & Item = { type: "track", id: videoId, title, subtitle, thumbnail, artists, album: info.album, durationSec };
     if (info.artists.length) t.artistIds = info.artistIds;

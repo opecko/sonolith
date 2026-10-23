@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import playlists from "./__fixtures__/library-playlists.json";
 import liked from "./__fixtures__/liked-songs.json";
-import { flattenPage, parseBrowse, parseDuration, runInfo } from "./raw";
+import { flattenPage, mapRawItem, parseBrowse, parseDuration, runInfo } from "./raw";
 
 describe("raw browse parser", () => {
   it("parses library grid, skips create button and unknown nodes", () => {
@@ -71,5 +71,18 @@ describe("runInfo", () => {
     expect(info.artists).toEqual(["A", "B"]);
     expect(info.artistIds).toEqual(["UCa", "UCb"]);
     expect(info.album).toEqual({ id: "MPREx", title: "Alb" });
+  });
+});
+
+describe("song rows", () => {
+  it("finds the length before a plays count (search results)", () => {
+    const col = (...texts: string[]) => ({ musicResponsiveListItemFlexColumnRenderer: { text: { runs: texts.map((text) => ({ text })) } } });
+    const row = {
+      musicResponsiveListItemRenderer: {
+        playlistItemData: { videoId: "e1N_fJlJaXY" },
+        flexColumns: [col("Reality In Motion"), col("Tame Impala", " • ", "Currents", " • ", "4:13"), col("11M plays")],
+      },
+    };
+    expect(mapRawItem(row)).toMatchObject({ type: "track", title: "Reality In Motion", durationSec: 253 });
   });
 });

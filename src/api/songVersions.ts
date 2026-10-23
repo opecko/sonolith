@@ -28,7 +28,7 @@ export function pickSong(video: Track, candidates: Track[]): Track | undefined {
   return fits.find((c) => c.title.toLowerCase() === wanted) ?? [...fits].sort((a, b) => a.title.length - b.title.length)[0];
 }
 
-const CACHE_KEY = "songVersions-v1";
+const CACHE_KEY = "songVersions-v2"; // v1 entries came from a parser that missed their length
 const CACHE_MAX = 2000;
 let cache: Map<string, Track | null> | null = null;
 
