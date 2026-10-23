@@ -53,6 +53,7 @@ export function mapTrack(n: N, fallback: TrackFallback = {}): Track | null {
     album,
     durationSec: typeof n.duration?.seconds === "number" ? n.duration.seconds : undefined,
     rating: likeStatus(n.menu),
+    ...(n.item_type === "video" ? { video: true } : {}),
   };
 }
 

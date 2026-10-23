@@ -61,6 +61,8 @@ export interface Track {
   show?: { id: string; title: string };
   /** Where the track entered the queue; autoplay tracks get a divider and can be dropped. */
   source?: "autoplay";
+  /** A music video (official or uploaded), not the song itself; see songVersions.ts. */
+  video?: boolean;
 }
 
 export interface AlbumRef {

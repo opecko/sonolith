@@ -1,6 +1,7 @@
 import { getAccountClient, getClient, ytFetch } from "./client";
 import { historyPingUrl, makeCpn } from "./history";
 import { parseCredits } from "./menu";
+import { isEditorialPlaylist, songVersions } from "./songVersions";
 import { parseChannel, parseShow, type PodcastChannel, type PodcastShow } from "./podcast";
 import { flattenPage } from "./raw";
 import {
@@ -63,10 +64,22 @@ export async function getLibrary(section: LibrarySection): Promise<Page<Item>> {
   return wrap(first);
 }
 
+/** Songs only, for matching music videos to their songs (songVersions.ts). */
+const SONGS_FILTER = "EgWKAQIIAWoMEBEQEBADEAQQFRAJ";
+async function searchSongs(query: string): Promise<Track[]> {
+  const r = await searchPage(exec, query, SONGS_FILTER);
+  return [...r.top, ...r.groups.flatMap((g) => g.items), ...r.shelves.flatMap((s) => s.items)].filter((i): i is Track & Item => i.type === "track");
+}
+
 export async function getPlaylist(id: string): Promise<Playlist> {
-  const wrap = (p: N, base: Omit<Playlist, "tracks" | "loadMore">): Playlist => ({
+  // YouTube Music's own playlists come as music videos without Premium: shown and played as the songs instead.
+  const tracksOf = (p: N) => {
+    const tracks = mapTracks(p.items ?? p.contents);
+    return isEditorialPlaylist(id) ? songVersions(tracks, searchSongs) : tracks;
+  };
+  const wrap = async (p: N, base: Omit<Playlist, "tracks" | "loadMore">): Promise<Playlist> => ({
     ...base,
-    tracks: mapTracks(p.items ?? p.contents),
+    tracks: await tracksOf(p),
     loadMore: p.has_continuation ? async () => wrap(await p.getContinuation(), base) : null,
   });
   const page: N = await (await music()).getPlaylist(id);
