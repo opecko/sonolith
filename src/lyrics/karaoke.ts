@@ -62,17 +62,53 @@ export function gapsOf(lines: LyricLine[], min = GAP_MS): [number, number, numbe
   return out;
 }
 
-/** Breathing dots: how lit dot `k` of 3 is (they light up one by one across the break) and the group's scale. */
-export function gapPose(from: number, to: number, ms: number, breathe: boolean): { dots: number[]; scale: number } {
-  const p = Math.min(1, Math.max(0, (ms - from) / (to - from)));
-  const dots = [0, 1, 2].map((k) => Math.min(1, Math.max(0, p * 3 - k)));
-  if (!breathe) return { dots, scale: 1 };
-  // A slow breath; it shrinks away over the last half second so the next line takes over.
-  const fade = Math.min(1, Math.max(0, (to - ms) / 500));
-  return { dots, scale: (1 + 0.1 * Math.sin((2 * Math.PI * (ms - from)) / 1800)) * fade };
+// Break dots, after Apple Music's: they pop in, breathe slowly while lighting up one by one, then swell once and
+// vanish just before the next line.
+const GAP_IN_MS = 400;
+const GAP_FADE_IN_MS = 160;
+const GAP_OUT_MS = 450;
+/** Half a breath (small → big). */
+const GAP_BREATH_MS = 2500;
+const GAP_SMALL = 0.85;
+const GAP_BIG = 1.12;
+const GAP_SWELL = 1.2;
+/** The share of the exit spent swelling; the rest shrinks it away. */
+const GAP_SWELL_SHARE = 0.35;
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t));
+const smooth = (t: number) => t * t * (3 - 2 * t);
+
+/**
+ * Break dots at `ms`: how lit dot `k` of 3 is (one after another until the exit), and the group's scale and
+ * opacity. `breathe` off (the Simple style): the dots only light up.
+ */
+export function gapPose(from: number, to: number, ms: number, breathe: boolean): { dots: number[]; scale: number; opacity: number } {
+  const t = ms - from;
+  const length = Math.max(1, to - from);
+  // Short breaks keep at least the pop-in before the exit.
+  const exitAt = Math.max(Math.min(GAP_IN_MS, length), length - GAP_OUT_MS);
+  const lit = clamp01(t / exitAt);
+  const dots = [0, 1, 2].map((k) => clamp01(lit * 3 - k));
+  if (!breathe) return { dots, scale: 1, opacity: 1 };
+  if (t >= exitAt) {
+    const p = clamp01((t - exitAt) / Math.max(1, length - exitAt));
+    if (p <= GAP_SWELL_SHARE) return { dots, scale: GAP_SMALL + (GAP_SWELL - GAP_SMALL) * smooth(p / GAP_SWELL_SHARE), opacity: 1 };
+    const q = smooth((p - GAP_SWELL_SHARE) / (1 - GAP_SWELL_SHARE));
+    return { dots, scale: GAP_SWELL * (1 - q), opacity: 1 - q };
+  }
+  // The breath is timed backwards from the exit, so it is at its smallest when the swell starts.
+  const mix = (1 + Math.cos((Math.PI * (exitAt - t)) / GAP_BREATH_MS)) / 2;
+  const breath = GAP_SMALL + (GAP_BIG - GAP_SMALL) * mix;
+  return { dots, scale: breath * easeOutExpo(clamp01(t / GAP_IN_MS)), opacity: clamp01(t / GAP_FADE_IN_MS) };
 }
 
 const round = (v: number, step: number) => Math.round(v / step) * step;
+
+const resetGap = (el: HTMLElement) => {
+  el.style.transform = "";
+  el.style.opacity = "";
+};
 
 /**
  * Drives synced lyrics already rendered in `ol` (`li[data-i]` lines with `[data-w]` word and `[data-bw]` background
@@ -149,7 +185,14 @@ export function createKaraoke(ol: HTMLElement, lines: LyricLine[], style: Karaok
           li.toggleAttribute("data-active", k === i);
           li.toggleAttribute("data-past", gap ? k <= sung : k < i);
         });
-        for (const g of gaps) g.el.toggleAttribute("data-active", g === gap);
+        for (const g of gaps) {
+          g.el.toggleAttribute("data-active", g === gap);
+          // A break left (or not reached yet) shows its dots at rest, not where its exit stopped.
+          if (g !== gap) {
+            resetGap(g.el);
+            written.delete(g.el);
+          }
+        }
         if (active >= 0 && active !== i) leaving = active;
         active = i;
         current = now;
@@ -162,8 +205,13 @@ export function createKaraoke(ol: HTMLElement, lines: LyricLine[], style: Karaok
           const v = round(pose.dots[k], 0.02);
           put(d, `d${v}`, () => d.style.setProperty("--d", String(v)));
         });
+        // Rounded, so a frame that wouldn't change a pixel writes nothing.
         const sc = round(pose.scale, 0.005);
-        put(gap.el, `s${sc}`, () => (gap.el.style.transform = sc === 1 ? "" : `scale(${sc})`));
+        const op = round(pose.opacity, 0.02);
+        put(gap.el, `s${sc}o${op}`, () => {
+          gap.el.style.transform = sc === 1 ? "" : `scale(${sc})`;
+          gap.el.style.opacity = op === 1 ? "" : String(op);
+        });
       }
       // The line just left finishes its glow / settle, then is left alone.
       if (leaving >= 0 && leaving !== i) {
@@ -181,7 +229,7 @@ export function createKaraoke(ol: HTMLElement, lines: LyricLine[], style: Karaok
           el.style.top = "";
           el.removeAttribute("data-g");
         }
-      for (const g of gaps) g.el.style.transform = "";
+      for (const g of gaps) resetGap(g.el);
       delete ol.dataset.k;
     },
   };
