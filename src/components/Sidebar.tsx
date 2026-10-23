@@ -93,37 +93,38 @@ export default function Sidebar() {
   const go = useNav((s) => s.go);
   const signedIn = useAuth((s) => s.status === "signedIn");
   return (
-    <nav aria-label="Main" className="m3-drawer flex w-60 shrink-0 flex-col border-r border-[var(--c-outline)] bg-[var(--c-bg)]">
-      <div className="flex h-16 items-center gap-2 px-6">
+    // Below lg a rail: icons only (names as tooltips), no playlist list (they're in Library).
+    <nav aria-label="Main" className="m3-drawer flex w-60 shrink-0 flex-col border-r border-[var(--c-outline)] bg-[var(--c-bg)] max-lg:w-20">
+      <div className="flex h-16 items-center gap-2 px-6 max-lg:justify-center max-lg:px-0">
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--c-accent)]" aria-hidden>
           <span className="ml-0.5 h-0 w-0 border-y-[6px] border-l-[10px] border-y-transparent border-l-white" />
         </span>
-        <span className="text-xl font-bold tracking-tight">ytdesk</span>
+        <span className="text-xl font-bold tracking-tight max-lg:hidden">ytdesk</span>
       </div>
       <div className="space-y-1 px-2 pt-2">
         {items.map(({ label, route, icon }) => {
           const active = current === route.name;
           return (
-            <button key={label} onClick={() => go(route)} aria-current={active ? "page" : undefined}
-              className={`m3-nav-item flex h-12 w-full items-center gap-6 rounded-[var(--radius)] px-4 text-left text-base hover:bg-[var(--c-hover)] ${active ? "bg-[var(--c-hover)] font-medium" : "text-[var(--c-text-muted)]"}`}>
+            <button key={label} onClick={() => go(route)} aria-current={active ? "page" : undefined} title={label}
+              className={`m3-nav-item flex h-12 w-full items-center gap-6 rounded-[var(--radius)] px-4 text-left text-base hover:bg-[var(--c-hover)] max-lg:justify-center max-lg:px-0 ${active ? "bg-[var(--c-hover)] font-medium" : "text-[var(--c-text-muted)]"}`}>
               {icon}
-              {label}
+              <span className="max-lg:sr-only">{label}</span>
             </button>
           );
         })}
       </div>
-      <hr className="m3-divider mx-6 my-4 border-[var(--c-outline)]" />
+      <hr className="m3-divider mx-6 my-4 border-[var(--c-outline)] max-lg:mx-4" />
       {signedIn && (
-        <>
+        <div className="flex min-h-0 flex-1 flex-col max-lg:hidden">
           <NewPlaylist />
           <div className="scroll-y mt-4 min-h-0 flex-1 px-2 pb-4">
             <PlaylistList />
           </div>
-        </>
+        </div>
       )}
-      <button onClick={() => go({ name: "settings" })} aria-current={current === "settings" ? "page" : undefined}
-        className="m3-nav-item mx-2 mb-3 mt-auto flex h-10 items-center gap-6 rounded-[var(--radius)] px-4 text-sm text-[var(--c-text-muted)] hover:bg-[var(--c-hover)]">
-        <Settings size={20} aria-hidden /> Settings
+      <button onClick={() => go({ name: "settings" })} aria-current={current === "settings" ? "page" : undefined} title="Settings"
+        className="m3-nav-item mx-2 mb-3 mt-auto flex h-10 items-center gap-6 rounded-[var(--radius)] px-4 text-sm text-[var(--c-text-muted)] hover:bg-[var(--c-hover)] max-lg:justify-center max-lg:px-0">
+        <Settings size={20} aria-hidden /> <span className="max-lg:sr-only">Settings</span>
       </button>
     </nav>
   );

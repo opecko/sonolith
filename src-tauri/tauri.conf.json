@@ -15,7 +15,7 @@
         "title": "ytdesk",
         "width": 1200,
         "height": 780,
-        "minWidth": 800,
+        "minWidth": 480,
         "minHeight": 520
       }
     ],

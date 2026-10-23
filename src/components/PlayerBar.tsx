@@ -43,7 +43,7 @@ export function TrackMoreMenu({ track, className = "h-10 w-10" }: { track: Track
 function NowPlaying() {
   const { track, status, error } = usePlayer(useShallow((s) => ({ track: s.queue[s.index], status: s.status, error: s.error })));
   return (
-    <div className="flex w-[30%] min-w-0 items-center gap-4">
+    <div className="flex w-[30%] min-w-0 items-center gap-4 max-md:w-[34%] max-md:gap-3">
       <button onClick={openNowPlaying} disabled={!track} aria-label="Open now playing" className="shrink-0 hover:opacity-80">
         <Thumb src={track?.thumbnail} px={48} className="h-12 w-12" />
       </button>
@@ -61,8 +61,9 @@ function NowPlaying() {
       </div>
       {track && (
         <>
-          {!track.podcast && <RatingButtons track={track} />}
-          <MoreMenu />
+          {/* A narrow window keeps the title readable; both are in Now Playing too. */}
+          {!track.podcast && <div className="flex max-md:hidden"><RatingButtons track={track} /></div>}
+          <div className="flex max-md:hidden"><MoreMenu /></div>
         </>
       )}
     </div>
@@ -202,9 +203,10 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
     );
   return (
     <div className={`flex items-center justify-center ${lg ? "gap-3" : "gap-2"} ${size === "sm" ? "" : "flex-wrap"}`}>
-      {shuffleBtn}
+      {/* The player bar in a narrow window: just previous / play / next (shuffle and repeat are in Now Playing). */}
+      <div className={`flex ${size === "sm" ? "max-sm:hidden" : ""}`}>{shuffleBtn}</div>
       {group}
-      {repeatBtn}
+      <div className={`flex ${size === "sm" ? "max-sm:hidden" : ""}`}>{repeatBtn}</div>
     </div>
   );
 }
@@ -263,15 +265,15 @@ export default function PlayerBar() {
   // Same height, so the (covered) content above doesn't lay out again; no children, so no clock subscriptions.
   if (hidden) return <footer aria-hidden className="h-[72px] shrink-0" />;
   return (
-    <footer className="m3-playerbar relative z-40 flex h-[72px] shrink-0 items-center gap-6 border-t border-[var(--c-outline)] bg-[var(--c-surface)] px-4">
+    <footer className="m3-playerbar relative z-40 flex h-[72px] shrink-0 items-center gap-6 border-t border-[var(--c-outline)] bg-[var(--c-surface)] px-4 max-md:gap-3 max-md:px-3">
       <NowPlaying />
       <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5">
         <Controls />
         <Progress />
       </div>
-      <div className="flex w-[30%] items-center justify-end gap-2">
+      <div className="flex w-[30%] items-center justify-end gap-2 max-md:w-auto max-md:gap-0">
         <PodcastSpeedSlot />
-        <VolumeControl />
+        <VolumeControl sliderClassName="w-24 max-md:hidden" />
         <NowPlayingToggle />
       </div>
     </footer>
