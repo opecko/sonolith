@@ -365,6 +365,10 @@
 @media (max-width: 1023px) {
   .np-material { --np-cover: min(34vh, calc(100vw - var(--np-panel, 0px) - 64px)); }
   .np-info { width: min(640px, calc(100vw - var(--np-panel, 0px) - 64px)); }
+  /* Stacked, the cover gives up height first in a short window, so the info and transport never run into the
+     bottom strip (volume, close): its box shrinks in the column and the cover fits the box's height. */
+  .np-cover-box { container-type: size; flex: 0 1 var(--np-cover); min-height: 0; width: 100%; }
+  .np-cover { width: min(var(--np-cover), 100cqh); }
 }
 
 .bento-tile {

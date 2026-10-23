@@ -72,9 +72,11 @@ export default function MaterialLayout() {
       </div>
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 items-center justify-center gap-12 px-12 pb-2 pt-20 max-lg:flex-col max-lg:gap-6 max-lg:px-8">
-          <div className="flex shrink-0 flex-col items-center gap-4">
+          <div className="flex shrink-0 flex-col items-center gap-4 max-lg:min-h-0 max-lg:w-full max-lg:shrink">
             <PodcastMode />
-            <CoverArt className="np-cover aspect-square rounded-[var(--m3-corner-2xl)]" />
+            <div className="np-cover-box flex justify-center">
+              <CoverArt className="np-cover aspect-square rounded-[var(--m3-corner-2xl)]" />
+            </div>
           </div>
           {track && (
             <div className="np-info flex min-w-0 shrink-0 flex-col gap-6">
