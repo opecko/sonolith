@@ -370,6 +370,8 @@
   .np-cover-box { container-type: size; flex: 0 1 var(--np-cover); min-height: 0; width: 100%; }
   .np-cover { width: min(var(--np-cover), 100cqh); }
 }
+/* A thumbnail-sized cover is noise: below this the stacked layout drops it. */
+@container (max-height: 63px) { .np-cover { display: none; } }
 
 .bento-tile {
   min-width: 0;
