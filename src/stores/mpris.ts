@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { mediaArtwork } from "../api/art";
 import { nativeMpris } from "./platform";
-import { usePlayer, type Repeat } from "./player";
+import { onPlaybackTick, playbackTime, usePlayer, type Repeat } from "./player";
 import { useProgress } from "./progress";
 
 const LOOP: Record<Repeat, string> = { off: "None", all: "Playlist", one: "Track" };
@@ -45,7 +45,10 @@ export async function initMpris() {
   const push = (force = false) => {
     const s = p();
     const t = s.queue[s.index];
-    const { position, duration } = useProgress.getState();
+    // Not useProgress.position: that clock stands still while the window is hidden (0 after a track change there),
+    // so play/pause or volume from the panel would report it and reset the position shown there.
+    const position = playbackTime();
+    const { duration } = useProgress.getState();
     const status = s.status === "playing" || s.status === "loading" ? "Playing" : t && s.status !== "error" ? "Paused" : "Stopped";
     const key = JSON.stringify([t?.id, t?.title, status, s.volume, s.muted, s.shuffle, s.repeat, s.index > 0 || s.repeat !== "off", s.index < s.queue.length - 1 || s.repeat !== "off", Math.round(duration)]);
     if (!force && key === last) return;
@@ -77,7 +80,9 @@ export async function initMpris() {
   };
   usePlayer.subscribe(() => push());
   // The clock ticks constantly; only a jump away from the expected position (a seek) is worth sending.
-  useProgress.subscribe(({ position }) => {
+  // Ticks come from the audio element, so this works while the window is hidden too.
+  onPlaybackTick(() => {
+    const position = playbackTime();
     const playing = p().status === "playing";
     const expected = sentPos + (playing ? (Date.now() - sentAt) / 1000 : 0);
     if (Math.abs(position - expected) > SEEK_JUMP_S) push(true);
