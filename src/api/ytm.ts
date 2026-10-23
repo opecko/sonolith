@@ -1,4 +1,4 @@
-import { getClient, ytFetch } from "./client";
+import { getAccountClient, getClient, ytFetch } from "./client";
 import { historyPingUrl, makeCpn } from "./history";
 import { parseCredits } from "./menu";
 import { parseChannel, parseShow, type PodcastChannel, type PodcastShow } from "./podcast";
@@ -42,7 +42,7 @@ export async function getBrowse(ref: BrowseRef): Promise<Page<Shelf>> {
 }
 
 export async function createPlaylist(title: string): Promise<string | undefined> {
-  const r = await (await getClient()).playlist.create(title, []);
+  const r = await (await getAccountClient()).playlist.create(title, []);
   return r.playlist_id;
 }
 
@@ -50,12 +50,16 @@ export async function createPlaylist(title: string): Promise<string | undefined>
 export const exec: Exec = async (endpoint, body) =>
   ((await (await getClient()).actions.execute(endpoint, { ...body, client: "YTMUSIC", parse: false })) as N).data;
 
+/** exec for calls that act on the account: signed out, they fail with AuthError before asking YouTube. */
+const accountExec: Exec = async (endpoint, body) =>
+  ((await (await getAccountClient()).actions.execute(endpoint, { ...body, client: "YTMUSIC", parse: false })) as N).data;
+
 export async function getLibrary(section: LibrarySection): Promise<Page<Item>> {
   const wrap = (p: ListPage): Page<Item> => ({
     items: p.items,
-    loadMore: p.next ? async () => wrap(await libraryPage(exec, section, p.next!)) : null,
+    loadMore: p.next ? async () => wrap(await libraryPage(accountExec, section, p.next!)) : null,
   });
-  const first = await libraryPage(exec, section);
+  const first = await libraryPage(accountExec, section);
   return wrap(first);
 }
 
@@ -91,11 +95,11 @@ const RATE_ENDPOINT: Record<Rating, string> = { LIKE: "/like/like", DISLIKE: "/l
 
 /** Thumbs up / down / neutral. Sent as the YT Music client (youtubei.js' interact.* uses the YouTube client → 400). */
 export async function rate(videoId: string, rating: Rating): Promise<void> {
-  await exec(RATE_ENDPOINT[rating], { target: { videoId } });
+  await accountExec(RATE_ENDPOINT[rating], { target: { videoId } });
 }
 
 export async function addToPlaylist(playlistId: string, videoId: string): Promise<void> {
-  await (await getClient()).playlist.addVideos(playlistId, [videoId]);
+  await (await getAccountClient()).playlist.addVideos(playlistId, [videoId]);
 }
 
 /**
@@ -103,12 +107,12 @@ export async function addToPlaylist(playlistId: string, videoId: string): Promis
  * endpoint it can't send ("Expected an api_url").
  */
 export async function deletePlaylist(playlistId: string): Promise<void> {
-  await exec("/playlist/delete", { playlistId });
+  await accountExec("/playlist/delete", { playlistId });
 }
 
 /** Fails with "This playlist cannot be edited." for playlists the user doesn't own. */
 export async function removeFromPlaylist(playlistId: string, videoId: string): Promise<void> {
-  await (await getClient()).playlist.removeVideos(playlistId, [videoId]);
+  await (await getAccountClient()).playlist.removeVideos(playlistId, [videoId]);
 }
 
 /** Raw /next for a video and/or queue (chips, header, related/lyrics tabs, automix seed). */
@@ -121,7 +125,7 @@ export function getChipTracks(chip: QueueChip, currentId: string) {
 }
 
 export function getAccount() {
-  return account(exec);
+  return account(accountExec);
 }
 
 /** Central "Start radio": resolves the radio endpoint for any source and returns the first page. */
@@ -141,7 +145,7 @@ export async function getLyrics(ref: BrowseRef): Promise<Lyrics | null> {
 
 /** Adds a play of `videoId` to the account's YouTube Music history. */
 export async function recordHistory(videoId: string): Promise<void> {
-  const url = historyPingUrl(await exec("/player", { videoId }), makeCpn());
+  const url = historyPingUrl(await accountExec("/player", { videoId }), makeCpn());
   if (!url) throw new Error("No playback tracking URL in the player response");
   const res = await ytFetch(url, { method: "GET" });
   if (!res.ok) throw new Error(`History ping failed: HTTP ${res.status}`);
@@ -149,7 +153,7 @@ export async function recordHistory(videoId: string): Promise<void> {
 
 /** Sends a menu feedback token (library save/remove, pin, remove from history, …). */
 export async function sendFeedback(token: string): Promise<void> {
-  const r = await exec("/feedback", { feedbackTokens: [token] });
+  const r = await accountExec("/feedback", { feedbackTokens: [token] });
   const ok = (r?.feedbackResponses ?? []).every((f: { isProcessed?: boolean }) => f?.isProcessed !== false);
   if (!ok) throw new Error("YouTube Music did not accept the change");
 }
@@ -175,7 +179,7 @@ export async function getCredits(browseId: string): Promise<Credits> {
 
 /** Listening history grouped by day ("Today", "Yesterday", …); `chip` = Music / Podcasts filter. */
 export async function getHistory(chip?: BrowseRef): Promise<Page<Shelf>> {
-  return shelfPage(await browse(exec, chip ?? { browseId: "FEmusic_history" }));
+  return shelfPage(await browse(accountExec, chip ?? { browseId: "FEmusic_history" }));
 }
 
 // ---------- podcasts ----------
@@ -193,7 +197,7 @@ export async function getEpisodes(token: string): Promise<Page<Track>> {
 }
 
 export async function setPodcastSaved(playlistId: string, saved: boolean): Promise<void> {
-  await exec(saved ? "/like/like" : "/like/removelike", { target: { playlistId } });
+  await accountExec(saved ? "/like/like" : "/like/removelike", { target: { playlistId } });
 }
 
 export async function getChannel(id: string): Promise<PodcastChannel> {
@@ -201,5 +205,5 @@ export async function getChannel(id: string): Promise<PodcastChannel> {
 }
 
 export async function setSubscribed(channelId: string, on: boolean): Promise<void> {
-  await exec(on ? "/subscription/subscribe" : "/subscription/unsubscribe", { channelIds: [channelId] });
+  await accountExec(on ? "/subscription/subscribe" : "/subscription/unsubscribe", { channelIds: [channelId] });
 }

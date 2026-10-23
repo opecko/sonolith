@@ -15,12 +15,15 @@ import PlaylistView from "./PlaylistView";
 import SearchView from "./SearchView";
 import SettingsView from "./SettingsView";
 
+/** Routes that only make sense with an account; everything else works signed out (anonymous InnerTube). */
+const ACCOUNT_ROUTES = new Set(["library", "history"]);
+
 function SignInPrompt() {
   const { login, error } = useAuth();
   return (
     <div className="mx-auto mt-24 max-w-sm text-center">
       <h2 className="text-2xl font-bold tracking-tight">Sign in to YouTube Music</h2>
-      <p className="mt-2 text-sm text-[var(--c-text-muted)]">A Google sign-in window will open. Your cookies are stored in the OS keyring.</p>
+      <p className="mt-2 text-sm text-[var(--c-text-muted)]">Your library, likes and history need an account. A Google sign-in window will open; your cookies are stored in the OS keyring.</p>
       <button onClick={login} className="m3-btn m3-filled mt-6 h-10 rounded-full bg-button px-6 text-sm font-medium text-on-button hover:scale-105">Sign in</button>
       {error && <p className="mt-3 text-sm text-[var(--c-error)]">{error}</p>}
     </div>
@@ -56,7 +59,7 @@ export default function MainView() {
 
   return (
     <main ref={ref} className="scroll-y min-h-0 flex-1 px-8 pb-8 pt-6">
-      {status === "loading" ? null : status === "signedOut" ? <SignInPrompt /> : <ErrorBoundary key={key}><Routed /></ErrorBoundary>}
+      {status === "loading" ? null : status === "signedOut" && ACCOUNT_ROUTES.has(route.name) ? <SignInPrompt /> : <ErrorBoundary key={key}><Routed /></ErrorBoundary>}
     </main>
   );
 }

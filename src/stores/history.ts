@@ -1,4 +1,5 @@
 import { recordHistory } from "../api/ytm";
+import { useAuth } from "./auth";
 import { useDevSlot } from "./devSlot";
 import { onPlaybackTick, playbackTime, usePlayer } from "./player";
 import { useProgress } from "./progress";
@@ -19,7 +20,7 @@ export function initHistory() {
       currentId = id;
       recorded = false;
     }
-    if (!id || recorded || status !== "playing" || !useSettings.getState().saveHistory) return;
+    if (!id || recorded || status !== "playing" || !useSettings.getState().saveHistory || useAuth.getState().status !== "signedIn") return;
     // The real playback time: the displayed position stands still while the window is hidden (tray).
     const position = playbackTime();
     const { duration } = useProgress.getState();

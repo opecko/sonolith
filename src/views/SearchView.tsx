@@ -4,6 +4,7 @@ import type { CardAction, Chip, Item, Page, SearchGroup, SearchResults, Track } 
 import { search } from "../api/ytm";
 import { EpisodeRow } from "../components/Episode";
 import ItemMenu, { playlistEntries } from "../components/ItemMenu";
+import { useAuth } from "../stores/auth";
 import LoadMore from "../components/LoadMore";
 import Menu from "../components/Menu";
 import { ItemGrid, ShelfRow } from "../components/Shelves";
@@ -30,12 +31,13 @@ const secondary = `${pill} m3-btn m3-outlined border border-fg/25 hover:bg-fg/10
 
 /** Shuffle / Mix (artists) and Play / Save (songs), as on the YouTube Music top-result card. */
 function CardButtons({ top, actions }: { top: Item; actions: CardAction[] }) {
+  const signedIn = useAuth((s) => s.status === "signedIn");
   return (
     <div className="mt-4 flex flex-wrap items-center gap-3">
       {actions.map((a, i) => {
         const cls = i === 0 ? primary : secondary;
         if (a.kind === "save")
-          return isTrack(top) ? (
+          return isTrack(top) && signedIn ? (
             <Menu key={a.kind} entries={() => playlistEntries(top)} label={`Save ${top.title} to a playlist`} className={cls}
               trigger={<><ListPlus size={18} aria-hidden /> {a.label}</>} />
           ) : null;

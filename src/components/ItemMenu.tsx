@@ -7,6 +7,7 @@ import type { Item, MenuToggle, Track, TrackMenu } from "../api/types";
 import { addToPlaylist, getCredits, getTrackMenu, removeFromPlaylist, sendFeedback } from "../api/ytm";
 import { invalidate } from "../hooks/useData";
 import { playItem, queueCollection } from "../stores/actions";
+import { useAuth } from "../stores/auth";
 import { markEpisode, useEpisodeProgress } from "../stores/episodeProgress";
 import { useLibrary } from "../stores/library";
 import { useNav } from "../stores/nav";
@@ -190,7 +191,8 @@ function trackEntries(track: Track, menu: TrackMenu | undefined, loading: boolea
     // An episode's own "Mark as played" (below) replaces the server's, and also sends it.
     ...(menu?.toggles ?? []).filter((t) => !(track.podcast && t === playedToggle(menu))).map(toggleEntry),
     ...(track.podcast ? [markEntry(track, menu)] : []),
-    { label: "Save to playlist", icon: <ListPlus size={S} />, submenu: () => playlistEntries(track) },
+    // Signed out there are no playlists to save to.
+    ...(useAuth.getState().status === "signedIn" ? [{ label: "Save to playlist", icon: <ListPlus size={S} />, submenu: () => playlistEntries(track) }] : []),
     // Only on the user's own playlists (saved ones by others are in the library too, but can't be edited).
     ...(playlistId && ownPlaylist(playlistId) ? [removeEntry(track, playlistId)] : []),
   ];

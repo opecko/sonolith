@@ -19,7 +19,8 @@ export const ytFetch = makeYtFetch(tauriFetch as typeof fetch, {
   cookie: () => cookieValue,
   authUser: () => authUser,
   onResponse: (res) => {
-    if (res.status === 401) {
+    // Signed out, a 401 is just an account-only request: nothing has expired.
+    if (res.status === 401 && cookieValue) {
       cached = null;
       expiredHandler?.();
     }
@@ -37,15 +38,22 @@ export function getCookie(): Promise<string | null> {
   return invoke<string | null>("auth_get_cookie");
 }
 
+/** The InnerTube client: signed in with the stored cookie, or anonymous without one. */
 export function getClient(): Promise<Innertube> {
   cached ??= (async () => {
     const cookie = await getCookie();
-    if (!cookie) throw new AuthError();
     cookieValue = cookie;
-    return createInnertube(ytFetch, cookie, authUser);
+    return createInnertube(ytFetch, cookie ?? undefined, authUser);
   })();
   cached.catch(() => (cached = null));
   return cached;
+}
+
+/** For requests that act on the account (library, likes, playlists, history): signed out, they fail with AuthError. */
+export async function getAccountClient(): Promise<Innertube> {
+  const client = await getClient();
+  if (!cookieValue) throw new AuthError("Sign in to YouTube Music to use your library, likes and playlists.");
+  return client;
 }
 
 export function resetClient() {

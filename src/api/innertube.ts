@@ -61,7 +61,8 @@ export function makeYtFetch(base: typeof fetch, opts: YtFetchOptions): typeof fe
  */
 Platform.shim.eval = (data) => new Function(data.output)();
 
-export function createInnertube(fetchFn: typeof fetch, cookie: string, accountIndex = 0) {
+/** Without a cookie the client is anonymous (signed out): browsing, search and playback still work. */
+export function createInnertube(fetchFn: typeof fetch, cookie?: string, accountIndex = 0) {
   return Innertube.create({
     cookie,
     fetch: fetchFn,
