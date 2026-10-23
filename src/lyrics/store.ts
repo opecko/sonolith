@@ -57,6 +57,10 @@ async function load(track: Track) {
     if (now && now.provider === d.provider && now.synced === d.synced) return;
     useLyrics.setState({ status: "done", data: d });
   };
+  // Providers match by length (Better Lyrics answers only with album and length): a track that doesn't carry its
+  // length waits for the audio's, or it would be asked without one and lose its best lyrics.
+  if (order.length && !track.durationSec) await waitForDuration(track.id);
+  if (mine !== gen) return;
   const fromProviders = order.length
     ? await invoke<LyricsResponse>("lyrics_get", lyricsRequest(track, order, false, (r) => r.lyrics?.synced && show(toData(r)))).then(toData, () => null)
     : null;
@@ -73,6 +77,22 @@ async function load(track: Track) {
   // The same answer the view already shows: keep the object, nothing re-renders.
   if (now && chosen && now.provider === chosen.provider && now.synced === chosen.synced) useLyrics.setState({ status: "done" });
   else useLyrics.setState({ id: track.id, status: "done", data: chosen });
+}
+
+/** Until the playing audio's length is known (a few seconds at most; then the request goes without it). */
+function waitForDuration(id: string): Promise<void> {
+  if (useProgress.getState().duration > 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    const stopProgress = useProgress.subscribe((p) => p.duration > 0 && done());
+    const stopPlayer = usePlayer.subscribe((s) => s.queue[s.index]?.id !== id && done());
+    const timer = setTimeout(done, 4000);
+    function done() {
+      stopProgress();
+      stopPlayer();
+      clearTimeout(timer);
+      resolve();
+    }
+  });
 }
 
 function waitForWatch(id: string): Promise<import("../api/types").BrowseRef | undefined> {
