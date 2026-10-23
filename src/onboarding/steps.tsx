@@ -4,6 +4,7 @@ import { getAccount } from "../api/ytm";
 import { ModeToggle, PaletteGrid } from "../components/appearance/PaletteGallery";
 import { LAYOUTS, LayoutPreview, STYLES } from "../components/appearance/StyleOptions";
 import { TransportSample } from "../components/PlayerBar";
+import Select from "../components/Select";
 import Slider from "../components/Slider";
 import Switch from "../components/Switch";
 import { UiStyleScope } from "../components/UiStyle";
@@ -11,7 +12,7 @@ import { useAsync } from "../hooks/useData";
 import { KaraokeChoices } from "../lyrics/KaraokeSetting";
 import { useAuth } from "../stores/auth";
 import { setAppearance, useSettings } from "../stores/settings";
-import { AMBIENT_QUALITIES, type UiStyle } from "../theme/appearance";
+import { AMBIENT_QUALITIES, COVER_COLOR_OPTIONS, type UiStyle } from "../theme/appearance";
 import { FEATURED } from "../theme/featured";
 import { getPalette, PALETTES } from "../theme/palettes";
 import logo from "../../src-tauri/icons/128x128@2x.png";
@@ -154,8 +155,8 @@ export function ColorsStep({ onMore }: { onMore: () => void }) {
       </div>
       <PaletteGrid palettes={shown} mode={mode} selected={selected.id} onSelect={(id) => setAppearance({ palette: id })} />
       <div className="mt-4 border-t border-[var(--m3-outline-variant)] pt-2">
-        <Option title="Colors from album art" detail="The colors follow the cover of what's playing; your palette is used when there's no cover.">
-          <Switch on={coverColors} onChange={(on) => setAppearance({ coverColors: on })} label="Colors from album art" />
+        <Option title="Colors from album art" detail="The colors follow the cover of what's playing, everywhere or only in Now Playing; your palette is used when there's no cover.">
+          <Select value={coverColors} options={COVER_COLOR_OPTIONS} onChange={(v) => setAppearance({ coverColors: v })} label="Colors from album art" />
         </Option>
       </div>
     </div>

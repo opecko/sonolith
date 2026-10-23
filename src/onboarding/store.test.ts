@@ -16,7 +16,7 @@ const snapshot = () => {
 describe("running the setup again (Settings → About)", () => {
   // An onboarded user with non-default choices.
   useSettings.getState().set({ onboardingCompleted: true, lastSeenVersion: "2.0.0", autoplay: false });
-  setAppearance({ palette: "nord", mode: "light", uiStyle: "classic", nowPlayingLayout: "bento", ambient: false, coverColors: true });
+  setAppearance({ palette: "nord", mode: "light", uiStyle: "classic", nowPlayingLayout: "bento", ambient: false, coverColors: "app" });
 
   it("opening and closing it changes no setting", () => {
     const before = snapshot();

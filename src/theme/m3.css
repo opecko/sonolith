@@ -3,8 +3,9 @@
  * (html[data-ui-style="m3"]) uses them for components; Classic ignores them. Values: docs/m3-expressive.md.
  */
 
-/* Color roles derived from the --c-* tokens (recipes in m3.ts; a test keeps both in sync). */
-:root {
+/* Color roles derived from the --c-* tokens (recipes in m3.ts; a test keeps both in sync). Declared again on a
+   themed scope (Now Playing with colors from album art only there) so they follow that scope's tokens. */
+:root, [data-theme-scope] {
   --m3-primary: var(--c-accent);
   --m3-on-primary: var(--c-on-accent);
   --m3-primary-container: color-mix(in srgb, var(--c-accent) 22%, var(--c-bg));
@@ -36,6 +37,9 @@
   --m3-inverse-on-surface: var(--c-bg);
   --m3-inverse-primary: color-mix(in srgb, var(--c-accent) 70%, var(--c-bg));
   --m3-scrim: var(--c-scrim);
+}
+
+:root {
   /* Corner scale at the default 8px corner setting; applyLayout() rewrites them for other settings. */
   --m3-corner-none: 0px;
   --m3-corner-xs: 4px;

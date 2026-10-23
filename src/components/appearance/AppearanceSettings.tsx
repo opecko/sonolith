@@ -2,12 +2,13 @@ import { ChevronDown, Download, LayoutGrid, RotateCcw, Upload } from "lucide-rea
 import { useCallback, useMemo, useState } from "react";
 import { useCoverScheme } from "../../stores/coverColors";
 import { setAppearance, useSettings } from "../../stores/settings";
-import { AMBIENT_QUALITIES, DEFAULT_APPEARANCE, type FontKind } from "../../theme/appearance";
+import { AMBIENT_QUALITIES, COVER_COLOR_OPTIONS, DEFAULT_APPEARANCE, type FontKind } from "../../theme/appearance";
 import { FEATURED } from "../../theme/featured";
 import { effectiveTokens } from "../../theme/index";
 import { getPalette, hasMode, PALETTES } from "../../theme/palettes";
 import { searchPalettes } from "../../theme/search";
 import type { Mode } from "../../theme/types";
+import Select from "../Select";
 import Slider from "../Slider";
 import Switch from "../Switch";
 import ColorEditor, { ContrastWarnings, type EditorView } from "./ColorEditor";
@@ -57,8 +58,8 @@ function DisplayOptions() {
           </OptionRow>
         </>
       )}
-      <OptionRow title="Colors from album art" detail="The whole color scheme comes from the playing track's cover. Your custom colors still apply on top; without a cover the palette is used.">
-        <Switch on={a.coverColors} onChange={(coverColors) => setAppearance({ coverColors })} label="Colors from album art" />
+      <OptionRow title="Colors from album art" detail="The color scheme comes from the playing track's cover, for the whole app or only Now Playing. Your custom colors still apply on top; without a cover the palette is used.">
+        <Select value={a.coverColors} options={COVER_COLOR_OPTIONS} onChange={(coverColors) => setAppearance({ coverColors })} label="Colors from album art" />
       </OptionRow>
       <OptionRow title="Corner radius">
         <Slider className="w-40" value={a.radius} max={24} step={1} live onCommit={(radius) => setAppearance({ radius: Math.round(radius) })} label="Corner radius" tooltip="value" format={(v) => `${Math.round(v)} px`} />
@@ -115,7 +116,7 @@ export default function AppearanceSettings() {
 
   const selected = getPalette(palette);
   // With colors from album art, the contrast checks look at what's on screen: the cover's scheme plus overrides.
-  const cover = useCoverScheme((s) => (appearance.coverColors ? s.tokens : null));
+  const cover = useCoverScheme((s) => (appearance.coverColors === "app" ? s.tokens : null));
   const tokens = useMemo(() => effectiveTokens({ palette, mode, overrides }, cover ?? {}), [palette, mode, overrides, cover]);
   const shown = useMemo(() => {
     if (query.trim()) return searchPalettes(PALETTES, query);

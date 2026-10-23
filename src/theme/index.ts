@@ -63,6 +63,23 @@ export function applyTheme(t: ThemeChoice, extra: Partial<TokenMap> = {}, root: 
   root.style.colorScheme = isLight(all.bg) ? "light" : "dark";
 }
 
+/**
+ * The theme on one element only (Now Playing with colors from album art there). Every token is written: an unset
+ * one would inherit <html>'s value, not index.css's default.
+ */
+export function applyScopedTheme(el: HTMLElement, t: ThemeChoice, extra: Partial<TokenMap>) {
+  const { all } = resolve(t, extra);
+  for (const k of TOKENS) el.style.setProperty(`--c-${k}`, all[k]);
+  el.style.colorScheme = isLight(all.bg) ? "light" : "dark";
+  el.dataset.themeScope = "";
+}
+
+export function clearScopedTheme(el: HTMLElement) {
+  for (const k of TOKENS) el.style.removeProperty(`--c-${k}`);
+  el.style.colorScheme = "";
+  delete el.dataset.themeScope;
+}
+
 /** CSS font-family for the font setting; null keeps index.css's own stack. */
 export function fontStack(font: string, family: string): string | null {
   switch (font) {

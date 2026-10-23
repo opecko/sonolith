@@ -57,11 +57,14 @@ describe("colors from album art", () => {
     expect(mixTokens(a, b, 0).bg).toBe(a.bg);
   });
 
-  it("migrates Accent from artwork to Colors from album art", () => {
-    expect(normalizeAppearance({ coverAccent: true }).coverColors).toBe(true);
-    expect(normalizeAppearance({ coverAccent: false }).coverColors).toBe(false);
-    expect(normalizeAppearance({ coverColors: true, coverAccent: false }).coverColors).toBe(true);
-    expect(normalizeAppearance({}).coverColors).toBe(false);
+  it("migrates Accent from artwork and the old switch to Colors from album art", () => {
+    expect(normalizeAppearance({ coverAccent: true }).coverColors).toBe("app");
+    expect(normalizeAppearance({ coverAccent: false }).coverColors).toBe("off");
+    expect(normalizeAppearance({ coverColors: true, coverAccent: false }).coverColors).toBe("app");
+    expect(normalizeAppearance({ coverColors: false }).coverColors).toBe("off");
+    expect(normalizeAppearance({ coverColors: "nowPlaying" }).coverColors).toBe("nowPlaying");
+    expect(normalizeAppearance({ coverColors: "sometimes" }).coverColors).toBe("off");
+    expect(normalizeAppearance({}).coverColors).toBe("off");
     expect("coverAccent" in normalizeAppearance({ coverAccent: true })).toBe(false);
   });
 });

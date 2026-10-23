@@ -1,4 +1,5 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { setCoverScope } from "../stores/coverColors";
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
 import { setAppearance, useSettings } from "../stores/settings";
@@ -171,6 +172,11 @@ export default function NowPlaying() {
   const [mounted, setMounted] = useState(open);
   if (open && !mounted) setMounted(true);
   const panel = useRef<HTMLDivElement>(null);
+  // "Colors from album art" for Now Playing only themes this element (while it's mounted).
+  const panelRef = useCallback((el: HTMLDivElement | null) => {
+    panel.current = el;
+    setCoverScope(el);
+  }, []);
   const m3 = useUiStyle() === "m3";
   const layout = useSettings((s) => s.appearance.nowPlayingLayout);
   useSlide(panel, open, () => useUi.getState().setNowPlayingCovering(true), () => {
@@ -191,7 +197,7 @@ export default function NowPlaying() {
 
   if (!mounted) return null;
   return (
-    <div ref={panel} role="dialog" aria-label="Now playing" aria-hidden={!open} data-ambient={ambientOn ? "" : undefined}
+    <div ref={panelRef} role="dialog" aria-label="Now playing" aria-hidden={!open} data-ambient={ambientOn ? "" : undefined}
       className={`${open ? "" : "pointer-events-none"} fixed inset-x-0 ${layout === "classic" ? "bottom-[72px]" : "bottom-0"} top-0 z-30 flex bg-[var(--c-bg)] will-change-transform`}>
       {ambientOn && <Backdrop src={thumb} intensity={ambientIntensity} quality={ambientQuality} />}
       {/* One close button per layout: Classic uses the player bar's; Material and Bento, which replace the bar, put

@@ -4,6 +4,15 @@ import { BUILTIN_ID } from "./palettes";
 import { DEFAULT_TOKENS } from "./tokens";
 
 /** Everything under Settings → Appearance; also the shape of an exported theme file. */
+export const COVER_COLORS = ["off", "app", "nowPlaying"] as const;
+export type CoverColors = (typeof COVER_COLORS)[number];
+/** The choices as the Settings and onboarding dropdowns name them. */
+export const COVER_COLOR_OPTIONS: readonly { value: CoverColors; label: string }[] = [
+  { value: "off", label: "Off" },
+  { value: "app", label: "Whole app" },
+  { value: "nowPlaying", label: "Now Playing only" },
+];
+
 export interface Appearance extends ThemeChoice {
   /** Blurred artwork light behind Now Playing. */
   ambient: boolean;
@@ -11,8 +20,9 @@ export interface Appearance extends ThemeChoice {
   ambientIntensity: number;
   /** Ambient smoothness: how many colors are sampled and how big the canvas they're spread over is. */
   ambientQuality: AmbientQuality;
-  /** "Colors from album art": the whole scheme generated from the current cover (the palette as fallback). */
-  coverColors: boolean;
+  /** "Colors from album art": the scheme generated from the current cover (the palette as fallback), for the whole
+   * app or only Now Playing. */
+  coverColors: CoverColors;
   /** Corner radius in px. */
   radius: number;
   density: "normal" | "compact";
@@ -56,7 +66,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   ambient: true,
   ambientIntensity: 0.8,
   ambientQuality: "medium",
-  coverColors: false,
+  coverColors: "off",
   radius: 8,
   density: "normal",
   zoom: 1,
@@ -87,8 +97,10 @@ export function normalizeAppearance(raw: unknown): Appearance {
     ambient: typeof r.ambient === "boolean" ? r.ambient : d.ambient,
     ambientIntensity: num(r.ambientIntensity, 0, 1, d.ambientIntensity),
     ambientQuality: AMBIENT_QUALITIES.includes(r.ambientQuality as AmbientQuality) ? (r.ambientQuality as AmbientQuality) : d.ambientQuality,
-    // Before 2.0 this was "Accent from artwork" (coverAccent): on stays on.
-    coverColors: typeof r.coverColors === "boolean" ? r.coverColors : typeof r.coverAccent === "boolean" ? r.coverAccent : d.coverColors,
+    // Was a switch (on = the whole app); before 2.0 "Accent from artwork" (coverAccent): on stays on.
+    coverColors: COVER_COLORS.includes(r.coverColors as CoverColors) ? (r.coverColors as CoverColors)
+      : typeof r.coverColors === "boolean" ? (r.coverColors ? "app" : "off")
+      : typeof r.coverAccent === "boolean" ? (r.coverAccent ? "app" : "off") : d.coverColors,
     radius: num(r.radius, 0, 24, d.radius),
     density: r.density === "compact" ? "compact" : "normal",
     zoom: num(r.zoom, 0.9, 1.25, d.zoom),

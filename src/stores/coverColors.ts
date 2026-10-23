@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { tween } from "../motion";
 import { mixTokens, schemeTokens, sourceColor } from "../theme/albumScheme";
 import { isLight } from "../theme/color";
-import { effectiveTokens } from "../theme/index";
+import { applyScopedTheme, clearScopedTheme, effectiveTokens } from "../theme/index";
 import type { TokenMap } from "../theme/tokens";
 import { usePlayer } from "./player";
 import { useSettings } from "./settings";
@@ -45,8 +45,26 @@ export const useCoverScheme = create<{ tokens: TokenMap | null }>(() => ({ token
 /** What is painted right now: the scheme, a mix while changing tracks, or null (the palette). */
 let shown: TokenMap | null = null;
 
-/** Tokens "Colors from album art" puts between the palette and the user's own overrides (empty when off). */
-export const coverTokens = (): Partial<TokenMap> => shown ?? {};
+/** Tokens "Colors from album art" puts between the palette and the user's own overrides on <html> (empty when
+ * off or when only Now Playing takes them). */
+export const coverTokens = (): Partial<TokenMap> => (useSettings.getState().appearance.coverColors === "app" ? shown ?? {} : {});
+
+/** Now Playing's root: themed on its own when the setting is "Now Playing only". */
+let scope: HTMLElement | null = null;
+
+export function setCoverScope(el: HTMLElement | null) {
+  if (scope && scope !== el) clearScopedTheme(scope);
+  scope = el;
+  paintCoverScope();
+}
+
+/** Puts the cover's scheme (or the transition to it) on Now Playing alone, or takes it off. */
+export function paintCoverScope() {
+  if (!scope) return;
+  const a = useSettings.getState().appearance;
+  if (a.coverColors === "nowPlaying" && shown) applyScopedTheme(scope, a, shown);
+  else if (scope.dataset.themeScope !== undefined) clearScopedTheme(scope);
+}
 
 /**
  * Follows the current track's cover while "Colors from album art" is on and re-applies the theme through
@@ -78,7 +96,7 @@ export function initCoverColors(onChange: () => void) {
   const update = () => {
     const a = useSettings.getState().appearance;
     const p = usePlayer.getState();
-    const src = a.coverColors ? p.queue[p.index]?.thumbnail ?? "" : "";
+    const src = a.coverColors !== "off" ? p.queue[p.index]?.thumbnail ?? "" : "";
     if (!src && !key) return;
     if (darkFor !== a) {
       darkFor = a;

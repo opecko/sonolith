@@ -4,14 +4,17 @@ import App from "./App";
 import { openMenuAt } from "./components/Menu";
 import "./index.css";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { coverTokens, initCoverColors } from "./stores/coverColors";
+import { coverTokens, initCoverColors, paintCoverScope } from "./stores/coverColors";
 import { useSettings } from "./stores/settings";
 import { applyLayout, applyStyle, applyTheme } from "./theme";
 import { initMorph, setMotionEnabled } from "./motion";
 import { initFocusMode } from "./focusMode";
 
 // Appearance goes on synchronously before the first render, so startup never flashes the default colors.
-const applyColors = () => applyTheme(useSettings.getState().appearance, coverTokens());
+const applyColors = () => {
+  applyTheme(useSettings.getState().appearance, coverTokens());
+  paintCoverScope();
+};
 const applyZoom = (z: number) => void getCurrentWebview().setZoom(z).catch(() => {});
 applyColors();
 applyLayout(useSettings.getState().appearance);
