@@ -9,10 +9,14 @@ export type WhatsNewAction =
   /** Sets the layout; `open` also opens Now Playing, `tryCard` shows the layout picker card at its top. */
   | { type: "setNowPlayingLayout"; layout: NowPlayingLayout; open?: boolean; tryCard?: boolean };
 
+/** Housekeeping a release needs once, run when its entry opens (also a closed set). */
+export type WhatsNewChore = "clearLyricsCache";
+
 export interface WhatsNewEntry {
   /** The release this entry is for, "X.Y.Z". */
   version: string;
   title: string;
   highlights: { icon: LucideIcon; title: string; text: string }[];
   actions?: { label: string; action: WhatsNewAction }[];
+  onShow?: WhatsNewChore[];
 }

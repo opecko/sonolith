@@ -1,11 +1,12 @@
 import { getVersion } from "@tauri-apps/api/app";
+import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { openSettings } from "../stores/nav";
 import { setAppearance, useSettings } from "../stores/settings";
 import { useUi } from "../stores/ui";
 import { WHATS_NEW } from "./entries";
 import { pickWhatsNew } from "./select";
-import type { WhatsNewAction, WhatsNewEntry } from "./types";
+import type { WhatsNewAction, WhatsNewChore, WhatsNewEntry } from "./types";
 
 export const useWhatsNew = create<{ entry: WhatsNewEntry | null; show: (e: WhatsNewEntry | null) => void }>((set) => ({
   entry: null,
@@ -31,6 +32,15 @@ export function runWhatsNewAction(a: WhatsNewAction) {
   }
 }
 
+function runChore(c: WhatsNewChore) {
+  switch (c) {
+    case "clearLyricsCache":
+      // Lyrics picked by older rules (e.g. asked without the track's length) are found again with the new ones.
+      void invoke("lyrics_clear_cache").catch(() => {});
+      break;
+  }
+}
+
 /**
  * Startup (after the first-run check): after an update to a version with an entry, shows it once (a moment in,
  * after the first page). On a fresh install it only saves the version.
@@ -42,6 +52,9 @@ export function initWhatsNew(freshInstall: boolean) {
   getVersion().then((version) => {
     const { show, save } = pickWhatsNew(version, useSettings.getState().lastSeenVersion, freshInstall, WHATS_NEW);
     if (save) useSettings.getState().set({ lastSeenVersion: save });
-    if (show) window.setTimeout(() => useWhatsNew.getState().show(show), 1200);
+    if (show) window.setTimeout(() => {
+      show.onShow?.forEach(runChore);
+      useWhatsNew.getState().show(show);
+    }, 1200);
   }, () => {});
 }
