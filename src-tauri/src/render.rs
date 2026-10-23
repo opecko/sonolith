@@ -80,10 +80,18 @@ pub fn render_set_gpu(app: AppHandle, enabled: bool) -> Result<(), String> {
 }
 
 /// Whether an earlier ytdesk left data on disk: its config.json (GPU, close to tray, yt-dlp path) or a yt-dlp it
-/// downloaded. The first-run onboarding counts that as an existing install (along with stored settings and cookie).
-#[tauri::command(async)]
-pub fn app_has_prior_data(app: AppHandle) -> bool {
-    let config = config_path(&app).is_some_and(|p| p.exists());
+/// downloaded. Taken once in setup, before the yt-dlp auto-install creates `bin/`: asked later, a fresh install
+/// already looks like an existing one.
+pub struct PriorData(pub bool);
+
+pub fn prior_data_on_disk(app: &AppHandle) -> bool {
+    let config = config_path(app).is_some_and(|p| p.exists());
     let ytdlp = app.path().app_data_dir().ok().is_some_and(|d| d.join("bin").exists());
     config || ytdlp
+}
+
+/// The first-run onboarding counts prior data on disk as an existing install (along with stored settings and cookie).
+#[tauri::command]
+pub fn app_has_prior_data(prior: tauri::State<'_, PriorData>) -> bool {
+    prior.0
 }

@@ -47,6 +47,8 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
             app.manage(lyrics::LyricsState::new(app.handle()));
+            // Before ensure_fresh: its install creates the directory that marks an existing install.
+            app.manage(render::PriorData(render::prior_data_on_disk(app.handle())));
             ytdlp::ensure_fresh(app.handle().clone());
             #[cfg(target_os = "linux")]
             mpris::init(app.handle());
