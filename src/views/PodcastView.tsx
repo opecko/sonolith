@@ -1,5 +1,6 @@
 import { Bookmark, BookmarkCheck, ChevronDown, Play, Share2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { errorText } from "../api/errors";
 import type { ShowChip } from "../api/podcast";
 import type { Page, Track } from "../api/types";
 import { getEpisodes, getPodcastShow, setPodcastSaved } from "../api/ytm";
@@ -12,7 +13,7 @@ import { useNav } from "../stores/nav";
 import { playEpisode } from "../stores/actions";
 import { useToast } from "../stores/toast";
 
-const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const errMsg = errorText;
 
 /** "Latest ▾" sort dropdown (Latest / Oldest / Popular / Creator provided). */
 function SortChip({ chip, active, onPick }: { chip: ShowChip; active: string | null; onPick: (token: string) => void }) {

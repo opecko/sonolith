@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { errorText } from "../api/errors";
 import { maxresUrl, mediaArtwork } from "../api/art";
 import type { NextResult } from "../api/queue";
 import { getStreamUrl, logPlayback, prefetchStream, probeStream, UnsupportedCodecError, viaProxy, type Stream } from "../api/stream";
@@ -140,7 +141,7 @@ export function shuffleTracks<T>(list: T[]): T[] {
   return out;
 }
 
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const message = errorText;
 
 /** Last session's queue (see queueSnapshot.ts); restored as "idle": shown and ready, nothing plays until Play. */
 const saved = (() => {

@@ -3,6 +3,7 @@ import {
   Trash2, User, Users,
 } from "lucide-react";
 import { useState } from "react";
+import { errorText } from "../api/errors";
 import type { Item, MenuToggle, Track, TrackMenu } from "../api/types";
 import { addToPlaylist, getCredits, getTrackMenu, removeFromPlaylist, sendFeedback } from "../api/ytm";
 import { invalidate } from "../hooks/useData";
@@ -19,7 +20,7 @@ import Menu, { type MenuEntry } from "./Menu";
 
 const S = 18;
 const isMix = (item: Item) => item.type === "playlist" && item.id.startsWith("RD");
-const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const errMsg = errorText;
 
 /** Radio source for any item YT Music offers radio on. */
 export function radioSource(item: Item) {

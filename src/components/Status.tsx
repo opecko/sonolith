@@ -1,6 +1,7 @@
 import { AlertCircle, RotateCw } from "lucide-react";
-import { Component, type ReactNode } from "react";
+import { Component, useEffect, type ReactNode } from "react";
 import { AuthError } from "../api/client";
+import { isNetworkError } from "../api/errors";
 import { useAuth } from "../stores/auth";
 import { useUiStyle } from "./UiStyle";
 import { LoadingIndicator } from "./LoadingIndicator";
@@ -63,12 +64,21 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
 export function ErrorBox({ error, onRetry }: { error: Error; onRetry?: () => void }) {
   const login = useAuth((s) => s.login);
   const isAuth = error instanceof AuthError;
+  const offline = !isAuth && isNetworkError(error);
+  // Back online: the page loads again by itself.
+  useEffect(() => {
+    if (!offline || !onRetry) return;
+    window.addEventListener("online", onRetry);
+    return () => window.removeEventListener("online", onRetry);
+  }, [offline, onRetry]);
   return (
     <div role="alert" className="m3-error-box my-6 flex max-w-2xl gap-4 rounded-lg border border-[var(--c-error)]/30 bg-[var(--c-error)]/10 p-4">
       <AlertCircle size={24} className="shrink-0 text-[var(--c-error)]" aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{isAuth ? "Please sign in" : "Something went wrong"}</p>
-        <p className="mt-1 select-text whitespace-pre-wrap break-words text-sm text-[var(--c-text-muted)]">{error.message}</p>
+        <p className="text-sm font-medium">{isAuth ? "Please sign in" : offline ? "You're offline" : "Something went wrong"}</p>
+        <p className="mt-1 select-text whitespace-pre-wrap break-words text-sm text-[var(--c-text-muted)]">
+          {offline ? "ytdesk can't reach YouTube Music. Check your internet connection; this page loads again once you're back online." : error.message}
+        </p>
         <div className="mt-4 flex gap-2">
           {isAuth && <button onClick={login} className="m3-btn m3-filled h-8 rounded-full bg-button px-4 text-sm font-medium text-on-button">Sign in</button>}
           {onRetry && (
