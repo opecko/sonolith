@@ -1,3 +1,4 @@
+mod api;
 mod auth;
 mod discord;
 mod fonts;
