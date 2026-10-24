@@ -2,7 +2,7 @@
 # Builds the frontend into a temp dir (never dist/) and checks that the dev toolkit (src/dev) isn't in it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-out="${1:-/tmp/ytdesk-verify}"
+out="${1:-/tmp/sonolith-verify}"
 node_modules/.bin/vite build --outDir "$out" --emptyOutDir > /dev/null 2>&1
 marker=$(sed -n 's/.*DEV_TOOLKIT_MARKER = "\([^"]*\)".*/\1/p' src/dev/index.tsx)
 fail=0

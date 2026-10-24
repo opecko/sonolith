@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Updates the AUR packages (packaging/aur/ytdesk, packaging/aur/ytdesk-bin) to a published GitHub release.
+# Updates the AUR packages (packaging/aur/sonolith, packaging/aur/sonolith-bin) to a published GitHub release, plus
+# the transitional ytdesk and ytdesk-bin (empty, they pull in the renamed ones) while packaging/aur/ytdesk* exist.
 #
 #   scripts/aur.sh 1.2.2           # set pkgver, fill sha256sums from the release, regenerate .SRCINFO
 #   scripts/aur.sh 1.2.2 --push    # then commit both to aur.archlinux.org (needs your SSH key on AUR)
@@ -16,7 +17,7 @@ push=0
 [ "${2:-}" = --push ] && push=1
 command -v makepkg >/dev/null || die "missing makepkg (Arch only)"
 
-repo=https://github.com/opecko/ytdesk
+repo=https://github.com/opecko/sonolith
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
@@ -24,8 +25,8 @@ sha() {
   curl -fsSL -o "$tmp/f" "$1" || die "can't download $1 (is v$ver published?)"
   sha256sum "$tmp/f" | cut -d' ' -f1
 }
-deb=$(sha "$repo/releases/download/v$ver/ytdesk_${ver}_amd64.deb")
-license=$(sha "https://raw.githubusercontent.com/opecko/ytdesk/v$ver/LICENSE")
+deb=$(sha "$repo/releases/download/v$ver/sonolith_${ver}_amd64.deb")
+license=$(sha "https://raw.githubusercontent.com/opecko/sonolith/v$ver/LICENSE")
 tarball=$(sha "$repo/archive/refs/tags/v$ver.tar.gz")
 
 # Sets pkgver, resets pkgrel and replaces the whole sha256sums=(…) array (one or more lines) with the given sums.
@@ -46,16 +47,22 @@ open(path, "w").write(s)
 PY
 }
 
-update packaging/aur/ytdesk-bin/PKGBUILD "$deb" "$license"
-update packaging/aur/ytdesk/PKGBUILD "$tarball"
-
+update packaging/aur/sonolith-bin/PKGBUILD "$deb" "$license"
+update packaging/aur/sonolith/PKGBUILD "$tarball"
+packages=(sonolith sonolith-bin)
 for p in ytdesk ytdesk-bin; do
+  [ -d "packaging/aur/$p" ] || continue
+  update "packaging/aur/$p/PKGBUILD" # transitional: no sources
+  packages+=("$p")
+done
+
+for p in "${packages[@]}"; do
   (cd "packaging/aur/$p" && makepkg --printsrcinfo > .SRCINFO)
 done
 echo "packaging/aur updated to $ver"
 
 [ "$push" = 1 ] || exit 0
-for p in ytdesk ytdesk-bin; do
+for p in "${packages[@]}"; do
   git clone -q "ssh://aur@aur.archlinux.org/$p.git" "$tmp/$p"
   cp "packaging/aur/$p/PKGBUILD" "packaging/aur/$p/.SRCINFO" "$tmp/$p/"
   git -C "$tmp/$p" add PKGBUILD .SRCINFO

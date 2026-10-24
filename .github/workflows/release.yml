@@ -1,4 +1,4 @@
-# Builds the Windows installer, the Debian package and the Arch ytdesk-bin
+# Builds the Windows installer, the Debian package and the Arch sonolith-bin
 # package on GitHub runners and attaches them, with SHA256SUMS and a changelog, to the release for a tag.
 #
 # Run it from Actions → Release → Run workflow with an existing tag like v1.2.0 (tag it and push the tag first).
@@ -67,7 +67,7 @@ jobs:
       - name: Collect
         run: |
           mkdir dist-release
-          cp src-tauri/target/release/bundle/deb/*.deb packaging/out/ytdesk-bin-*.pkg.tar.zst dist-release/
+          cp src-tauri/target/release/bundle/deb/*.deb packaging/out/sonolith-bin-*.pkg.tar.zst dist-release/
           ls -lh dist-release
       - uses: actions/upload-artifact@v4
         with:
@@ -94,10 +94,18 @@ jobs:
       - run: npm ci
       - name: Windows installer
         run: npx tauri build --bundles nsis
+      # NSIS names it after the product name (Sonolith_…); the asset is lowercase, the name update.rs downloads.
+      - name: Rename installer
+        shell: bash
+        run: |
+          mkdir dist-win
+          for f in src-tauri/target/release/bundle/nsis/*-setup.exe; do
+            b=$(basename "$f"); cp "$f" "dist-win/${b,,}"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+          path: dist-win/*-setup.exe
           if-no-files-found: error
 
   release:
@@ -134,5 +142,5 @@ jobs:
             gh release edit "$TAG" --notes-file notes.md
             gh release upload "$TAG" out/* --clobber
           else
-            gh release create "$TAG" out/* --verify-tag --title "ytdesk ${TAG#v}" --notes-file changelog.md
+            gh release create "$TAG" out/* --verify-tag --title "Sonolith ${TAG#v}" --notes-file changelog.md
           fi

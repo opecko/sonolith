@@ -39,6 +39,32 @@ if gh release view "$tag" >/dev/null 2>&1; then
   gh release edit "$tag" --notes-file "$notes"
   gh release upload "$tag" "${files[@]}" --clobber
 else
-  gh release create "$tag" "${files[@]}" --verify-tag --title "ytdesk $ver" --notes-file "$notes"
+  gh release create "$tag" "${files[@]}" --verify-tag --title "Sonolith $ver" --notes-file "$notes"
 fi
 gh release view "$tag" --json url -q .url
+
+# ---------- bridge for ytdesk builds ----------
+# ytdesk (≤ 2.2.0) checks github.com/opecko/ytdesk and installs ytdesk_<ver>_x64-setup.exe only from download URLs
+# under that repo, so through the rename redirect it finds updates but can't install them. A small repo under the
+# old name (README pointing here) gets the same release with the installer under its old name; ytdesk builds update
+# from it into Sonolith. Skipped while opecko/ytdesk is just the redirect to this repo.
+bridge=opecko/ytdesk
+if [ "$(gh repo view "$bridge" --json nameWithOwner -q .nameWithOwner 2>/dev/null)" = "$bridge" ]; then
+  bdir=$(mktemp -d)
+  trap 'rm -f "$notes"; rm -rf "$bdir"' EXIT
+  cp "$dir/sonolith_${ver}_x64-setup.exe" "$bdir/ytdesk_${ver}_x64-setup.exe"
+  [ -f "$dir/sonolith_${ver}_amd64.deb" ] && cp "$dir/sonolith_${ver}_amd64.deb" "$bdir/"
+  (cd "$bdir" && sha256sum -- * > SHA256SUMS)
+  bnotes="$bdir/notes.md"
+  { printf '**ytdesk is now Sonolith.** This is a copy of [Sonolith %s](https://github.com/%s/releases/tag/%s) for ytdesk'"'"'s updater; Sonolith itself lives at https://github.com/%s.\n\n' "$ver" "$GITHUB_REPOSITORY" "$tag" "$GITHUB_REPOSITORY"; cat "$notes"; } > "$bnotes"
+  bfiles=("$bdir"/*_x64-setup.exe "$bdir"/*.deb "$bdir/SHA256SUMS")
+  if gh release view "$tag" -R "$bridge" >/dev/null 2>&1; then
+    gh release edit "$tag" -R "$bridge" --notes-file "$bnotes"
+    gh release upload "$tag" -R "$bridge" "${bfiles[@]}" --clobber
+  else
+    gh release create "$tag" -R "$bridge" "${bfiles[@]}" --title "Sonolith $ver (ytdesk is now Sonolith)" --notes-file "$bnotes"
+  fi
+  gh release view "$tag" -R "$bridge" --json url -q .url
+else
+  echo "no bridge repo $bridge yet (or it's the rename redirect): ytdesk builds can't install this release themselves" >&2
+fi

@@ -11,7 +11,7 @@
 #
 # Targets:
 #   deb   Debian/Ubuntu package (native tauri build)
-#   arch  Arch ytdesk-bin package, repackaged from the deb with makepkg on this machine and smoke-tested (ldd)
+#   arch  Arch sonolith-bin package, repackaged from the deb with makepkg on this machine and smoke-tested (ldd)
 #   win   Windows NSIS installer, cross-compiled with cargo-xwin
 # Bump the version first in: src-tauri/tauri.conf.json, src-tauri/Cargo.toml, package.json, packaging/arch*/PKGBUILD.
 set -euo pipefail
@@ -160,18 +160,18 @@ mkdir -p "$out"
 if want deb || want arch; then
   step "Debian package"
   npx tauri build --bundles deb
-  deb="src-tauri/target/release/bundle/deb/ytdesk_${ver}_amd64.deb"
+  deb="src-tauri/target/release/bundle/deb/sonolith_${ver}_amd64.deb"
   [ -f "$deb" ] || die "expected $deb"
   want deb && cp "$deb" "$out/"
 fi
 
 # ---------- arch ----------
 if want arch; then
-  step "Arch package (ytdesk-bin, makepkg + smoke test)"
-  rm -f packaging/out/ytdesk-bin-*.pkg.tar.zst
+  step "Arch package (sonolith-bin, makepkg + smoke test)"
+  rm -f packaging/out/sonolith-bin-*.pkg.tar.zst
   restore_pkgbuilds=1 # on_exit restores the sha256sums make-src.sh writes
   packaging/arch/native-build.sh bin
-  cp packaging/out/ytdesk-bin-"$ver"-*-x86_64.pkg.tar.zst "$out/"
+  cp packaging/out/sonolith-bin-"$ver"-*-x86_64.pkg.tar.zst "$out/"
   git checkout -- packaging/arch/PKGBUILD packaging/arch-bin/PKGBUILD # clean tree again, e.g. for --publish
   restore_pkgbuilds=0
 fi
@@ -180,9 +180,11 @@ fi
 if want win; then
   step "Windows installer (NSIS via cargo-xwin)"
   npx tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc --bundles nsis
-  exe="src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/ytdesk_${ver}_x64-setup.exe"
+  # NSIS names it after the product name (Sonolith_…); the release asset is lowercase like the others, and that's
+  # the name update.rs downloads.
+  exe="src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Sonolith_${ver}_x64-setup.exe"
   [ -f "$exe" ] || die "expected $exe"
-  cp "$exe" "$out/"
+  cp "$exe" "$out/sonolith_${ver}_x64-setup.exe"
 fi
 
 step "Checksums"

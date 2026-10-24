@@ -20,9 +20,9 @@ cat <<'MD'
 
 | Platform | File |
 | --- | --- |
-| Windows 10/11 (x64) | `ytdesk_*_x64-setup.exe` |
-| Debian / Ubuntu 24.04+ | `ytdesk_*_amd64.deb` |
-| Arch Linux | from the AUR: `yay -S ytdesk-bin` or `paru -S ytdesk-bin` |
+| Windows 10/11 (x64) | `sonolith_*_x64-setup.exe` |
+| Debian / Ubuntu 24.04+ | `sonolith_*_amd64.deb` |
+| Arch Linux | from the AUR: `yay -S sonolith-bin` or `paru -S sonolith-bin` |
 
 Checksums are in `SHA256SUMS`.
 MD
