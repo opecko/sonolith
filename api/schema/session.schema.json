@@ -23,11 +23,12 @@
     "RegistrationPending": {
       "description": "The request is waiting for the user. Its outcome arrives as `registration.resolved` with the same `requestId`.",
       "type": "object",
-      "required": ["status", "requestId", "expiresAt"],
+      "required": ["status", "requestId", "expiresAt", "identity"],
       "properties": {
         "status": { "const": "pending" },
         "requestId": { "type": "string" },
-        "expiresAt": { "$ref": "common.schema.json#/$defs/TimestampMs" }
+        "expiresAt": { "$ref": "common.schema.json#/$defs/TimestampMs" },
+        "identity": { "description": "The app identity Sonolith derived for the calling process (SPEC section 6.6).", "$ref": "#/$defs/AppIdentity" }
       }
     },
     "RequestScopesResult": {
@@ -62,6 +63,24 @@
         "retryAfterMs": { "description": "When `status` is `denied` or `expired`: how long until the app may ask again. Otherwise null.", "type": ["integer", "null"], "minimum": 0 }
       }
     },
+    "AppIdentity": {
+      "description": "Who the calling process is, as Sonolith derives it from the operating system (SPEC section 6.6). A token is bound to `key`.",
+      "type": "object",
+      "required": ["kind", "key", "executable", "interpreter", "script", "appImage", "flatpakId"],
+      "properties": {
+        "kind": {
+          "description": "`executable` (a native program), `interpreter` (a script run by an interpreter), `appimage` or `flatpak`.",
+          "type": "string",
+          "enum": ["executable", "interpreter", "appimage", "flatpak"]
+        },
+        "key": { "description": "The normalized identity Sonolith compares, for example `interp:python3:/home/alex/bin/bar.py`. Version segments are replaced by `*`; lower case on Windows.", "type": "string" },
+        "executable": { "description": "The verified executable path as the operating system reports it.", "type": "string" },
+        "interpreter": { "description": "The interpreter family, for example `python3` or `node`, when `kind` is `interpreter`; otherwise null.", "type": ["string", "null"] },
+        "script": { "description": "The absolute script path from the command line, or `module:<name>` for `python -m`, when `kind` is `interpreter` and there is one; otherwise null. Taken from the command line, not verified.", "type": ["string", "null"] },
+        "appImage": { "description": "The AppImage file's path when `kind` is `appimage`; otherwise null.", "type": ["string", "null"] },
+        "flatpakId": { "description": "The Flatpak app id when `kind` is `flatpak`; otherwise null.", "type": ["string", "null"] }
+      }
+    },
     "Token": {
       "description": "A client token: `snl_` followed by 43 base64url characters (256 random bits). A secret: store it like a password.",
       "type": "string",
@@ -70,23 +89,25 @@
     "HelloResult": {
       "description": "The authenticated session.",
       "type": "object",
-      "required": ["apiVersion", "appVersion", "appId", "grantedScopes", "signedIn"],
+      "required": ["apiVersion", "appVersion", "appId", "grantedScopes", "signedIn", "identity"],
       "properties": {
         "apiVersion": { "$ref": "common.schema.json#/$defs/ApiVersion" },
         "appVersion": { "description": "Sonolith's own version. Informational; check `apiVersion` for compatibility.", "type": "string" },
         "appId": { "$ref": "common.schema.json#/$defs/AppId" },
         "grantedScopes": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/Scope" } },
-        "signedIn": { "description": "Whether the user is signed in to a YouTube account in Sonolith.", "type": "boolean" }
+        "signedIn": { "description": "Whether the user is signed in to a YouTube account in Sonolith.", "type": "boolean" },
+        "identity": { "description": "The app identity Sonolith derived for the calling process (SPEC section 6.6).", "$ref": "#/$defs/AppIdentity" }
       }
     },
     "SessionInfo": {
       "description": "The calling app's session.",
       "type": "object",
-      "required": ["appId", "grantedScopes", "signedIn"],
+      "required": ["appId", "grantedScopes", "signedIn", "identity"],
       "properties": {
         "appId": { "$ref": "common.schema.json#/$defs/AppId" },
         "grantedScopes": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/Scope" } },
-        "signedIn": { "type": "boolean" }
+        "signedIn": { "type": "boolean" },
+        "identity": { "description": "The app identity Sonolith derived for the calling process (SPEC section 6.6).", "$ref": "#/$defs/AppIdentity" }
       }
     },
     "ServerInfo": {

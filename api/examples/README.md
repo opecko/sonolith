@@ -19,3 +19,8 @@ Both clients have the same commands:
 - `disconnect`: the "Disconnect from Sonolith" action. Unregisters and deletes the token.
 
 They never register on their own: without a token, `run` tells you to run `register`.
+
+App identity (section 6.6 of [SPEC.md](../SPEC.md)): the Python client is `interp:python3:<path of
+sonolith_client.py>` (`interp:python:…` on Windows) and the Node client `interp:node:<path of sonolith-client.ts>`.
+Updating Python or Node, also through nvm, pyenv, asdf or mise, keeps the identity; moving the script makes Sonolith
+ask you again. The shell examples register on their own; see [shell/](shell/).

@@ -267,7 +267,16 @@
             "value": {
               "status": "pending",
               "requestId": "req_5Jt2xQ",
-              "expiresAt": 1793022300000
+              "expiresAt": 1793022300000,
+              "identity": {
+                "kind": "executable",
+                "key": "exe:/usr/bin/mybar",
+                "executable": "/usr/bin/mybar",
+                "interpreter": null,
+                "script": null,
+                "appImage": null,
+                "flatpakId": null
+              }
             }
           }
         }
@@ -530,7 +539,16 @@
                 "player:read",
                 "player:control"
               ],
-              "signedIn": true
+              "signedIn": true,
+              "identity": {
+                "kind": "executable",
+                "key": "exe:/usr/bin/mybar",
+                "executable": "/usr/bin/mybar",
+                "interpreter": null,
+                "script": null,
+                "appImage": null,
+                "flatpakId": null
+              }
             }
           }
         }
@@ -538,7 +556,7 @@
       "x-scope": null,
       "x-requires-session": false,
       "x-rate-class": "auth",
-      "description": "Send it first on every new connection. Sonolith checks the token and that the calling executable is the one the user approved. Sonolith finishes `session.hello` before it reads the next message, so a client MAY send further requests right after it without waiting.\n\nIf the executable path changed (the app was updated or moved), the user is asked again and the call fails with `RegistrationPending` (reason `identityChanged`). Keep the connection open, wait for `registration.resolved` (`kind` `identity`), and on approval call `session.hello` again with the same token."
+      "description": "Send it first on every new connection. Sonolith checks the token and that the calling process has the app identity the user approved (section 6.6). Sonolith finishes `session.hello` before it reads the next message, so a client MAY send further requests right after it without waiting.\n\nIf the app identity changed (for example, the app was moved), the user is asked again and the call fails with `RegistrationPending` (reason `identityChanged`). Keep the connection open, wait for `registration.resolved` (`kind` `identity`), and on approval call `session.hello` again with the same token."
     },
     {
       "name": "events.subscribe",
@@ -4923,7 +4941,7 @@
         "message": "RegistrationPending",
         "data": {
           "name": "RegistrationPending",
-          "meaning": "A request is already waiting for the user, or the app's executable changed and the user must approve it again."
+          "meaning": "A request is already waiting for the user, or the app identity changed and the user must approve it again."
         }
       },
       "RegistrationDenied": {
@@ -5464,7 +5482,7 @@
     {
       "reason": "identityChanged",
       "error": "RegistrationPending",
-      "meaning": "The app's executable path changed; the user is asked to approve it again."
+      "meaning": "The app identity changed (section 6.6); the user is asked to approve it again."
     },
     {
       "reason": "starting",

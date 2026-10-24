@@ -38,8 +38,8 @@
 1. Only after a user action ("Connect to Sonolith" button): `app.register {appId, name, description, publisher,
    homepage?, icon? (PNG data URI ≤ 65536 chars), scopes: [{scope, required, reason}], apiVersion}`.
 2. Result `{status:"pending", requestId, expiresAt}`. Keep the SAME connection open (closing cancels it). The user
-   sees a notification and a consent screen with your name, publisher, icon, verified executable path, and one line
-   per scope with your `reason`; optional scopes can be unticked. Expires after 5 min.
+   sees a notification and a consent screen with your name, publisher, icon, app identity, and one line per scope
+   with your `reason`; optional scopes can be unticked. Expires after 5 min.
 3. Wait for notification `registration.resolved {requestId, kind, status, token, grantedScopes, retryAfterMs}`:
    - `approved`: store `token` (sent only once) in a secret store (Linux Secret Service, Windows Credential
      Manager/DPAPI; fallback: user-only file), then `session.hello`.
@@ -47,7 +47,7 @@
 4. Every connection: `session.hello {appId, token, apiVersion}` first. Sonolith finishes it before reading the
    next line, so you may pipeline requests after it.
    - Unauthorized / NotRegistered -> delete token, show "Disconnected from Sonolith", wait for the user.
-   - RegistrationPending (reason identityChanged) -> your executable path changed; keep the connection open,
+   - RegistrationPending (reason identityChanged) -> your app identity changed; keep the connection open,
      wait for `registration.resolved` kind "identity", then hello again with the same token.
 5. More scopes later: `app.requestScopes {scopes}` (only after a user action) -> pending/granted, then
    `registration.resolved` kind "scopes" and `session.scopesChanged`.
@@ -61,6 +61,23 @@ Minimal session (one line each):
 {"jsonrpc":"2.0","id":2,"method":"events.subscribe","params":{"topics":["player.track","player.state"]}}
 {"jsonrpc":"2.0","id":3,"method":"player.toggle"}
 ```
+
+## App identity (the token is bound to appId + identity key)
+
+Sonolith derives it from the OS, first match wins:
+1. Flatpak -> `flatpak:<app-id>`. The app needs `--filesystem=xdg-run/sonolith` (not `:ro`) to reach the socket.
+2. AppImage (exe under a `.mount_*` dir and `APPIMAGE` env set) -> `appimage:<APPIMAGE path>`, versions in the
+   file name become `*`.
+3. Interpreter (python*, pythonw, node, nodejs, bun, deno, ruby*, perl*, sh, dash, bash, zsh, fish, pwsh,
+   powershell, also `.exe`) -> `interp:<family>:<absolute script path>` (family keeps only the major version:
+   python3.13 -> python3); `module:<name>` for `python -m`; `-` for inline code / interactive. Script = first
+   non-option argument that is an existing file (skips `bun run`/`deno run`; `powershell` 5.1 needs `-File`).
+4. Otherwise `exe:<path>`.
+Version segments in paths become `*` (nvm, nvm-windows, pyenv, asdf, mise, Volta, fnm, Homebrew Cellar,
+lib/python3.X, Windows PythonXY, /snap/<name>/<rev>, app-<ver>, WindowsApps). Keys are lower case on Windows. So
+interpreter/version-manager/AppImage updates keep the identity; moving the app or script asks the user again.
+`session.hello`, `app.info` and the `app.register` result return `identity`. Interpreter identity is weak by design
+(same interpreter family + same script path = same app), which is fine for a same-user local API.
 
 ## Scopes (label = what the user sees)
 
@@ -197,11 +214,12 @@ Not replayed after reconnect; subscribe again. Extrapolate position: `positionMs
 - LyricsLineEvent {trackId: string, lineIndex: integer | null, text: string | null, startMs: integer (ms) | null, endMs: integer (ms) | null, positionMs: integer (ms)}
 - LyricsWordEvent {trackId: string, lineIndex: integer, wordIndex: integer, background: boolean, positionMs: integer (ms)}
 - ScopeRequest {scope: Scope, required: boolean, reason: string}
-- RegistrationPending {status: "pending", requestId: string, expiresAt: integer (ms since epoch)}
+- RegistrationPending {status: "pending", requestId: string, expiresAt: integer (ms since epoch), identity: AppIdentity}
 - RequestScopesResult {status: "pending" | "granted", requestId: string | null, expiresAt: integer (ms since epoch) | null, grantedScopes: Scope[]}
 - RegistrationOutcome {requestId: string, kind: "register" | "scopes" | "identity", status: "approved" | "denied" | "blocked" | "expired", token: string | null, grantedScopes: Scope[] | null, retryAfterMs: integer | null}
-- HelloResult {apiVersion: string, appVersion: string, appId: string, grantedScopes: Scope[], signedIn: boolean}
-- SessionInfo {appId: string, grantedScopes: Scope[], signedIn: boolean}
+- AppIdentity {kind: "executable" | "interpreter" | "appimage" | "flatpak", key: string, executable: string, interpreter: string | null, script: string | null, appImage: string | null, flatpakId: string | null}
+- HelloResult {apiVersion: string, appVersion: string, appId: string, grantedScopes: Scope[], signedIn: boolean, identity: AppIdentity}
+- SessionInfo {appId: string, grantedScopes: Scope[], signedIn: boolean, identity: AppIdentity}
 - ServerInfo {apiVersion: string, appVersion: string, platform: "linux" | "windows", methods: string[], topics: Topic[], session: SessionInfo | null}
 - Topic = "player.state" | "player.track" | "player.position" | "player.volume" | "queue" | "lyrics" | "lyrics.line" | "lyrics.word" | "account"
 - SubscribeResult {topics: Topic[], positionHz: integer (1–4)}
@@ -224,7 +242,7 @@ InvalidParams, InternalError, RateLimited, Unavailable, Timeout (+ SessionRequir
 - -32001 NotRegistered: The `appId` is not registered (never registered, unregistered, or removed by the user). -> Delete the stored token. Show "Disconnected from Sonolith". Register again only after a user action.
 - -32002 Unauthorized: The token is wrong or has been revoked. -> Delete the stored token. Show "Disconnected from Sonolith". Register again only after a user action.
 - -32003 PermissionDenied: The app lacks the scope in `data.scope`. -> Do not retry. Hide the feature, or ask for the scope with `app.requestScopes` after a user action.
-- -32004 RegistrationPending: A request is already waiting for the user, or the app's executable changed and the user must approve it again. -> Wait for `registration.resolved` with `data.requestId` on the connection that made the request.
+- -32004 RegistrationPending: A request is already waiting for the user, or the app identity changed and the user must approve it again. -> Wait for `registration.resolved` with `data.requestId` on the connection that made the request.
 - -32005 RegistrationDenied: The user denied a recent request; asking again is on hold. -> Do not ask again before `data.retryAfterMs`, and then only after a user action.
 - -32006 Blocked: The user blocked this app. -> Stop. Tell the user the app can be unblocked in Sonolith's Settings → Connected apps.
 - -32007 NotSignedIn: The method needs a YouTube account and the user is signed out. -> Tell the user to sign in in Sonolith; subscribe to `account` to know when they do.

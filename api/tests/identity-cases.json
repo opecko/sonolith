@@ -1,0 +1,209 @@
+{
+  "description": "How Sonolith derives an app identity from the calling process. Each case is the process as the operating system reports it (executable, command line, working directory, environment, Flatpak app id, and which files exist) and the identity Sonolith must derive. Cases with the same key are the same app: updating the interpreter, the version manager's version, the AppImage or the install directory does not ask the user again. SPEC.md section 6.6 renders this table; Sonolith's tests run every case.",
+  "cases": [
+    {
+      "name": "Native executable",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/mybar", "argv": ["mybar", "--daemon"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": [] },
+      "identity": { "kind": "executable", "key": "exe:/usr/bin/mybar", "executable": "/usr/bin/mybar", "interpreter": null, "script": null, "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Python script, relative path, interpreter options",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/python3.13", "argv": ["python3", "-u", "-W", "ignore", "bin/bar.py", "--verbose"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": ["/home/alex/bin/bar.py"] },
+      "identity": { "kind": "interpreter", "key": "interp:python3:/home/alex/bin/bar.py", "executable": "/usr/bin/python3.13", "interpreter": "python3", "script": "/home/alex/bin/bar.py", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "The same Python script after a Python update (same key)",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/python3.14", "argv": ["/usr/bin/python3", "/home/alex/bin/bar.py"], "cwd": "/", "env": {}, "flatpakId": null, "files": ["/home/alex/bin/bar.py"] },
+      "identity": { "kind": "interpreter", "key": "interp:python3:/home/alex/bin/bar.py", "executable": "/usr/bin/python3.14", "interpreter": "python3", "script": "/home/alex/bin/bar.py", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Python module (-m)",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/python3.13", "argv": ["python3", "-m", "mybar", "run"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": [] },
+      "identity": { "kind": "interpreter", "key": "interp:python3:module:mybar", "executable": "/usr/bin/python3.13", "interpreter": "python3", "script": "module:mybar", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Python with inline code (-c): no script",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/python3.13", "argv": ["python3", "-c", "import mybar; mybar.main()"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": [] },
+      "identity": { "kind": "interpreter", "key": "interp:python3:-", "executable": "/usr/bin/python3.13", "interpreter": "python3", "script": null, "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Python package under a versioned site-packages directory",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/python3.13", "argv": ["python3", "/home/alex/.local/lib/python3.13/site-packages/mybar/__main__.py"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": ["/home/alex/.local/lib/python3.13/site-packages/mybar/__main__.py"] },
+      "identity": { "kind": "interpreter", "key": "interp:python3:/home/alex/.local/lib/python3.*/site-packages/mybar/__main__.py", "executable": "/usr/bin/python3.13", "interpreter": "python3", "script": "/home/alex/.local/lib/python3.13/site-packages/mybar/__main__.py", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "pyenv: console script inside a versioned Python",
+      "platform": "linux",
+      "process": { "exe": "/home/alex/.pyenv/versions/3.12.4/bin/python3.12", "argv": ["/home/alex/.pyenv/versions/3.12.4/bin/python3.12", "/home/alex/.pyenv/versions/3.12.4/bin/mybar"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": ["/home/alex/.pyenv/versions/3.12.4/bin/mybar"] },
+      "identity": { "kind": "interpreter", "key": "interp:python3:/home/alex/.pyenv/versions/*/bin/mybar", "executable": "/home/alex/.pyenv/versions/3.12.4/bin/python3.12", "interpreter": "python3", "script": "/home/alex/.pyenv/versions/3.12.4/bin/mybar", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "nvm: globally installed npm package",
+      "platform": "linux",
+      "process": { "exe": "/home/alex/.nvm/versions/node/v20.11.0/bin/node", "argv": ["node", "/home/alex/.nvm/versions/node/v20.11.0/lib/node_modules/mybar/bin/cli.js"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": ["/home/alex/.nvm/versions/node/v20.11.0/lib/node_modules/mybar/bin/cli.js"] },
+      "identity": { "kind": "interpreter", "key": "interp:node:/home/alex/.nvm/versions/node/*/lib/node_modules/mybar/bin/cli.js", "executable": "/home/alex/.nvm/versions/node/v20.11.0/bin/node", "interpreter": "node", "script": "/home/alex/.nvm/versions/node/v20.11.0/lib/node_modules/mybar/bin/cli.js", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "nvm: the same package after switching to Node 22 (same key)",
+      "platform": "linux",
+      "process": { "exe": "/home/alex/.nvm/versions/node/v22.3.0/bin/node", "argv": ["node", "/home/alex/.nvm/versions/node/v22.3.0/lib/node_modules/mybar/bin/cli.js"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": ["/home/alex/.nvm/versions/node/v22.3.0/lib/node_modules/mybar/bin/cli.js"] },
+      "identity": { "kind": "interpreter", "key": "interp:node:/home/alex/.nvm/versions/node/*/lib/node_modules/mybar/bin/cli.js", "executable": "/home/alex/.nvm/versions/node/v22.3.0/bin/node", "interpreter": "node", "script": "/home/alex/.nvm/versions/node/v22.3.0/lib/node_modules/mybar/bin/cli.js", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Node with --require and a relative script",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/node", "argv": ["node", "--require", "./tracing.js", "--enable-source-maps", "dist/index.js"], "cwd": "/home/alex/proj", "env": {}, "flatpakId": null, "files": ["/home/alex/proj/tracing.js", "/home/alex/proj/dist/index.js"] },
+      "identity": { "kind": "interpreter", "key": "interp:node:/home/alex/proj/dist/index.js", "executable": "/usr/bin/node", "interpreter": "node", "script": "/home/alex/proj/dist/index.js", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "mise: Node installed per version",
+      "platform": "linux",
+      "process": { "exe": "/home/alex/.local/share/mise/installs/node/22.3.0/bin/node", "argv": ["node", "/home/alex/.local/share/mise/installs/node/22.3.0/lib/node_modules/mybar/cli.js"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": ["/home/alex/.local/share/mise/installs/node/22.3.0/lib/node_modules/mybar/cli.js"] },
+      "identity": { "kind": "interpreter", "key": "interp:node:/home/alex/.local/share/mise/installs/node/*/lib/node_modules/mybar/cli.js", "executable": "/home/alex/.local/share/mise/installs/node/22.3.0/bin/node", "interpreter": "node", "script": "/home/alex/.local/share/mise/installs/node/22.3.0/lib/node_modules/mybar/cli.js", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Bun: bun run",
+      "platform": "linux",
+      "process": { "exe": "/home/alex/.bun/bin/bun", "argv": ["bun", "run", "src/bar.ts"], "cwd": "/home/alex/proj", "env": {}, "flatpakId": null, "files": ["/home/alex/proj/src/bar.ts"] },
+      "identity": { "kind": "interpreter", "key": "interp:bun:/home/alex/proj/src/bar.ts", "executable": "/home/alex/.bun/bin/bun", "interpreter": "bun", "script": "/home/alex/proj/src/bar.ts", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Bun: a subcommand that is not a file gives no script",
+      "platform": "linux",
+      "process": { "exe": "/home/alex/.bun/bin/bun", "argv": ["bun", "x", "mybar"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": [] },
+      "identity": { "kind": "interpreter", "key": "interp:bun:-", "executable": "/home/alex/.bun/bin/bun", "interpreter": "bun", "script": null, "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Deno: deno run with permission flags",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/deno", "argv": ["deno", "run", "--allow-net", "--config", "deno.json", "main.ts"], "cwd": "/home/alex/proj", "env": {}, "flatpakId": null, "files": ["/home/alex/proj/deno.json", "/home/alex/proj/main.ts"] },
+      "identity": { "kind": "interpreter", "key": "interp:deno:/home/alex/proj/main.ts", "executable": "/usr/bin/deno", "interpreter": "deno", "script": "/home/alex/proj/main.ts", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Ruby with a versioned binary name",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/ruby3.2", "argv": ["ruby", "-I", "lib", "bar.rb"], "cwd": "/home/alex/proj", "env": {}, "flatpakId": null, "files": ["/home/alex/proj/bar.rb"] },
+      "identity": { "kind": "interpreter", "key": "interp:ruby3:/home/alex/proj/bar.rb", "executable": "/usr/bin/ruby3.2", "interpreter": "ruby3", "script": "/home/alex/proj/bar.rb", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Perl",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/perl", "argv": ["perl", "-w", "/home/alex/bin/bar.pl"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": ["/home/alex/bin/bar.pl"] },
+      "identity": { "kind": "interpreter", "key": "interp:perl:/home/alex/bin/bar.pl", "executable": "/usr/bin/perl", "interpreter": "perl", "script": "/home/alex/bin/bar.pl", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Bash script run through its shebang",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/bash", "argv": ["/bin/bash", "./now-playing.sh"], "cwd": "/home/alex/bin", "env": {}, "flatpakId": null, "files": ["/home/alex/bin/now-playing.sh"] },
+      "identity": { "kind": "interpreter", "key": "interp:bash:/home/alex/bin/now-playing.sh", "executable": "/usr/bin/bash", "interpreter": "bash", "script": "/home/alex/bin/now-playing.sh", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "fish with -c: no script",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/fish", "argv": ["fish", "-c", "mybar --once"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": [] },
+      "identity": { "kind": "interpreter", "key": "interp:fish:-", "executable": "/usr/bin/fish", "interpreter": "fish", "script": null, "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Script after --",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/zsh", "argv": ["zsh", "--", "-weird-name.zsh"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": ["/home/alex/-weird-name.zsh"] },
+      "identity": { "kind": "interpreter", "key": "interp:zsh:/home/alex/-weird-name.zsh", "executable": "/usr/bin/zsh", "interpreter": "zsh", "script": "/home/alex/-weird-name.zsh", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "AppImage",
+      "platform": "linux",
+      "process": { "exe": "/tmp/.mount_MyBarAb12Cd/usr/bin/mybar", "argv": ["/tmp/.mount_MyBarAb12Cd/usr/bin/mybar"], "cwd": "/home/alex", "env": { "APPIMAGE": "/home/alex/Apps/MyBar-1.4.2-x86_64.AppImage" }, "flatpakId": null, "files": ["/home/alex/Apps/MyBar-1.4.2-x86_64.AppImage"] },
+      "identity": { "kind": "appimage", "key": "appimage:/home/alex/Apps/MyBar-*-x86_64.AppImage", "executable": "/tmp/.mount_MyBarAb12Cd/usr/bin/mybar", "interpreter": null, "script": null, "appImage": "/home/alex/Apps/MyBar-1.4.2-x86_64.AppImage", "flatpakId": null }
+    },
+    {
+      "name": "The same AppImage after an update, mounted elsewhere (same key)",
+      "platform": "linux",
+      "process": { "exe": "/tmp/.mount_MyBarZz98Yx/usr/bin/mybar", "argv": ["/tmp/.mount_MyBarZz98Yx/usr/bin/mybar"], "cwd": "/home/alex", "env": { "APPIMAGE": "/home/alex/Apps/MyBar-1.5.0-x86_64.AppImage" }, "flatpakId": null, "files": ["/home/alex/Apps/MyBar-1.5.0-x86_64.AppImage"] },
+      "identity": { "kind": "appimage", "key": "appimage:/home/alex/Apps/MyBar-*-x86_64.AppImage", "executable": "/tmp/.mount_MyBarZz98Yx/usr/bin/mybar", "interpreter": null, "script": null, "appImage": "/home/alex/Apps/MyBar-1.5.0-x86_64.AppImage", "flatpakId": null }
+    },
+    {
+      "name": "AppImage that bundles an interpreter",
+      "platform": "linux",
+      "process": { "exe": "/tmp/.mount_ToolQq11/usr/bin/python3.11", "argv": ["python3.11", "/tmp/.mount_ToolQq11/usr/share/tool/main.py"], "cwd": "/home/alex", "env": { "APPIMAGE": "/home/alex/Apps/Tool.AppImage" }, "flatpakId": null, "files": ["/home/alex/Apps/Tool.AppImage", "/tmp/.mount_ToolQq11/usr/share/tool/main.py"] },
+      "identity": { "kind": "appimage", "key": "appimage:/home/alex/Apps/Tool.AppImage", "executable": "/tmp/.mount_ToolQq11/usr/bin/python3.11", "interpreter": null, "script": null, "appImage": "/home/alex/Apps/Tool.AppImage", "flatpakId": null }
+    },
+    {
+      "name": "APPIMAGE set but the process is not running from an AppImage mount (ignored)",
+      "platform": "linux",
+      "process": { "exe": "/usr/bin/mybar", "argv": ["mybar"], "cwd": "/home/alex", "env": { "APPIMAGE": "/home/alex/Apps/Other.AppImage" }, "flatpakId": null, "files": ["/home/alex/Apps/Other.AppImage"] },
+      "identity": { "kind": "executable", "key": "exe:/usr/bin/mybar", "executable": "/usr/bin/mybar", "interpreter": null, "script": null, "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "asdf: a native tool installed per version",
+      "platform": "linux",
+      "process": { "exe": "/home/alex/.asdf/installs/golang/1.22.1/packages/bin/mybar", "argv": ["mybar"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": [] },
+      "identity": { "kind": "executable", "key": "exe:/home/alex/.asdf/installs/golang/*/packages/bin/mybar", "executable": "/home/alex/.asdf/installs/golang/1.22.1/packages/bin/mybar", "interpreter": null, "script": null, "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Snap: the revision directory",
+      "platform": "linux",
+      "process": { "exe": "/snap/mybar/123/usr/bin/mybar", "argv": ["mybar"], "cwd": "/home/alex", "env": {}, "flatpakId": null, "files": [] },
+      "identity": { "kind": "executable", "key": "exe:/snap/mybar/*/usr/bin/mybar", "executable": "/snap/mybar/123/usr/bin/mybar", "interpreter": null, "script": null, "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Flatpak",
+      "platform": "linux",
+      "process": { "exe": "/app/bin/mybar", "argv": ["mybar"], "cwd": "/home/alex", "env": {}, "flatpakId": "com.example.MyBar", "files": [] },
+      "identity": { "kind": "flatpak", "key": "flatpak:com.example.MyBar", "executable": "/app/bin/mybar", "interpreter": null, "script": null, "appImage": null, "flatpakId": "com.example.MyBar" }
+    },
+    {
+      "name": "Windows: native executable (keys ignore case)",
+      "platform": "windows",
+      "process": { "exe": "C:\\Program Files\\MyBar\\MyBar.exe", "argv": ["MyBar.exe"], "cwd": "C:\\Users\\Alex", "env": {}, "flatpakId": null, "files": [] },
+      "identity": { "kind": "executable", "key": "exe:c:\\program files\\mybar\\mybar.exe", "executable": "C:\\Program Files\\MyBar\\MyBar.exe", "interpreter": null, "script": null, "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Windows: Python script",
+      "platform": "windows",
+      "process": { "exe": "C:\\Users\\Alex\\AppData\\Local\\Programs\\Python\\Python313\\python.exe", "argv": ["python", "bar.py"], "cwd": "C:\\Users\\Alex\\Scripts", "env": {}, "flatpakId": null, "files": ["C:\\Users\\Alex\\Scripts\\bar.py"] },
+      "identity": { "kind": "interpreter", "key": "interp:python:c:\\users\\alex\\scripts\\bar.py", "executable": "C:\\Users\\Alex\\AppData\\Local\\Programs\\Python\\Python313\\python.exe", "interpreter": "python", "script": "C:\\Users\\Alex\\Scripts\\bar.py", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Windows: Python package in a versioned PythonXY directory, run by pythonw",
+      "platform": "windows",
+      "process": { "exe": "C:\\Users\\Alex\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe", "argv": ["pythonw.exe", "C:\\Users\\Alex\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\mybar\\__main__.py"], "cwd": "C:\\Users\\Alex", "env": {}, "flatpakId": null, "files": ["C:\\Users\\Alex\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\mybar\\__main__.py"] },
+      "identity": { "kind": "interpreter", "key": "interp:python:c:\\users\\alex\\appdata\\local\\programs\\python\\python3*\\lib\\site-packages\\mybar\\__main__.py", "executable": "C:\\Users\\Alex\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe", "interpreter": "python", "script": "C:\\Users\\Alex\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\mybar\\__main__.py", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Windows: PowerShell 7 with -File",
+      "platform": "windows",
+      "process": { "exe": "C:\\Program Files\\PowerShell\\7\\pwsh.exe", "argv": ["pwsh.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ".\\bar.ps1"], "cwd": "C:\\Users\\Alex\\Scripts", "env": {}, "flatpakId": null, "files": ["C:\\Users\\Alex\\Scripts\\bar.ps1"] },
+      "identity": { "kind": "interpreter", "key": "interp:pwsh:c:\\users\\alex\\scripts\\bar.ps1", "executable": "C:\\Program Files\\PowerShell\\7\\pwsh.exe", "interpreter": "pwsh", "script": "C:\\Users\\Alex\\Scripts\\bar.ps1", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Windows: interactive Windows PowerShell 5.1 (a positional argument is a command, not a file)",
+      "platform": "windows",
+      "process": { "exe": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "argv": ["powershell.exe", "-NoLogo", "bar.ps1"], "cwd": "C:\\Users\\Alex\\Scripts", "env": {}, "flatpakId": null, "files": ["C:\\Users\\Alex\\Scripts\\bar.ps1"] },
+      "identity": { "kind": "interpreter", "key": "interp:powershell:-", "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "interpreter": "powershell", "script": null, "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Windows: nvm-windows Node with a global package",
+      "platform": "windows",
+      "process": { "exe": "C:\\Users\\Alex\\AppData\\Roaming\\nvm\\v20.11.0\\node.exe", "argv": ["node", "C:\\Users\\Alex\\AppData\\Roaming\\nvm\\v20.11.0\\node_modules\\mybar\\cli.js"], "cwd": "C:\\Users\\Alex", "env": {}, "flatpakId": null, "files": ["C:\\Users\\Alex\\AppData\\Roaming\\nvm\\v20.11.0\\node_modules\\mybar\\cli.js"] },
+      "identity": { "kind": "interpreter", "key": "interp:node:c:\\users\\alex\\appdata\\roaming\\nvm\\*\\node_modules\\mybar\\cli.js", "executable": "C:\\Users\\Alex\\AppData\\Roaming\\nvm\\v20.11.0\\node.exe", "interpreter": "node", "script": "C:\\Users\\Alex\\AppData\\Roaming\\nvm\\v20.11.0\\node_modules\\mybar\\cli.js", "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Windows: self-updating app with app-<version> folders",
+      "platform": "windows",
+      "process": { "exe": "C:\\Users\\Alex\\AppData\\Local\\MyBar\\app-1.2.3\\MyBar.exe", "argv": ["MyBar.exe"], "cwd": "C:\\Users\\Alex", "env": {}, "flatpakId": null, "files": [] },
+      "identity": { "kind": "executable", "key": "exe:c:\\users\\alex\\appdata\\local\\mybar\\app-*\\mybar.exe", "executable": "C:\\Users\\Alex\\AppData\\Local\\MyBar\\app-1.2.3\\MyBar.exe", "interpreter": null, "script": null, "appImage": null, "flatpakId": null }
+    },
+    {
+      "name": "Windows: Microsoft Store (MSIX) app",
+      "platform": "windows",
+      "process": { "exe": "C:\\Program Files\\WindowsApps\\Example.MyBar_1.2.3.0_x64__8wekyb3d8bbwe\\MyBar.exe", "argv": ["MyBar.exe"], "cwd": "C:\\Users\\Alex", "env": {}, "flatpakId": null, "files": [] },
+      "identity": { "kind": "executable", "key": "exe:c:\\program files\\windowsapps\\example.mybar_*_x64__8wekyb3d8bbwe\\mybar.exe", "executable": "C:\\Program Files\\WindowsApps\\Example.MyBar_1.2.3.0_x64__8wekyb3d8bbwe\\MyBar.exe", "interpreter": null, "script": null, "appImage": null, "flatpakId": null }
+    }
+  ]
+}

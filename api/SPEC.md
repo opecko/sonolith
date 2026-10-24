@@ -127,7 +127,11 @@ Sonolith listens on a local endpoint that only the current user can open. There 
   owned by another user or is accessible to others.
 - Clients using the `/tmp` fallback SHOULD check that the directory is owned by their own uid and has mode `0700`
   before connecting.
-- Sandboxed apps (for example Flatpak) need access to that path, for example `--filesystem=xdg-run/sonolith`.
+- **Flatpak:** a sandboxed app sees the socket only when its manifest (or the user, with `flatpak override --user
+  --filesystem=xdg-run/sonolith <app-id>`) grants `--filesystem=xdg-run/sonolith`. Read access is not enough to
+  connect; the permission must not be `:ro`. Such an app gets the identity `flatpak:<app-id>` (section 6.6), so it
+  stays the same app across Flatpak updates. Other sandboxes (for example Snap with strict confinement) cannot reach
+  the socket unless they are given access to that path.
 
 ### 3.2 Windows
 
@@ -298,7 +302,7 @@ connection.
 ```text
 App                              Sonolith                              User
  |-- app.register --------------->|                                      |
- |                                |-- checks the calling executable      |
+ |                                |-- derives the app identity           |
  |<-------------- pending --------|-- notification + consent screen ---->|
  |   (keeps the connection open)  |                                      |
  |                                |<---------- Allow / Deny / Block -----|
@@ -312,8 +316,9 @@ App                              Sonolith                              User
 1. The app calls [`app.register`](#appregister) with its `appId`, display details and the scopes it wants, each
    with a `reason`. It works without a token.
 2. Sonolith identifies the calling process through the operating system (Linux: the socket's peer credentials;
-   Windows: the pipe client's process id) and resolves its **executable path**. If it cannot, the call fails with
-   `Unavailable` (reason `peerUnverified`).
+   Windows: the pipe client's process id) and derives its **app identity** (section 6.6). If it cannot, the call
+   fails with `Unavailable` (reason `peerUnverified`). The `pending` result includes the identity, so a developer
+   can see what the user is shown.
 3. Sonolith answers `pending` at once, shows a system notification "<name> wants to connect to Sonolith" and a
    consent screen. Clicking the notification brings Sonolith to the front, also when it is hidden in the tray.
 4. The app waits for [`registration.resolved`](#registrationresolved) on the **same connection**.
@@ -338,7 +343,9 @@ Rules:
 The consent screen shows:
 
 - the app's icon, name, publisher and homepage, as the app declared them;
-- the **verified executable path**, for example `/usr/bin/mybar` or `C:\Program Files\MyBar\mybar.exe`;
+- the **app identity** (section 6.6): the executable path, for example `/usr/bin/mybar` or
+  `C:\Program Files\MyBar\mybar.exe`; for a script, the interpreter and the script path; for an AppImage, the
+  AppImage file; for a Flatpak, the Flatpak app id;
 - "<name> wants to:", followed by one line per scope: the scope's label from the [scope table](#8-scopes) and the
   app's `reason` under it;
 - a checkbox per optional scope (ticked by default) that the user can untick; required scopes have no checkbox;
@@ -364,11 +371,11 @@ reasons say what the user gets: "To show the current song in your bar", not "Nee
 
 ### 6.4 Spam protection
 
-- After a denial, new requests from the same `appId` **or** the same executable path are refused for a
+- After a denial, new requests from the same `appId` **or** the same app identity are refused for a
   **cooldown** with `RegistrationDenied` and `data.retryAfterMs`, without bothering the user: 10 minutes after the
   first denial, 1 hour after a second denial within 24 hours, 24 hours after each further one.
 - After an expiry, the cooldown is 1 minute.
-- A blocked app (by `appId` or executable path) gets `Blocked` for `app.register` and `session.hello`, and
+- A blocked app (by `appId` or app identity) gets `Blocked` for `app.register` and `session.hello`, and
   nothing is shown to the user, until the user unblocks it in Settings → Connected apps.
 - `app.requestScopes` follows the same cooldowns.
 
@@ -379,21 +386,116 @@ sees a consent screen with only the new scopes (Allow, Deny). The outcome arrive
 `kind` `scopes`, and an approval is followed by `session.scopesChanged`. The same rules apply: only after a user
 action, keep the connection open, cooldown after a denial.
 
-### 6.6 When the executable changes
+### 6.6 App identity
 
-The token is bound to the `appId` **and** the executable path the user approved. When `session.hello` comes from a
-different executable path (the app was updated to a new location, moved, or a different program uses the token):
+A token is bound to the `appId` **and** the **app identity** the user approved. The app identity says which program
+is calling. Sonolith derives it from what the operating system reports about the calling process: its executable
+path, its command line, its working directory, its environment and, on Linux, whether it runs in a Flatpak sandbox.
+It is built so that ordinary updates (a new Python, a new Node version through a version manager, an updated
+AppImage, a new install folder of a self-updating app) keep the same identity.
+
+Sonolith checks these rules in order and uses the first that applies:
+
+1. **Flatpak** (Linux): the process runs in a Flatpak sandbox. The identity is the Flatpak app id. Key:
+   `flatpak:<app-id>`.
+2. **AppImage** (Linux): the executable lies inside an AppImage mount (a directory whose name starts with
+   `.mount_`) and the process environment has `APPIMAGE` set to an existing file. The identity is that file, not the
+   random mount path. Version numbers in the file name (`MyBar-1.4.2-x86_64.AppImage`) are replaced by `*`. Key:
+   `appimage:<path>`.
+3. **Interpreter**: the executable's file name, without `.exe`, is one of `python`, `pythonw`, `node`, `nodejs`,
+   `bun`, `deno`, `ruby`, `perl`, `sh`, `dash`, `bash`, `zsh`, `fish`, `pwsh`, `powershell`, optionally followed by
+   a version (`python3.13`, `ruby3.2`). The identity is the **interpreter family** plus the **script**:
+   - The family is the name with only the major version kept (`python3.13` → `python3`, `ruby3.2` → `ruby3`;
+     `pythonw` → `python`, `nodejs` → `node`). The interpreter's own path is not part of the identity, so updating
+     or moving the interpreter changes nothing.
+   - The script is the first command-line argument that is not an interpreter option (Sonolith skips options and
+     their values, `bun run` and `deno run`, and takes the argument after `--`), made absolute against the
+     process's working directory, with symbolic links resolved. It must be an existing file; otherwise there is no
+     script. `python -m <module>` gives the script `module:<module>`. Inline code (`-c`, `-e`, `--eval`,
+     `-Command`) and interactive sessions give no script. Windows PowerShell 5.1 (`powershell`) treats a bare
+     argument as a command, so only `-File <path>` names a script there; PowerShell 7 (`pwsh`) also accepts a bare
+     path.
+   - Key: `interp:<family>:<script>`, or `interp:<family>:-` without a script.
+4. **Executable**: anything else. The identity is the executable path. Key: `exe:<path>`.
+
+In script and executable paths, Sonolith replaces version segments with `*`:
+
+| Where | Example | Becomes |
+|---|---|---|
+| nvm | `~/.nvm/versions/node/v20.11.0/…` | `~/.nvm/versions/node/*/…` |
+| nvm-windows | `…\nvm\v20.11.0\…` | `…\nvm\*\…` |
+| pyenv | `~/.pyenv/versions/3.12.4/…` | `~/.pyenv/versions/*/…` |
+| asdf | `~/.asdf/installs/<tool>/1.22.1/…` | `~/.asdf/installs/<tool>/*/…` |
+| mise | `…/mise/installs/<tool>/22.3.0/…` | `…/mise/installs/<tool>/*/…` |
+| Volta | `~/.volta/tools/image/<tool>/20.11.0/…` | `~/.volta/tools/image/<tool>/*/…` |
+| fnm | `…/fnm/node-versions/v20.11.0/…` | `…/fnm/node-versions/*/…` |
+| Homebrew on Linux | `…/Cellar/<formula>/1.2.3/…` | `…/Cellar/<formula>/*/…` |
+| Python library folder | `…/lib/python3.13/…` | `…/lib/python3.*/…` |
+| Windows Python | `…\Python313\…`, `…\Python313-32\…` | `…\Python3*\…`, `…\Python3*-32\…` |
+| Snap | `/snap/<name>/123/…` | `/snap/<name>/*/…` |
+| Self-updating Windows apps | `…\app-1.2.3\…` | `…\app-*\…` |
+| Microsoft Store (MSIX) | `…\WindowsApps\<Name>_1.2.3.0_x64__<id>\…` | `…\WindowsApps\<Name>_*_x64__<id>\…` |
+
+On Windows, keys are compared in lower case, because Windows paths ignore case. The consent screen and `identity`
+in results show the real paths. Every case below is part of Sonolith's tests
+([tests/identity-cases.json](tests/identity-cases.json)); cases with the same key are the same app.
+
+<!-- BEGIN GENERATED: identity -->
+| Case | Process | Identity key |
+|---|---|---|
+| Native executable | exe `/usr/bin/mybar`, argv `mybar --daemon`, cwd `/home/alex` | `exe:/usr/bin/mybar` |
+| Python script, relative path, interpreter options | exe `/usr/bin/python3.13`, argv `python3 -u -W ignore bin/bar.py --verbose`, cwd `/home/alex` | `interp:python3:/home/alex/bin/bar.py` |
+| The same Python script after a Python update (same key) | exe `/usr/bin/python3.14`, argv `/usr/bin/python3 /home/alex/bin/bar.py`, cwd `/` | `interp:python3:/home/alex/bin/bar.py` |
+| Python module (-m) | exe `/usr/bin/python3.13`, argv `python3 -m mybar run`, cwd `/home/alex` | `interp:python3:module:mybar` |
+| Python with inline code (-c): no script | exe `/usr/bin/python3.13`, argv `python3 -c import mybar; mybar.main()`, cwd `/home/alex` | `interp:python3:-` |
+| Python package under a versioned site-packages directory | exe `/usr/bin/python3.13`, argv `python3 /home/alex/.local/lib/python3.13/site-packages/mybar/__main__.py`, cwd `/home/alex` | `interp:python3:/home/alex/.local/lib/python3.*/site-packages/mybar/__main__.py` |
+| pyenv: console script inside a versioned Python | exe `/home/alex/.pyenv/versions/3.12.4/bin/python3.12`, argv `/home/alex/.pyenv/versions/3.12.4/bin/python3.12 /home/alex/.pyenv/versions/3.12.4/bin/mybar`, cwd `/home/alex` | `interp:python3:/home/alex/.pyenv/versions/*/bin/mybar` |
+| nvm: globally installed npm package | exe `/home/alex/.nvm/versions/node/v20.11.0/bin/node`, argv `node /home/alex/.nvm/versions/node/v20.11.0/lib/node_modules/mybar/bin/cli.js`, cwd `/home/alex` | `interp:node:/home/alex/.nvm/versions/node/*/lib/node_modules/mybar/bin/cli.js` |
+| nvm: the same package after switching to Node 22 (same key) | exe `/home/alex/.nvm/versions/node/v22.3.0/bin/node`, argv `node /home/alex/.nvm/versions/node/v22.3.0/lib/node_modules/mybar/bin/cli.js`, cwd `/home/alex` | `interp:node:/home/alex/.nvm/versions/node/*/lib/node_modules/mybar/bin/cli.js` |
+| Node with --require and a relative script | exe `/usr/bin/node`, argv `node --require ./tracing.js --enable-source-maps dist/index.js`, cwd `/home/alex/proj` | `interp:node:/home/alex/proj/dist/index.js` |
+| mise: Node installed per version | exe `/home/alex/.local/share/mise/installs/node/22.3.0/bin/node`, argv `node /home/alex/.local/share/mise/installs/node/22.3.0/lib/node_modules/mybar/cli.js`, cwd `/home/alex` | `interp:node:/home/alex/.local/share/mise/installs/node/*/lib/node_modules/mybar/cli.js` |
+| Bun: bun run | exe `/home/alex/.bun/bin/bun`, argv `bun run src/bar.ts`, cwd `/home/alex/proj` | `interp:bun:/home/alex/proj/src/bar.ts` |
+| Bun: a subcommand that is not a file gives no script | exe `/home/alex/.bun/bin/bun`, argv `bun x mybar`, cwd `/home/alex` | `interp:bun:-` |
+| Deno: deno run with permission flags | exe `/usr/bin/deno`, argv `deno run --allow-net --config deno.json main.ts`, cwd `/home/alex/proj` | `interp:deno:/home/alex/proj/main.ts` |
+| Ruby with a versioned binary name | exe `/usr/bin/ruby3.2`, argv `ruby -I lib bar.rb`, cwd `/home/alex/proj` | `interp:ruby3:/home/alex/proj/bar.rb` |
+| Perl | exe `/usr/bin/perl`, argv `perl -w /home/alex/bin/bar.pl`, cwd `/home/alex` | `interp:perl:/home/alex/bin/bar.pl` |
+| Bash script run through its shebang | exe `/usr/bin/bash`, argv `/bin/bash ./now-playing.sh`, cwd `/home/alex/bin` | `interp:bash:/home/alex/bin/now-playing.sh` |
+| fish with -c: no script | exe `/usr/bin/fish`, argv `fish -c mybar --once`, cwd `/home/alex` | `interp:fish:-` |
+| Script after -- | exe `/usr/bin/zsh`, argv `zsh -- -weird-name.zsh`, cwd `/home/alex` | `interp:zsh:/home/alex/-weird-name.zsh` |
+| AppImage | exe `/tmp/.mount_MyBarAb12Cd/usr/bin/mybar`, argv `/tmp/.mount_MyBarAb12Cd/usr/bin/mybar`, cwd `/home/alex`, `APPIMAGE=/home/alex/Apps/MyBar-1.4.2-x86_64.AppImage` | `appimage:/home/alex/Apps/MyBar-*-x86_64.AppImage` |
+| The same AppImage after an update, mounted elsewhere (same key) | exe `/tmp/.mount_MyBarZz98Yx/usr/bin/mybar`, argv `/tmp/.mount_MyBarZz98Yx/usr/bin/mybar`, cwd `/home/alex`, `APPIMAGE=/home/alex/Apps/MyBar-1.5.0-x86_64.AppImage` | `appimage:/home/alex/Apps/MyBar-*-x86_64.AppImage` |
+| AppImage that bundles an interpreter | exe `/tmp/.mount_ToolQq11/usr/bin/python3.11`, argv `python3.11 /tmp/.mount_ToolQq11/usr/share/tool/main.py`, cwd `/home/alex`, `APPIMAGE=/home/alex/Apps/Tool.AppImage` | `appimage:/home/alex/Apps/Tool.AppImage` |
+| APPIMAGE set but the process is not running from an AppImage mount (ignored) | exe `/usr/bin/mybar`, argv `mybar`, cwd `/home/alex`, `APPIMAGE=/home/alex/Apps/Other.AppImage` | `exe:/usr/bin/mybar` |
+| asdf: a native tool installed per version | exe `/home/alex/.asdf/installs/golang/1.22.1/packages/bin/mybar`, argv `mybar`, cwd `/home/alex` | `exe:/home/alex/.asdf/installs/golang/*/packages/bin/mybar` |
+| Snap: the revision directory | exe `/snap/mybar/123/usr/bin/mybar`, argv `mybar`, cwd `/home/alex` | `exe:/snap/mybar/*/usr/bin/mybar` |
+| Flatpak | exe `/app/bin/mybar`, argv `mybar`, cwd `/home/alex`, Flatpak `com.example.MyBar` | `flatpak:com.example.MyBar` |
+| Windows: native executable (keys ignore case) | exe `C:\Program Files\MyBar\MyBar.exe`, argv `MyBar.exe`, cwd `C:\Users\Alex` | `exe:c:\program files\mybar\mybar.exe` |
+| Windows: Python script | exe `C:\Users\Alex\AppData\Local\Programs\Python\Python313\python.exe`, argv `python bar.py`, cwd `C:\Users\Alex\Scripts` | `interp:python:c:\users\alex\scripts\bar.py` |
+| Windows: Python package in a versioned PythonXY directory, run by pythonw | exe `C:\Users\Alex\AppData\Local\Programs\Python\Python312\pythonw.exe`, argv `pythonw.exe C:\Users\Alex\AppData\Local\Programs\Python\Python312\Lib\site-packages\mybar\__main__.py`, cwd `C:\Users\Alex` | `interp:python:c:\users\alex\appdata\local\programs\python\python3*\lib\site-packages\mybar\__main__.py` |
+| Windows: PowerShell 7 with -File | exe `C:\Program Files\PowerShell\7\pwsh.exe`, argv `pwsh.exe -NoProfile -ExecutionPolicy Bypass -File .\bar.ps1`, cwd `C:\Users\Alex\Scripts` | `interp:pwsh:c:\users\alex\scripts\bar.ps1` |
+| Windows: interactive Windows PowerShell 5.1 (a positional argument is a command, not a file) | exe `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`, argv `powershell.exe -NoLogo bar.ps1`, cwd `C:\Users\Alex\Scripts` | `interp:powershell:-` |
+| Windows: nvm-windows Node with a global package | exe `C:\Users\Alex\AppData\Roaming\nvm\v20.11.0\node.exe`, argv `node C:\Users\Alex\AppData\Roaming\nvm\v20.11.0\node_modules\mybar\cli.js`, cwd `C:\Users\Alex` | `interp:node:c:\users\alex\appdata\roaming\nvm\*\node_modules\mybar\cli.js` |
+| Windows: self-updating app with app-<version> folders | exe `C:\Users\Alex\AppData\Local\MyBar\app-1.2.3\MyBar.exe`, argv `MyBar.exe`, cwd `C:\Users\Alex` | `exe:c:\users\alex\appdata\local\mybar\app-*\mybar.exe` |
+| Windows: Microsoft Store (MSIX) app | exe `C:\Program Files\WindowsApps\Example.MyBar_1.2.3.0_x64__8wekyb3d8bbwe\MyBar.exe`, argv `MyBar.exe`, cwd `C:\Users\Alex` | `exe:c:\program files\windowsapps\example.mybar_*_x64__8wekyb3d8bbwe\mybar.exe` |
+<!-- END GENERATED: identity -->
+
+When `session.hello` comes from a process with a **different** identity key (the app moved, its script moved, or a
+different program uses the token):
 
 1. `session.hello` fails with `RegistrationPending` (reason `identityChanged`, with `data.requestId` and
    `data.expiresAt`).
-2. The user sees "<name> was updated or moved" with the old and the new path, and Allow, Deny, Deny and block.
+2. The user sees "<name> was updated or moved" with the old and the new identity, and Allow, Deny, Deny and block.
 3. The client keeps the connection open and waits for `registration.resolved` with `kind` `identity`.
-4. On `approved`, the token stays the same and is now bound to the new path; the client calls `session.hello` again.
-   On `denied` or `expired`, the token still works from the old path only.
+4. On `approved`, the token stays the same and is now bound to the new identity; the client calls `session.hello`
+   again. On `denied` or `expired`, the token still works from the old identity only.
 
-An app that updates in place (same path) is not asked again. For apps run by an interpreter (Python, Node.js,
-PowerShell), the executable is the interpreter, so an interpreter upgrade to a new path asks again. Apps whose
-executable path changes on every start will ask every time; ship a stable launcher instead.
+Advice for developers:
+
+- Keep the program or script at a stable path. Moving it asks the user again.
+- A script's identity is its interpreter family and its path. Start it the same way every time; prefer a script
+  file over inline code (`-c`), because every inline-code or interactive session of an interpreter shares one
+  identity.
+- `session.hello` and `app.info` return the identity Sonolith sees, which helps when testing.
 
 ---
 
@@ -430,7 +532,7 @@ YouTube.
 | `Unauthorized` | The token is wrong or revoked. | Delete the token. Show "Disconnected from Sonolith". Offer "Connect to Sonolith"; register only when the user clicks it. |
 | `NotRegistered` | The app is not registered (anymore). | The same as `Unauthorized`. |
 | `Blocked` | The user blocked the app. | Delete the token. Tell the user it can be unblocked in Sonolith's Settings → Connected apps. |
-| `RegistrationPending` (`identityChanged`) | The executable path changed; the user is being asked. | Keep the connection open; wait for `registration.resolved` (section 6.6). |
+| `RegistrationPending` (`identityChanged`) | The app identity changed; the user is being asked. | Keep the connection open; wait for `registration.resolved` (section 6.6). |
 | `UnsupportedVersion` | Sonolith does not speak this API major version. | Tell the user to update Sonolith or the app. |
 
 A session lasts as long as its connection.
@@ -573,7 +675,7 @@ Every error is a JSON-RPC error object. `data` always has `name` and `reason`; s
 | -32001 | `NotRegistered` | The `appId` is not registered (never registered, unregistered, or removed by the user). | Delete the stored token. Show "Disconnected from Sonolith". Register again only after a user action. |
 | -32002 | `Unauthorized` | The token is wrong or has been revoked. | Delete the stored token. Show "Disconnected from Sonolith". Register again only after a user action. |
 | -32003 | `PermissionDenied` | The app lacks the scope in `data.scope`. | Do not retry. Hide the feature, or ask for the scope with `app.requestScopes` after a user action. |
-| -32004 | `RegistrationPending` | A request is already waiting for the user, or the app's executable changed and the user must approve it again. | Wait for `registration.resolved` with `data.requestId` on the connection that made the request. |
+| -32004 | `RegistrationPending` | A request is already waiting for the user, or the app identity changed and the user must approve it again. | Wait for `registration.resolved` with `data.requestId` on the connection that made the request. |
 | -32005 | `RegistrationDenied` | The user denied a recent request; asking again is on hold. | Do not ask again before `data.retryAfterMs`, and then only after a user action. |
 | -32006 | `Blocked` | The user blocked this app. | Stop. Tell the user the app can be unblocked in Sonolith's Settings → Connected apps. |
 | -32007 | `NotSignedIn` | The method needs a YouTube account and the user is signed out. | Tell the user to sign in in Sonolith; subscribe to `account` to know when they do. |
@@ -601,7 +703,7 @@ methods that need a scope with `PermissionDenied`. The method reference lists th
 | `alreadyAuthenticated` | `InvalidRequest` | `session.hello` or `app.register` on a connection that already has a session. |
 | `cursorExpired` | `InvalidParams` | The cursor is too old or the list changed; start again from the first page. |
 | `unknownParam` | `InvalidParams` | A parameter this Sonolith does not know (it may be newer than this Sonolith). |
-| `identityChanged` | `RegistrationPending` | The app's executable path changed; the user is asked to approve it again. |
+| `identityChanged` | `RegistrationPending` | The app identity changed (section 6.6); the user is asked to approve it again. |
 | `starting` | `Unavailable` | Sonolith is still starting up. |
 | `nothingPlaying` | `Unavailable` | The method needs a current item and there is none. |
 | `notEditable` | `Unavailable` | The playlist cannot be changed by the user (for example, it belongs to someone else). |
@@ -723,11 +825,11 @@ The API is a local, per-user service. This section says plainly what it protects
   (Windows, access list for the current user only) can be opened only by the user's own processes.
 - **Remote access.** There is no network listener. Windows remote pipe clients are rejected.
 - **Apps the user did not approve.** Without a token there is nothing beyond `app.info`, `app.register` and
-  `session.hello`. Registration needs the user's explicit approval on a screen showing the verified executable path.
+  `session.hello`. Registration needs the user's explicit approval on a screen showing the app identity.
 - **Approved apps overreaching.** Every method checks the app's scopes. The user sees and controls the scopes, and
   can remove an app at any time.
-- **Token reuse by a different program.** The token is bound to the executable path the user approved. Another
-  program presenting it triggers a new consent screen instead of access.
+- **Token reuse by a different program.** The token is bound to the app identity the user approved. A program
+  with another identity presenting it triggers a new consent screen instead of access.
 - **Token theft from Sonolith's data.** Sonolith stores only hashes of tokens.
 - **Accidental overload.** Rate limits keep a buggy integration from hammering the user's YouTube account, and
   cooldowns and blocking keep a misbehaving app from flooding the user with consent requests.
@@ -735,13 +837,17 @@ The API is a local, per-user service. This section says plainly what it protects
 **It does not protect against:**
 
 - **Malware running as the same user.** A program running under the user's account can read another app's stored
-  token (unless the platform's secret store prevents it), impersonate its executable path (for example, by running
-  the same interpreter), read Sonolith's files, or control the user's desktop. The operating system does not
+  token (unless the platform's secret store prevents it), take on its identity (for example, by running the same
+  interpreter with the same script path, or by setting `APPIMAGE`), read Sonolith's files, or control the user's desktop. The operating system does not
   separate a user's own programs from each other, and this API cannot either.
 - **Self-declared details.** The app's name, description, publisher, homepage and icon are what the app says. Only
-  the executable path is verified. The user should judge an app by its path.
-- **Interpreted apps.** For a script, the verified executable is the interpreter (for example `/usr/bin/python3`),
-  so the binding does not tell two scripts run by the same interpreter apart.
+  the app identity comes from the operating system. The user should judge an app by its identity.
+- **Interpreter-based identity is weaker.** For a script, only the interpreter's executable is verified by the
+  operating system; the script path comes from the command line, which the process's starter chooses. Any script
+  run by the same interpreter family with the same script path is the same app, and so is every inline-code or
+  interactive session of that interpreter. Likewise an AppImage's identity rests on its `APPIMAGE` variable. This
+  is acceptable within this model, because only the user's own programs can open the endpoint, and those are
+  trusted no more and no less than the user's account.
 - **A fake Sonolith on Windows.** Named pipes live in one namespace for all users. While Sonolith is not running,
   another user could create a pipe with the expected name and receive the tokens clients send to it. Clients reduce
   this by taking the name from `discovery.json` (in the user's private profile) and checking the server process id
@@ -865,7 +971,24 @@ Request:
 Response:
 
 ```json
-{"jsonrpc":"2.0","id":2,"result":{"status":"pending","requestId":"req_5Jt2xQ","expiresAt":1793022300000}}
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "status": "pending",
+    "requestId": "req_5Jt2xQ",
+    "expiresAt": 1793022300000,
+    "identity": {
+      "kind": "executable",
+      "key": "exe:/usr/bin/mybar",
+      "executable": "/usr/bin/mybar",
+      "interpreter": null,
+      "script": null,
+      "appImage": null,
+      "flatpakId": null
+    }
+  }
+}
 ```
 
 #### `app.requestScopes`
@@ -964,9 +1087,9 @@ Response:
 
 Authenticates the connection with the app's token.
 
-Send it first on every new connection. Sonolith checks the token and that the calling executable is the one the user approved. Sonolith finishes `session.hello` before it reads the next message, so a client MAY send further requests right after it without waiting.
+Send it first on every new connection. Sonolith checks the token and that the calling process has the app identity the user approved (section 6.6). Sonolith finishes `session.hello` before it reads the next message, so a client MAY send further requests right after it without waiting.
 
-If the executable path changed (the app was updated or moved), the user is asked again and the call fails with `RegistrationPending` (reason `identityChanged`). Keep the connection open, wait for `registration.resolved` (`kind` `identity`), and on approval call `session.hello` again with the same token.
+If the app identity changed (for example, the app was moved), the user is asked again and the call fails with `RegistrationPending` (reason `identityChanged`). Keep the connection open, wait for `registration.resolved` (`kind` `identity`), and on approval call `session.hello` again with the same token.
 
 | Scope | Session | Rate class |
 |---|---|---|
@@ -1015,7 +1138,16 @@ Response:
       "player:read",
       "player:control"
     ],
-    "signedIn": true
+    "signedIn": true,
+    "identity": {
+      "kind": "executable",
+      "key": "exe:/usr/bin/mybar",
+      "executable": "/usr/bin/mybar",
+      "interpreter": null,
+      "script": null,
+      "appImage": null,
+      "flatpakId": null
+    }
   }
 }
 ```
@@ -4329,6 +4461,7 @@ The request is waiting for the user. Its outcome arrives as `registration.resolv
 | `status` | "pending" |  |
 | `requestId` | string |  |
 | `expiresAt` | integer (ms since epoch) | A point in time: milliseconds since the Unix epoch (UTC). |
+| `identity` | [AppIdentity](#appidentity) | The app identity Sonolith derived for the calling process (SPEC section 6.6). |
 
 #### RequestScopesResult
 
@@ -4354,6 +4487,20 @@ Parameters of `registration.resolved`.
 | `grantedScopes` | [Scope](#scope)[] \| null | The app's scopes after an approval, otherwise null. |
 | `retryAfterMs` | integer \| null | When `status` is `denied` or `expired`: how long until the app may ask again. Otherwise null. |
 
+#### AppIdentity
+
+Who the calling process is, as Sonolith derives it from the operating system (SPEC section 6.6). A token is bound to `key`.
+
+| Field | Type | Description |
+|---|---|---|
+| `kind` | "executable" \| "interpreter" \| "appimage" \| "flatpak" | `executable` (a native program), `interpreter` (a script run by an interpreter), `appimage` or `flatpak`. |
+| `key` | string | The normalized identity Sonolith compares, for example `interp:python3:/home/alex/bin/bar.py`. Version segments are replaced by `*`; lower case on Windows. |
+| `executable` | string | The verified executable path as the operating system reports it. |
+| `interpreter` | string \| null | The interpreter family, for example `python3` or `node`, when `kind` is `interpreter`; otherwise null. |
+| `script` | string \| null | The absolute script path from the command line, or `module:<name>` for `python -m`, when `kind` is `interpreter` and there is one; otherwise null. Taken from the command line, not verified. |
+| `appImage` | string \| null | The AppImage file's path when `kind` is `appimage`; otherwise null. |
+| `flatpakId` | string \| null | The Flatpak app id when `kind` is `flatpak`; otherwise null. |
+
 #### HelloResult
 
 The authenticated session.
@@ -4365,6 +4512,7 @@ The authenticated session.
 | `appId` | string | A stable reverse-DNS app id: lowercase, at least three dot-separated labels, at most 128 characters, for example `com.example.mybar`. |
 | `grantedScopes` | [Scope](#scope)[] |  |
 | `signedIn` | boolean | Whether the user is signed in to a YouTube account in Sonolith. |
+| `identity` | [AppIdentity](#appidentity) | The app identity Sonolith derived for the calling process (SPEC section 6.6). |
 
 #### SessionInfo
 
@@ -4375,6 +4523,7 @@ The calling app's session.
 | `appId` | string | A stable reverse-DNS app id: lowercase, at least three dot-separated labels, at most 128 characters, for example `com.example.mybar`. |
 | `grantedScopes` | [Scope](#scope)[] |  |
 | `signedIn` | boolean |  |
+| `identity` | [AppIdentity](#appidentity) | The app identity Sonolith derived for the calling process (SPEC section 6.6). |
 
 #### ServerInfo
 
@@ -4466,25 +4615,27 @@ Tick every item before you ship.
 4. **Handle pending:** keep the connection open, tell the user to approve in Sonolith, and handle every
    `registration.resolved` status: `approved`, `denied` (respect `retryAfterMs`), `blocked`, `expired`.
 5. **Store the token securely:** secret store first, a user-only file as fallback; never log or show it.
-6. **Say hello on every connection:** `session.hello` first, with `apiVersion`; handle `Unauthorized`,
+6. **Keep a stable identity:** install the program or script at a fixed path; run scripts as files, not inline
+   code (section 6.6).
+7. **Say hello on every connection:** `session.hello` first, with `apiVersion`; handle `Unauthorized`,
    `NotRegistered`, `Blocked`, `RegistrationPending` (`identityChanged`) and `UnsupportedVersion`.
-7. **Respect scopes:** use only `grantedScopes`; hide features that need other scopes; handle
+8. **Respect scopes:** use only `grantedScopes`; hide features that need other scopes; handle
    `session.scopesChanged` and `PermissionDenied`.
-8. **Handle revocation:** on `session.revoked`, `Unauthorized` or `NotRegistered`, stop, delete the token, and show
+9. **Handle revocation:** on `session.revoked`, `Unauthorized` or `NotRegistered`, stop, delete the token, and show
    "Disconnected from Sonolith".
-9. **Never re-register automatically:** only after the user asks.
-10. **Offer "Disconnect from Sonolith":** a visible action that calls `app.unregister` and deletes the token, even
+10. **Never re-register automatically:** only after the user asks.
+11. **Offer "Disconnect from Sonolith":** a visible action that calls `app.unregister` and deletes the token, even
     when Sonolith is not available.
-11. **Reconnect with backoff:** 1 s doubling to 60 s with jitter; never start Sonolith more than once per user action;
+12. **Reconnect with backoff:** 1 s doubling to 60 s with jitter; never start Sonolith more than once per user action;
     subscribe again after reconnecting.
-12. **Use events, not polling:** subscribe to topics; use `player.position` with extrapolation instead of frequent
+13. **Use events, not polling:** subscribe to topics; use `player.position` with extrapolation instead of frequent
     `player.getState`.
-13. **Respect rate limits:** on `RateLimited`, wait `data.retryAfterMs`; never retry in a tight loop.
-14. **Handle the common errors:** `Unavailable`, `Timeout`, `NotSignedIn`, `NotFound`, `InvalidParams`
+14. **Respect rate limits:** on `RateLimited`, wait `data.retryAfterMs`; never retry in a tight loop.
+15. **Handle the common errors:** `Unavailable`, `Timeout`, `NotSignedIn`, `NotFound`, `InvalidParams`
     (`cursorExpired`: restart paging).
-15. **Test without Sonolith:** with Sonolith not running, with the API turned off, and with Sonolith quitting while
+16. **Test without Sonolith:** with Sonolith not running, with the API turned off, and with Sonolith quitting while
     connected; the app must stay usable and retry quietly.
-16. **Test the user paths:** deny, deny and block, let a request expire, untick an optional scope, remove the app in
+17. **Test the user paths:** deny, deny and block, let a request expire, untick an optional scope, remove the app in
     Sonolith while connected, and disconnect from the app.
 
 ---
@@ -4503,6 +4654,7 @@ Tick every item before you ship.
 | Cursor | An opaque string that continues a paged list. |
 | Entry | One occurrence of an item in the queue or a playlist, identified by `entryId`. |
 | Event | A notification from Sonolith: a JSON-RPC message without `id`. |
+| App identity | Which program is calling: an executable, an interpreter family and script, an AppImage or a Flatpak, normalized so that updates keep it (section 6.6). |
 | Executable path | The full path of the program that opened the connection, as the operating system reports it. |
 | Item | A track, episode, album, playlist, artist or podcast. |
 | Revision | A number that grows whenever the queue changes. |

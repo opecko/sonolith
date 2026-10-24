@@ -2,9 +2,17 @@
 
 Read-only use from a terminal or a script, with `socat` (Linux) or PowerShell (Windows).
 
-A token is bound to the program that registered it (see "When the executable changes" in [SPEC.md](../../SPEC.md)).
+A token is bound to the app identity of the program that registered it (section 6.6 of [SPEC.md](../../SPEC.md)).
 A token from the Python or Node example will not work from `socat` or PowerShell: Sonolith would ask the user to
-approve the new program. So the shell registers once on its own, with its own `appId`.
+approve the new program. So `socat` and PowerShell each register once on their own, with their own `appId`.
+
+What identity they get:
+
+- `socat` is a native program, so its identity is `exe:/usr/bin/socat`. Every `socat` command you run is the same
+  app to Sonolith.
+- PowerShell is an interpreter. Run interactively (as below), its identity is `interp:pwsh:-` (or
+  `interp:powershell:-` for Windows PowerShell 5.1), shared by every interactive PowerShell session. Put the
+  commands in a `.ps1` file and run it with `pwsh -File` to get an identity for that script instead.
 
 ## Linux (`socat`)
 

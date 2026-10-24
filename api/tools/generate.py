@@ -106,6 +106,9 @@ LYRICS = {
          "background": []},
     ],
 }
+IDENTITY = {"kind": "executable", "key": "exe:/usr/bin/mybar", "executable": "/usr/bin/mybar", "interpreter": None,
+            "script": None, "appImage": None, "flatpakId": None}
+IDENTITY_CASES = json.loads((API / "tests" / "identity-cases.json").read_text())["cases"]
 SCOPES_BAR = [
     {"scope": "player:read", "required": True, "reason": "To show the current song in your bar"},
     {"scope": "player:control", "required": False, "reason": "To play, pause and skip from your bar"},
@@ -142,7 +145,7 @@ ERRORS = [
     (-32001, "NotRegistered", "The `appId` is not registered (never registered, unregistered, or removed by the user).", "Delete the stored token. Show \"Disconnected from Sonolith\". Register again only after a user action."),
     (-32002, "Unauthorized", "The token is wrong or has been revoked.", "Delete the stored token. Show \"Disconnected from Sonolith\". Register again only after a user action."),
     (-32003, "PermissionDenied", "The app lacks the scope in `data.scope`.", "Do not retry. Hide the feature, or ask for the scope with `app.requestScopes` after a user action."),
-    (-32004, "RegistrationPending", "A request is already waiting for the user, or the app's executable changed and the user must approve it again.", "Wait for `registration.resolved` with `data.requestId` on the connection that made the request."),
+    (-32004, "RegistrationPending", "A request is already waiting for the user, or the app identity changed and the user must approve it again.", "Wait for `registration.resolved` with `data.requestId` on the connection that made the request."),
     (-32005, "RegistrationDenied", "The user denied a recent request; asking again is on hold.", "Do not ask again before `data.retryAfterMs`, and then only after a user action."),
     (-32006, "Blocked", "The user blocked this app.", "Stop. Tell the user the app can be unblocked in Sonolith's Settings → Connected apps."),
     (-32007, "NotSignedIn", "The method needs a YouTube account and the user is signed out.", "Tell the user to sign in in Sonolith; subscribe to `account` to know when they do."),
@@ -165,7 +168,7 @@ REASONS = [
     ("alreadyAuthenticated", "InvalidRequest", "`session.hello` or `app.register` on a connection that already has a session."),
     ("cursorExpired", "InvalidParams", "The cursor is too old or the list changed; start again from the first page."),
     ("unknownParam", "InvalidParams", "A parameter this Sonolith does not know (it may be newer than this Sonolith)."),
-    ("identityChanged", "RegistrationPending", "The app's executable path changed; the user is asked to approve it again."),
+    ("identityChanged", "RegistrationPending", "The app identity changed (section 6.6); the user is asked to approve it again."),
     ("starting", "Unavailable", "Sonolith is still starting up."),
     ("nothingPlaying", "Unavailable", "The method needs a current item and there is none."),
     ("notEditable", "Unavailable", "The playlist cannot be changed by the user (for example, it belongs to someone else)."),
@@ -228,7 +231,7 @@ METHODS = [
               ("UnsupportedVersion", None)],
       example_params={"appId": "com.example.mybar", "name": "My Bar", "description": "A status bar for Wayland compositors.",
                       "publisher": "Example Labs", "homepage": "https://example.com/mybar", "scopes": SCOPES_BAR, "apiVersion": "1.0"},
-      example_result={"status": "pending", "requestId": "req_5Jt2xQ", "expiresAt": NOW + 300000}),
+      example_result={"status": "pending", "requestId": "req_5Jt2xQ", "expiresAt": NOW + 300000, "identity": IDENTITY}),
     M("app.requestScopes", "Asks the user for more scopes. Shows a consent screen with only the new ones.",
       rate="auth",
       description=(
@@ -250,9 +253,9 @@ METHODS = [
     M("session.hello", "Authenticates the connection with the app's token.",
       session=False, rate="auth",
       description=(
-          "Send it first on every new connection. Sonolith checks the token and that the calling executable is the one the user approved. "
+          "Send it first on every new connection. Sonolith checks the token and that the calling process has the app identity the user approved (section 6.6). "
           "Sonolith finishes `session.hello` before it reads the next message, so a client MAY send further requests right after it without waiting.\n\n"
-          "If the executable path changed (the app was updated or moved), the user is asked again and the call fails with `RegistrationPending` "
+          "If the app identity changed (for example, the app was moved), the user is asked again and the call fails with `RegistrationPending` "
           "(reason `identityChanged`). Keep the connection open, wait for `registration.resolved` (`kind` `identity`), and on approval call `session.hello` again with the same token."),
       params=[
           P("appId", ref("common", "AppId"), True, "The id the app registered with."),
@@ -265,7 +268,7 @@ METHODS = [
               ("Blocked", None), ("RegistrationPending", "`identityChanged`"), ("UnsupportedVersion", None)],
       example_params={"appId": "com.example.mybar", "token": TOKEN, "apiVersion": "1.0"},
       example_result={"apiVersion": "1.0.0", "appVersion": "2.4.0", "appId": "com.example.mybar",
-                      "grantedScopes": ["player:read", "player:control"], "signedIn": True}),
+                      "grantedScopes": ["player:read", "player:control"], "signedIn": True, "identity": IDENTITY}),
     # ---------------------------------------------------------------- events
     M("events.subscribe", "Subscribes the connection to event topics. Sends a snapshot of each new topic right after the response.",
       rate="local",
@@ -926,8 +929,21 @@ def llms_scopes():
     return "\n".join(f"- {s} (\"{label}\"{', sensitive' if sens else ''}): {allows}" for s, label, sens, allows in SCOPES) + "\n"
 
 
+def md_identity():
+    rows = ["| Case | Process | Identity key |", "|---|---|---|"]
+    for c in IDENTITY_CASES:
+        p = c["process"]
+        bits = [f"exe `{p['exe']}`", "argv `" + " ".join(p["argv"]) + "`", f"cwd `{p['cwd']}`"]
+        bits += [f"`{k}={v}`" for k, v in p["env"].items()]
+        if p["flatpakId"]:
+            bits.append(f"Flatpak `{p['flatpakId']}`")
+        rows.append(f"| {cell(c['name'])} | {cell(', '.join(bits))} | `{cell(c['identity']['key'])}` |")
+    return "\n".join(rows) + "\n"
+
+
 SPEC_BLOCKS = {"methods": md_methods, "events": md_events, "topics": md_topics, "types": md_types,
-               "errors": md_errors, "reasons": md_reasons, "scopes": md_scopes, "rates": md_rates}
+               "errors": md_errors, "reasons": md_reasons, "scopes": md_scopes, "rates": md_rates,
+               "identity": md_identity}
 LLMS_BLOCKS = {"methods": llms_methods, "events": llms_events, "types": llms_types, "errors": llms_errors, "scopes": llms_scopes}
 
 
@@ -969,6 +985,8 @@ def validate_examples():
             assert e in ERROR_CODES, e
     for e in EVENTS:
         check(e["params"], e["example"], f"{e['name']} params")
+    for c in IDENTITY_CASES:
+        check(ref("session", "AppIdentity"), c["identity"], f"identity case {c['name']!r}")
     # Every method needs a scope from the list; every topic in the Topic enum has exactly one event.
     scope_names = [s for s, *_ in SCOPES]
     assert scope_names == SCHEMAS["common"]["$defs"]["Scope"]["enum"], "SCOPES and the Scope enum differ"
