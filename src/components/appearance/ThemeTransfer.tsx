@@ -2,9 +2,9 @@ import { Check, Copy, FileUp, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { normalizeAppearance, type Appearance } from "../../theme/appearance";
 
-/** Theme file: the whole Appearance settings plus a marker, so other JSON is rejected. */
+/** Theme file: the whole Appearance settings plus a marker, so other JSON is rejected. ytdesk (the old name) wrote `ytdeskTheme`. */
 export function exportTheme(a: Appearance): string {
-  return JSON.stringify({ ytdeskTheme: 1, appearance: a }, null, 2);
+  return JSON.stringify({ sonolithTheme: 1, appearance: a }, null, 2);
 }
 
 export function importTheme(text: string): Appearance {
@@ -14,8 +14,8 @@ export function importTheme(text: string): Appearance {
   } catch {
     throw new Error("This isn't valid JSON.");
   }
-  const d = data as { ytdeskTheme?: unknown; appearance?: unknown };
-  if (!d || typeof d !== "object" || d.ytdeskTheme !== 1 || !d.appearance) throw new Error("This isn't a ytdesk theme.");
+  const d = data as { sonolithTheme?: unknown; ytdeskTheme?: unknown; appearance?: unknown };
+  if (!d || typeof d !== "object" || (d.sonolithTheme ?? d.ytdeskTheme) !== 1 || !d.appearance) throw new Error("This isn't a Sonolith theme.");
   return normalizeAppearance(d.appearance);
 }
 
@@ -69,7 +69,7 @@ export default function ThemeTransfer({ kind, current, onImport, onClose }: {
           <button className="icon-btn h-9 w-9" onClick={onClose} aria-label="Close"><X size={20} /></button>
         </header>
         <p className="text-sm text-[var(--c-text-muted)]">
-          {kind === "export" ? "Palette, custom colors and the other appearance options. Save it or share it." : "Paste a theme exported from ytdesk, or open the file."}
+          {kind === "export" ? "Palette, custom colors and the other appearance options. Save it or share it." : "Paste a theme exported from Sonolith, or open the file."}
         </p>
         <textarea
           value={text}

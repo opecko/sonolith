@@ -5,7 +5,7 @@ import { hiResArt } from "./art";
 export const ACTIVITY_LISTENING = 2;
 /** status_display_type: 0 = app name, 1 = state, 2 = details. */
 export const STATUS_DISPLAY_DETAILS = 2;
-/** Art asset uploaded in the Discord application ("Rich Presence → Art Assets"). */
+/** Art asset uploaded in the Discord application ("Rich Presence → Art Assets"); its key keeps the old name (ytdesk). */
 export const APP_ASSET = "ytdesk";
 
 export interface PresenceInput {
@@ -52,7 +52,7 @@ export function buildActivity(p: PresenceInput): Record<string, any> {
       large_image: artUrl(track),
       ...(album ? { large_text: fit(album) } : {}),
       small_image: APP_ASSET,
-      small_text: p.playing ? "ytdesk" : "Paused",
+      small_text: p.playing ? "Sonolith" : "Paused",
     },
   };
   // Start/end timestamps make Discord draw the progress bar; omitted while paused so the time stands still.

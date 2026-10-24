@@ -5,7 +5,7 @@ import { useToast } from "../stores/toast";
 import { useUpdate } from "../stores/update";
 import ReleaseNotes from "./ReleaseNotes";
 
-/** One copyable command, e.g. "yay -S ytdesk-bin". */
+/** One copyable command, e.g. "yay -S sonolith-bin". */
 function Command({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -25,7 +25,7 @@ function AurUpdate({ aur }: { aur: { package: string; helpers: string[] } }) {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm text-[var(--c-text-muted)]">
-        You installed ytdesk from the AUR ({aur.package}). Update it with your AUR helper, or with your usual system update:
+        You installed Sonolith from the AUR ({aur.package}). Update it with your AUR helper, or with your usual system update:
       </p>
       {helpers.map((h) => <Command key={h} text={`${h} -S ${aur.package}`} />)}
     </div>
@@ -54,7 +54,7 @@ export default function UpdateDialog() {
         className="m3-dialog flex max-h-[80vh] w-[min(520px,100%)] flex-col rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] shadow-2xl">
         <header className="flex items-start justify-between gap-4 px-6 pb-2 pt-5">
           <div>
-            <h2 className="text-lg font-semibold">ytdesk {info.latest} is available</h2>
+            <h2 className="text-lg font-semibold">Sonolith {info.latest} is available</h2>
             <p className="text-sm text-[var(--c-text-muted)]">You have version {info.current}.</p>
           </div>
           <button className="icon-btn h-10 w-10 shrink-0" onClick={close} disabled={busy} aria-label="Close"><X size={20} /></button>
@@ -74,7 +74,7 @@ export default function UpdateDialog() {
               </p>
             </div>
           )}
-          {install.status === "starting" && <p className="mb-3 text-sm text-[var(--c-text-muted)]">Starting the installer. ytdesk will close now.</p>}
+          {install.status === "starting" && <p className="mb-3 text-sm text-[var(--c-text-muted)]">Starting the installer. Sonolith will close now.</p>}
           {info.aur && <div className="mb-4"><AurUpdate aur={info.aur} /></div>}
           <div className="flex items-center justify-between gap-4">
             <p className="text-xs text-[var(--c-text-subtle)]">You can turn off update checks in Settings.</p>
@@ -102,7 +102,7 @@ export function UpdateChip() {
   const available = useUpdate((s) => s.available);
   if (!available) return null;
   return (
-    <button onClick={() => useUpdate.getState().setDialogOpen(true)} title={`ytdesk ${available.latest} is available`}
+    <button onClick={() => useUpdate.getState().setDialogOpen(true)} title={`Sonolith ${available.latest} is available`}
       className="flex h-8 shrink-0 items-center gap-2 rounded-full bg-[var(--c-accent)] px-3 text-sm font-medium text-on-accent hover:brightness-110">
       <Download size={16} aria-hidden /> New version available!
     </button>

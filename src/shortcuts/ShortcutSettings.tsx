@@ -61,12 +61,12 @@ export default function ShortcutSettings() {
   return (
     <>
       <SettingCard title="Keyboard shortcuts">
-        <SettingRow id="shortcutsEnabled" title="Use keyboard shortcuts" detail="Keys for the player while ytdesk's window is focused.">
+        <SettingRow id="shortcutsEnabled" title="Use keyboard shortcuts" detail="Keys for the player while Sonolith's window is focused.">
           <Switch on={enabled} onChange={(on) => setShortcuts({ enabled: on })} label="Use keyboard shortcuts" />
         </SettingRow>
         <p className="mx-5 mb-4 flex items-start gap-3 text-sm text-[var(--c-text-muted)]">
           <AppWindow size={18} className="mt-0.5 shrink-0 text-[var(--c-accent)]" aria-hidden />
-          <span><strong className="font-semibold text-[var(--c-text)]">Only inside ytdesk:</strong> not system-wide. Your keyboard's media keys control playback everywhere.</span>
+          <span><strong className="font-semibold text-[var(--c-text)]">Only inside Sonolith:</strong> not system-wide. Your keyboard's media keys control playback everywhere.</span>
         </p>
       </SettingCard>
       <SettingCard title="Keys">

@@ -79,7 +79,7 @@ pub fn render_set_gpu(app: AppHandle, enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
-/// Whether an earlier ytdesk left data on disk: its config.json (GPU, close to tray, yt-dlp path) or a yt-dlp it
+/// Whether an earlier version left data on disk: its config.json (GPU, close to tray, yt-dlp path) or a yt-dlp it
 /// downloaded. Taken once in setup, before the yt-dlp auto-install creates `bin/`: asked later, a fresh install
 /// already looks like an existing one.
 pub struct PriorData(pub bool);

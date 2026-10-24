@@ -59,7 +59,7 @@ export default function ChangelogDialog({ current, onClose }: { current: string;
             entries.map((e) => (
               <section key={e.version} className="border-t border-[var(--c-outline)] pb-2 pt-4 first:border-t-0 first:pt-0">
                 <div className="mb-2 flex flex-wrap items-baseline gap-x-3">
-                  <h3 className="text-base font-semibold text-[var(--c-text)]">ytdesk {e.version}</h3>
+                  <h3 className="text-base font-semibold text-[var(--c-text)]">Sonolith {e.version}</h3>
                   {e.version === current && <span className="rounded-full bg-[var(--c-accent)] px-2 py-0.5 text-xs font-medium text-on-accent">Installed</span>}
                   <span className="text-xs text-[var(--c-text-subtle)]">{day(e.date)}</span>
                 </div>

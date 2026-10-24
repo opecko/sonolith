@@ -8,7 +8,7 @@ import Thumb from "./Thumb";
 
 /**
  * "2.4K views • 9h ago • 3 min left" (+ progress bar), as on YouTube Music. Progress is the local one (where the
- * episode was left in ytdesk, stores/episodeProgress) when there is one, else the server's.
+ * episode was left in Sonolith, stores/episodeProgress) when there is one, else the server's.
  */
 function Meta({ id, ep }: { id: string; ep?: EpisodeInfo }) {
   const local = useEpisodeProgress((s) => s.entries[id]);

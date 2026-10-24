@@ -63,7 +63,7 @@
   font-display: swap;
 }
 
-/* The M3 style's own font when the font setting is "ytdesk" (a font picked in Settings sets --font inline and wins).
+/* The M3 style's own font when the font setting is "Sonolith" (a font picked in Settings sets --font inline and wins).
    Google Sans Flex reads light at 400, so its regular is Medium (500) and medium steps up to 600. */
 :root[data-ui-style="m3"][data-font="app"] {
   --font: "Google Sans Flex", "Google Sans", "Inter", "Roboto", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;

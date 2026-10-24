@@ -15,7 +15,7 @@ describe("buildActivity", () => {
       status_display_type: 2,
       details: "Loser",
       state: "Tame Impala",
-      assets: { large_image: "https://lh3.googleusercontent.com/abc=w512-h512-l90-rj", large_text: "Deadbeat", small_image: APP_ASSET, small_text: "ytdesk" },
+      assets: { large_image: "https://lh3.googleusercontent.com/abc=w512-h512-l90-rj", large_text: "Deadbeat", small_image: APP_ASSET, small_text: "Sonolith" },
       timestamps: { start: 970_000, end: 1_193_000 },
       buttons: [{ label: "Listen on YouTube Music", url: "https://music.youtube.com/watch?v=vid000000A1" }],
     });

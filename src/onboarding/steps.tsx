@@ -48,7 +48,7 @@ export function Welcome() {
   return (
     <div className="flex flex-col items-center py-6 text-center">
       <img src={logo} alt="" width={96} height={96} className="mb-6 h-24 w-24" />
-      <h1 tabIndex={-1} data-step-title="" className="type-display-small-em outline-none">Welcome to ytdesk</h1>
+      <h1 tabIndex={-1} data-step-title="" className="type-display-small-em outline-none">Welcome to Sonolith</h1>
       <p className="type-body-large mt-3 max-w-md text-[var(--m3-on-surface-variant)]">
         YouTube Music on your desktop: your library, mixes and radio, with media keys and a look you can make your own.
       </p>
@@ -83,7 +83,7 @@ export function SignIn({ onContinue, busy, onSignIn }: { onContinue: () => void;
   ];
   return (
     <div>
-      <StepTitle sub="ytdesk works without an account too, but it's at its best signed in.">Sign in to YouTube Music</StepTitle>
+      <StepTitle sub="Sonolith works without an account too, but it's at its best signed in.">Sign in to YouTube Music</StepTitle>
       <ul className="mb-6 flex flex-col gap-3">
         {perks.map(([Icon, text]) => (
           <li key={text} className="type-body-large flex items-center gap-3">
@@ -227,7 +227,7 @@ export function LyricsStep() {
 export function Done() {
   const tips: [typeof Keyboard, string][] = [
     [MousePointerClick, "Right-click a song, album or playlist for more options."],
-    [Keyboard, "Media keys work even while ytdesk is in the background."],
+    [Keyboard, "Media keys work even while Sonolith is in the background."],
     [PaletteIcon, "Everything you just picked lives in Settings → Appearance."],
   ];
   return (

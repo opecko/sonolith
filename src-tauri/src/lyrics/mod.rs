@@ -31,7 +31,7 @@ pub struct LyricsState {
 
 impl LyricsState {
     pub fn new(app: &AppHandle) -> Self {
-        let ua = format!("ytdesk/{} (+https://github.com/opecko/ytdesk)", app.package_info().version);
+        let ua = format!("Sonolith/{} (+https://github.com/opecko/sonolith)", app.package_info().version);
         let http = Client::builder().user_agent(ua).timeout(Duration::from_secs(8)).build().unwrap_or_default();
         LyricsState { http, cache: Cache::new(app.path().app_cache_dir().ok().map(|d| d.join("lyrics"))) }
     }

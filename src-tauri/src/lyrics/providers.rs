@@ -306,7 +306,7 @@ mod live {
     #[test]
     #[ignore]
     fn every_provider_against_a_known_song() {
-        let http = Client::builder().user_agent("ytdesk/test (+https://github.com/opecko/ytdesk)").build().unwrap();
+        let http = Client::builder().user_agent("Sonolith/test (+https://github.com/opecko/sonolith)").build().unwrap();
         let req = Request {
             video_id: "PvM79DJ2PmM".into(),
             title: "The Less I Know the Better".into(),

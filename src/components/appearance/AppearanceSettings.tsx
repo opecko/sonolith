@@ -20,7 +20,7 @@ import ThemeTransfer from "./ThemeTransfer";
 
 const FEATURED_PALETTES = FEATURED.map((id) => PALETTES.find((p) => p.id === id)).filter((p) => !!p);
 
-const FONT_OPTIONS: readonly (readonly [FontKind, string])[] = [["app", "ytdesk"], ["system", "System"], ["mono", "Monospace"], ["custom", "Installed"]];
+const FONT_OPTIONS: readonly (readonly [FontKind, string])[] = [["app", "Sonolith"], ["system", "System"], ["mono", "Monospace"], ["custom", "Installed"]];
 
 const pct = (v: number) => `${Math.round(v * 100)} %`;
 
@@ -36,7 +36,7 @@ export function LookSettings() {
         <SettingRow id="animations" title="Animations" detail="Springs, shape changes and slides. Off reduces motion; by default it follows your system's setting.">
           <AnimationsSwitch />
         </SettingRow>
-        <SettingRow id="classic" title="Classic ytdesk" detail="Back to the look from before 2.0: Classic style and the Classic Now Playing.">
+        <SettingRow id="classic" title="Classic look" detail="Back to the look from before 2.0: Classic style and the Classic Now Playing.">
           <ResetToClassic />
         </SettingRow>
       </SettingCard>
@@ -53,7 +53,7 @@ export function LookSettings() {
         </SettingRow>
       </SettingCard>
       <SettingCard title="Text">
-        <SettingRow id="font" title="Font" detail={a.font === "custom" && !a.fontFamily ? "Pick one of your installed fonts below." : "ytdesk's own font, your system's, or any font you have installed."}>
+        <SettingRow id="font" title="Font" detail={a.font === "custom" && !a.fontFamily ? "Pick one of your installed fonts below." : "Sonolith's own font, your system's, or any font you have installed."}>
           <Segmented value={a.font} options={FONT_OPTIONS} onChange={(font) => setAppearance({ font })} label="Font" />
         </SettingRow>
         {a.font === "custom" && <div className="px-5 pb-4"><FontPicker value={a.fontFamily} onChange={(fontFamily) => setAppearance({ fontFamily })} /></div>}
@@ -183,7 +183,7 @@ export function ColorSettings() {
           <button className={outlineBtn} onClick={() => setTransfer("import")}><Upload size={16} aria-hidden /> Import</button>
           <button className={outlineBtn} onClick={() => setTransfer("export")}><Download size={16} aria-hidden /> Export</button>
         </SettingRow>
-        <SettingRow id="restoreAppearance" title="Restore default appearance" detail="Every Look, Colors and Now Playing setting back to how ytdesk comes.">
+        <SettingRow id="restoreAppearance" title="Restore default appearance" detail="Every Look, Colors and Now Playing setting back to how Sonolith comes.">
           <button className={outlineBtn} onClick={() => useSettings.getState().set({ appearance: DEFAULT_APPEARANCE })}>
             <RotateCcw size={16} aria-hidden /> Restore
           </button>

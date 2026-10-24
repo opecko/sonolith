@@ -6,7 +6,7 @@ import Switch from "../Switch";
 
 export const STYLES: { id: UiStyle; label: string; detail: string }[] = [
   { id: "m3", label: "Material 3 Expressive", detail: "Rounder shapes, tonal colors, springy motion and buttons that change shape as you press them." },
-  { id: "classic", label: "Classic", detail: "The ytdesk look from before 2.0: flat, compact, like YouTube Music." },
+  { id: "classic", label: "Classic", detail: "The look from before 2.0: flat, compact, like YouTube Music." },
 ];
 
 export const LAYOUTS: { id: NowPlayingLayout; label: string }[] = [

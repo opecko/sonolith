@@ -174,7 +174,7 @@ impl TempCookies {
     fn create(header: &str) -> Result<Self, String> {
         let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
         let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.subsec_nanos()).unwrap_or(0);
-        let path = std::env::temp_dir().join(format!("ytdesk-cookies-{}-{nanos:x}.txt", std::process::id()));
+        let path = std::env::temp_dir().join(format!("sonolith-cookies-{}-{nanos:x}.txt", std::process::id()));
         let mut opts = std::fs::OpenOptions::new();
         opts.write(true).create_new(true);
         #[cfg(unix)]

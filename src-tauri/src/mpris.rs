@@ -87,7 +87,7 @@ fn send(app: &AppHandle, action: &str, value: serde_json::Value) {
 
 fn track_path(id: &str) -> String {
     let clean: String = id.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '_' }).collect();
-    format!("/org/ytdesk/track/{clean}")
+    format!("/org/sonolith/track/{clean}")
 }
 
 fn metadata(track: Option<&TrackInfo>) -> HashMap<String, Value<'static>> {
@@ -137,11 +137,11 @@ impl Root {
     }
     #[zbus(property)]
     fn identity(&self) -> &str {
-        "ytdesk"
+        "Sonolith"
     }
     #[zbus(property)]
     fn desktop_entry(&self) -> &str {
-        "ytdesk"
+        "sonolith"
     }
     #[zbus(property)]
     fn supported_uri_schemes(&self) -> Vec<String> {
@@ -281,7 +281,7 @@ pub fn init(app: &AppHandle) {
     tauri::async_runtime::spawn(async move {
         let built = async {
             zbus::connection::Builder::session()?
-                .name("org.mpris.MediaPlayer2.ytdesk")?
+                .name("org.mpris.MediaPlayer2.sonolith")?
                 .serve_at(PATH, Root(app))?
                 .serve_at(PATH, Player(shared))?
                 .build()

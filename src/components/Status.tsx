@@ -77,7 +77,7 @@ export function ErrorBox({ error, onRetry }: { error: Error; onRetry?: () => voi
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{isAuth ? "Please sign in" : offline ? "You're offline" : "Something went wrong"}</p>
         <p className="mt-1 select-text whitespace-pre-wrap break-words text-sm text-[var(--c-text-muted)]">
-          {offline ? "ytdesk can't reach YouTube Music. Check your internet connection; this page loads again once you're back online." : error.message}
+          {offline ? "Sonolith can't reach YouTube Music. Check your internet connection; this page loads again once you're back online." : error.message}
         </p>
         <div className="mt-4 flex gap-2">
           {isAuth && <button onClick={login} className="m3-btn m3-filled h-8 rounded-full bg-button px-4 text-sm font-medium text-on-button">Sign in</button>}

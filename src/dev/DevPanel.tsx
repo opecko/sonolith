@@ -26,10 +26,10 @@ function fakeUpdate(current: string, flavor: Flavor): UpdateInfo {
     current,
     latest,
     newer: true,
-    notes: `## ytdesk ${latest}\n\n**Simulated update** from the dev toolkit. Nothing is downloaded, installed or opened.\n\n- A highlight\n- Another one`,
+    notes: `## Sonolith ${latest}\n\n**Simulated update** from the dev toolkit. Nothing is downloaded, installed or opened.\n\n- A highlight\n- Another one`,
     url: "",
     installer: flavor === "installer",
-    aur: flavor === "aur" ? { package: "ytdesk-bin", helpers: ["yay", "paru"] } : null,
+    aur: flavor === "aur" ? { package: "sonolith-bin", helpers: ["yay", "paru"] } : null,
     simulated: true,
   };
 }

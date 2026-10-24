@@ -1,10 +1,10 @@
 {
-  "name": "ytdesk",
+  "name": "sonolith",
   "private": true,
   "version": "2.2.0",
   "description": "Lightweight YouTube Music desktop client",
   "license": "MIT",
-  "repository": "github:opecko/ytdesk",
+  "repository": "github:opecko/sonolith",
   "type": "module",
   "scripts": {
     "dev": "vite",

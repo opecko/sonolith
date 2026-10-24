@@ -1,6 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ytdesk",
+  "productName": "Sonolith",
+  "mainBinaryName": "sonolith",
   "version": "2.2.0",
   "identifier": "dev.sonolith.app",
   "build": {
@@ -12,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "ytdesk",
+        "title": "Sonolith",
         "width": 1200,
         "height": 780,
         "minWidth": 480,
@@ -29,7 +30,7 @@
       "deb"
     ],
     "publisher": "opecko",
-    "homepage": "https://github.com/opecko/ytdesk",
+    "homepage": "https://github.com/opecko/sonolith",
     "copyright": "Copyright (c) 2026 opecko",
     "license": "MIT",
     "licenseFile": "../LICENSE",

@@ -6,7 +6,7 @@ import { DEFAULT_APPEARANCE, normalizeAppearance, type Appearance } from "../the
 
 export interface Settings {
   autoplay: boolean;
-  /** Discord Rich Presence ("Listening to ytdesk"). */
+  /** Discord Rich Presence ("Listening to Sonolith"). */
   discordRpc: boolean;
   /** "Listen on YouTube Music" button in the presence. */
   discordButton: boolean;

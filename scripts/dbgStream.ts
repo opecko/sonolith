@@ -28,7 +28,7 @@ function which(bin: string): string | null {
 }
 
 // Same lookup order as the app: override, then the managed copy in the app data dir, then PATH.
-const MANAGED = join(process.env.HOME ?? "", ".local/share/dev.ytdesk.app/bin/yt-dlp");
+const MANAGED = join(process.env.HOME ?? "", ".local/share/dev.sonolith.app/bin/yt-dlp");
 const defaultBin = () => process.env.YTDLP_PATH || (existsSync(MANAGED) ? MANAGED : "yt-dlp");
 
 export async function dbgStream(yt: Innertube, videoId: string, cookie: string, ytdlp = defaultBin()) {
@@ -55,7 +55,7 @@ export async function dbgStream(yt: Innertube, videoId: string, cookie: string, 
   const ytdlpInfo = { bin: which(ytdlp) ?? ytdlp, version: version.stdout?.trim() || version.error?.message };
 
   // yt-dlp -v with a temporary Netscape cookie file, deleted right after.
-  const cookieFile = join(tmpdir(), `ytdesk-cookies-${process.pid}.txt`);
+  const cookieFile = join(tmpdir(), `sonolith-cookies-${process.pid}.txt`);
   writeFileSync(cookieFile, netscapeCookies(cookie), { mode: 0o600 });
   const jsArgs = runtimes.deno ? [] : runtimes.node ? ["--js-runtimes", "node"] : [];
   let tail: string[] = [];

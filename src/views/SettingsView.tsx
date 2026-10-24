@@ -160,7 +160,7 @@ function UpdatesCard() {
   };
   return (
     <SettingCard title="Updates">
-      <SettingRow id="updateCheck" title="Check for updates on startup" detail="Looks for a new ytdesk release on GitHub when the app starts.">
+      <SettingRow id="updateCheck" title="Check for updates on startup" detail="Looks for a new Sonolith release on GitHub when the app starts.">
         <Switch on={updateCheck} onChange={(v) => set({ updateCheck: v })} label="Check for updates on startup" />
       </SettingRow>
       <SettingRow id="checkNow" title="Check now" detail={state.text ? <span className={state.error ? "text-[var(--c-error)]" : ""}>{state.text}</span> : "Look for a new version right away."}>
@@ -179,13 +179,13 @@ function SystemSettings() {
     <>
       <SettingCard title="Window">
         <FlagSetting id="closeToTray" get="render_get_close_to_tray" set="render_set_close_to_tray" title="Close to tray"
-          detail="The close button hides ytdesk to the system tray and music keeps playing. Quit from the tray menu." />
+          detail="The close button hides Sonolith to the system tray and music keeps playing. Quit from the tray menu." />
         <FlagSetting id="gpu" get="render_get_gpu" set="render_set_gpu" title="Use the graphics card"
-          detail="Off keeps ytdesk off the GPU (handy while gaming) and uses more CPU instead. On most machines, leave it on." />
+          detail="Off keeps Sonolith off the GPU (handy while gaming) and uses more CPU instead. On most machines, leave it on." />
       </SettingCard>
       <UpdatesCard />
       <SettingCard title="Playback engine">
-        <SettingRow id="ytdlp" title="yt-dlp" detail="The fallback that finds audio streams. ytdesk keeps its own up-to-date copy unless you set a path.">
+        <SettingRow id="ytdlp" title="yt-dlp" detail="The fallback that finds audio streams. Sonolith keeps its own up-to-date copy unless you set a path.">
           <button className="m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]"
             onClick={() => setYtdlp((o) => !o)} aria-expanded={ytdlp}>
             {ytdlp ? "Hide" : "Details"} <ChevronDown size={16} className={ytdlp ? "rotate-180" : ""} aria-hidden />
@@ -215,8 +215,8 @@ function About() {
   }, []);
   return (
     <>
-      <SettingCard title="ytdesk">
-        <SettingRow id="version" title={`Version ${version}`} detail={<><CreditLink name="ytdesk">ytdesk</CreditLink> is open source, MIT license.</>}>
+      <SettingCard title="Sonolith">
+        <SettingRow id="version" title={`Version ${version}`} detail={<><CreditLink name="sonolith">Sonolith</CreditLink> is open source, MIT license.</>}>
           <button className="chip inline-flex items-center gap-2" onClick={() => setChangelog(true)}>
             <ScrollText size={16} aria-hidden /> Changelog
           </button>
@@ -254,7 +254,7 @@ const GROUPS: { tone: string; items: Category[] }[] = [
     { id: "lyrics", title: "Lyrics", detail: "Karaoke style, providers", icon: MicVocal, page: () => <LyricsProviderSettings /> },
   ] },
   { tone: "orange", items: [
-    { id: "shortcuts", title: "Keyboard shortcuts", detail: "Keys inside ytdesk", icon: Keyboard, page: () => <ShortcutSettings /> },
+    { id: "shortcuts", title: "Keyboard shortcuts", detail: "Keys inside Sonolith", icon: Keyboard, page: () => <ShortcutSettings /> },
     { id: "discord", title: "Discord", detail: "Show what you're playing", icon: MessageCircle, page: () => <DiscordSettings /> },
   ] },
   { tone: "pink", items: [

@@ -28,11 +28,11 @@ export interface Appearance extends ThemeChoice {
   density: "normal" | "compact";
   /** UI scale, 0.9–1.25. */
   zoom: number;
-  /** "app" = ytdesk's own font stack, "system"/"mono" = the system's UI/monospace font, "custom" = `fontFamily`. */
+  /** "app" = Sonolith's own font stack, "system"/"mono" = the system's UI/monospace font, "custom" = `fontFamily`. */
   font: FontKind;
   /** An installed font family, used when `font` is "custom". */
   fontFamily: string;
-  /** "m3" = Material 3 Expressive, "classic" = the ytdesk look from before 2.0. */
+  /** "m3" = Material 3 Expressive, "classic" = the look from before 2.0. */
   uiStyle: UiStyle;
   /** Now Playing layout; independent of `uiStyle`. */
   nowPlayingLayout: NowPlayingLayout;

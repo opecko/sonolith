@@ -23,8 +23,13 @@ describe("theme import/export", () => {
     expect(importTheme(exportTheme(a))).toEqual(a);
   });
 
+  it("imports themes exported before the rename (ytdesk)", () => {
+    const a = { ...DEFAULT_APPEARANCE, palette: "nord" };
+    expect(importTheme(JSON.stringify({ ytdeskTheme: 1, appearance: a }))).toEqual(a);
+  });
+
   it("rejects other JSON", () => {
     expect(() => importTheme("{")).toThrow(/JSON/);
-    expect(() => importTheme('{"palette":"nord"}')).toThrow(/ytdesk theme/);
+    expect(() => importTheme('{"palette":"nord"}')).toThrow(/Sonolith theme/);
   });
 });

@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use serde_json::{json, Value};
 
-/// Public Discord application id ("ytdesk").
+/// Public Discord application id (named "ytdesk" when it was created).
 const CLIENT_ID: &str = "1556215776350961704";
 /// How often to retry when Discord isn't running yet.
 const RETRY: Duration = Duration::from_secs(5);
@@ -257,7 +257,7 @@ mod tests {
     #[test]
     fn talks_to_a_fake_discord() {
         use std::os::unix::net::UnixListener;
-        let dir = std::env::temp_dir().join(format!("ytdesk-ipc-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("sonolith-ipc-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("discord-ipc-0");
         let _ = std::fs::remove_file(&path);

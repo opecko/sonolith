@@ -99,7 +99,7 @@ export default function Sidebar() {
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--c-accent)]" aria-hidden>
           <span className="ml-0.5 h-0 w-0 border-y-[6px] border-l-[10px] border-y-transparent border-l-white" />
         </span>
-        <span className="text-xl font-bold tracking-tight max-lg:hidden">ytdesk</span>
+        <span className="text-xl font-bold tracking-tight max-lg:hidden">Sonolith</span>
       </div>
       <div className="space-y-1 px-2 pt-2">
         {items.map(({ label, route, icon }) => {

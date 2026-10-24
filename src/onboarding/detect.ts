@@ -1,4 +1,4 @@
-/** localStorage keys any earlier ytdesk (1.x included) wrote, besides "settings". */
+/** localStorage keys any earlier version (1.x included, when the app was called ytdesk) wrote, besides "settings". */
 export const PRIOR_KEYS = ["volume", "queue-v1", "colorEditorView"] as const;
 
 /** What startup knows without asking anything slow. */
