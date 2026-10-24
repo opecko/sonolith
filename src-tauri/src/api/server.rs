@@ -9,6 +9,7 @@ use super::methods::{self, Buckets, Handler};
 use super::peer::PeerError;
 use super::protocol::{self, Code, Line, Request, RpcError};
 use super::store::{self, AppRecord, Registry};
+use super::validate;
 use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::PathBuf;
@@ -441,7 +442,10 @@ impl Server {
             (_, "events.subscribe") => self.subscribe(conn, p, &scopes),
             (_, "events.unsubscribe") => self.unsubscribe(conn, p),
             (_, "player.getState") => self.player_state().ok_or_else(|| RpcError::new(Code::Unavailable).reason("starting").with("retryAfterMs", 1000)),
-            (Handler::Frontend, name) => self.call_frontend(name, p, app_id.as_deref().unwrap_or(""), &scopes).await,
+            (Handler::Frontend, name) => {
+                validate::check(name, p)?;
+                self.call_frontend(name, p, app_id.as_deref().unwrap_or(""), &scopes).await
+            }
             (Handler::Server, _) => Err(RpcError::new(Code::InternalError)),
         }
     }

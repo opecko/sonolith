@@ -16,6 +16,7 @@ mod store;
 #[cfg(all(test, target_os = "linux"))]
 mod tests;
 mod transport;
+mod validate;
 #[cfg(windows)]
 mod win;
 
