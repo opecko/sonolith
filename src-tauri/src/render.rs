@@ -15,11 +15,11 @@ fn read_config(app: &AppHandle) -> serde_json::Value {
         .unwrap_or_else(|| serde_json::json!({}))
 }
 
-fn flag(app: &AppHandle, key: &str, default: bool) -> bool {
+pub(crate) fn flag(app: &AppHandle, key: &str, default: bool) -> bool {
     read_config(app).get(key).and_then(|v| v.as_bool()).unwrap_or(default)
 }
 
-fn write_flag(app: &AppHandle, key: &str, value: bool) -> Result<(), String> {
+pub(crate) fn write_flag(app: &AppHandle, key: &str, value: bool) -> Result<(), String> {
     let path = config_path(app).ok_or("no config dir")?;
     let mut cfg = read_config(app);
     cfg[key] = serde_json::Value::Bool(value);

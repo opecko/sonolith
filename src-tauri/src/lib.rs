@@ -73,6 +73,7 @@ pub fn run() {
             if !render::gpu_enabled(app.handle()) {
                 render::apply(app.handle(), false);
             }
+            api::init(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -119,9 +120,26 @@ pub fn run() {
             update::open_credit,
             fonts::fonts_list,
             update::update_install,
+            api::api_status,
+            api::api_set_enabled,
+            api::api_ready,
+            api::api_reply,
+            api::api_publish,
+            api::api_consent_answer,
+            api::api_apps,
+            api::api_remove_app,
+            api::api_remove_all,
+            api::api_revoke_scope,
+            api::api_block,
+            api::api_unblock,
         ])
-        .run(context)
-        .expect("error while running tauri application");
+        .build(context)
+        .expect("error while running tauri application")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                api::shutdown(app);
+            }
+        });
 }
 
 #[cfg(test)]
