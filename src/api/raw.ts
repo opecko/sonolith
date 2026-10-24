@@ -401,6 +401,12 @@ export function parseBrowse(data: R): BrowsePage {
     add(sl.contents);
     page.chips.push(...parseChips(sl.header));
     page.next ??= continuationOf(sl, sl.contents) ?? null;
+    const edit = arr(sl.contents).find((c) => c?.musicEditablePlaylistDetailHeaderRenderer)?.musicEditablePlaylistDetailHeaderRenderer
+      ?? data?.header?.musicEditablePlaylistDetailHeaderRenderer;
+    if (edit) {
+      const privacy = edit.editHeader?.musicPlaylistEditHeaderRenderer?.privacy;
+      page.own = { privacy: typeof privacy === "string" ? privacy : null };
+    }
   }
   const cc = data?.continuationContents;
   if (cc?.sectionListContinuation) {

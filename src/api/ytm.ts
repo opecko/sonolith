@@ -12,7 +12,7 @@ import {
   mapAlbum, mapArtist, mapHeader, mapTracks,
 } from "./mappers";
 import type {
-  Album, Artist, BrowsePage, BrowseRef, Credits, Item, LibrarySection, Page, Playlist, QueueChip, Rating, SearchGroup, SearchResults, Shelf, Suggestions, Track, TrackMenu,
+  Album, Artist, BrowsePage, BrowseRef, Credits, Item, LibrarySection, OwnPlaylist, Page, Playlist, QueueChip, Rating, SearchGroup, SearchResults, Shelf, Suggestions, Track, TrackMenu,
 } from "./types";
 
 // youtubei.js page classes expose continuation helpers; typed loosely since we only use a subset.
@@ -111,13 +111,15 @@ export async function getPlaylist(id: string): Promise<Playlist> {
 /**
  * A playlist's entries as YouTube lists them, with each entry's own id (`setVideoId`, only for playlists the user can
  * edit). youtubei.js' parsed playlist page drops those ids, so this reads the raw page; `getPlaylist` has the header.
+ * `own` is set when the page is the user's own playlist (YouTube's editable header), with its privacy.
  */
-export async function getPlaylistEntries(id: string): Promise<Page<Track>> {
+export async function getPlaylistEntries(id: string): Promise<Page<Track> & { own: OwnPlaylist | null }> {
   const wrap = (p: { items: Item[]; next: string | null }): Page<Track> => ({
     items: p.items.filter((i): i is Track & Item => i.type === "track"),
     loadMore: p.next ? async () => wrap(flattenPage(await browse(exec, { continuation: p.next! }))) : null,
   });
-  return wrap(flattenPage(await browse(exec, { browseId: id.startsWith("VL") ? id : `VL${id}` })));
+  const first = await browse(exec, { browseId: id.startsWith("VL") ? id : `VL${id}` });
+  return { ...wrap(flattenPage(first)), own: first.own ?? null };
 }
 
 export async function getAlbum(id: string): Promise<Album> {

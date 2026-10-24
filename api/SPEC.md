@@ -2617,7 +2617,7 @@ Response:
 
 Returns a playlist and its items, one page at a time.
 
-With `library:read`, any playlist the user can see works, including private ones and liked songs. With only `search`, only public and unlisted playlists work; others give `NotFound`.
+With `library:read`, any playlist the user can see works, including private ones and liked songs. With only `search`, only other people's public and unlisted playlists work; the user's own playlists (also public ones), liked songs, episodes for later and the mixes made from the user's listening give `NotFound`. An id with YouTube's `VL` prefix (`VLPL…`) is the same playlist as without it.
 
 Every item comes as an entry with its own `entryId`. A song that is in the playlist twice is two entries with the same `item.id` and different `entryId`s.
 

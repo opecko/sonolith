@@ -102,4 +102,19 @@ describe("song rows", () => {
     // Playlists the user can't edit carry no entry ids.
     expect((mapRawItem(row()) as Track).setVideoId).toBeUndefined();
   });
+
+  it("tells the user's own playlist by its editable header, with its privacy", () => {
+    // The shape of a real own-playlist page (2026-10), trimmed to the header.
+    const pageWith = (header: object) => ({
+      contents: { twoColumnBrowseResultsRenderer: { tabs: [{ tabRenderer: { content: { sectionListRenderer: { contents: [header] } } } }] } },
+    });
+    const own = pageWith({
+      musicEditablePlaylistDetailHeaderRenderer: {
+        header: { musicResponsiveHeaderRenderer: {} },
+        editHeader: { musicPlaylistEditHeaderRenderer: { privacy: "PRIVATE" } },
+      },
+    });
+    expect(parseBrowse(own).own).toEqual({ privacy: "PRIVATE" });
+    expect(parseBrowse(pageWith({ musicResponsiveHeaderRenderer: {} })).own).toBeUndefined();
+  });
 });

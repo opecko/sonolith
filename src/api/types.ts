@@ -168,6 +168,13 @@ export interface BrowsePage {
   chips: Chip[];
   messages: string[];
   next: Continuation | null;
+  /** Set when the page is one of the user's own playlists (YouTube sends the editable header), with its privacy. */
+  own?: OwnPlaylist;
+}
+
+export interface OwnPlaylist {
+  /** "PUBLIC", "UNLISTED" or "PRIVATE", as YouTube says; null when it doesn't. */
+  privacy: string | null;
 }
 
 export interface Page<T> {

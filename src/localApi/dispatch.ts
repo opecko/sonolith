@@ -31,6 +31,14 @@ const libraryCtx = (call: Call) => ctx(call.scopes.includes("library:read"));
 /** Album, playlist and podcast items added at most per reference (api/SPEC.md queue.add). */
 const MAX_ITEMS = 500;
 
+/** A playlist id without the `VL` browse prefix, which YouTube also accepts ("VLLM" is liked songs too). */
+const playlistId = (id: string) => id.replace(/^(VL)+/, "");
+/**
+ * The user's automatic lists, which are library data: liked songs, episodes for later, liked videos, watch later,
+ * new episodes of followed podcasts, and the mixes made from their listening (Replay Mix, My Supermix).
+ */
+const PERSONAL_LISTS = /^(LM|SE|LL|WL|RDPN)$|^RDTMAK5uy_/;
+
 // ---------------------------------------------------------------- resolving references
 
 /** A track or episode by id, with the metadata the player needs (/next knows every playable video). */
@@ -62,7 +70,7 @@ const playlistPage = (pl: Awaited<ReturnType<typeof getPlaylist>>): Page<Track> 
 
 /** Every entry of a playlist (up to 100 pages), to look entries up by their ids. */
 async function allEntries(id: string): Promise<Track[]> {
-  let p = await getPlaylistEntries(id);
+  let p: Page<Track> = await getPlaylistEntries(id);
   const all = [...p.items];
   for (let i = 0; p.loadMore && i < 100; i++) {
     p = await p.loadMore();
@@ -264,15 +272,21 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
 
   "playlist.get": async (p, call) => {
     const lib = call.scopes.includes("library:read");
-    // Without library access, only public and unlisted playlists: not the user's own or automatic ones.
-    if (!lib && (p.id === "LM" || p.id === "SE" || useLibrary.getState().playlists?.some((x) => x.id === p.id && C.playlist(x).editable))) throw notFound();
-    const pl = await about(() => getPlaylist(p.id));
+    const id = playlistId(p.id);
+    // Without library access, only other people's public and unlisted playlists: never the user's own or automatic
+    // ones. Own playlists are recognised from YouTube's page itself, which doesn't depend on the library being loaded.
+    if (!lib && PERSONAL_LISTS.test(id)) throw notFound();
+    const entries = lib || p.cursor !== undefined ? null : await about(() => getPlaylistEntries(id));
+    if (entries?.own) throw notFound();
+    const pl = await about(() => getPlaylist(id));
     if (!pl.title && !pl.tracks.length) throw notFound();
-    const listed = useLibrary.getState().playlists?.find((x) => x.id === p.id);
+    const listed = useLibrary.getState().playlists?.find((x) => x.id === id);
     const detail: A.PlaylistDetail = { ...C.playlist({ ...pl, subtitle: listed?.subtitle ?? pl.subtitle }), description: null, privacy: null };
     const c = libraryCtx(call);
-    // Entries come from the raw page: only it has each entry's own id (the same song twice has two).
-    const r = await page(`playlist:${p.id}`, p.cursor, p.limit, () => about(() => getPlaylistEntries(p.id)), (t: Track): A.PlaylistEntry => ({ entryId: t.setVideoId ?? null, item: C.mediaItem(t, c) }));
+    // Entries come from the raw page: only it has each entry's own id (the same song twice has two). The key keeps a
+    // cursor from a call with library access out of one without.
+    const first = () => (entries ? Promise.resolve(entries) : about(() => getPlaylistEntries(id)));
+    const r = await page(`playlist:${id}:${lib ? "library" : "public"}`, p.cursor, p.limit, first, (t: Track): A.PlaylistEntry => ({ entryId: t.setVideoId ?? null, item: C.mediaItem(t, c) }));
     return { playlist: detail, ...r };
   },
   "playlist.create": async (p) => {

@@ -264,14 +264,40 @@ describe("library and playlists", () => {
   });
 
   it("hides the user's own playlists from apps with only search", async () => {
-    h.ytm.getPlaylistEntries.mockResolvedValue(page([song("a")]));
+    h.ytm.getPlaylistEntries.mockResolvedValue({ ...page([song("a")]), own: { privacy: "PUBLIC" } });
     h.ytm.getPlaylist.mockResolvedValue({ type: "playlist", id: "PLmine", title: "Mine", subtitle: "3 tracks", tracks: [song("a")], loadMore: null });
     expect(await fails(run("playlist.get", { id: "PLmine" }, ["search"]))).toEqual({ name: "NotFound", reason: null });
     expect(await fails(run("playlist.get", { id: "LM" }, ["search"]))).toEqual({ name: "NotFound", reason: null });
+    h.ytm.getPlaylistEntries.mockResolvedValue({ ...page([song("a")]), own: null });
     h.ytm.getPlaylist.mockResolvedValue({ type: "playlist", id: "PLpub", title: "Public", subtitle: "Someone • 1 tracks", tracks: [song("a")], loadMore: null });
     expect((await run("playlist.get", { id: "PLpub" }, ["search"])).playlist).toMatchObject({ id: "PLpub", editable: false });
     const mine = await run("playlist.get", { id: "PLmine" });
     expect(mine.playlist).toMatchObject({ title: "Public" });
+  });
+
+  it("keeps library lists from apps without library:read, whatever form the id takes", async () => {
+    h.ytm.getPlaylist.mockResolvedValue({ type: "playlist", id: "x", title: "T", subtitle: "", tracks: [song("a")], loadMore: null });
+    h.ytm.getPlaylistEntries.mockResolvedValue({ ...page([song("a")]), own: null });
+    for (const id of ["LM", "VLLM", "VLVLLM", "SE", "VLSE", "LL", "RDPN", "RDTMAK5uy_mix"]) {
+      expect(await fails(run("playlist.get", { id }, ["search"])), id).toEqual({ name: "NotFound", reason: null });
+    }
+    expect(h.ytm.getPlaylistEntries).not.toHaveBeenCalled();
+    // Own and private playlists are recognised from YouTube's page, not from the (maybe unloaded) library store.
+    h.ytm.getPlaylistEntries.mockResolvedValue({ ...page([song("a")]), own: { privacy: "PUBLIC" } });
+    for (const id of ["PLown", "VLPLown"]) expect(await fails(run("playlist.get", { id }, ["search"])), id).toEqual({ name: "NotFound", reason: null });
+    h.ytm.getPlaylistEntries.mockResolvedValue({ ...page([song("a")]), own: { privacy: "PRIVATE" } });
+    expect(await fails(run("playlist.get", { id: "PLprivate" }, ["search"]))).toEqual({ name: "NotFound", reason: null });
+    // With library:read they are readable, under the plain id.
+    expect((await run("playlist.get", { id: "VLLM", limit: 1 })).items).toHaveLength(1);
+    expect(h.ytm.getPlaylist).toHaveBeenLastCalledWith("LM");
+    expect(h.ytm.getPlaylistEntries).toHaveBeenLastCalledWith("LM");
+  });
+
+  it("doesn't let a cursor from a library call continue for an app without library:read", async () => {
+    h.ytm.getPlaylist.mockResolvedValue({ type: "playlist", id: "PL1", title: "L", subtitle: "", tracks: [], loadMore: null });
+    h.ytm.getPlaylistEntries.mockResolvedValue({ ...page([song("a")], async () => page([song("b")])), own: { privacy: "PRIVATE" } });
+    const first = await run("playlist.get", { id: "PL1", limit: 1 });
+    expect(await fails(run("playlist.get", { id: "PL1", limit: 1, cursor: first.nextCursor }, ["search"]))).toMatchObject({ name: "InvalidParams", reason: "cursorExpired" });
   });
 
   it("answers NotFound for a playlist YouTube returns empty", async () => {
