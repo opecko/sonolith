@@ -74,6 +74,8 @@ interface LocalApiState {
   frontSince: number;
   apps: ConnectedApp[];
   blocked: BlockedApp[];
+  /** The saved list of apps couldn't be read at startup: what happened to it. */
+  registryProblem: string | null;
   refresh: () => Promise<void>;
   /** Registered and blocked apps; follows `api:apps-changed`. */
   loadApps: () => Promise<void>;
@@ -89,10 +91,11 @@ export const useLocalApi = create<LocalApiState>((set, get) => ({
   frontSince: 0,
   apps: [],
   blocked: [],
+  registryProblem: null,
   refresh: async () => set({ status: await invoke<ApiStatus>("api_status") }),
   loadApps: async () => {
-    const r = await invoke<{ apps: ConnectedApp[]; blocked: BlockedApp[] }>("api_apps");
-    set({ apps: r.apps, blocked: r.blocked });
+    const r = await invoke<{ apps: ConnectedApp[]; blocked: BlockedApp[]; registryProblem: string | null }>("api_apps");
+    set({ apps: r.apps, blocked: r.blocked, registryProblem: r.registryProblem });
   },
   setEnabled: async (enabled) => {
     try {

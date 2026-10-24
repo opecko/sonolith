@@ -643,6 +643,17 @@ async fn subscriptions_end_with_the_scope() {
 }
 
 #[tokio::test]
+async fn settings_learn_that_an_unreadable_app_list_was_set_aside() {
+    let dir = temp_dir("corrupt");
+    std::fs::write(dir.join("api-apps.json"), "{ not json").unwrap();
+    let server = Server::new(Arc::new(FakeHost::default()), dir.join("api-apps.json"), "9.9.9".into());
+    let problem = server.apps()["registryProblem"].as_str().unwrap().to_string();
+    assert!(problem.contains("set aside as api-apps.json.corrupt-"), "{problem}");
+    assert!(!dir.join("api-apps.json").exists());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[tokio::test]
 async fn malformed_lines_keep_the_connection() {
     let env = start("framing").await;
     let mut c = Client::connect(&env.socket).await;

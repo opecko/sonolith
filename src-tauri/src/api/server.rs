@@ -126,6 +126,8 @@ pub struct Server {
     host: Arc<dyn Host>,
     registry_path: PathBuf,
     registry: Mutex<Registry>,
+    /// What went wrong reading the saved registry at startup, shown in Settings.
+    registry_problem: Option<String>,
     conns: Mutex<HashMap<u64, Conn>>,
     pending: Mutex<HashMap<String, Pending>>,
     /// Calls waiting for the frontend: the connection they came from, and where the answer goes.
@@ -148,11 +150,12 @@ pub struct Server {
 
 impl Server {
     pub fn new(host: Arc<dyn Host>, registry_path: PathBuf, app_version: String) -> Arc<Server> {
-        let registry = Registry::load(&registry_path);
+        let (registry, registry_problem) = Registry::load(&registry_path);
         let server = Arc::new(Server {
             host,
             registry_path,
             registry: Mutex::new(registry),
+            registry_problem,
             conns: Mutex::new(HashMap::new()),
             pending: Mutex::new(HashMap::new()),
             bridge: Mutex::new(HashMap::new()),
@@ -1071,7 +1074,7 @@ impl Server {
                 })
             })
             .collect();
-        json!({ "apps": apps, "blocked": reg.blocked })
+        json!({ "apps": apps, "blocked": reg.blocked, "registryProblem": self.registry_problem })
     }
 
     fn emit_apps_changed(&self) {

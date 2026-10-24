@@ -64,6 +64,9 @@ pub struct Registry {
     pub blocked: Vec<BlockRecord>,
     #[serde(default)]
     pub denials: Vec<Denial>,
+    /// Set when an unreadable file could not be moved aside: saving would overwrite it, so nothing is saved.
+    #[serde(skip)]
+    pub frozen: bool,
 }
 
 pub fn hash_token(token: &str) -> String {
@@ -92,12 +95,37 @@ pub fn random_id(prefix: &str) -> String {
 }
 
 impl Registry {
-    pub fn load(path: &Path) -> Registry {
-        std::fs::read_to_string(path).ok().and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default()
+    /// The saved registry, and what went wrong with it, for Settings. A file that can't be read is renamed to
+    /// `<name>.corrupt-<ms>` and the registry starts empty; it is never overwritten, so nothing is lost for good.
+    pub fn load(path: &Path) -> (Registry, Option<String>) {
+        let failure = match std::fs::read_to_string(path) {
+            Ok(text) => match serde_json::from_str(&text) {
+                Ok(r) => return (r, None),
+                Err(e) => e.to_string(),
+            },
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return (Registry::default(), None),
+            Err(e) => e.to_string(),
+        };
+        let mut name = path.file_name().unwrap_or_default().to_os_string();
+        name.push(format!(".corrupt-{}", super::server::now_ms()));
+        let aside = path.with_file_name(name);
+        match std::fs::rename(path, &aside) {
+            Ok(()) => {
+                let file = aside.file_name().unwrap_or_default().to_string_lossy();
+                (Registry::default(), Some(format!("The list of connected apps could not be read ({failure}), so it was set aside as {file}. Apps have to connect again, and apps you blocked are no longer blocked.")))
+            }
+            Err(e) => (
+                Registry { frozen: true, ..Registry::default() },
+                Some(format!("The list of connected apps could not be read ({failure}) or set aside ({e}). Until Sonolith restarts, changes to connected apps are not saved.")),
+            ),
+        }
     }
 
     /// Writes atomically (temp file + rename), readable only by the user.
     pub fn save(&self, path: &Path) -> std::io::Result<()> {
+        if self.frozen {
+            return Ok(());
+        }
         if let Some(dir) = path.parent() {
             std::fs::create_dir_all(dir)?;
         }
@@ -284,14 +312,29 @@ mod tests {
         let mut r = Registry::default();
         r.block("a", "A", &ident("exe:/a"), 1, true);
         r.save(&path).unwrap();
-        assert_eq!(Registry::load(&path), r);
+        assert_eq!(Registry::load(&path).0, r);
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
             assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
         }
-        std::fs::write(&path, "garbage").unwrap();
-        assert_eq!(Registry::load(&path), Registry::default());
+        assert_eq!(Registry::load(&path), (r, None));
+        std::fs::remove_dir_all(dir).ok();
+    }
+
+    #[test]
+    fn a_corrupted_file_is_set_aside_not_overwritten() {
+        let dir = std::env::temp_dir().join(format!("sonolith-api-store-corrupt-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("apps.json");
+        std::fs::write(&path, "{\"apps\": [garbage").unwrap();
+        let (r, problem) = Registry::load(&path);
+        assert!(r.apps.is_empty() && !r.frozen);
+        assert!(problem.unwrap().contains("set aside as apps.json.corrupt-"));
+        r.save(&path).unwrap();
+        let kept = std::fs::read_dir(&dir).unwrap().filter(|e| std::fs::read_to_string(e.as_ref().unwrap().path()).unwrap() == "{\"apps\": [garbage").count();
+        assert_eq!(kept, 1, "the unreadable file must survive");
         std::fs::remove_dir_all(dir).ok();
     }
 }

@@ -151,6 +151,7 @@ export default function ConnectedAppsSettings() {
   const status = useLocalApi((s) => s.status);
   const apps = useLocalApi((s) => s.apps);
   const blocked = useLocalApi((s) => s.blocked);
+  const registryProblem = useLocalApi((s) => s.registryProblem);
   const setEnabled = useLocalApi((s) => s.setEnabled);
   const [open, setOpen] = useState<string | null>(null);
   useEffect(() => {
@@ -194,6 +195,7 @@ export default function ConnectedAppsSettings() {
         </SettingRow>
       </SettingCard>
       <SettingCard title="Apps">
+        {registryProblem && <SettingRow title="Connected apps were reset" detail={<span className="select-text text-[var(--c-error)]">{registryProblem}</span>} />}
         {apps.length === 0 && (
           <SettingRow title="No apps yet" detail={enabled ? "When an app asks to connect, you'll be asked here and in a notification." : "Turn the switch on, then let an app ask to connect."} />
         )}
