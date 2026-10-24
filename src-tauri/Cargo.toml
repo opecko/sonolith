@@ -22,7 +22,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 keyring = "4.2.0"
 url = "2.5.8"
-tokio = { version = "1", features = ["net", "io-util", "time", "rt"] }
+tokio = { version = "1", features = ["net", "io-util", "time", "rt", "sync", "macros"] }
+getrandom = "0.3"
 tauri-plugin-opener = "2"
 sha2 = "0.10"
 dirs = "7"
@@ -36,3 +37,17 @@ webkit2gtk = "2.0"
 # Same version tray-icon uses: its AppIndicator gets a title (tray.rs).
 libappindicator = "0.9"
 zbus = "5"
+futures-util = { version = "0.3", default-features = false }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  "Win32_System_Diagnostics_Debug",
+  "Win32_System_Pipes",
+  "Win32_System_Threading",
+  "Win32_UI_Shell",
+  "Wdk_System_Threading",
+] }
+tauri-winrt-notification = "0.7"
