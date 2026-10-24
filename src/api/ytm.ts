@@ -12,7 +12,7 @@ import {
   mapAlbum, mapArtist, mapHeader, mapTracks,
 } from "./mappers";
 import type {
-  Album, Artist, BrowsePage, BrowseRef, Credits, Item, LibrarySection, Page, Playlist, QueueChip, Rating, SearchResults, Shelf, Suggestions, Track, TrackMenu,
+  Album, Artist, BrowsePage, BrowseRef, Credits, Item, LibrarySection, Page, Playlist, QueueChip, Rating, SearchGroup, SearchResults, Shelf, Suggestions, Track, TrackMenu,
 } from "./types";
 
 // youtubei.js page classes expose continuation helpers; typed loosely since we only use a subset.
@@ -64,10 +64,23 @@ export async function getLibrary(section: LibrarySection): Promise<Page<Item>> {
   return wrap(first);
 }
 
+/**
+ * Search params for one result type, as YouTube Music's filter chips send them: a type field ("EgWKAQ" + songs II,
+ * videos IQ, …; playlists are the "Community playlists" chip) plus a ranking suffix that any of its values works with.
+ */
+export const SEARCH_FILTERS: Record<SearchGroup, string> = {
+  songs: "EgWKAQIIAWoMEBEQEBADEAQQFRAJ",
+  videos: "EgWKAQIQAWoMEBEQEBADEAQQFRAJ",
+  albums: "EgWKAQIYAWoMEBEQEBADEAQQFRAJ",
+  artists: "EgWKAQIgAWoMEBEQEBADEAQQFRAJ",
+  playlists: "EgeKAQQoAEABagwQERAQEAMQBBAVEAk=",
+  podcasts: "EgWKAQJQAWoMEBEQEBADEAQQFRAJ",
+  episodes: "EgWKAQJIAWoMEBEQEBADEAQQFRAJ",
+};
+
 /** Songs only, for matching music videos to their songs (songVersions.ts). */
-const SONGS_FILTER = "EgWKAQIIAWoMEBEQEBADEAQQFRAJ";
 async function searchSongs(query: string): Promise<Track[]> {
-  const r = await searchPage(exec, query, SONGS_FILTER);
+  const r = await searchPage(exec, query, SEARCH_FILTERS.songs);
   return [...r.top, ...r.groups.flatMap((g) => g.items), ...r.shelves.flatMap((s) => s.items)].filter((i): i is Track & Item => i.type === "track");
 }
 
@@ -97,6 +110,11 @@ export async function getArtist(id: string): Promise<Artist> {
 /** Mixed overview (no params) or a single-type list when `params` comes from a filter chip. */
 export function search(query: string, params?: string, next?: string): Promise<SearchResults> {
   return searchPage(exec, query, params, next);
+}
+
+/** One result type, paged (`next` = the previous page's continuation). */
+export function searchByType(query: string, type: SearchGroup, next?: string): Promise<SearchResults> {
+  return searchPage(exec, query, SEARCH_FILTERS[type], next);
 }
 
 export function getSearchSuggestions(query: string): Promise<Suggestions> {
