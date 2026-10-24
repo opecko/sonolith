@@ -37,7 +37,7 @@ export const useNav = create<NavState>((set) => ({
 }));
 
 /** Settings categories (SettingsView's list, in this order). */
-export const SETTINGS_SECTIONS = ["look", "colors", "nowplaying", "playback", "lyrics", "shortcuts", "discord", "system", "about"] as const;
+export const SETTINGS_SECTIONS = ["look", "colors", "nowplaying", "playback", "lyrics", "shortcuts", "discord", "apps", "system", "about"] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 /**

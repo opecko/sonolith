@@ -1,6 +1,6 @@
 import {
   ArrowLeft, ChevronDown, ChevronRight, Cpu, Disc3, Download, ExternalLink, Hand, Info, Keyboard, MessageCircle, MicVocal, Paintbrush, Palette, Play,
-  RefreshCw, ScrollText, type LucideIcon,
+  Plug, RefreshCw, ScrollText, type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
@@ -15,6 +15,7 @@ import { useAsync } from "../hooks/useData";
 import { rerunOnboarding } from "../onboarding/store";
 import ShortcutSettings from "../shortcuts/ShortcutSettings";
 import LyricsProviderSettings from "../lyrics/LyricsProviderSettings";
+import ConnectedAppsSettings from "../localApi/ConnectedAppsSettings";
 import { useSettingsNav, type SettingsSection } from "../stores/nav";
 import { useSettings } from "../stores/settings";
 import { useUpdate } from "../stores/update";
@@ -256,6 +257,7 @@ const GROUPS: { tone: string; items: Category[] }[] = [
   { tone: "orange", items: [
     { id: "shortcuts", title: "Keyboard shortcuts", detail: "Keys inside Sonolith", icon: Keyboard, page: () => <ShortcutSettings /> },
     { id: "discord", title: "Discord", detail: "Show what you're playing", icon: MessageCircle, page: () => <DiscordSettings /> },
+    { id: "apps", title: "Connected apps", detail: "Let other apps use Sonolith", icon: Plug, page: () => <ConnectedAppsSettings /> },
   ] },
   { tone: "pink", items: [
     { id: "system", title: "System", detail: "Tray, graphics, updates, yt-dlp", icon: Cpu, page: () => <SystemSettings /> },
