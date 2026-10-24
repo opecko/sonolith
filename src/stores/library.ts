@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Item } from "../api/types";
-import { createPlaylist, deletePlaylist, getLibrary } from "../api/ytm";
+import { createPlaylist, deletePlaylist, getLibrary, renamePlaylist } from "../api/ytm";
 import { invalidate } from "../hooks/useData";
 
 interface LibraryState {
@@ -12,6 +12,8 @@ interface LibraryState {
   changed: () => void;
   /** Deletes the playlist on YouTube Music and drops it from the list right away. */
   remove: (id: string) => Promise<void>;
+  /** Renames the playlist on YouTube Music and shows the new title right away. */
+  rename: (id: string, title: string) => Promise<void>;
   /** Shows a song added (+1) or removed (-1) in the playlist's track count before YouTube confirms it. */
   adjustCount: (id: string, delta: number) => void;
 }
@@ -26,6 +28,8 @@ const fresh = new Map<string, { item: Item; until: number }>();
 const FRESH_MS = 2 * 60_000;
 /** Deleted here but possibly still in the lagging listing for a while: hidden until it's gone there. */
 const deleted = new Map<string, number>();
+/** Renamed here; the lagging listing may still have the old title for a while. */
+const renamed = new Map<string, { title: string; until: number }>();
 
 /** YouTube's library listing lags behind edits; reload again a bit later until it has caught up. */
 const LAGGED_RELOADS_MS = [2_500, 10_000];
@@ -65,7 +69,8 @@ export const useLibrary = create<LibraryState>((set, get) => ({
         const now = Date.now();
         for (const [id, f] of fresh) if (f.until < now || all.some((p) => p.id === id)) fresh.delete(id);
         for (const [id, until] of deleted) if (until < now || !all.some((p) => p.id === id)) deleted.delete(id);
-        const listed = all.filter((p) => !deleted.has(p.id));
+        for (const [id, r] of renamed) if (r.until < now || all.some((p) => p.id === id && p.title === r.title)) renamed.delete(id);
+        const listed = all.filter((p) => !deleted.has(p.id)).map((p) => (renamed.has(p.id) ? { ...p, title: renamed.get(p.id)!.title } : p));
         set({ playlists: [...[...fresh.values()].map((f) => f.item), ...listed], error: null });
       } catch (e) {
         set({ error: e instanceof Error ? e.message : String(e) });
@@ -91,6 +96,15 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     fresh.delete(id);
     deleted.set(id, Date.now() + FRESH_MS);
     set({ playlists: (get().playlists ?? []).filter((p) => p.id !== id) });
+    invalidate(`playlist:${id}`);
+    reloadLater();
+  },
+  rename: async (id, title) => {
+    await renamePlaylist(id, title);
+    renamed.set(id, { title, until: Date.now() + FRESH_MS });
+    const f = fresh.get(id);
+    if (f) f.item = { ...f.item, title };
+    set({ playlists: get().playlists?.map((p) => (p.id === id ? { ...p, title } : p)) ?? null });
     invalidate(`playlist:${id}`);
     reloadLater();
   },

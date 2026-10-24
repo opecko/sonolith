@@ -123,6 +123,10 @@ export async function deletePlaylist(playlistId: string): Promise<void> {
   await accountExec("/playlist/delete", { playlistId });
 }
 
+export async function renamePlaylist(playlistId: string, title: string): Promise<void> {
+  await (await getAccountClient()).playlist.setName(playlistId, title);
+}
+
 /** Fails with "This playlist cannot be edited." for playlists the user doesn't own. */
 export async function removeFromPlaylist(playlistId: string, videoId: string): Promise<void> {
   await (await getAccountClient()).playlist.removeVideos(playlistId, [videoId]);
