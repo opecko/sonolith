@@ -568,6 +568,34 @@ async fn a_peer_that_cannot_be_looked_up_holds_up_nobody() {
 }
 
 #[tokio::test]
+async fn texts_for_the_consent_screen_cannot_carry_control_or_direction_characters() {
+    let env = start("texts").await;
+    let base = registration("com.example.texts", vec![scope("search", true)]);
+    let with = |key: &str, value: &str| {
+        let mut r = base.clone();
+        r[key] = json!(value);
+        r
+    };
+    for (params, path) in [
+        (with("name", "Firefox\u{202E}rab"), "/name"),
+        (with("name", "Bar\nSonolith says: safe"), "/name"),
+        (with("description", "Shows\u{200B}songs"), "/description"),
+        (with("publisher", "Example\u{7}"), "/publisher"),
+        (with("publisher", "Ex\u{2066}ample"), "/publisher"),
+    ] {
+        // A connection each: `auth` allows five calls in a row.
+        let e = Client::connect(&env.socket).await.err("app.register", params).await;
+        assert_eq!((code(&e), e["data"]["path"].as_str()), (-32602, Some(path)));
+    }
+    let mut r = base.clone();
+    r["scopes"][0]["reason"] = json!("To show\u{2028}more");
+    let mut c = Client::connect(&env.socket).await;
+    assert_eq!(c.err("app.register", r).await["data"]["path"], "/scopes/0");
+    // Ordinary text in any script is fine.
+    assert_eq!(c.ok("app.register", with("name", "Přehrávač – Ünïcödé 音楽")).await["status"], "pending");
+}
+
+#[tokio::test]
 async fn malformed_lines_keep_the_connection() {
     let env = start("framing").await;
     let mut c = Client::connect(&env.socket).await;

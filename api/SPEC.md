@@ -941,6 +941,8 @@ Registering an `appId` that is already registered also goes through consent. Whe
 
 A client MUST call this only after a user action (for example, a "Connect to Sonolith" button), never on its own at startup or after an error.
 
+`name`, `description`, `publisher` and each scope's `reason` are single lines of plain text: control characters (line breaks included) and invisible formatting characters (such as direction overrides or zero-width spaces) fail with `InvalidParams`.
+
 | Scope | Session | Rate class |
 |---|---|---|
 | none | not needed | `auth` |

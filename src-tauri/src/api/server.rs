@@ -551,9 +551,9 @@ impl Server {
         }
         let v = Params::new(p, &["appId", "name", "description", "publisher", "homepage", "icon", "scopes", "apiVersion"])?;
         let app_id = v.app_id("appId")?;
-        let name = v.text("name", 1, 48)?;
-        v.text("description", 1, 200)?;
-        v.text("publisher", 1, 64)?;
+        let name = v.plain("name", 1, 48)?;
+        v.plain("description", 1, 200)?;
+        v.plain("publisher", 1, 64)?;
         if let Some(h) = v.opt_text("homepage", 1, 200)? {
             if !h.starts_with("https://") || url::Url::parse(&h).is_err() {
                 return Err(v.invalid("homepage"));
@@ -1550,6 +1550,16 @@ async fn lyrics_clock(weak: std::sync::Weak<Server>, mut changes: watch::Receive
     }
 }
 
+/// No control characters (line breaks included) and no invisible format characters: direction overrides and isolates
+/// could make a name read backwards ("Firefox" from "xoferiF"), and line breaks could fake a second line of a
+/// notification. Ordinary text in any script passes.
+fn plain_text(s: &str) -> bool {
+    !s.chars().any(|c| {
+        c.is_control()
+            || matches!(c, '\u{AD}' | '\u{61C}' | '\u{180E}' | '\u{200B}'..='\u{200F}' | '\u{2028}'..='\u{202E}' | '\u{2060}'..='\u{206F}' | '\u{FEFF}' | '\u{FFF9}'..='\u{FFFB}')
+    })
+}
+
 fn valid_icon(icon: &str) -> bool {
     let Some(data) = icon.strip_prefix("data:image/png;base64,") else { return false };
     use base64::Engine;
@@ -1592,6 +1602,12 @@ impl<'a> Params<'a> {
         self.opt_text(key, min, max)?.ok_or_else(|| self.invalid(key))
     }
 
+    /// Text for the consent screen and the notification: one line, no control or direction characters.
+    fn plain(&self, key: &str, min: usize, max: usize) -> Result<String, RpcError> {
+        let t = self.text(key, min, max)?;
+        if plain_text(&t) { Ok(t) } else { Err(self.invalid(key)) }
+    }
+
     fn app_id(&self, key: &str) -> Result<String, RpcError> {
         let id = self.text(key, 1, 128)?;
         let labels: Vec<&str> = id.split('.').collect();
@@ -1630,7 +1646,7 @@ impl<'a> Params<'a> {
             }
             let scope = o.get("scope").and_then(Value::as_str).filter(|s| methods::SCOPES.contains(s)).ok_or_else(bad)?;
             let required = o.get("required").and_then(Value::as_bool).ok_or_else(bad)?;
-            let reason = o.get("reason").and_then(Value::as_str).filter(|r| (1..=120).contains(&r.chars().count())).ok_or_else(bad)?;
+            let reason = o.get("reason").and_then(Value::as_str).filter(|r| (1..=120).contains(&r.chars().count()) && plain_text(r)).ok_or_else(bad)?;
             if out.iter().any(|(x, _, _)| x == scope) {
                 return Err(bad());
             }

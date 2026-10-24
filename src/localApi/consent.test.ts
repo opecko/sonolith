@@ -14,6 +14,14 @@ describe("identityRows", () => {
     expect(identityRows({ ...base, kind: "flatpak", flatpakId: "com.example.Bar" })).toEqual([{ label: "Flatpak app", value: "com.example.Bar" }]);
   });
 
+  it("shows invisible and direction characters in paths instead of obeying them", () => {
+    // "/home/u/\u202Ehs.lab" would render as "/home/u/bal.sh".
+    const id = { ...base, executable: "/home/u/\u202Ehs.lab", key: "exe:x" };
+    expect(identityRows(id)[0].value).toBe("/home/u/<U+202E>hs.lab");
+    const script = { ...base, kind: "interpreter" as const, key: "interp:bash:x", interpreter: "bash", script: "/tmp/a\nb\u200B.sh" };
+    expect(identityRows(script)[0].value).toBe("/tmp/a<U+000A>b<U+200B>.sh");
+  });
+
   it("titles each kind of request", () => {
     expect(consentTitle({ kind: "register", name: "Bar" })).toBe("Bar wants to connect to Sonolith");
     expect(consentTitle({ kind: "identity", name: "Bar" })).toBe("Bar was updated or moved");

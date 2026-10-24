@@ -213,7 +213,9 @@ METHODS = [
           "connection closes, Sonolith cancels the request and withdraws the consent screen. A request expires after 5 minutes.\n\n"
           "Registering an `appId` that is already registered also goes through consent. When the user approves, the old token stops "
           "working (its connections get `session.revoked` with reason `replaced`) and the new one is sent.\n\n"
-          "A client MUST call this only after a user action (for example, a \"Connect to Sonolith\" button), never on its own at startup or after an error."),
+          "A client MUST call this only after a user action (for example, a \"Connect to Sonolith\" button), never on its own at startup or after an error.\n\n"
+          "`name`, `description`, `publisher` and each scope's `reason` are single lines of plain text: control characters (line breaks "
+          "included) and invisible formatting characters (such as direction overrides or zero-width spaces) fail with `InvalidParams`."),
       params=[
           P("appId", ref("common", "AppId"), True, "The app's stable id. Use the same id in every version of the app."),
           P("name", {"type": "string", "minLength": 1, "maxLength": 48}, True, "The app's name as the user knows it. 1–48 characters."),
