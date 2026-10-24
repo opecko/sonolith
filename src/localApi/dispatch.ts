@@ -87,8 +87,21 @@ async function podcastEpisodes(id: string): Promise<Track[]> {
   return (await allPages(first)).map(withShow);
 }
 
+/**
+ * Refuses, for an app without `library:read`, what is library data: the user's automatic lists and personal mixes
+ * (by id) and their own playlists, public or not (from YouTube's page, which doesn't depend on the library being
+ * loaded). Returns the first page of entries it read, if any.
+ */
+async function libraryGuard(id: string, call: Call): Promise<Awaited<ReturnType<typeof getPlaylistEntries>> | null> {
+  if (call.scopes.includes("library:read")) return null;
+  if (PERSONAL_LISTS.test(id)) throw notFound();
+  const entries = await about(() => getPlaylistEntries(id));
+  if (entries.own) throw notFound();
+  return entries;
+}
+
 /** Everything a playable reference stands for, in order. */
-async function tracksOf(ref: A.PlayableRef): Promise<{ tracks: Track[]; context: { playlistId?: string; title?: string } }> {
+async function tracksOf(ref: A.PlayableRef, call: Call): Promise<{ tracks: Track[]; context: { playlistId?: string; title?: string } }> {
   switch (ref.type) {
     case "track":
     case "episode":
@@ -99,8 +112,10 @@ async function tracksOf(ref: A.PlayableRef): Promise<{ tracks: Track[]; context:
       return { tracks: a.tracks.slice(0, MAX_ITEMS), context: { title: a.title } };
     }
     case "playlist": {
-      const pl = await getPlaylist(ref.id);
-      return { tracks: await allPages(playlistPage(pl)), context: { playlistId: ref.id, title: pl.title } };
+      const id = playlistId(ref.id);
+      await libraryGuard(id, call);
+      const pl = await getPlaylist(id);
+      return { tracks: await allPages(playlistPage(pl)), context: { playlistId: id, title: pl.title } };
     }
     case "podcast":
       return { tracks: await podcastEpisodes(ref.id), context: {} };
@@ -206,8 +221,8 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     useSettings.getState().set({ podcastSpeed: p.rate });
     return {};
   },
-  "player.playItem": async (p) => {
-    const { tracks, context } = await about(() => tracksOf(p.item));
+  "player.playItem": async (p, call) => {
+    const { tracks, context } = await about(() => tracksOf(p.item, call));
     if (!tracks.length) throw new ApiError("Unavailable", "notPlayable");
     const single = p.item.type === "track" || p.item.type === "episode";
     let index = 0;
@@ -225,14 +240,14 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     const from = p.cursor !== undefined ? sliceCursor(p.cursor, rev) : Math.min(p.fromIndex ?? 0, player().queue.length);
     return { ...queueSummary(), ...slice(queueEntries(call), from, p.limit, rev) };
   },
-  "queue.add": async (p) => {
-    const lists = await Promise.all(p.items.map((r) => about(() => tracksOf(r))));
+  "queue.add": async (p, call) => {
+    const lists = await Promise.all(p.items.map((r) => about(() => tracksOf(r, call))));
     const before = player().queue.length;
     player().addToQueue(lists.flatMap((l) => l.tracks));
     return { added: player().queue.length - before, queue: queueSummary() };
   },
-  "queue.playNext": async (p) => {
-    const lists = await Promise.all(p.items.map((r) => about(() => tracksOf(r))));
+  "queue.playNext": async (p, call) => {
+    const lists = await Promise.all(p.items.map((r) => about(() => tracksOf(r, call))));
     const tracks = lists.flatMap((l) => l.tracks);
     const before = player().queue.length;
     player().playNext(tracks);
@@ -273,11 +288,8 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
   "playlist.get": async (p, call) => {
     const lib = call.scopes.includes("library:read");
     const id = playlistId(p.id);
-    // Without library access, only other people's public and unlisted playlists: never the user's own or automatic
-    // ones. Own playlists are recognised from YouTube's page itself, which doesn't depend on the library being loaded.
-    if (!lib && PERSONAL_LISTS.test(id)) throw notFound();
-    const entries = lib || p.cursor !== undefined ? null : await about(() => getPlaylistEntries(id));
-    if (entries?.own) throw notFound();
+    // Without library access, only other people's public and unlisted playlists (a cursor was checked on page one).
+    const entries = p.cursor !== undefined ? null : await libraryGuard(id, call);
     const pl = await about(() => getPlaylist(id));
     if (!pl.title && !pl.tracks.length) throw notFound();
     const listed = useLibrary.getState().playlists?.find((x) => x.id === id);

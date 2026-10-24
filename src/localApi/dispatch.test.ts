@@ -179,6 +179,28 @@ describe("player.playItem", () => {
     expect(player().playQueue.mock.calls[0][0][0]).toMatchObject({ id: "e1", show: { id: "PLshow", title: "Show" } });
   });
 
+  it("doesn't play or queue library lists for an app without library:read", async () => {
+    h.ytm.getPlaylist.mockResolvedValue({ type: "playlist", id: "x", title: "List", subtitle: "", tracks: [song("a")], loadMore: null });
+    h.ytm.getPlaylistEntries.mockResolvedValue({ ...page([song("a")]), own: null });
+    const notFound = { name: "NotFound", reason: null };
+    const control: Call["scopes"] = ["player:control", "player:read", "queue:read", "queue:write"];
+    for (const id of ["LM", "VLLM", "SE", "VLSE"]) {
+      const item = { type: "playlist", id };
+      expect(await fails(run("player.playItem", { item }, control)), id).toEqual(notFound);
+      expect(await fails(run("queue.add", { items: [item] }, control)), id).toEqual(notFound);
+      expect(await fails(run("queue.playNext", { items: [item] }, control)), id).toEqual(notFound);
+    }
+    h.ytm.getPlaylistEntries.mockResolvedValue({ ...page([song("a")]), own: { privacy: "PRIVATE" } });
+    expect(await fails(run("queue.add", { items: [{ type: "playlist", id: "PLmine" }] }, control))).toEqual(notFound);
+    expect(player().playQueue).not.toHaveBeenCalled();
+    expect(player().playNext).not.toHaveBeenCalled();
+    // Someone else's public playlist plays; with library:read so does liked songs.
+    h.ytm.getPlaylistEntries.mockResolvedValue({ ...page([song("a")]), own: null });
+    await run("player.playItem", { item: { type: "playlist", id: "PLpub" } }, control);
+    await run("player.playItem", { item: { type: "playlist", id: "VLLM" } });
+    expect(player().playQueue.mock.calls.map((c) => c[2].playlistId)).toEqual(["PLpub", "LM"]);
+  });
+
   it("says notPlayable for an album without tracks", async () => {
     h.ytm.getAlbum.mockResolvedValue({ type: "album", id: "x", title: "Empty", subtitle: "", tracks: [], related: [] });
     expect(await fails(run("player.playItem", { item: { type: "album", id: "x" } }))).toEqual({ name: "Unavailable", reason: "notPlayable" });

@@ -1720,7 +1720,7 @@ An empty object `{}`.
 
 **Errors**
 
-- `NotFound` (-32008)
+- `NotFound` (-32008): the item does not exist, or it is the user's own playlist, liked songs, episodes for later or a personal mix while the app lacks `library:read` (see `playlist.get`)
 - `Unavailable` (-32010): `notPlayable`
 - `PermissionDenied` (-32003): the app lacks `player:control`
 - `SessionRequired` (-32012)
@@ -1876,7 +1876,7 @@ An album, playlist or podcast adds all its items (at most 500). If autoplay entr
 
 **Errors**
 
-- `NotFound` (-32008): one of the items does not exist; nothing is added
+- `NotFound` (-32008): one of the items does not exist, or is the user's own playlist, liked songs, episodes for later or a personal mix while the app lacks `library:read` (see `playlist.get`); nothing is added
 - `PermissionDenied` (-32003): the app lacks `queue:write`
 - `SessionRequired` (-32012)
 - the [common errors](#112-common-errors)
@@ -1930,7 +1930,7 @@ Inserts items right after the current item.
 
 **Errors**
 
-- `NotFound` (-32008): one of the items does not exist; nothing is added
+- `NotFound` (-32008): one of the items does not exist, or is the user's own playlist, liked songs, episodes for later or a personal mix while the app lacks `library:read` (see `playlist.get`); nothing is added
 - `PermissionDenied` (-32003): the app lacks `queue:write`
 - `SessionRequired` (-32012)
 - the [common errors](#112-common-errors)
