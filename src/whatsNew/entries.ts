@@ -7,7 +7,6 @@ import type { WhatsNewEntry } from "./types";
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
-    // The release that ships the rename; adjust the version when it's picked.
     version: "2.3.0",
     title: "ytdesk is now Sonolith",
     highlights: [
