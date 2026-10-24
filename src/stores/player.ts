@@ -66,7 +66,8 @@ interface PlayerState {
   setAutoplay: (on: boolean) => void;
   playIndex: (index: number) => void;
   selectChip: (id: string) => void;
-  playQueue: (tracks: Track[], index?: number, context?: QueueContext) => void;
+  /** `startAt` (seconds) starts the first track there instead of the beginning (or an episode's saved spot). */
+  playQueue: (tracks: Track[], index?: number, context?: QueueContext, startAt?: number) => void;
   togglePlay: () => void;
   /** Play or pause outright (MPRIS / media session Play and Pause), whatever the shown status says. */
   setPlaying: (on: boolean) => void;
@@ -201,14 +202,14 @@ export const usePlayer = create<PlayerState>((set, get) => {
     }
   }
 
-  function start(index: number) {
+  function start(index: number, startAt?: number) {
     retries = 0;
     stuckRecoveries = 0;
     pausedAt = null;
     prefetchedFor = -1;
     // Episodes continue where they were left (stores/episodeProgress).
     const t = get().queue[index];
-    void load(index, t?.podcast ? savedResume(t.id) : 0);
+    void load(index, startAt ?? (t?.podcast ? savedResume(t.id) : 0));
     const id = get().queue[index]?.id;
     if (id) history = pushHistory(history, id);
     void refreshWatch();
@@ -507,7 +508,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     activeChipId: saved?.activeChipId ?? null,
     chipLoading: false,
 
-    playQueue: (tracks, index = 0, context = {}) => {
+    playQueue: (tracks, index = 0, context = {}, startAt) => {
       if (!tracks.length) return;
       queueGen++;
       radioReq++; // a queue the user picked wins over a radio still loading
@@ -515,7 +516,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       unshuffled = tracks;
       const queue = get().shuffle ? [tracks[index], ...shuffleTracks(tracks.filter((_, i) => i !== index))] : tracks;
       set({ queue, context, chips: [], activeChipId: null, radioPending: null });
-      start(get().shuffle ? 0 : index);
+      start(get().shuffle ? 0 : index, startAt);
     },
     playRadio: (track) => {
       const mine = ++queueGen;
