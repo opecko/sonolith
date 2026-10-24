@@ -109,22 +109,40 @@ pub async fn start(server: Arc<Server>, app_version: &str) -> std::io::Result<(E
     let path = socket.to_string_lossy().into_owned();
     write_discovery(&discovery, "unix", &path, app_version)?;
     let task = tauri::async_runtime::spawn(async move {
-        let accept = async {
-            loop {
-                let Ok((stream, _)) = listener.accept().await else {
-                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                    continue;
-                };
-                let peer = super::peer::unix_peer(&stream);
-                tokio::spawn(server.clone().serve(stream, peer));
-            }
-        };
         tokio::select! {
-            _ = accept => {}
-            _ = expiry_ticker(server.clone()) => {}
+            _ = accept_unix(listener, server.clone()) => {}
+            _ = expiry_ticker(server) => {}
         }
     });
     Ok((Endpoint { path, discovery, socket }, task))
+}
+
+/// Serves every connection to the socket, each with the peer the kernel reports.
+#[cfg(unix)]
+pub(super) async fn accept_unix(listener: tokio::net::UnixListener, server: Arc<Server>) {
+    loop {
+        let Ok((stream, _)) = listener.accept().await else {
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            continue;
+        };
+        let peer = super::peer::unix_peer(&stream);
+        let hangup = hangup(std::os::fd::AsRawFd::as_raw_fd(&stream));
+        tokio::spawn(server.clone().serve(stream, peer, hangup));
+    }
+}
+
+/// Resolves when the peer has closed both directions (POLLHUP), which end of input alone does not tell. `serve`
+/// owns the stream and drops this future before the stream, so the fd stays ours while it is polled.
+#[cfg(unix)]
+async fn hangup(fd: std::os::fd::RawFd) {
+    loop {
+        tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+        let mut p = libc::pollfd { fd, events: 0, revents: 0 };
+        // SAFETY: one valid pollfd, zero timeout.
+        if unsafe { libc::poll(&mut p, 1, 0) } > 0 && p.revents & (libc::POLLHUP | libc::POLLERR | libc::POLLNVAL) != 0 {
+            return;
+        }
+    }
 }
 
 // ---------------------------------------------------------------- Windows
@@ -167,7 +185,8 @@ pub async fn start(server: Arc<Server>, app_version: &str) -> std::io::Result<(E
                 }
             };
             let peer = pipe_peer(&connected);
-            tokio::spawn(server.clone().serve(connected, peer));
+            // A pipe cannot be half-closed: end of input means the client is gone.
+            tokio::spawn(server.clone().serve(connected, peer, std::future::ready(())));
         }
         };
         tokio::select! {

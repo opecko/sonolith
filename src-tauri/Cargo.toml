@@ -39,6 +39,9 @@ libappindicator = "0.9"
 zbus = "5"
 futures-util = { version = "0.3", default-features = false }
 
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = [
   "Win32_Foundation",

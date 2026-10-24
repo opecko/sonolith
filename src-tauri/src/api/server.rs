@@ -165,22 +165,26 @@ impl Server {
 
     // ------------------------------------------------------------ connections
 
-    /// Serves one connection until it closes. `peer` is what the OS said about the other end.
-    pub async fn serve<S>(self: Arc<Self>, stream: S, peer: Result<ProcessInfo, PeerError>)
+    /// Serves one connection until it closes. `peer` is what the OS said about the other end. `hangup` resolves
+    /// once the client is gone for good; it is only awaited after the client stopped sending, because end of input
+    /// alone may be a half-close (a shell pipe) that still waits for answers.
+    pub async fn serve<S, H>(self: Arc<Self>, stream: S, peer: Result<ProcessInfo, PeerError>, hangup: H)
     where
         S: AsyncRead + AsyncWrite + Send + 'static,
+        H: std::future::Future<Output = ()> + Send,
     {
         if self.connection_count() >= MAX_CONNECTIONS {
             return;
         }
         let identity = peer.ok().map(|p| identity::derive(&p, cfg!(windows), &identity::RealFs));
-        self.serve_as(stream, identity).await
+        self.serve_as(stream, identity, hangup).await
     }
 
     /// `serve` with the identity already derived (tests use this to act as any program).
-    pub async fn serve_as<S>(self: Arc<Self>, stream: S, identity: Option<AppIdentity>)
+    pub async fn serve_as<S, H>(self: Arc<Self>, stream: S, identity: Option<AppIdentity>, hangup: H)
     where
         S: AsyncRead + AsyncWrite + Send + 'static,
+        H: std::future::Future<Output = ()> + Send,
     {
         let (rd, mut wr) = tokio::io::split(stream);
         let id = self.id();
@@ -204,6 +208,7 @@ impl Server {
             },
         );
         let (closed_tx, mut closed_rx) = watch::channel(false);
+        tokio::pin!(hangup);
 
         // Writer: drains the queue; ends on Close, a write error, or when every sender is gone.
         let writer_queued = queued.clone();
@@ -258,7 +263,10 @@ impl Server {
                 }
                 Ok(Line::Eof) => {
                     self.half_close(id);
-                    let _ = closed_rx.wait_for(|c| *c).await;
+                    tokio::select! {
+                        _ = closed_rx.wait_for(|c| *c) => {}
+                        _ = &mut hangup => {}
+                    }
                     break;
                 }
                 Err(_) => break,
