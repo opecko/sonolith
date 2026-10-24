@@ -95,7 +95,9 @@ interpreter/version-manager/AppImage updates keep the identity; moving the app o
 <!-- END GENERATED: scopes -->
 
 Without `library:read`, `Track.rating`, `Episode.played` and `Episode.resumePositionMs` are null.
-`playlist.get` works with `library:read` (any playlist) or `search` (public/unlisted only).
+`playlist.get` works with `library:read` (any playlist) or `search` (other people's public/unlisted playlists only:
+the user's own playlists, liked songs, episodes for later and personal mixes give NotFound; the same holds for playlist
+references in `player.playItem`, `queue.add` and `queue.playNext`). `VLPL…` and `PL…` are the same playlist.
 
 ## Methods
 
@@ -258,7 +260,11 @@ InvalidParams, InternalError, RateLimited, Unavailable, Timeout (+ SessionRequir
 
 ## Limits
 
-16 requests in flight per connection; 8 connections per app; authenticate within 30 s; answers within 30 s.
+16 requests in flight per connection; 8 connections per app; authenticate within 30 s (a pending registration doesn't
+count; the 30 s restart when it ends); answers within 30 s. A client that leaves over 4 MiB unread, or reads nothing for
+10 s while Sonolith writes, is disconnected. queue.add/playNext: at most 1000 entries per call, queue at most 5000.
+Answers over 1 MiB come as InternalError `resultTooLarge`. app.register texts (name, description, publisher, reasons)
+are single-line plain text: no control or invisible formatting characters.
 Rate classes per app: local 50/s, control 10/s, network 2/s, account 1 per 2 s (30/min), auth 1/s per connection.
 On RateLimited wait `data.retryAfterMs`. Prefer events over polling.
 
