@@ -203,19 +203,23 @@ fn tmp_path(path: &Path) -> PathBuf {
     path.with_file_name(name)
 }
 
-#[cfg(unix)]
-fn write_private(path: &Path, data: &[u8]) -> std::io::Result<()> {
+/// Writes a new file readable only by the user (a temp file, renamed into place after). A leftover from a crash is
+/// removed first (a link is removed, not followed); the file is then created fresh (O_EXCL, O_NOFOLLOW), so a link
+/// planted in between makes the write fail instead of writing through it.
+pub(super) fn write_private(path: &Path, data: &[u8]) -> std::io::Result<()> {
     use std::io::Write;
-    use std::os::unix::fs::OpenOptionsExt;
-    let mut f = std::fs::OpenOptions::new().write(true).create(true).truncate(true).mode(0o600).open(path)?;
+    let _ = std::fs::remove_file(path);
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600).custom_flags(libc::O_NOFOLLOW);
+    }
+    // On Windows the app data dir is inside the user's profile, private to the user by default.
+    let mut f = options.open(path)?;
     f.write_all(data)?;
     f.sync_all()
-}
-
-#[cfg(not(unix))]
-fn write_private(path: &Path, data: &[u8]) -> std::io::Result<()> {
-    // The app data dir is inside the user's profile, private to the user by default.
-    std::fs::write(path, data)
 }
 
 #[cfg(test)]
@@ -319,6 +323,22 @@ mod tests {
             assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
         }
         assert_eq!(Registry::load(&path), (r, None));
+        std::fs::remove_dir_all(dir).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn saving_never_follows_a_planted_temp_file_link() {
+        let dir = std::env::temp_dir().join(format!("sonolith-api-store-link-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let victim = dir.join("victim");
+        std::fs::write(&victim, "precious").unwrap();
+        let path = dir.join("apps.json");
+        std::os::unix::fs::symlink(&victim, tmp_path(&path)).unwrap();
+        Registry::default().save(&path).unwrap();
+        assert_eq!(std::fs::read_to_string(&victim).unwrap(), "precious");
+        assert_eq!(Registry::load(&path), (Registry::default(), None));
         std::fs::remove_dir_all(dir).ok();
     }
 

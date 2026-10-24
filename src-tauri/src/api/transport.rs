@@ -39,21 +39,8 @@ fn write_discovery(path: &std::path::Path, transport: &str, endpoint: &str, app_
         "startedAt": now_ms(),
     });
     let tmp = path.with_extension("json.tmp");
-    write_private(&tmp, serde_json::to_string_pretty(&body).unwrap().as_bytes())?;
+    super::store::write_private(&tmp, serde_json::to_string_pretty(&body).unwrap().as_bytes())?;
     std::fs::rename(tmp, path)
-}
-
-#[cfg(unix)]
-fn write_private(path: &std::path::Path, data: &[u8]) -> std::io::Result<()> {
-    use std::io::Write;
-    use std::os::unix::fs::OpenOptionsExt;
-    let mut f = std::fs::OpenOptions::new().write(true).create(true).truncate(true).mode(0o600).open(path)?;
-    f.write_all(data)
-}
-
-#[cfg(windows)]
-fn write_private(path: &std::path::Path, data: &[u8]) -> std::io::Result<()> {
-    std::fs::write(path, data)
 }
 
 /// Expires unanswered consent requests once a second while the endpoint is up.
@@ -70,12 +57,20 @@ async fn expiry_ticker(server: Arc<Server>) {
 /// `$XDG_RUNTIME_DIR/sonolith`, or `/tmp/sonolith-<uid>` without it. Created private; refused if it is not.
 #[cfg(unix)]
 pub fn runtime_dir() -> std::io::Result<PathBuf> {
-    use std::os::unix::fs::{DirBuilderExt, MetadataExt, PermissionsExt};
+    use std::os::unix::fs::MetadataExt;
     let uid = std::fs::metadata("/proc/self")?.uid();
-    let dir = match std::env::var("XDG_RUNTIME_DIR") {
-        Ok(x) if !x.is_empty() => PathBuf::from(x).join("sonolith"),
-        _ => PathBuf::from(format!("/tmp/sonolith-{uid}")),
-    };
+    match std::env::var("XDG_RUNTIME_DIR") {
+        Ok(x) if !x.is_empty() => private_dir(PathBuf::from(x).join("sonolith"), uid, false),
+        _ => private_dir(PathBuf::from(format!("/tmp/sonolith-{uid}")), uid, true),
+    }
+}
+
+/// `dir`, created with mode 0700, or checked to be ours and not a link. In a parent other users share (`/tmp`), an
+/// existing directory others can reach is refused: they may have planted files in it (SPEC.md 3.1). Inside the
+/// user's own runtime dir nobody else could have, so a loose mode is just fixed.
+#[cfg(unix)]
+fn private_dir(dir: PathBuf, uid: u32, shared_parent: bool) -> std::io::Result<PathBuf> {
+    use std::os::unix::fs::{DirBuilderExt, MetadataExt, PermissionsExt};
     match std::fs::DirBuilder::new().mode(0o700).create(&dir) {
         Ok(()) => {}
         Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
@@ -86,6 +81,9 @@ pub fn runtime_dir() -> std::io::Result<PathBuf> {
         return Err(std::io::Error::new(std::io::ErrorKind::PermissionDenied, format!("{} is not ours", dir.display())));
     }
     if meta.mode() & 0o077 != 0 {
+        if shared_parent {
+            return Err(std::io::Error::new(std::io::ErrorKind::PermissionDenied, format!("{} is open to other users", dir.display())));
+        }
         std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700))?;
     }
     Ok(dir)
@@ -198,4 +196,31 @@ pub async fn start(server: Arc<Server>, app_version: &str) -> std::io::Result<(E
         }
     });
     Ok((Endpoint { path: name, discovery }, task))
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+
+    #[test]
+    fn a_shared_fallback_dir_others_can_reach_is_refused() {
+        let base = std::env::temp_dir().join(format!("sonolith-runtime-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let uid = std::fs::metadata("/proc/self").unwrap().uid();
+        // In /tmp, other users could have put files into a directory open to them: refuse it (SPEC.md 3.1).
+        let open = base.join("open");
+        std::fs::create_dir(&open).unwrap();
+        std::fs::set_permissions(&open, std::fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(private_dir(open.clone(), uid, true).is_err());
+        // Inside the private XDG_RUNTIME_DIR nobody else could, so the mode is just fixed.
+        assert!(private_dir(open.clone(), uid, false).is_ok());
+        assert_eq!(std::fs::metadata(&open).unwrap().permissions().mode() & 0o777, 0o700);
+        // A fresh one is created private; a link is never taken for the directory.
+        assert!(private_dir(base.join("new"), uid, true).is_ok());
+        std::os::unix::fs::symlink(&open, base.join("link")).unwrap();
+        assert!(private_dir(base.join("link"), uid, true).is_err());
+        std::fs::remove_dir_all(&base).ok();
+    }
 }
