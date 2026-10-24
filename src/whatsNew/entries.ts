@@ -1,4 +1,4 @@
-import { Clapperboard, Keyboard, LayoutDashboard, LogIn, MicVocal, Palette, Podcast, Settings2, Sparkles } from "lucide-react";
+import { Clapperboard, Keyboard, LayoutDashboard, LogIn, MicVocal, Palette, Podcast, Settings2, Sparkles, Terminal } from "lucide-react";
 import type { WhatsNewEntry } from "./types";
 
 /**
@@ -6,6 +6,24 @@ import type { WhatsNewEntry } from "./types";
  * entry shows nothing after the update.
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
+  {
+    // The release that ships the rename; adjust the version when it's picked.
+    version: "2.3.0",
+    title: "ytdesk is now Sonolith",
+    highlights: [
+      {
+        icon: Sparkles,
+        title: "Same app, new name",
+        text: "Everything you had is still here: your settings and colors, your sign-in, your queue, episode progress and lyrics.",
+      },
+      {
+        icon: Terminal,
+        title: "For power users",
+        text: "The Wayland window class and app id are now sonolith (update your Hyprland window rules), the MPRIS player is sonolith (playerctl -p sonolith), and the command is sonolith.",
+      },
+    ],
+    actions: [{ label: "Open Settings → About", action: { type: "openSettings", section: "about" } }],
+  },
   {
     version: "2.2.0",
     title: "ytdesk 2.2: no account needed",
