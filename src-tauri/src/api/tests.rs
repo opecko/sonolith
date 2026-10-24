@@ -482,3 +482,85 @@ async fn endpoint_writes_discovery_and_cleans_up() {
     assert!(!socket.exists() && !dir.join("discovery.json").exists());
     let _ = std::fs::remove_dir_all(&base);
 }
+
+// ---------------------------------------------------------------- a live server for the example clients
+
+/// Approves (or denies, `SONOLITH_TEST_CONSENT=deny`) every consent request after a moment, like a user clicking.
+#[derive(Default)]
+struct AutoHost {
+    server: std::sync::OnceLock<Arc<Server>>,
+}
+
+impl Host for AutoHost {
+    fn emit(&self, event: &str, payload: Value) {
+        if event != "api:consent" {
+            return;
+        }
+        let Some(server) = self.server.get().cloned() else { return };
+        let rid = payload["requestId"].as_str().unwrap_or("").to_string();
+        let decision = if std::env::var("SONOLITH_TEST_CONSENT").as_deref() == Ok("deny") { Decision::Deny } else { Decision::Allow };
+        let scopes: Vec<String> = payload["scopes"].as_array().into_iter().flatten().filter_map(|s| s["scope"].as_str().map(String::from)).collect();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(400)).await;
+            let _ = server.resolve(&rid, decision, &scopes);
+        });
+    }
+    fn notify(&self, _request_id: &str, _title: &str, _body: &str) {}
+    fn close_notification(&self, _request_id: &str) {}
+}
+
+fn demo_track(id: &str, title: &str) -> Value {
+    json!({
+        "type": "track", "id": id, "title": title, "artists": [{ "id": "UCdemo", "name": "Demo Band" }], "album": null, "durationMs": 20_000,
+        "thumbnailUrl": null, "explicit": false, "video": false, "rating": null,
+    })
+}
+
+/// Serves like Sonolith with a fake frontend, until `$SONOLITH_TEST_DIR/stop` exists:
+/// `SONOLITH_TEST_DIR=/tmp/snl cargo test --lib api::tests::live_server_for_examples -- --ignored --nocapture`,
+/// then point a client at it with `XDG_RUNTIME_DIR=/tmp/snl`. Every 4 seconds the track changes; `touch /tmp/snl/remove`
+/// removes all apps, `touch /tmp/snl/stop` ends it. `SONOLITH_TEST_CONSENT=deny` denies instead of allowing.
+#[tokio::test]
+#[ignore]
+async fn live_server_for_examples() {
+    let base = PathBuf::from(std::env::var("SONOLITH_TEST_DIR").expect("SONOLITH_TEST_DIR"));
+    std::fs::create_dir_all(&base).unwrap();
+    std::env::set_var("XDG_RUNTIME_DIR", &base);
+    let host = Arc::new(AutoHost::default());
+    let server = Server::new(host.clone(), base.join("api-apps.json"), "9.9.9".into());
+    host.server.set(server.clone()).ok();
+    let (endpoint, task) = super::transport::start(server.clone(), "9.9.9").await.unwrap();
+    println!("listening on {}", endpoint.path);
+    server.frontend_ready(true);
+    let lyrics = |id: &str| {
+        let lines: Vec<Value> = (0..8)
+            .map(|i| json!({ "startMs": i * 2000, "endMs": i * 2000 + 1800, "text": format!("Line {i}"), "words": [], "background": [] }))
+            .collect();
+        json!({ "trackId": id, "status": "found", "lyrics": { "trackId": id, "tier": "line", "provider": "lrclib", "providerName": "LRCLIB", "attribution": null, "lines": lines } })
+    };
+    server.publish("account", json!({ "signedIn": true }));
+    let mut n = 0u32;
+    while !base.join("stop").exists() {
+        let (id, title) = if n % 2 == 0 { ("trackA", "First song") } else { ("trackB", "Second song") };
+        let now = super::server::now_ms();
+        server.publish("player", json!({
+            "status": "playing", "item": demo_track(id, title), "positionMs": 0, "positionAt": now, "durationMs": 20_000, "volume": 50,
+            "muted": false, "shuffle": false, "repeat": "off", "rate": 1, "episodeRate": 1, "canGoNext": true, "canGoPrevious": true,
+            "queueIndex": 0, "queueLength": 2, "autoplay": true,
+        }));
+        server.publish("lyrics", lyrics(id));
+        n += 1;
+        for _ in 0..40 {
+            if base.join("stop").exists() {
+                break;
+            }
+            // `touch remove`: the user removes every app in Settings.
+            if std::fs::remove_file(base.join("remove")).is_ok() {
+                server.remove_all();
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    }
+    task.abort();
+    endpoint.cleanup();
+}

@@ -197,7 +197,17 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function register(): Promise<boolean> {
   const conn = await Connection.open();
   try {
-    const pending = await conn.call("app.register", REGISTRATION);
+    let pending: any;
+    try {
+      pending = await conn.call("app.register", REGISTRATION);
+    } catch (e) {
+      if (!(e instanceof RpcError)) throw e;
+      if (e.name === "Blocked") say("Sonolith blocked this app. You can unblock it in Sonolith's Settings → Connected apps.");
+      else if (e.name === "RegistrationDenied") say(`Access was denied recently. You can try again in ${Math.ceil(e.data.retryAfterMs / 60000)} min.`);
+      else if (e.name === "RegistrationPending") say("A request from this app is already waiting. Answer it in Sonolith.");
+      else throw e;
+      return false;
+    }
     say("Waiting for you to approve “Sonolith Demo (Node)” in Sonolith…");
     for (;;) {
       const msg = await conn.nextEvent();

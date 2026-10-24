@@ -8,8 +8,8 @@ approve the new program. So `socat` and PowerShell each register once on their o
 
 What identity they get:
 
-- `socat` is a native program, so its identity is `exe:/usr/bin/socat`. Every `socat` command you run is the same
-  app to Sonolith.
+- `socat` is a native program, so its identity is its executable path, `exe:/usr/bin/socat` (or `exe:/usr/bin/socat1`
+  where `socat` is a link to it, as on Arch). Every `socat` command you run is the same app to Sonolith.
 - PowerShell is an interpreter. Run interactively (as below), its identity is `interp:pwsh:-` (or
   `interp:powershell:-` for Windows PowerShell 5.1), shared by every interactive PowerShell session. Put the
   commands in a `.ps1` file and run it with `pwsh -File` to get an identity for that script instead.

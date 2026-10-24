@@ -218,7 +218,18 @@ async def register(store):
     """Asks the user for access. Call this only because the user asked (here: the `register` command)."""
     conn = await Connection.open()
     try:
-        pending = await conn.call("app.register", REGISTRATION)
+        try:
+            pending = await conn.call("app.register", REGISTRATION)
+        except RpcError as e:
+            if e.name == "Blocked":
+                say("Sonolith blocked this app. You can unblock it in Sonolith's Settings → Connected apps.")
+            elif e.name == "RegistrationDenied":
+                say(f"Access was denied recently. You can try again in {-(-e.data['retryAfterMs'] // 60000)} min.")
+            elif e.name == "RegistrationPending":
+                say("A request from this app is already waiting. Answer it in Sonolith.")
+            else:
+                raise
+            return False
         say("Waiting for you to approve “Sonolith Demo” in Sonolith…")
         while True:
             msg = await conn.next_event()
@@ -234,7 +245,7 @@ async def register(store):
             if p["status"] == "blocked":
                 say("Sonolith blocked this app. You can unblock it in Sonolith's Settings → Connected apps.")
             elif p["status"] == "denied":
-                say(f"Access was denied. You can try again in {p['retryAfterMs'] // 60000 + 1} min.")
+                say(f"Access was denied. You can try again in {-(-p['retryAfterMs'] // 60000)} min.")
             else:
                 say("Nobody answered in time. Run `register` again to retry.")
             return False
