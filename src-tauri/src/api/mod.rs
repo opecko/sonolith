@@ -13,6 +13,8 @@ mod peer;
 mod protocol;
 pub mod server;
 mod store;
+#[cfg(all(test, target_os = "linux"))]
+mod tests;
 mod transport;
 #[cfg(windows)]
 mod win;
