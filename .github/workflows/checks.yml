@@ -1,0 +1,21 @@
+# Fast checks on every push and pull request. The full test suite runs in the release workflow.
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  api-spec:
+    name: API spec is generated and its examples are valid
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install jsonschema
+      - run: python3 api/tools/generate.py --check
