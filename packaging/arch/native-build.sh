@@ -18,7 +18,7 @@ build() {
     root="$work/root-$1"
     mkdir -p "$root"
     bsdtar -xf "$p" -C "$root"
-    if ldd "$root/usr/bin/ytdesk" | grep 'not found'; then
+    if ldd "$root/usr/bin/sonolith" | grep 'not found'; then
       echo "smoke test failed: $(basename "$p") has unresolved libraries" >&2
       exit 1
     fi

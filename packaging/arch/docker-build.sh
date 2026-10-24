@@ -16,9 +16,9 @@ docker run --rm -v "$PWD/packaging:/in:ro" -v "$PWD/packaging/out:/out" archlinu
   # Smoke test each package on its own (they conflict): install, check every library resolves, remove.
   for p in /out/*.pkg.tar.zst; do
     pacman -U --noconfirm \$p >/dev/null
-    if ldd /usr/bin/ytdesk | grep 'not found'; then exit 1; fi
+    if ldd /usr/bin/sonolith | grep 'not found'; then exit 1; fi
     echo \"ok: \$(basename \$p) installs, all libraries found\"
-    pacman -Rns --noconfirm \$(pacman -Qqo /usr/bin/ytdesk) >/dev/null
+    pacman -Rns --noconfirm \$(pacman -Qqo /usr/bin/sonolith) >/dev/null
   done
   chown -R $(id -u):$(id -g) /out
 "

@@ -1,25 +1,28 @@
 # Maintainer: opecko <https://github.com/opecko>
-# Repackages the Debian build (src-tauri/target/release/bundle/deb/ytdesk_<ver>_amd64.deb) for Arch.
+# Repackages the Debian build (src-tauri/target/release/bundle/deb/sonolith_<ver>_amd64.deb) for Arch.
 # Copy that .deb next to this file (packaging/arch/make-src.sh does it), then: makepkg -si
-pkgname=ytdesk-bin
+pkgname=sonolith-bin
 pkgver=2.2.0
 pkgrel=1
 pkgdesc="YouTube Music desktop client (prebuilt)"
-url='https://github.com/opecko/ytdesk'
+url='https://github.com/opecko/sonolith'
 arch=('x86_64')
 license=('MIT')
 depends=('webkit2gtk-4.1' 'gtk3' 'libsoup3' 'dbus' 'gst-plugins-base' 'gst-plugins-good' 'gst-libav' 'libayatana-appindicator')
 optdepends=('nodejs: JS runtime for the yt-dlp playback fallback'
             'gnome-keyring: stores the login cookie (Secret Service)')
-provides=('ytdesk')
-conflicts=('ytdesk')
+# Sonolith was called ytdesk until 2.2.0. The ytdesk packages of the same version are transitional (empty, they
+# depend on this one), so only the real old ones conflict.
+provides=('sonolith' 'ytdesk')
+conflicts=('sonolith' "ytdesk<$pkgver" "ytdesk-bin<$pkgver")
+replaces=('ytdesk-bin')
 options=('!strip' '!debug')
-source=("ytdesk_${pkgver}_amd64.deb")
-noextract=("ytdesk_${pkgver}_amd64.deb")
+source=("sonolith_${pkgver}_amd64.deb")
+noextract=("sonolith_${pkgver}_amd64.deb")
 sha256sums=('SKIP')
 
 prepare() {
-  bsdtar -xf "ytdesk_${pkgver}_amd64.deb" data.tar.gz
+  bsdtar -xf "sonolith_${pkgver}_amd64.deb" data.tar.gz
 }
 
 package() {
@@ -30,4 +33,6 @@ package() {
     mv "$pkgdir/usr/share/icons/hicolor/256x256@2/apps" "$pkgdir/usr/share/icons/hicolor/256x256/"
     rmdir "$pkgdir/usr/share/icons/hicolor/256x256@2"
   fi
+  # The old command keeps working for one release.
+  ln -s sonolith "$pkgdir/usr/bin/ytdesk"
 }
