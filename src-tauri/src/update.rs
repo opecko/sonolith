@@ -52,6 +52,7 @@ pub struct AurInstall {
 }
 
 /// AUR packages that ship this app: the current ones and those from before the rename (until the user switches).
+#[cfg(target_os = "linux")]
 const AUR_PACKAGES: &[&str] = &["sonolith", "sonolith-bin", "ytdesk", "ytdesk-bin"];
 
 /// The AUR package that owns the running binary, if any (Arch-based distros only; dev builds aren't owned).
