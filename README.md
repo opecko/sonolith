@@ -1,8 +1,13 @@
-# ytdesk
+# Sonolith
 
 vibe coded stuff btw
 
 A fast, lightweight desktop app for **YouTube Music** on Windows and Linux.
+
+> **Sonolith was called ytdesk** until version 2.2. Updating keeps your settings, sign-in, queue and everything
+> else. If you customized things around the old name: the command is now `sonolith`, the Wayland app id / window
+> class is `sonolith` (update Hyprland window rules), and the MPRIS player is `sonolith` (`playerctl -p sonolith`).
+> On Arch, `yay -Syu` moves `ytdesk-bin` / `ytdesk` over to `sonolith-bin` / `sonolith`.
 
 Sign in with your Google account and you get your library, playlists, mixes and recommendations in an app of its
 own. It's not a wrapped browser tab, so it starts quickly and uses little memory and CPU.
@@ -29,11 +34,11 @@ own. It's not a wrapped browser tab, so it starts quickly and uses little memory
 Install from the AUR with your AUR helper. Updates then come with your normal system upgrade (`yay` / `paru`).
 
 ```
-yay -S ytdesk-bin
+yay -S sonolith-bin
 ```
 
-or `paru -S ytdesk-bin`. [`ytdesk-bin`](https://aur.archlinux.org/packages/ytdesk-bin) is the ready-built app;
-[`ytdesk`](https://aur.archlinux.org/packages/ytdesk) builds it from source instead (takes a while).
+or `paru -S sonolith-bin`. [`sonolith-bin`](https://aur.archlinux.org/packages/sonolith-bin) is the ready-built app;
+[`sonolith`](https://aur.archlinux.org/packages/sonolith) builds it from source instead (takes a while).
 
 ### Windows and Ubuntu / Debian
 
@@ -41,8 +46,8 @@ Get the latest version from the [**Releases**](../../releases/latest) page:
 
 | System | File | How to install |
 | --- | --- | --- |
-| **Windows 10 / 11** | `ytdesk_…_x64-setup.exe` | Double-click and follow the installer |
-| **Ubuntu / Debian** (24.04+) | `ytdesk_…_amd64.deb` | Double-click, or `sudo apt install ./ytdesk_…_amd64.deb` |
+| **Windows 10 / 11** | `sonolith_…_x64-setup.exe` | Double-click and follow the installer |
+| **Ubuntu / Debian** (24.04+) | `sonolith_…_amd64.deb` | Double-click, or `sudo apt install ./sonolith_…_amd64.deb` |
 
 macOS isn't supported yet.
 
@@ -51,8 +56,8 @@ macOS isn't supported yet.
 
 ## Getting started
 
-1. Open **ytdesk** and click **Sign in**.
-2. Log in to your Google account in the window that opens. ytdesk saves the session in your system's secure
+1. Open **Sonolith** and click **Sign in**.
+2. Log in to your Google account in the window that opens. Sonolith saves the session in your system's secure
    credential store (Windows Credential Manager / the Linux keyring), never in a plain file.
 3. Play something. Click the cover in the bottom bar to open **Now Playing**.
 
@@ -65,20 +70,20 @@ macOS isn't supported yet.
 
 ## Troubleshooting
 
-- **A song won't play**: ytdesk retries automatically. If some songs still fail, open **Settings → Advanced** and
+- **A song won't play**: Sonolith retries automatically. If some songs still fail, open **Settings → Advanced** and
   install the **yt-dlp** fallback with one click.
 - **Signed out unexpectedly**: YouTube sometimes expires sessions. Just sign in again.
 - **Media keys don't work on Linux (Wayland)**: some Wayland desktops don't allow global shortcuts. Use your
-  desktop's media controls instead; ytdesk shows up there too.
+  desktop's media controls instead; Sonolith shows up there too.
 - **Linux: asked to unlock a keyring**, or sign-in isn't remembered: install and unlock a keyring service
   (e.g. GNOME Keyring or KWallet).
 
 ## Privacy
 
-ytdesk talks only to YouTube / Google (and to Discord on your computer, if Rich Presence is on). There is no
-analytics or telemetry, and no ytdesk server.
+Sonolith talks only to YouTube / Google (and to Discord on your computer, if Rich Presence is on). There is no
+analytics or telemetry, and no Sonolith server.
 
-ytdesk is an unofficial app and isn't affiliated with or endorsed by Google or YouTube.
+Sonolith is an unofficial app and isn't affiliated with or endorsed by Google or YouTube.
 
 ---
 
