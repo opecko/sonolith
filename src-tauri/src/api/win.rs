@@ -104,16 +104,15 @@ impl Drop for UserOnly {
     }
 }
 
-/// The pipe client's process facts. The pipe's ACL already limits clients to the current user.
-pub fn pipe_peer(pipe: &NamedPipeServer) -> Result<ProcessInfo, PeerError> {
+/// The pipe client's process id. The pipe's ACL already limits clients to the current user.
+pub fn pipe_client_pid(pipe: &NamedPipeServer) -> Option<u32> {
     let mut pid = 0u32;
-    if unsafe { GetNamedPipeClientProcessId(pipe.as_raw_handle() as HANDLE, &mut pid) } == 0 || pid == 0 {
-        return Err(PeerError::Unknown);
-    }
-    process(pid)
+    let ok = unsafe { GetNamedPipeClientProcessId(pipe.as_raw_handle() as HANDLE, &mut pid) } != 0;
+    (ok && pid != 0).then_some(pid)
 }
 
-fn process(pid: u32) -> Result<ProcessInfo, PeerError> {
+/// A process's facts (image path, command line, working directory). Blocking.
+pub fn process(pid: u32) -> Result<ProcessInfo, PeerError> {
     unsafe {
         let h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, 0, pid);
         let h = if h.is_null() { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) } else { h };

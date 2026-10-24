@@ -52,11 +52,11 @@ pub fn flatpak_app_id(info: &str) -> Option<String> {
     None
 }
 
-/// The connecting process of a Unix socket, after checking it runs as our user.
+/// The connecting process of a Unix socket (from its credentials), after checking it runs as our user. Blocking.
 #[cfg(target_os = "linux")]
-pub fn unix_peer(stream: &tokio::net::UnixStream) -> Result<ProcessInfo, PeerError> {
+pub fn unix_peer(cred: Option<tokio::net::unix::UCred>) -> Result<ProcessInfo, PeerError> {
     use std::os::unix::fs::MetadataExt;
-    let cred = stream.peer_cred().map_err(|_| PeerError::Unknown)?;
+    let cred = cred.ok_or(PeerError::Unknown)?;
     let me = std::fs::metadata("/proc/self").map_err(|_| PeerError::Unknown)?.uid();
     if cred.uid() != me {
         return Err(PeerError::OtherUser);

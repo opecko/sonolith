@@ -316,8 +316,8 @@ App                              Sonolith                              User
 1. The app calls [`app.register`](#appregister) with its `appId`, display details and the scopes it wants, each
    with a `reason`. It works without a token.
 2. Sonolith identifies the calling process through the operating system (Linux: the socket's peer credentials;
-   Windows: the pipe client's process id) and derives its **app identity** (section 6.6). If it cannot, the call
-   fails with `Unavailable` (reason `peerUnverified`). The `pending` result includes the identity, so a developer
+   Windows: the pipe client's process id) and derives its **app identity** (section 6.6). If it cannot, or not
+   within 2 seconds, the call fails with `Unavailable` (reason `peerUnverified`). The `pending` result includes the identity, so a developer
    can see what the user is shown.
 3. Sonolith answers `pending` at once, shows a system notification "<name> wants to connect to Sonolith" and a
    consent screen. Clicking the notification brings Sonolith to the front, also when it is hidden in the tray.

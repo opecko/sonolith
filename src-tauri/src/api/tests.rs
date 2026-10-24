@@ -511,6 +511,27 @@ async fn closing_cancels_frontend_work_in_flight() {
 }
 
 #[tokio::test]
+async fn a_peer_that_cannot_be_looked_up_holds_up_nobody() {
+    let env = start("slowpeer").await;
+    // A lookup stuck like a stat on a hung FUSE mount, until the test ends.
+    let (release, stuck) = std::sync::mpsc::channel::<()>();
+    let (ours, theirs) = UnixStream::pair().unwrap();
+    let peer = move || {
+        let _ = stuck.recv();
+        Err(super::peer::PeerError::Unknown)
+    };
+    tokio::spawn(env.server.clone().serve(theirs, peer, std::future::pending()));
+    // Others are served meanwhile (this runtime has one thread: a blocking lookup on it would stop everything).
+    let mut other = Client::connect(&env.socket).await;
+    assert_eq!(other.ok("app.info", json!({})).await["appVersion"], "9.9.9");
+    // The stuck one gets an answer too, as a peer that couldn't be verified.
+    let mut c = Client::over(ours);
+    let e = c.err("app.register", registration("com.example.slow", vec![scope("search", true)])).await;
+    assert_eq!((code(&e), e["data"]["reason"].as_str()), (-32010, Some("peerUnverified")));
+    drop(release);
+}
+
+#[tokio::test]
 async fn malformed_lines_keep_the_connection() {
     let env = start("framing").await;
     let mut c = Client::connect(&env.socket).await;

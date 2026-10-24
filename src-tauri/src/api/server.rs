@@ -25,6 +25,11 @@ const MAX_IN_FLIGHT: usize = 16;
 const MAX_APP_CONNECTIONS: usize = 8;
 pub const MAX_CONNECTIONS: usize = 64;
 const AUTH_TIMEOUT: Duration = Duration::from_secs(30);
+/// How long working out who connected may take; a slower peer stays unverified.
+const PEER_TIMEOUT: Duration = Duration::from_secs(2);
+/// Identity lookups at once. One stuck for good (a hung FUSE mount) keeps its slot, so this also caps the blocking
+/// threads a client can tie up; with every slot stuck, new peers are unverified but the app goes on.
+const IDENTITY_SLOTS: usize = 8;
 const BRIDGE_TIMEOUT: Duration = Duration::from_secs(25);
 const MAX_QUEUED: usize = 4 * 1024 * 1024;
 /// A write that makes no progress for this long means the client stopped reading: the connection ends.
@@ -132,6 +137,7 @@ pub struct Server {
     lyrics_wanted: AtomicBool,
     frontend_ready: AtomicBool,
     next_id: AtomicU64,
+    identity_slots: Arc<tokio::sync::Semaphore>,
     app_version: String,
     platform: &'static str,
 }
@@ -154,6 +160,7 @@ impl Server {
             lyrics_wanted: AtomicBool::new(false),
             frontend_ready: AtomicBool::new(false),
             next_id: AtomicU64::new(1),
+            identity_slots: Arc::new(tokio::sync::Semaphore::new(IDENTITY_SLOTS)),
             app_version,
             platform: if cfg!(windows) { "windows" } else { "linux" },
         });
@@ -171,19 +178,38 @@ impl Server {
 
     // ------------------------------------------------------------ connections
 
-    /// Serves one connection until it closes. `peer` is what the OS said about the other end. `hangup` resolves
-    /// once the client is gone for good; it is only awaited after the client stopped sending, because end of input
-    /// alone may be a half-close (a shell pipe) that still waits for answers.
-    pub async fn serve<S, H>(self: Arc<Self>, stream: S, peer: Result<ProcessInfo, PeerError>, hangup: H)
+    /// Serves one connection until it closes. `peer` asks the OS about the other end (blocking work). `hangup`
+    /// resolves once the client is gone for good; it is only awaited after the client stopped sending, because end
+    /// of input alone may be a half-close (a shell pipe) that still waits for answers.
+    pub async fn serve<S, H, P>(self: Arc<Self>, stream: S, peer: P, hangup: H)
     where
         S: AsyncRead + AsyncWrite + Send + 'static,
         H: std::future::Future<Output = ()> + Send,
+        P: FnOnce() -> Result<ProcessInfo, PeerError> + Send + 'static,
     {
         if self.connection_count() >= MAX_CONNECTIONS {
             return;
         }
-        let identity = peer.ok().map(|p| identity::derive(&p, cfg!(windows), &identity::RealFs));
+        let identity = self.identify(peer).await;
         self.serve_as(stream, identity, hangup).await
+    }
+
+    /// The peer's app identity, worked out on a blocking thread: /proc reads and `canonicalize` / `is_file` on paths
+    /// from the client's command line can hang. None (`peerUnverified`) when it fails or takes over `PEER_TIMEOUT`.
+    async fn identify<P>(&self, peer: P) -> Option<AppIdentity>
+    where
+        P: FnOnce() -> Result<ProcessInfo, PeerError> + Send + 'static,
+    {
+        let slots = self.identity_slots.clone();
+        let work = async move {
+            let slot = slots.acquire_owned().await.ok()?;
+            let derive = move || {
+                let _slot = slot;
+                peer().ok().map(|p| identity::derive(&p, cfg!(windows), &identity::RealFs))
+            };
+            tokio::task::spawn_blocking(derive).await.ok().flatten()
+        };
+        tokio::time::timeout(PEER_TIMEOUT, work).await.ok().flatten()
     }
 
     /// `serve` with the identity already derived (tests use this to act as any program).
