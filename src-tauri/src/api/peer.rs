@@ -1,10 +1,12 @@
 //! Who is on the other end of a connection: the process facts `identity::derive` needs.
 
+#[cfg(target_os = "linux")]
 use super::identity::ProcessInfo;
 
 #[derive(Debug)]
 pub enum PeerError {
     /// The process belongs to another user (should not happen: the endpoint is private).
+    #[cfg_attr(windows, allow(dead_code))]
     OtherUser,
     /// The OS did not tell us enough to identify the process.
     Unknown,
@@ -33,6 +35,7 @@ pub fn linux_process(pid: i32) -> Result<ProcessInfo, PeerError> {
     Ok(ProcessInfo { exe, argv, cwd, appimage, flatpak_id })
 }
 
+#[cfg(any(target_os = "linux", test))]
 /// `name=` in the `[Application]` group of a `.flatpak-info` file.
 pub fn flatpak_app_id(info: &str) -> Option<String> {
     let mut in_app = false;
@@ -60,9 +63,6 @@ pub fn unix_peer(stream: &tokio::net::UnixStream) -> Result<ProcessInfo, PeerErr
     }
     linux_process(cred.pid().ok_or(PeerError::Unknown)?)
 }
-
-#[cfg(windows)]
-pub use super::win::pipe_peer;
 
 #[cfg(test)]
 mod tests {
