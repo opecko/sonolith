@@ -762,14 +762,12 @@ impl Server {
         Ok(())
     }
 
+    /// The registry changes first and the old sessions end after: a `session.hello` in between then fails instead of
+    /// starting a session the revocation has already passed by (see `hello`).
     fn replace_app(&self, p: &Pending, scopes: &[String], token: &str, now: u64) {
-        let had = self.registry.lock().unwrap().app(&p.app_id).is_some();
-        if had {
-            self.revoke_app(&p.app_id, "replaced");
-        }
         let d = |k: &str| p.details.get(k).and_then(Value::as_str).map(String::from);
         let mut reg = self.registry.lock().unwrap();
-        reg.remove(&p.app_id);
+        let had = reg.remove(&p.app_id).is_some();
         reg.apps.push(AppRecord {
             app_id: p.app_id.clone(),
             name: d("name").unwrap_or_default(),
@@ -784,6 +782,10 @@ impl Server {
             last_used_at: None,
         });
         let _ = reg.save(&self.registry_path);
+        drop(reg);
+        if had {
+            self.revoke_app(&p.app_id, "replaced");
+        }
     }
 
     fn request_scopes(&self, conn: u64, p: &Map<String, Value>, app_id: String, identity: Option<AppIdentity>) -> Result<Value, RpcError> {
@@ -834,7 +836,7 @@ impl Server {
         let token = v.text("token", 1, 100)?;
         v.version()?;
         let identity = identity.ok_or_else(|| RpcError::new(Code::Unavailable).reason("peerUnverified"))?;
-        let (record_identity, scopes, name) = {
+        let (record_identity, name) = {
             let reg = self.registry.lock().unwrap();
             if reg.is_blocked(&app_id, &identity.key) {
                 return Err(RpcError::new(Code::Blocked));
@@ -843,7 +845,7 @@ impl Server {
             if !reg.token_matches(&app_id, &token) {
                 return Err(RpcError::new(Code::Unauthorized));
             }
-            (a.identity.clone(), a.scopes.clone(), a.name.clone())
+            (a.identity.clone(), a.name.clone())
         };
         if record_identity.key != identity.key {
             self.admit_request(&app_id, &identity)?;
@@ -851,23 +853,35 @@ impl Server {
             self.ask_user(&rid, &name, Kind::Identity);
             return Err(RpcError::new(Code::RegistrationPending).reason("identityChanged").with("requestId", rid).with("expiresAt", expires_at));
         }
-        {
-            let mut conns = self.conns.lock().unwrap();
-            let count = conns.values().filter(|c| c.app_id.as_deref() == Some(&app_id) && !c.closing).count();
-            if count >= MAX_APP_CONNECTIONS {
-                return Err(RpcError::new(Code::RateLimited).reason("tooManyConnections").with("retryAfterMs", 1000));
-            }
-            let c = conns.get_mut(&conn).ok_or_else(|| RpcError::new(Code::InternalError))?;
-            c.app_id = Some(app_id.clone());
-            c.scopes = scopes.clone();
-        }
-        {
+        // The session starts under the registry lock, checked once more: removing, replacing or blocking the app
+        // changes the registry first and revokes sessions after, so a hello is either revoked or refused, never
+        // missed. Scopes come from the same look, so a scope revoked meanwhile isn't granted either.
+        let scopes = {
             let mut reg = self.registry.lock().unwrap();
+            if reg.is_blocked(&app_id, &identity.key) {
+                return Err(RpcError::new(Code::Blocked));
+            }
+            let a = reg.app(&app_id).ok_or_else(|| RpcError::new(Code::NotRegistered))?;
+            if !reg.token_matches(&app_id, &token) || a.identity.key != identity.key {
+                return Err(RpcError::new(Code::Unauthorized));
+            }
+            let scopes = a.scopes.clone();
+            {
+                let mut conns = self.conns.lock().unwrap();
+                let count = conns.values().filter(|c| c.app_id.as_deref() == Some(&app_id) && !c.closing).count();
+                if count >= MAX_APP_CONNECTIONS {
+                    return Err(RpcError::new(Code::RateLimited).reason("tooManyConnections").with("retryAfterMs", 1000));
+                }
+                let c = conns.get_mut(&conn).ok_or_else(|| RpcError::new(Code::InternalError))?;
+                c.app_id = Some(app_id.clone());
+                c.scopes = scopes.clone();
+            }
             if let Some(a) = reg.app_mut(&app_id) {
                 a.last_used_at = Some(now_ms());
             }
             let _ = reg.save(&self.registry_path);
-        }
+            scopes
+        };
         self.emit_apps_changed();
         Ok(json!({
             "apiVersion": protocol::API_VERSION,
@@ -948,11 +962,12 @@ impl Server {
 
     /// Removes an app (Settings → Connected apps): its token stops working and connected clients are told.
     pub fn remove_app(&self, app_id: &str) {
-        self.revoke_app(app_id, "removed");
+        // Registry first, then the sessions (see `hello`).
         let mut reg = self.registry.lock().unwrap();
         reg.remove(app_id);
         let _ = reg.save(&self.registry_path);
         drop(reg);
+        self.revoke_app(app_id, "removed");
         self.emit_apps_changed();
     }
 
@@ -983,11 +998,13 @@ impl Server {
     pub fn block_app(&self, app_id: &str) {
         let rec = self.registry.lock().unwrap().app(app_id).cloned();
         if let Some(a) = rec {
-            self.revoke_app(app_id, "blocked");
+            // Registry first, then the sessions (see `hello`).
             let mut reg = self.registry.lock().unwrap();
             reg.remove(app_id);
             reg.block(app_id, &a.name, &a.identity, now_ms(), true);
             let _ = reg.save(&self.registry_path);
+            drop(reg);
+            self.revoke_app(app_id, "blocked");
         }
         self.emit_apps_changed();
     }
