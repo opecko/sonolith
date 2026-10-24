@@ -63,6 +63,11 @@ export interface Track {
   source?: "autoplay";
   /** A music video (official or uploaded), not the song itself; see songVersions.ts. */
   video?: boolean;
+  /**
+   * YouTube's id of this entry in the playlist it was listed in (`playlistSetVideoId`): unlike `id`, different for
+   * every occurrence of the same song. Only on entries of playlists the user can edit.
+   */
+  setVideoId?: string;
 }
 
 export interface AlbumRef {

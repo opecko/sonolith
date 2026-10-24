@@ -108,6 +108,18 @@ export async function getPlaylist(id: string): Promise<Playlist> {
   return wrap(page, { type: "playlist", id, ...mapHeader(page.header) });
 }
 
+/**
+ * A playlist's entries as YouTube lists them, with each entry's own id (`setVideoId`, only for playlists the user can
+ * edit). youtubei.js' parsed playlist page drops those ids, so this reads the raw page; `getPlaylist` has the header.
+ */
+export async function getPlaylistEntries(id: string): Promise<Page<Track>> {
+  const wrap = (p: { items: Item[]; next: string | null }): Page<Track> => ({
+    items: p.items.filter((i): i is Track & Item => i.type === "track"),
+    loadMore: p.next ? async () => wrap(flattenPage(await browse(exec, { continuation: p.next! }))) : null,
+  });
+  return wrap(flattenPage(await browse(exec, { browseId: id.startsWith("VL") ? id : `VL${id}` })));
+}
+
 export async function getAlbum(id: string): Promise<Album> {
   return mapAlbum(id, await (await music()).getAlbum(id));
 }
@@ -154,9 +166,14 @@ export async function renamePlaylist(playlistId: string, title: string): Promise
   await (await getAccountClient()).playlist.setName(playlistId, title);
 }
 
-/** Fails with "This playlist cannot be edited." for playlists the user doesn't own. */
-export async function removeFromPlaylist(playlistId: string, videoIds: string | string[]): Promise<void> {
-  await (await getAccountClient()).playlist.removeVideos(playlistId, Array.isArray(videoIds) ? videoIds : [videoIds]);
+/**
+ * Fails with "This playlist cannot be edited." for playlists the user doesn't own. `ids` are video ids (every
+ * occurrence goes), or with `bySetVideoId` the entries' own ids from `getPlaylistEntries`: exactly those entries,
+ * so one copy of a song listed twice can be removed alone. (The ids are the same ones youtubei.js reads from the
+ * playlist with the main client; compared on a real playlist.)
+ */
+export async function removeFromPlaylist(playlistId: string, ids: string | string[], bySetVideoId = false): Promise<void> {
+  await (await getAccountClient()).playlist.removeVideos(playlistId, Array.isArray(ids) ? ids : [ids], bySetVideoId);
 }
 
 /**

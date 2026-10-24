@@ -225,6 +225,7 @@ function mapResponsive(n: R): Item | null {
     if (info.artists.length) t.artistIds = info.artistIds;
     const rating = likeStatusOf(n);
     if (rating) t.rating = rating;
+    if (n.playlistItemData?.playlistSetVideoId) t.setVideoId = n.playlistItemData.playlistSetVideoId;
     const menu = parseTrackMenu(n.menu?.menuRenderer);
     if (menu) t.menu = menu;
     if (isPodcastType(musicVideoType) || pageType(titleRuns[0]?.navigationEndpoint) === EPISODE_PAGE || info.show) asEpisode(t, restRuns, info);
@@ -257,6 +258,7 @@ function mapMultiRow(n: R): Item | null {
   const t: Track & Item = { type: "track", id, title, subtitle: runsText(n.subtitle), thumbnail: bestThumb(thumbsOf(n)), artists: [], podcast: true, episode };
   const menu = parseTrackMenu(n.menu?.menuRenderer);
   if (menu) t.menu = menu;
+  if (n.playlistItemData?.playlistSetVideoId) t.setVideoId = n.playlistItemData.playlistSetVideoId;
   return t;
 }
 

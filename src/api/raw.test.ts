@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import playlists from "./__fixtures__/library-playlists.json";
 import liked from "./__fixtures__/liked-songs.json";
+import type { Track } from "./types";
 import { flattenPage, mapRawItem, parseBrowse, parseDuration, runInfo } from "./raw";
 
 describe("raw browse parser", () => {
@@ -84,5 +85,21 @@ describe("song rows", () => {
       },
     };
     expect(mapRawItem(row)).toMatchObject({ type: "track", title: "Reality In Motion", durationSec: 253 });
+  });
+
+  it("keeps each playlist entry's own id: the same song twice has two", () => {
+    const col = (text: string) => ({ musicResponsiveListItemFlexColumnRenderer: { text: { runs: [{ text }] } } });
+    const row = (setId?: string) => ({
+      musicResponsiveListItemRenderer: {
+        playlistItemData: { videoId: "e1N_fJlJaXY", ...(setId ? { playlistSetVideoId: setId } : {}) },
+        flexColumns: [col("Reality In Motion"), col("Tame Impala")],
+      },
+    });
+    const a = mapRawItem(row("56B44F6D10557CC6")) as Track;
+    const b = mapRawItem(row("A1C2E3F4A5B6C7D8")) as Track;
+    expect([a.id, b.id]).toEqual(["e1N_fJlJaXY", "e1N_fJlJaXY"]);
+    expect([a.setVideoId, b.setVideoId]).toEqual(["56B44F6D10557CC6", "A1C2E3F4A5B6C7D8"]);
+    // Playlists the user can't edit carry no entry ids.
+    expect((mapRawItem(row()) as Track).setVideoId).toBeUndefined();
   });
 });
