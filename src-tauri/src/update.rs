@@ -190,6 +190,7 @@ pub fn update_open_page(app: AppHandle) -> Result<(), String> {
 pub fn open_credit(app: AppHandle, name: String) -> Result<(), String> {
     let url = match name.as_str() {
         "sonolith" => format!("https://github.com/{REPO}"),
+        "api-spec" => format!("https://github.com/{REPO}/blob/master/api/SPEC.md"),
         "google-sans-flex" => "https://github.com/googlefonts/googlesans-flex".to_owned(),
         "ofl" => "https://openfontlicense.org".to_owned(),
         _ => return Err(format!("unknown link {name}")),

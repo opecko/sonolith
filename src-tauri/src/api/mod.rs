@@ -129,7 +129,6 @@ async fn status(app: &AppHandle) -> Value {
         "running": path.is_some(),
         "path": path,
         "error": error,
-        "specUrl": "https://github.com/opecko/sonolith/blob/master/api/SPEC.md",
     })
 }
 

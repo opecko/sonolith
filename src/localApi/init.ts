@@ -32,6 +32,7 @@ export async function initLocalApi() {
     api.setState((s) => ({ consents: [...s.consents.filter((c) => c.requestId !== payload.requestId), payload] })));
   await listen<{ requestId: string }>("api:consent-cancel", ({ payload }) =>
     api.setState((s) => ({ consents: s.consents.filter((c) => c.requestId !== payload.requestId) })));
+  await listen("api:apps-changed", () => void api.getState().loadApps().catch(() => {}));
   await listen<boolean>("api:lyrics-wanted", ({ payload }) => setLyricsWantedByApps(payload));
   await listen<{ message: string }>("api:toast", ({ payload }) => useToast.getState().show(payload.message, "info"));
   // The state only matters to the server while it runs.

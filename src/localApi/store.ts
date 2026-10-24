@@ -10,7 +10,32 @@ export interface ApiStatus {
   path: string | null;
   /** Why the endpoint could not start. */
   error: string | null;
-  specUrl: string;
+}
+
+/** A registered app with its live state (src-tauri/src/api/server.rs `apps`). */
+export interface ConnectedApp {
+  appId: string;
+  name: string;
+  description: string;
+  publisher: string;
+  homepage: string | null;
+  icon: string | null;
+  identity: AppIdentity;
+  scopes: Scope[];
+  registeredAt: number;
+  lastUsedAt: number | null;
+  /** Open connections right now. */
+  connections: number;
+  /** Newest first, at most 50 calls (this session only). */
+  activity: { method: string; at: number }[];
+}
+
+export interface BlockedApp {
+  appId: string;
+  identityKey: string;
+  name: string;
+  identity: AppIdentity;
+  blockedAt: number;
 }
 
 /** A registration, scope or identity request (src-tauri/src/api/server.rs `consent_payload`). */
@@ -35,7 +60,11 @@ export interface Consent {
 interface LocalApiState {
   status: ApiStatus | null;
   consents: Consent[];
+  apps: ConnectedApp[];
+  blocked: BlockedApp[];
   refresh: () => Promise<void>;
+  /** Registered and blocked apps; follows `api:apps-changed`. */
+  loadApps: () => Promise<void>;
   /** Turns the API on or off; the error, if the endpoint can't start, ends up in `status.error`. */
   setEnabled: (on: boolean) => Promise<void>;
   answer: (requestId: string, decision: "allow" | "deny" | "block", scopes: Scope[]) => Promise<void>;
@@ -44,7 +73,13 @@ interface LocalApiState {
 export const useLocalApi = create<LocalApiState>((set) => ({
   status: null,
   consents: [],
+  apps: [],
+  blocked: [],
   refresh: async () => set({ status: await invoke<ApiStatus>("api_status") }),
+  loadApps: async () => {
+    const r = await invoke<{ apps: ConnectedApp[]; blocked: BlockedApp[] }>("api_apps");
+    set({ apps: r.apps, blocked: r.blocked });
+  },
   setEnabled: async (enabled) => {
     try {
       set({ status: await invoke<ApiStatus>("api_set_enabled", { enabled }) });

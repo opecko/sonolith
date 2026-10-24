@@ -4,7 +4,7 @@ import { consentTitle, identityRows } from "./consent";
 import { SCOPES, type AppIdentity, type Scope } from "./schema.gen";
 import { useLocalApi, type Consent } from "./store";
 
-function Identity({ identity, label }: { identity: AppIdentity; label?: string }) {
+export function Identity({ identity, label }: { identity: AppIdentity; label?: string }) {
   return (
     <div className="flex flex-col gap-1 rounded-md bg-fg/5 px-3 py-2 text-xs">
       {label && <div className="font-medium text-[var(--c-text-muted)]">{label}</div>}
