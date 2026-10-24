@@ -33,9 +33,15 @@ export function insertNext(queue: Track[], index: number, tracks: Track[]): { qu
   return { queue: [...queue.slice(0, index + 1), ...added, ...rest], added };
 }
 
-/** Add to queue: `tracks` at the end, skipping ones still to come (or playing). */
+/**
+ * Add to queue: `tracks` at the end of what the user queued, skipping ones still to come (or playing). Upcoming
+ * autoplay tracks stay after them, below the divider.
+ */
 export function append(queue: Track[], index: number, tracks: Track[]): { queue: Track[]; added: Track[] } {
   const upcoming = new Set(queue.slice(index).map((t) => t.id));
   const added = dedupe(tracks).filter((t) => !upcoming.has(t.id));
-  return { queue: added.length ? [...queue, ...added] : queue, added };
+  if (!added.length) return { queue, added };
+  let at = queue.length;
+  while (at > index + 1 && queue[at - 1].source === "autoplay") at--;
+  return { queue: [...queue.slice(0, at), ...added, ...queue.slice(at)], added };
 }

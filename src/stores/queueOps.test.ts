@@ -42,6 +42,12 @@ describe("insertNext / append", () => {
     expect(ids(r)).toBe("abcdaef"); // "a" was already played, so it comes again; "c" is playing, "e" listed twice
     expect(append(q("ab"), 0, q("b")).added).toHaveLength(0);
   });
+  it("appends above the upcoming autoplay tracks", () => {
+    const queue = q("abcd").map((t, i) => (i >= 2 ? { ...t, source: "autoplay" as const } : t));
+    expect(ids(append(queue, 0, q("x")))).toBe("abxcd");
+    // Autoplay tracks already playing or played stay where they are.
+    expect(ids(append(queue, 3, q("x")))).toBe("abcdx");
+  });
   it("dedupes in order", () => {
     expect(dedupe(q("abab c")).map((t) => t.id).join("")).toBe("ab c");
   });
