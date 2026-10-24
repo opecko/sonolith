@@ -2,7 +2,7 @@ import { AlertTriangle, AppWindow } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { consentTitle, identityRows } from "./consent";
 import { SCOPES, type AppIdentity, type Scope } from "./schema.gen";
-import { useLocalApi, type Consent } from "./store";
+import { CONSENT_ARM_MS, useLocalApi, type Consent } from "./store";
 
 export function Identity({ identity, label }: { identity: AppIdentity; label?: string }) {
   return (
@@ -18,12 +18,28 @@ export function Identity({ identity, label }: { identity: AppIdentity; label?: s
   );
 }
 
+/** False until the request on screen has been there `CONSENT_ARM_MS` (the store ignores earlier answers too). */
+function useArmed(): boolean {
+  const since = useLocalApi((s) => s.frontSince);
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    const left = since + CONSENT_ARM_MS - Date.now();
+    setArmed(left <= 0);
+    if (left <= 0) return;
+    const t = setTimeout(() => setArmed(true), left);
+    return () => clearTimeout(t);
+  }, [since]);
+  return armed;
+}
+
 function Request({ c, more }: { c: Consent; more: number }) {
   const answer = useLocalApi((s) => s.answer);
+  const armed = useArmed();
   // Optional scopes start ticked; the user may untick them.
   const [unticked, setUnticked] = useState<Set<Scope>>(new Set());
-  const deny = useRef<HTMLButtonElement>(null);
-  useEffect(() => deny.current?.focus(), [c.requestId]);
+  // Focus goes to the dialog itself, not a button: Enter or Space must never answer a request by default.
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => panel.current?.focus(), [c.requestId]);
   const chosen = c.scopes.filter((s) => !s.required && !unticked.has(s.scope)).map((s) => s.scope);
   const toggle = (s: Scope) => setUnticked((u) => {
     const n = new Set(u);
@@ -33,8 +49,8 @@ function Request({ c, more }: { c: Consent; more: number }) {
   });
   const btn = "h-10 rounded-full px-5 text-sm font-medium";
   return (
-    <div role="alertdialog" aria-modal="true" aria-labelledby="consent-title"
-      className="m3-dialog flex max-h-full w-[min(520px,100%)] flex-col gap-4 overflow-y-auto rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] p-6 shadow-2xl">
+    <div ref={panel} tabIndex={-1} role="alertdialog" aria-modal="true" aria-labelledby="consent-title"
+      className="m3-dialog outline-none flex max-h-full w-[min(520px,100%)] flex-col gap-4 overflow-y-auto rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] p-6 shadow-2xl">
       <div className="flex items-start gap-3">
         {c.icon ? <img src={c.icon} alt="" className="size-12 shrink-0 rounded-md" /> : <AppWindow size={48} className="shrink-0 text-[var(--c-text-muted)]" aria-hidden />}
         <div className="min-w-0 flex-1">
@@ -81,11 +97,11 @@ function Request({ c, more }: { c: Consent; more: number }) {
         </div>
       )}
       <div className="mt-1 flex flex-wrap items-center justify-end gap-2">
-        <button className={`${btn} m3-btn m3-text mr-auto text-[var(--c-error)] hover:bg-[var(--c-hover)]`} onClick={() => void answer(c.requestId, "block", [])}>
+        <button disabled={!armed} className={`${btn} m3-btn m3-text mr-auto text-[var(--c-error)] hover:bg-[var(--c-hover)] disabled:opacity-50`} onClick={() => void answer(c.requestId, "block", [])}>
           Deny and block this app
         </button>
-        <button ref={deny} className={`${btn} m3-btn m3-text border border-[var(--c-outline)] hover:bg-[var(--c-hover)]`} onClick={() => void answer(c.requestId, "deny", [])}>Deny</button>
-        <button className={`${btn} m3-btn m3-filled bg-button text-on-button hover:bg-button/90`} onClick={() => void answer(c.requestId, "allow", chosen)}>Allow</button>
+        <button disabled={!armed} className={`${btn} m3-btn m3-text border border-[var(--c-outline)] hover:bg-[var(--c-hover)] disabled:opacity-50`} onClick={() => void answer(c.requestId, "deny", [])}>Deny</button>
+        <button disabled={!armed} className={`${btn} m3-btn m3-filled bg-button text-on-button hover:bg-button/90 disabled:opacity-50`} onClick={() => void answer(c.requestId, "allow", chosen)}>Allow</button>
       </div>
     </div>
   );

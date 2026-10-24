@@ -350,7 +350,8 @@ The consent screen shows:
   app's `reason` under it;
 - a checkbox per optional scope (ticked by default) that the user can untick; required scopes have no checkbox;
 - sensitive scopes (`library:write`) marked with a warning;
-- the buttons **Allow**, **Deny**, and **Deny and block this app**.
+- the buttons **Allow**, **Deny**, and **Deny and block this app**. They respond only after the screen has been shown
+  for a second (also when the next waiting request takes its place), and none of them is a default for Enter.
 
 If the `appId` is already registered, the screen says so, and approving replaces the old token (its connections get
 `session.revoked` with reason `replaced`).

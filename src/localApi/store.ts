@@ -57,9 +57,18 @@ export interface Consent {
   expiresAt: number;
 }
 
+/**
+ * How long a consent request must be on screen before an answer counts: a click meant for what was there before (or
+ * the second click of a double click on the previous request) must not approve an app that just appeared.
+ */
+export const CONSENT_ARM_MS = 1000;
+
 interface LocalApiState {
   status: ApiStatus | null;
+  /** Waiting requests; the first one is on screen. */
   consents: Consent[];
+  /** When the request now on screen got there (`Date.now()`). */
+  frontSince: number;
   apps: ConnectedApp[];
   blocked: BlockedApp[];
   refresh: () => Promise<void>;
@@ -67,12 +76,14 @@ interface LocalApiState {
   loadApps: () => Promise<void>;
   /** Turns the API on or off; the error, if the endpoint can't start, ends up in `status.error`. */
   setEnabled: (on: boolean) => Promise<void>;
+  /** Answers the request on screen; ignored for any other request and until it has been shown `CONSENT_ARM_MS`. */
   answer: (requestId: string, decision: "allow" | "deny" | "block", scopes: Scope[]) => Promise<void>;
 }
 
-export const useLocalApi = create<LocalApiState>((set) => ({
+export const useLocalApi = create<LocalApiState>((set, get) => ({
   status: null,
   consents: [],
+  frontSince: 0,
   apps: [],
   blocked: [],
   refresh: async () => set({ status: await invoke<ApiStatus>("api_status") }),
@@ -88,7 +99,14 @@ export const useLocalApi = create<LocalApiState>((set) => ({
     }
   },
   answer: async (requestId, decision, scopes) => {
+    const { consents, frontSince } = get();
+    if (consents[0]?.requestId !== requestId || Date.now() - frontSince < CONSENT_ARM_MS) return;
     set((s) => ({ consents: s.consents.filter((c) => c.requestId !== requestId) }));
     await invoke("api_consent_answer", { requestId, decision, scopes }).catch(() => {});
   },
 }));
+
+// Every change of the request on screen restarts the wait, however the list changed (new, answered, cancelled).
+useLocalApi.subscribe((s, p) => {
+  if (s.consents[0]?.requestId !== p.consents[0]?.requestId) useLocalApi.setState({ frontSince: Date.now() });
+});
