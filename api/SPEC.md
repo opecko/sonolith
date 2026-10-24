@@ -227,7 +227,8 @@ Messages follow [JSON-RPC 2.0](https://www.jsonrpc.org/specification), with thes
   `\n`), so this is unambiguous.
 - A message MUST NOT exceed **1 MiB** (1 048 576 bytes, without the line feed). Sonolith answers an oversized message
   with `InvalidRequest` (reason `messageTooLarge`, `id` null) and closes the connection. Sonolith's own messages
-  also stay within 1 MiB.
+  also stay within 1 MiB: an answer that would be larger comes as `InternalError` (reason `resultTooLarge`), and an
+  event that would be larger is not sent.
 - A line that is not valid UTF-8 or not valid JSON gets a `ParseError` with `id` null; the connection stays open.
 - Empty lines are ignored.
 
@@ -705,6 +706,7 @@ methods that need a scope with `PermissionDenied`. The method reference lists th
 |---|---|---|
 | `messageTooLarge` | `InvalidRequest` | The message was over 1 MiB. Sonolith closes the connection. |
 | `batchNotSupported` | `InvalidRequest` | The message was a JSON array (a batch). |
+| `resultTooLarge` | `InternalError` | The answer would be over 1 MiB, Sonolith's own message limit. Ask for less, for example a smaller `limit`. |
 | `alreadyAuthenticated` | `InvalidRequest` | `session.hello` or `app.register` on a connection that already has a session. |
 | `cursorExpired` | `InvalidParams` | The cursor is too old or the list changed; start again from the first page. |
 | `unknownParam` | `InvalidParams` | A parameter this Sonolith does not know (it may be newer than this Sonolith). |

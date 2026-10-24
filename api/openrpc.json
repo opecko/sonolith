@@ -5514,6 +5514,11 @@
       "meaning": "The message was a JSON array (a batch)."
     },
     {
+      "reason": "resultTooLarge",
+      "error": "InternalError",
+      "meaning": "The answer would be over 1 MiB, Sonolith's own message limit. Ask for less, for example a smaller `limit`."
+    },
+    {
       "reason": "alreadyAuthenticated",
       "error": "InvalidRequest",
       "meaning": "`session.hello` or `app.register` on a connection that already has a session."

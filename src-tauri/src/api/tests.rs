@@ -654,6 +654,33 @@ async fn settings_learn_that_an_unreadable_app_list_was_set_aside() {
 }
 
 #[tokio::test]
+async fn nothing_sonolith_sends_is_over_the_message_limit() {
+    let env = start("bigout").await;
+    let token = register(&env, "com.example.big", &["queue:read", "lyrics:read", "player:read"]).await;
+    let mut s = session(&env, "com.example.big", &token).await;
+    let (tx, mut rx) = mpsc::unbounded_channel::<Value>();
+    *env.host.calls.lock().unwrap() = Some(tx);
+    env.server.frontend_ready(true);
+    let server = env.server.clone();
+    tokio::spawn(async move {
+        while let Some(call) = rx.recv().await {
+            server.bridge_reply(call["id"].as_u64().unwrap(), Some(json!({ "items": ["x".repeat(1024 * 1024)] })), None);
+        }
+    });
+    let e = s.err("queue.get", json!({})).await;
+    assert_eq!((code(&e), e["data"]["reason"].as_str()), (-32603, Some("resultTooLarge")));
+    // A notification that big is not sent; the connection goes on.
+    s.ok("events.subscribe", json!({ "topics": ["lyrics"] })).await;
+    let _ = s.note("lyrics.changed").await;
+    env.server.publish("player", json!({ "status": "paused", "item": { "type": "track", "id": "t1" }, "positionMs": 0, "positionAt": 0, "volume": 1, "muted": false, "rate": 1 }));
+    let _ = s.note("lyrics.changed").await;
+    let big = json!({ "trackId": "t1", "status": "found", "lyrics": { "lines": [{ "text": "y".repeat(1024 * 1024) }] } });
+    env.server.publish("lyrics", big);
+    assert_eq!(s.ok("app.info", json!({})).await["appVersion"], "9.9.9");
+    assert!(s.notes.iter().all(|n| n.to_string().len() <= 1024 * 1024), "an oversized message arrived");
+}
+
+#[tokio::test]
 async fn malformed_lines_keep_the_connection() {
     let env = start("framing").await;
     let mut c = Client::connect(&env.socket).await;

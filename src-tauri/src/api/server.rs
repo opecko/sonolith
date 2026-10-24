@@ -375,6 +375,15 @@ impl Server {
             return;
         }
         let mut line = msg.to_string();
+        if line.len() > protocol::MAX_MESSAGE {
+            // Sonolith's messages stay within the limit too (SPEC.md 4.2): an answer that big becomes an error with the
+            // same id; a notification that big is not sent.
+            let Some(id) = msg.get("id").filter(|_| msg.get("result").is_some()) else { return };
+            line = protocol::error_response(id, &RpcError::new(Code::InternalError).reason("resultTooLarge")).to_string();
+            if line.len() > protocol::MAX_MESSAGE {
+                return;
+            }
+        }
         line.push('\n');
         if queued + line.len() > MAX_QUEUED {
             // Too far behind to catch up: a graceful close would only queue behind the backlog.

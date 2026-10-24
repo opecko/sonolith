@@ -165,6 +165,7 @@ COMMON_ERRORS = ["InvalidRequest", "InvalidParams", "InternalError", "RateLimite
 REASONS = [
     ("messageTooLarge", "InvalidRequest", "The message was over 1 MiB. Sonolith closes the connection."),
     ("batchNotSupported", "InvalidRequest", "The message was a JSON array (a batch)."),
+    ("resultTooLarge", "InternalError", "The answer would be over 1 MiB, Sonolith's own message limit. Ask for less, for example a smaller `limit`."),
     ("alreadyAuthenticated", "InvalidRequest", "`session.hello` or `app.register` on a connection that already has a session."),
     ("cursorExpired", "InvalidParams", "The cursor is too old or the list changed; start again from the first page."),
     ("unknownParam", "InvalidParams", "A parameter this Sonolith does not know (it may be newer than this Sonolith)."),
