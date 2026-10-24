@@ -42,9 +42,18 @@ export async function getBrowse(ref: BrowseRef): Promise<Page<Shelf>> {
   return shelfPage(await browse(exec, ref));
 }
 
-export async function createPlaylist(title: string): Promise<string | undefined> {
-  const r = await (await getAccountClient()).playlist.create(title, []);
-  return r.playlist_id;
+/** A new playlist; privacy, description and first items only when given (YouTube's defaults otherwise). */
+export async function createPlaylist(
+  title: string,
+  opts: { description?: string; privacy?: "public" | "unlisted" | "private"; videoIds?: string[] } = {},
+): Promise<string | undefined> {
+  const r = await accountExec("/playlist/create", {
+    title,
+    ...(opts.description ? { description: opts.description } : {}),
+    ...(opts.privacy ? { privacyStatus: opts.privacy.toUpperCase() } : {}),
+    ...(opts.videoIds?.length ? { videoIds: opts.videoIds } : {}),
+  });
+  return r?.playlistId;
 }
 
 /** Raw WEB_REMIX call (parse:false) for our own defensive parsers. */
@@ -129,8 +138,8 @@ export async function rate(videoId: string, rating: Rating): Promise<void> {
   await accountExec(RATE_ENDPOINT[rating], { target: { videoId } });
 }
 
-export async function addToPlaylist(playlistId: string, videoId: string): Promise<void> {
-  await (await getAccountClient()).playlist.addVideos(playlistId, [videoId]);
+export async function addToPlaylist(playlistId: string, videoIds: string | string[]): Promise<void> {
+  await (await getAccountClient()).playlist.addVideos(playlistId, Array.isArray(videoIds) ? videoIds : [videoIds]);
 }
 
 /**
@@ -146,8 +155,23 @@ export async function renamePlaylist(playlistId: string, title: string): Promise
 }
 
 /** Fails with "This playlist cannot be edited." for playlists the user doesn't own. */
-export async function removeFromPlaylist(playlistId: string, videoId: string): Promise<void> {
-  await (await getAccountClient()).playlist.removeVideos(playlistId, [videoId]);
+export async function removeFromPlaylist(playlistId: string, videoIds: string | string[]): Promise<void> {
+  await (await getAccountClient()).playlist.removeVideos(playlistId, Array.isArray(videoIds) ? videoIds : [videoIds]);
+}
+
+/**
+ * Saves an album or someone else's playlist to the library, or removes it. Albums are saved through their audio
+ * playlist (OLAK5uy_…), which only the album page names.
+ */
+export async function setSaved(item: { type: "album" | "playlist"; id: string }, saved: boolean): Promise<void> {
+  let playlistId = item.id;
+  if (item.type === "album") {
+    const page = JSON.stringify(await exec("/browse", { browseId: item.id }));
+    const found = /"(OLAK5uy_[\w-]+)"/.exec(page)?.[1];
+    if (!found) throw new Error("No playlist for this album");
+    playlistId = found;
+  }
+  await accountExec(saved ? "/like/like" : "/like/removelike", { target: { playlistId } });
 }
 
 /** Raw /next for a video and/or queue (chips, header, related/lyrics tabs, automix seed). */
