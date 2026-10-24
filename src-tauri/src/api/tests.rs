@@ -614,6 +614,35 @@ async fn connections_leave_no_rate_limit_state_behind() {
 }
 
 #[tokio::test]
+async fn a_connection_whose_registration_ended_must_still_authenticate_in_time() {
+    let env = start("authtime").await;
+    env.server.set_auth_timeout(Duration::from_millis(300));
+    let mut c = Client::connect(&env.socket).await;
+    let r = c.ok("app.register", registration("com.example.idle", vec![scope("search", true)])).await;
+    // Waiting for the user doesn't count.
+    tokio::time::sleep(Duration::from_millis(600)).await;
+    env.server.resolve(r["requestId"].as_str().unwrap(), Decision::Deny, &[]).unwrap();
+    assert_eq!(c.note("registration.resolved").await["status"], "denied");
+    // After the outcome the clock starts again: no session.hello, no connection.
+    let started = std::time::Instant::now();
+    assert!(c.until_closed().await.is_empty());
+    assert!(started.elapsed() >= Duration::from_millis(250), "closed too early: {:?}", started.elapsed());
+}
+
+#[tokio::test]
+async fn subscriptions_end_with_the_scope() {
+    let env = start("subscope").await;
+    let token = register(&env, "com.example.subs", &["player:read", "queue:read"]).await;
+    let mut s = session(&env, "com.example.subs", &token).await;
+    s.ok("events.subscribe", json!({ "topics": ["queue", "account"] })).await;
+    env.server.revoke_scope("com.example.subs", "queue:read");
+    assert_eq!(s.note("session.scopesChanged").await["removed"], json!(["queue:read"]));
+    let topics = s.ok("events.subscribe", json!({ "topics": ["account"] })).await["topics"].clone();
+    assert_eq!(topics, json!(["account"]));
+    assert_eq!(s.err("events.subscribe", json!({ "topics": ["queue"] })).await["data"]["scope"], "queue:read");
+}
+
+#[tokio::test]
 async fn malformed_lines_keep_the_connection() {
     let env = start("framing").await;
     let mut c = Client::connect(&env.socket).await;

@@ -103,6 +103,8 @@ struct Conn {
     snapshots_due: Vec<String>,
     half_closed: bool,
     closing: bool,
+    /// When the connection last started its time to authenticate: on connecting, and when its registration ended.
+    idle_since: Instant,
 }
 
 #[derive(Default)]
@@ -138,6 +140,8 @@ pub struct Server {
     frontend_ready: AtomicBool,
     next_id: AtomicU64,
     identity_slots: Arc<tokio::sync::Semaphore>,
+    /// `AUTH_TIMEOUT` in ms; tests shorten it.
+    auth_timeout_ms: AtomicU64,
     app_version: String,
     platform: &'static str,
 }
@@ -161,6 +165,7 @@ impl Server {
             frontend_ready: AtomicBool::new(false),
             next_id: AtomicU64::new(1),
             identity_slots: Arc::new(tokio::sync::Semaphore::new(IDENTITY_SLOTS)),
+            auth_timeout_ms: AtomicU64::new(AUTH_TIMEOUT.as_millis() as u64),
             app_version,
             platform: if cfg!(windows) { "windows" } else { "linux" },
         });
@@ -174,6 +179,15 @@ impl Server {
 
     pub fn connection_count(&self) -> usize {
         self.conns.lock().unwrap().len()
+    }
+
+    #[cfg(test)]
+    pub fn set_auth_timeout(&self, d: Duration) {
+        self.auth_timeout_ms.store(d.as_millis() as u64, Ordering::Relaxed);
+    }
+
+    fn auth_timeout(&self) -> Duration {
+        Duration::from_millis(self.auth_timeout_ms.load(Ordering::Relaxed))
     }
 
     #[cfg(test)]
@@ -245,6 +259,7 @@ impl Server {
                 snapshots_due: Vec::new(),
                 half_closed: false,
                 closing: false,
+                idle_since: Instant::now(),
             },
         );
         let (closed_tx, mut closed_rx) = watch::channel(false);
@@ -277,16 +292,30 @@ impl Server {
             let _ = closed_tx.send(true);
         });
 
-        // Unauthenticated connections get 30 s, unless a registration is waiting for the user.
+        // Unauthenticated connections get 30 s, not counting the time a registration waits for the user: when it ends
+        // (whatever the outcome), the 30 s start again.
         let weak = Arc::downgrade(&self);
         tokio::spawn(async move {
-            tokio::time::sleep(AUTH_TIMEOUT).await;
-            if let Some(s) = weak.upgrade() {
-                let waiting = s.pending.lock().unwrap().values().any(|p| p.conn == id);
-                let idle = s.conns.lock().unwrap().get(&id).is_some_and(|c| c.app_id.is_none());
-                if idle && !waiting {
-                    s.close(id);
-                }
+            loop {
+                let wait = {
+                    let Some(s) = weak.upgrade() else { return };
+                    let timeout = s.auth_timeout();
+                    let waiting = s.pending.lock().unwrap().values().any(|p| p.conn == id);
+                    let due = match s.conns.lock().unwrap().get(&id) {
+                        Some(c) if c.app_id.is_none() && !c.closing => c.idle_since + timeout,
+                        _ => return,
+                    };
+                    let now = Instant::now();
+                    if waiting {
+                        timeout
+                    } else if due > now {
+                        due - now
+                    } else {
+                        s.close(id);
+                        return;
+                    }
+                };
+                tokio::time::sleep(wait).await;
             }
         });
 
@@ -511,7 +540,7 @@ impl Server {
             (_, "app.requestScopes") => self.request_scopes(conn, p, app_id.unwrap(), identity),
             (_, "app.unregister") => self.unregister(app_id.unwrap(), conn),
             (_, "session.hello") => self.hello(conn, p, identity, app_id.is_some()),
-            (_, "events.subscribe") => self.subscribe(conn, p, &scopes),
+            (_, "events.subscribe") => self.subscribe(conn, p),
             (_, "events.unsubscribe") => self.unsubscribe(conn, p),
             (_, "player.getState") => self
                 .player_state()
@@ -754,6 +783,9 @@ impl Server {
             "token": token, "grantedScopes": granted, "retryAfterMs": retry,
         });
         self.send(p.conn, protocol::notification("registration.resolved", params), false);
+        if let Some(c) = self.conns.lock().unwrap().get_mut(&p.conn) {
+            c.idle_since = Instant::now();
+        }
         if decision == Decision::Block {
             self.drop_identity(&p.identity.key);
         }
@@ -1057,23 +1089,25 @@ impl Server {
 
     // ------------------------------------------------------------ events
 
-    fn subscribe(self: &Arc<Self>, conn: u64, p: &Map<String, Value>, scopes: &[String]) -> Result<Value, RpcError> {
+    fn subscribe(self: &Arc<Self>, conn: u64, p: &Map<String, Value>) -> Result<Value, RpcError> {
         let v = Params::new(p, &["topics", "positionHz"])?;
         let topics = v.topics("topics")?;
         let hz = match p.get("positionHz") {
             None => None,
             Some(x) => Some(x.as_u64().filter(|h| (1..=4).contains(h)).ok_or_else(|| v.invalid("positionHz"))?),
         };
-        for t in &topics {
-            if let Some(Some(scope)) = methods::topic_scope(t) {
-                if !scopes.iter().any(|s| s == scope) {
-                    return Err(RpcError::new(Code::PermissionDenied).with("scope", scope));
-                }
-            }
-        }
         let (added, result, start_position) = {
             let mut conns = self.conns.lock().unwrap();
             let c = conns.get_mut(&conn).ok_or_else(|| RpcError::new(Code::InternalError))?;
+            // Against the scopes as they are now, under the lock `revoke_scope` takes: a scope revoked since this
+            // request started must not let a subscription through.
+            for t in &topics {
+                if let Some(Some(scope)) = methods::topic_scope(t) {
+                    if !c.scopes.iter().any(|s| s == scope) {
+                        return Err(RpcError::new(Code::PermissionDenied).with("scope", scope));
+                    }
+                }
+            }
             let added: Vec<String> = topics.iter().filter(|t| !c.topics.contains(*t)).cloned().collect();
             c.topics.extend(added.iter().cloned());
             let hz_changed = hz.is_some_and(|h| h != c.position_hz);

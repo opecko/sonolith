@@ -729,7 +729,7 @@ methods that need a scope with `PermissionDenied`. The method reference lists th
 | Requests in flight | 16 per connection | `RateLimited` (`tooManyInFlight`) |
 | Connections | 8 per app (counted after `session.hello`) | `RateLimited` (`tooManyConnections`) on `session.hello` |
 | Connections in total | 64 | new connections are closed at once |
-| Time to authenticate | 30 seconds after connecting, unless a registration is pending | connection closed |
+| Time to authenticate | 30 seconds after connecting, not counting a pending registration (the 30 seconds start again when it ends) | connection closed |
 | Pending registrations | 1 per app, 3 in total | `RegistrationPending` / `RateLimited` (`tooManyPending`) |
 | Answer time | Sonolith answers every request within 30 seconds | `Timeout`; Sonolith stops working on the request |
 | Queue | 1000 entries added per call, 5000 entries in all | the rest is left out (`added` says how many arrived) |
