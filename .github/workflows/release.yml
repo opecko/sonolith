@@ -56,7 +56,7 @@ jobs:
         run: |
           npx tsc --noEmit
           npx vitest run
-          pip install --break-system-packages jsonschema && python3 api/tools/generate.py --check
+          pip install --break-system-packages -r api/tools/requirements.txt && python3 api/tools/generate.py --check
           cd src-tauri && cargo test --quiet
 
       - name: Debian package

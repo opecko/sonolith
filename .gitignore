@@ -16,3 +16,4 @@ release/
 CLAUDE.md
 PLAN.md
 docs/
+__pycache__/

@@ -17,5 +17,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install jsonschema
+      - run: pip install -r api/tools/requirements.txt
       - run: python3 api/tools/generate.py --check
