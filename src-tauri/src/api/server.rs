@@ -176,6 +176,11 @@ impl Server {
         self.conns.lock().unwrap().len()
     }
 
+    #[cfg(test)]
+    pub fn rate_bucket_count(&self) -> usize {
+        self.buckets.lock().unwrap().len()
+    }
+
     // ------------------------------------------------------------ connections
 
     /// Serves one connection until it closes. `peer` asks the OS about the other end (blocking work). `hangup`
@@ -394,6 +399,8 @@ impl Server {
     /// Cleans up after a closed connection: its pending requests are cancelled.
     fn forget(&self, conn: u64) {
         let removed = self.conns.lock().unwrap().remove(&conn);
+        // Per-connection buckets end with it; an app's own stay, so reconnecting doesn't refill them.
+        self.buckets.lock().unwrap().remove(&format!("conn:{conn}"));
         // The frontend stops working on calls nobody waits for any more.
         let calls: Vec<u64> = {
             let mut bridge = self.bridge.lock().unwrap();

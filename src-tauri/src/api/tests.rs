@@ -596,6 +596,24 @@ async fn texts_for_the_consent_screen_cannot_carry_control_or_direction_characte
 }
 
 #[tokio::test]
+async fn connections_leave_no_rate_limit_state_behind() {
+    let env = start("buckets").await;
+    for _ in 0..20 {
+        let mut c = Client::connect(&env.socket).await;
+        c.ok("app.info", json!({})).await;
+    }
+    wait_for_connections(&env, 0).await;
+    assert_eq!(env.server.rate_bucket_count(), 0);
+    // An app's own buckets outlive its connections: reconnecting must not refill them.
+    let token = register(&env, "com.example.limited", &["player:read"]).await;
+    let mut s = session(&env, "com.example.limited", &token).await;
+    s.ok("app.info", json!({})).await;
+    drop(s);
+    wait_for_connections(&env, 0).await;
+    assert_eq!(env.server.rate_bucket_count(), 1);
+}
+
+#[tokio::test]
 async fn malformed_lines_keep_the_connection() {
     let env = start("framing").await;
     let mut c = Client::connect(&env.socket).await;
