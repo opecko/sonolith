@@ -6,7 +6,7 @@ use tauri::{AppHandle, Emitter};
 use tauri_plugin_http::reqwest;
 use tauri_plugin_opener::OpenerExt;
 
-const REPO: &str = "opecko/ytdesk";
+const REPO: &str = "opecko/sonolith";
 
 #[derive(Deserialize)]
 struct GhAsset {
@@ -45,11 +45,14 @@ pub struct UpdateInfo {
 
 #[derive(Serialize)]
 pub struct AurInstall {
-    /// "ytdesk" (built from source) or "ytdesk-bin".
+    /// "sonolith" (built from source) or "sonolith-bin"; ytdesk / ytdesk-bin are the packages from before the rename.
     package: String,
     /// AUR helpers found on PATH, in order of preference (may be empty).
     helpers: Vec<String>,
 }
+
+/// AUR packages that ship this app: the current ones and those from before the rename (until the user switches).
+const AUR_PACKAGES: &[&str] = &["sonolith", "sonolith-bin", "ytdesk", "ytdesk-bin"];
 
 /// The AUR package that owns the running binary, if any (Arch-based distros only; dev builds aren't owned).
 #[cfg(target_os = "linux")]
@@ -60,7 +63,7 @@ fn aur_install() -> Option<AurInstall> {
         return None;
     }
     let package = String::from_utf8_lossy(&out.stdout).trim().to_owned();
-    if package != "ytdesk" && package != "ytdesk-bin" {
+    if !AUR_PACKAGES.contains(&package.as_str()) {
         return None;
     }
     let path = std::env::var_os("PATH").unwrap_or_default();
@@ -97,12 +100,12 @@ fn is_newer(latest: &str, current: &str) -> bool {
 }
 
 fn installer_name(version: &str) -> String {
-    format!("ytdesk_{version}_x64-setup.exe")
+    format!("sonolith_{version}_x64-setup.exe")
 }
 
 fn client(app: &AppHandle) -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
-        .user_agent(format!("ytdesk/{}", app.package_info().version))
+        .user_agent(format!("Sonolith/{}", app.package_info().version))
         .build()
         .map_err(|e| e.to_string())
 }
@@ -185,7 +188,7 @@ pub fn update_open_page(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn open_credit(app: AppHandle, name: String) -> Result<(), String> {
     let url = match name.as_str() {
-        "ytdesk" => format!("https://github.com/{REPO}"),
+        "sonolith" => format!("https://github.com/{REPO}"),
         "google-sans-flex" => "https://github.com/googlefonts/googlesans-flex".to_owned(),
         "ofl" => "https://openfontlicense.org".to_owned(),
         _ => return Err(format!("unknown link {name}")),
@@ -202,7 +205,7 @@ fn expected_sha256(sums: &str, name: &str) -> Option<String> {
 }
 
 /// Downloads the installer of `version` from its GitHub release, checks it against the release's SHA256SUMS,
-/// starts it and quits ytdesk so the installer can replace the files. Progress: "update-progress" events.
+/// starts it and quits Sonolith so the installer can replace the files. Progress: "update-progress" events.
 #[tauri::command]
 pub async fn update_install(app: AppHandle, version: String) -> Result<(), String> {
     if !cfg!(windows) {
@@ -247,13 +250,13 @@ pub async fn update_install(app: AppHandle, version: String) -> Result<(), Strin
         return Err("the downloaded installer is corrupted (checksum mismatch); try again".into());
     }
 
-    let dir = std::env::temp_dir().join("ytdesk-update");
+    let dir = std::env::temp_dir().join("sonolith-update");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let path = dir.join(&name);
     std::fs::write(&path, &data).map_err(|e| format!("cannot save the installer: {e}"))?;
     std::process::Command::new(&path).spawn().map_err(|e| format!("cannot start the installer: {e}"))?;
 
-    // Give the installer a moment to show its window, then quit so it can replace ytdesk.exe.
+    // Give the installer a moment to show its window, then quit so it can replace sonolith.exe.
     let handle = app.clone();
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(std::time::Duration::from_millis(800)).await;
@@ -282,8 +285,8 @@ mod tests {
 
     #[test]
     fn sums() {
-        let s = "aa  other.deb\n0123456789abcdef0123456789abcdef0123456789abcdef0123456789ABCDEF  ytdesk_1.2.0_x64-setup.exe\n";
-        assert_eq!(expected_sha256(s, "ytdesk_1.2.0_x64-setup.exe").unwrap(), "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+        let s = "aa  other.deb\n0123456789abcdef0123456789abcdef0123456789abcdef0123456789ABCDEF  sonolith_1.2.0_x64-setup.exe\n";
+        assert_eq!(expected_sha256(s, "sonolith_1.2.0_x64-setup.exe").unwrap(), "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
         assert!(expected_sha256(s, "missing.exe").is_none());
     }
 }
