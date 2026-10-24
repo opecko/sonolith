@@ -59,7 +59,15 @@
           "nodejs",
           "ca-certificates",
           "gnome-keyring"
-        ]
+        ],
+        "provides": ["ytdesk"],
+        "conflicts": ["ytdesk"],
+        "replaces": ["ytdesk"]
+      }
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "windows/hooks.nsh"
       }
     }
   }

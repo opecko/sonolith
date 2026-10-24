@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=ytdesk
+Name=Sonolith
 Comment=YouTube Music desktop client
-Exec=ytdesk
-Icon=ytdesk
+Exec=sonolith
+Icon=sonolith
 Terminal=false
 Categories=AudioVideo;Audio;Music;
-StartupWMClass=ytdesk
+StartupWMClass=sonolith

@@ -1,0 +1,10 @@
+{
+  "productName": "sonolith",
+  "bundle": {
+    "linux": {
+      "deb": {
+        "desktopTemplate": "../packaging/linux/sonolith.desktop"
+      }
+    }
+  }
+}
