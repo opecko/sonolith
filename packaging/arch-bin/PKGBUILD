@@ -2,7 +2,7 @@
 # Repackages the Debian build (src-tauri/target/release/bundle/deb/sonolith_<ver>_amd64.deb) for Arch.
 # Copy that .deb next to this file (packaging/arch/make-src.sh does it), then: makepkg -si
 pkgname=sonolith-bin
-pkgver=2.2.0
+pkgver=2.3.0
 pkgrel=1
 pkgdesc="YouTube Music desktop client (prebuilt)"
 url='https://github.com/opecko/sonolith'
