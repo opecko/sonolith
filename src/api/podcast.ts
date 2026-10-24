@@ -1,6 +1,6 @@
 // Podcast show (MPSP… browse) and channel (user channel browse) pages.
 import { bestThumb, flattenPage, pageType, parseBrowse, runsText } from "./raw";
-import type { Continuation, Shelf, Track } from "./types";
+import type { Continuation, EpisodeInfo, Shelf, Track } from "./types";
 
 type R = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 const arr = (v: unknown): R[] => (Array.isArray(v) ? v : []);
@@ -103,3 +103,45 @@ export function parseChannel(id: string, data: R): PodcastChannel {
 
 /** Is a browse endpoint a podcast show / episode page (used when routing items)? */
 export const isPodcastPage = (ep: R) => /PODCAST_SHOW|NON_MUSIC_AUDIO_TRACK/.test(pageType(ep));
+
+/** "1 hr 5 min", "30 min", "45 sec" (episode lengths as YouTube Music writes them) → seconds. */
+export function parseSpokenDuration(text: string): number | undefined {
+  const parts = [...text.matchAll(/(\d+)\s*(hr|hour|min|sec)/g)];
+  if (!parts.length) return undefined;
+  return parts.reduce((acc, [, n, unit]) => acc + Number(n) * (unit.startsWith("h") ? 3600 : unit === "min" ? 60 : 1), 0);
+}
+
+/** An episode page (MPED… browse): the episode with its show, progress and full description. */
+export function parseEpisode(id: string, data: R): Track | null {
+  const h = find(data, "musicResponsiveHeaderRenderer");
+  const title = runsText(h?.title);
+  if (!title) return null;
+  const pr = h.progress?.musicPlaybackProgressRenderer;
+  const clean = (t: R) => runsText(t).replace(/^\s*•\s*/, "").trim() || undefined;
+  const played = !!clean(pr?.playedText);
+  const meta = runsText(h.subtitle) || undefined;
+  // Links in descriptions are shortened for display ("https://example.com/e..."); the endpoint has the whole URL.
+  const runs = arr(find(data, "musicDescriptionShelfRenderer")?.description?.runs);
+  const description = runs.map((r) => (r?.navigationEndpoint?.urlEndpoint?.url && /^https?:\/\//.test(r.text ?? "") ? r.navigationEndpoint.urlEndpoint.url : r?.text ?? "")).join("").trim();
+  const episode: EpisodeInfo = {
+    meta,
+    published: meta?.split(" • ").pop(),
+    description: description || undefined,
+    durationText: clean(pr?.durationText),
+  };
+  if (pr) episode.progress = { percent: played ? 100 : Number(pr.playbackProgressPercentage) || 0, text: played ? clean(pr.playedText) : clean(pr.playbackProgressText), played };
+  const strap = arr(h.straplineTextOne?.runs)[0];
+  const showId: string | undefined = strap?.navigationEndpoint?.browseEndpoint?.browseId;
+  return {
+    type: "track",
+    id,
+    title,
+    subtitle: meta ?? "",
+    thumbnail: bestThumb(h.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails, 300),
+    artists: [],
+    podcast: true,
+    episode,
+    durationSec: episode.durationText ? parseSpokenDuration(episode.durationText) : undefined,
+    show: showId ? { id: showId.replace(/^MPSP/, ""), title: runsText({ runs: [strap] }) } : undefined,
+  };
+}

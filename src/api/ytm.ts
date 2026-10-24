@@ -2,7 +2,7 @@ import { getAccountClient, getClient, ytFetch } from "./client";
 import { historyPingUrl, makeCpn } from "./history";
 import { parseCredits } from "./menu";
 import { isEditorialPlaylist, songVersions } from "./songVersions";
-import { parseChannel, parseShow, type PodcastChannel, type PodcastShow } from "./podcast";
+import { parseChannel, parseEpisode, parseShow, type PodcastChannel, type PodcastShow } from "./podcast";
 import { flattenPage } from "./raw";
 import {
   fetchChipTracks, fetchNext, parseLyrics, startRadio as startRadioRaw, type Lyrics, type NextResult, type RadioQueue, type RadioSource, type WatchArgs,
@@ -204,6 +204,11 @@ export async function getHistory(chip?: BrowseRef): Promise<Page<Shelf>> {
 /** Podcast show page by playlist id (the MPSP-prefixed browse id). */
 export async function getPodcastShow(playlistId: string): Promise<PodcastShow> {
   return parseShow(await exec("/browse", { browseId: playlistId.startsWith("MPSP") ? playlistId : `MPSP${playlistId}` }));
+}
+
+/** An episode page by video id; null when YouTube has no episode page for it. */
+export async function getEpisode(videoId: string): Promise<Track | null> {
+  return parseEpisode(videoId, await exec("/browse", { browseId: `MPED${videoId}` }));
 }
 
 /** Episode list for a filter chip / sort option, or the next page of it. */
