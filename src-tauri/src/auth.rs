@@ -1,7 +1,9 @@
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder};
 
-const SERVICE: &str = "ytdesk";
+const SERVICE: &str = "sonolith";
+/// The service ytdesk (this app's old name) stored the cookie under; read once to carry the sign-in over.
+const OLD_SERVICE: &str = "ytdesk";
 const ACCOUNT: &str = "ytmusic-cookie";
 const LOGIN_LABEL: &str = "login";
 const LOGIN_URL: &str =
@@ -42,12 +44,39 @@ fn entry() -> Result<keyring::Entry, String> {
     keyring::Entry::new(SERVICE, ACCOUNT).map_err(|e| e.to_string())
 }
 
+fn old_entry() -> Result<keyring::Entry, String> {
+    keyring::Entry::new(OLD_SERVICE, ACCOUNT).map_err(|e| e.to_string())
+}
+
+/// Stored as UTF-8 bytes (see auth_set_cookie); on Linux this matches entries written with set_password.
+fn read(entry: &keyring::Entry) -> Result<Option<String>, keyring::Error> {
+    match entry.get_secret() {
+        Ok(b) => Ok(Some(String::from_utf8_lossy(&b).into_owned()).filter(|c| has_auth_cookie(c))),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
+/// The ytdesk-era cookie, saved under the new service. The old entry stays (an older ytdesk still finds its
+/// sign-in after a downgrade, and nothing is lost if the new write didn't stick); signing out deletes both.
+fn migrate_old_cookie() -> Option<String> {
+    let cookie = read(&old_entry().ok()?).ok()??;
+    match entry().and_then(|e| e.set_secret(cookie.as_bytes()).map_err(|e| e.to_string())) {
+        Ok(()) => eprintln!("keyring: moved the sign-in from \"{OLD_SERVICE}\" to \"{SERVICE}\""),
+        Err(e) => eprintln!("keyring: couldn't save the sign-in under \"{SERVICE}\": {e}"),
+    }
+    Some(cookie)
+}
+
 #[tauri::command(async)]
 pub fn auth_get_cookie() -> Result<Option<String>, String> {
-    // Stored as UTF-8 bytes (see auth_set_cookie); on Linux this matches entries written with set_password.
-    match entry()?.get_secret().map(|b| String::from_utf8_lossy(&b).into_owned()) {
-        Ok(c) if has_auth_cookie(&c) => return Ok(Some(c)),
-        Ok(_) | Err(keyring::Error::NoEntry) => {}
+    match read(&entry()?) {
+        Ok(Some(c)) => return Ok(Some(c)),
+        Ok(None) => {
+            if let Some(c) = migrate_old_cookie() {
+                return Ok(Some(c));
+            }
+        }
         Err(e) => eprintln!("keyring read failed: {e}"),
     }
     Ok(std::env::var("YTM_COOKIE").ok().filter(|c| has_auth_cookie(c)))
@@ -64,9 +93,11 @@ pub fn auth_set_cookie(cookie: String) -> Result<(), String> {
 /// actually asks for an account instead of silently reusing the old session. Other web storage (settings) is kept.
 #[tauri::command]
 pub async fn auth_clear(app: AppHandle) -> Result<(), String> {
-    match entry()?.delete_credential() {
-        Ok(()) | Err(keyring::Error::NoEntry) => {}
-        Err(e) => return Err(e.to_string()),
+    for e in [entry()?, old_entry()?] {
+        match e.delete_credential() {
+            Ok(()) | Err(keyring::Error::NoEntry) => {}
+            Err(e) => return Err(e.to_string()),
+        }
     }
     // Cookie APIs deadlock on Windows when called from a sync command / the main thread.
     tauri::async_runtime::spawn_blocking(move || clear_session_cookies(&app))

@@ -2,7 +2,7 @@
 use std::{fs, io::Write, os::unix::fs::OpenOptionsExt};
 
 fn main() {
-    let cookie = keyring::Entry::new("ytdesk", "ytmusic-cookie")
+    let cookie = keyring::Entry::new("sonolith", "ytmusic-cookie")
         .and_then(|e| e.get_secret().map(|b| String::from_utf8_lossy(&b).into_owned()))
         .unwrap_or_else(|e| panic!("keyring read failed: {e}"));
     let mut f = fs::OpenOptions::new().create(true).write(true).truncate(true).mode(0o600).open("../.env.local").unwrap();

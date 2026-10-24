@@ -2,6 +2,7 @@ mod auth;
 mod discord;
 mod fonts;
 mod lyrics;
+mod migrate;
 #[cfg(target_os = "linux")]
 mod mpris;
 mod proxy;
@@ -13,19 +14,29 @@ mod ytdlp;
 use std::io::Write;
 use tauri::Manager;
 
+/// debug/playback.log: the repo root in dev builds, the app log dir in release.
+fn playback_log_path(log_dir: Option<std::path::PathBuf>) -> Option<std::path::PathBuf> {
+    if cfg!(debug_assertions) {
+        Some(std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../debug/playback.log")))
+    } else {
+        log_dir.map(|d| d.join("playback.log"))
+    }
+}
+
+fn append_playback_log(path: &Option<std::path::PathBuf>, line: &str) -> Result<(), String> {
+    let path = path.as_ref().ok_or("no log directory")?;
+    std::fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
+    let ts = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    let mut f = std::fs::OpenOptions::new().create(true).append(true).open(path).map_err(|e| e.to_string())?;
+    writeln!(f, "{ts} {}", line.replace('\n', " | ")).map_err(|e| e.to_string())
+}
+
 /// Appends one line to debug/playback.log (repo root in dev builds, app log dir in release).
 #[tauri::command(async)]
 fn log_playback(app: tauri::AppHandle, line: String) -> Result<String, String> {
-    let path = if cfg!(debug_assertions) {
-        std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../debug/playback.log"))
-    } else {
-        app.path().app_log_dir().map_err(|e| e.to_string())?.join("playback.log")
-    };
-    std::fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
-    let ts = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-    let mut f = std::fs::OpenOptions::new().create(true).append(true).open(&path).map_err(|e| e.to_string())?;
-    writeln!(f, "{ts} {}", line.replace('\n', " | ")).map_err(|e| e.to_string())?;
-    Ok(path.to_string_lossy().into_owned())
+    let path = playback_log_path(app.path().app_log_dir().ok());
+    append_playback_log(&path, &line)?;
+    Ok(path.map(|p| p.to_string_lossy().into_owned()).unwrap_or_default())
 }
 
 #[cfg(target_os = "linux")]
@@ -38,6 +49,9 @@ fn mpris_update(_snapshot: serde_json::Value) {}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let context = tauri::generate_context!();
+    // Before the builder: Tauri creates the window, and with it the webview's data directory, before setup runs.
+    migrate::run(&context.config().identifier);
     tauri::Builder::default()
         // Must be the first plugin: a second launch (e.g. from the app launcher while hidden in the tray) hands over
         // to the running instance and just shows its window.
@@ -105,7 +119,7 @@ pub fn run() {
             fonts::fonts_list,
             update::update_install,
         ])
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running tauri application");
 }
 
