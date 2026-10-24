@@ -31,6 +31,8 @@
   display-only English strings (hl=en); never parse them. Ids are opaque YouTube ids; always keep `type` with `id`.
 - Paging: `{cursor?, limit? (1–100, default 50)}` -> `{items, nextCursor|null}`. A page may be shorter than `limit`
   even when more follow; continue until `nextCursor` is null. `InvalidParams` reason `cursorExpired` = restart.
+- Queue and playlist items are entries with their own `entryId` (not the item's `id`): the same song twice = two
+  entries. `queue.move`, `queue.remove` and `playlist.removeTracks` take `entryId`s and change exactly those entries.
 - `apiVersion` in register/hello is the `MAJOR.MINOR` you wrote against, e.g. "1.0". Minor versions only add things.
 
 ## Registration flow

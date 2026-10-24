@@ -71,7 +71,7 @@ export type ArtistDetail = Artist & { description: string | null; sections: Arti
 export type PodcastDetail = Podcast & { description: string | null };
 /** An episode with its description. */
 export type EpisodeDetail = Episode & { description: string | null };
-/** One item in a playlist. `entryId` identifies this occurrence (a playlist can hold the same track twice); pass it to `playlist.removeTracks`. */
+/** One item in a playlist. `entryId` identifies this occurrence, not the track: a playlist can hold the same track twice, and the two entries have different ids. Pass it to `playlist.removeTracks` to remove exactly that entry. */
 export type PlaylistEntry = { entryId: string | null; item: MediaItem };
 /** One item in the listening history. */
 export type HistoryEntry = { item: MediaItem; sectionText: string | null };

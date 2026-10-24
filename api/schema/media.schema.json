@@ -273,11 +273,11 @@
       ]
     },
     "PlaylistEntry": {
-      "description": "One item in a playlist. `entryId` identifies this occurrence (a playlist can hold the same track twice); pass it to `playlist.removeTracks`.",
+      "description": "One item in a playlist. `entryId` identifies this occurrence, not the track: a playlist can hold the same track twice, and the two entries have different ids. Pass it to `playlist.removeTracks` to remove exactly that entry.",
       "type": "object",
       "required": ["entryId", "item"],
       "properties": {
-        "entryId": { "description": "Null when the playlist cannot be edited.", "type": ["string", "null"] },
+        "entryId": { "description": "An opaque id of this occurrence, different from the item's own `id`, unique within the playlist, and valid while the entry stays in it. Null when YouTube Music gives the entries of this playlist no ids. Entries of a playlist the user cannot edit can have ids too; removing them fails with `notEditable`.", "type": ["string", "null"] },
         "item": { "$ref": "#/$defs/MediaItem" }
       }
     },

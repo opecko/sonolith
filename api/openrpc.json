@@ -3271,7 +3271,7 @@
             },
             {
               "name": "limit",
-              "value": 1
+              "value": 3
             }
           ],
           "result": {
@@ -3311,9 +3311,55 @@
                     "video": false,
                     "rating": "like"
                   }
+                },
+                {
+                  "entryId": "3A9E5D0C7B21F48A",
+                  "item": {
+                    "type": "track",
+                    "id": "Rb7nW2kLq9E",
+                    "title": "Paper Satellites",
+                    "artists": [
+                      {
+                        "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                        "name": "Northern Static"
+                      }
+                    ],
+                    "album": {
+                      "id": "MPREb_4pL8gzRtw9a",
+                      "title": "Low Tide Radio"
+                    },
+                    "durationMs": 187000,
+                    "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                    "explicit": false,
+                    "video": false,
+                    "rating": "none"
+                  }
+                },
+                {
+                  "entryId": "C41D8F7A60B3E952",
+                  "item": {
+                    "type": "track",
+                    "id": "Xk3vT9pQm2A",
+                    "title": "Glass Harbor",
+                    "artists": [
+                      {
+                        "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                        "name": "Northern Static"
+                      }
+                    ],
+                    "album": {
+                      "id": "MPREb_4pL8gzRtw9a",
+                      "title": "Low Tide Radio"
+                    },
+                    "durationMs": 214000,
+                    "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                    "explicit": false,
+                    "video": false,
+                    "rating": "like"
+                  }
                 }
               ],
-              "nextCursor": "cGw6MQ"
+              "nextCursor": "cGw6Mw"
             }
           }
         }
@@ -3324,7 +3370,7 @@
       ],
       "x-requires-session": true,
       "x-rate-class": "network",
-      "description": "With `library:read`, any playlist the user can see works, including private ones and liked songs. With only `search`, only public and unlisted playlists work; others give `NotFound`."
+      "description": "With `library:read`, any playlist the user can see works, including private ones and liked songs. With only `search`, only public and unlisted playlists work; others give `NotFound`.\n\nEvery item comes as an entry with its own `entryId`. A song that is in the playlist twice is two entries with the same `item.id` and different `entryId`s."
     },
     {
       "name": "playlist.create",
@@ -3776,7 +3822,7 @@
         {
           "name": "entryIds",
           "required": true,
-          "description": "`entryId` values from `playlist.get`.",
+          "description": "`entryId` values from `playlist.get`, not item ids.",
           "schema": {
             "type": "array",
             "items": {
@@ -3799,7 +3845,8 @@
           "properties": {
             "removed": {
               "type": "integer",
-              "minimum": 0
+              "minimum": 0,
+              "description": "How many of the entries were removed."
             }
           }
         }
@@ -3861,7 +3908,8 @@
       ],
       "x-scope": "library:write",
       "x-requires-session": true,
-      "x-rate-class": "account"
+      "x-rate-class": "account",
+      "description": "Removes exactly the entries named by `entryIds`, nothing else: a song that is in the playlist twice loses only the copy whose `entryId` you pass. Ids the playlist does not have (already removed, or an item id instead of an `entryId`) are ignored, and `removed` counts the entries that were removed. Entry ids come from `playlist.get`; remove duplicates one `entryId` at a time or together."
     },
     {
       "name": "search.query",

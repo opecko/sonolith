@@ -760,6 +760,10 @@ long before retrying that class. A client SHOULD NOT poll: subscribe to events i
   ids for the rest. They are **opaque**: clients MUST NOT parse them or build them from parts. The same id string can
   mean different things with a different `type`, so always keep the type with the id.
 - Ids are stable: a client MAY store them and use them later.
+- The queue and a playlist can hold the same item more than once. Each occurrence is an **entry** with its own
+  `entryId` (`QueueEntry`, `PlaylistEntry`), different from the item's `id`. Methods that change a list
+  (`queue.move`, `queue.remove`, `playlist.removeTracks`) take `entryId`s, so exactly the occurrence you mean is
+  changed. Never pass an item `id` where an `entryId` is expected.
 - A client MAY use ids from YouTube Music links: `watch?v=<id>` is a track or episode, `playlist?list=<id>` a
   playlist, `browse/<id>` an album or podcast, `channel/<id>` an artist.
 
@@ -2615,6 +2619,8 @@ Returns a playlist and its items, one page at a time.
 
 With `library:read`, any playlist the user can see works, including private ones and liked songs. With only `search`, only public and unlisted playlists work; others give `NotFound`.
 
+Every item comes as an entry with its own `entryId`. A song that is in the playlist twice is two entries with the same `item.id` and different `entryId`s.
+
 | Scope | Session | Rate class |
 |---|---|---|
 | `library:read` or `search` | required | `network` |
@@ -2647,7 +2653,7 @@ With `library:read`, any playlist the user can see works, including private ones
 Request:
 
 ```json
-{"jsonrpc":"2.0","id":34,"method":"playlist.get","params":{"id":"PLx9KmQ2vT7bN4cR8wZ3yL5aD1fG6hJ0eS","limit":1}}
+{"jsonrpc":"2.0","id":34,"method":"playlist.get","params":{"id":"PLx9KmQ2vT7bN4cR8wZ3yL5aD1fG6hJ0eS","limit":3}}
 ```
 
 Response:
@@ -2691,9 +2697,55 @@ Response:
           "video": false,
           "rating": "like"
         }
+      },
+      {
+        "entryId": "3A9E5D0C7B21F48A",
+        "item": {
+          "type": "track",
+          "id": "Rb7nW2kLq9E",
+          "title": "Paper Satellites",
+          "artists": [
+            {
+              "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+              "name": "Northern Static"
+            }
+          ],
+          "album": {
+            "id": "MPREb_4pL8gzRtw9a",
+            "title": "Low Tide Radio"
+          },
+          "durationMs": 187000,
+          "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+          "explicit": false,
+          "video": false,
+          "rating": "none"
+        }
+      },
+      {
+        "entryId": "C41D8F7A60B3E952",
+        "item": {
+          "type": "track",
+          "id": "Xk3vT9pQm2A",
+          "title": "Glass Harbor",
+          "artists": [
+            {
+              "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+              "name": "Northern Static"
+            }
+          ],
+          "album": {
+            "id": "MPREb_4pL8gzRtw9a",
+            "title": "Low Tide Radio"
+          },
+          "durationMs": 214000,
+          "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+          "explicit": false,
+          "video": false,
+          "rating": "like"
+        }
       }
     ],
-    "nextCursor": "cGw6MQ"
+    "nextCursor": "cGw6Mw"
   }
 }
 ```
@@ -2886,6 +2938,8 @@ Response:
 
 Removes entries from a playlist the user owns.
 
+Removes exactly the entries named by `entryIds`, nothing else: a song that is in the playlist twice loses only the copy whose `entryId` you pass. Ids the playlist does not have (already removed, or an item id instead of an `entryId`) are ignored, and `removed` counts the entries that were removed. Entry ids come from `playlist.get`; remove duplicates one `entryId` at a time or together.
+
 | Scope | Session | Rate class |
 |---|---|---|
 | `library:write` | required | `account` |
@@ -2895,13 +2949,13 @@ Removes entries from a playlist the user owns.
 | Name | Type | Required | Description |
 |---|---|---|---|
 | `id` | string | yes | The playlist id. |
-| `entryIds` | string[] | yes | `entryId` values from `playlist.get`. |
+| `entryIds` | string[] | yes | `entryId` values from `playlist.get`, not item ids. |
 
 **Result**
 
 | Field | Type | Description |
 |---|---|---|
-| `removed` | integer |  |
+| `removed` | integer | How many of the entries were removed. |
 
 **Errors**
 
@@ -4259,11 +4313,11 @@ All fields of [Episode](#episode), plus:
 
 #### PlaylistEntry
 
-One item in a playlist. `entryId` identifies this occurrence (a playlist can hold the same track twice); pass it to `playlist.removeTracks`.
+One item in a playlist. `entryId` identifies this occurrence, not the track: a playlist can hold the same track twice, and the two entries have different ids. Pass it to `playlist.removeTracks` to remove exactly that entry.
 
 | Field | Type | Description |
 |---|---|---|
-| `entryId` | string \| null | Null when the playlist cannot be edited. |
+| `entryId` | string \| null | An opaque id of this occurrence, different from the item's own `id`, unique within the playlist, and valid while the entry stays in it. Null when YouTube Music gives the entries of this playlist no ids. Entries of a playlist the user cannot edit can have ids too; removing them fails with `notEditable`. |
 | `item` | [MediaItem](#mediaitem) | One playable item: a Track or an Episode. |
 
 #### HistoryEntry
