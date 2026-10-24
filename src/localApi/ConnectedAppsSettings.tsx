@@ -6,6 +6,7 @@ import Switch from "../components/Switch";
 import { useToast } from "../stores/toast";
 import { SettingCard, SettingRow } from "../views/settings/kit";
 import { activityLines, ago, connectionText, scopeRows } from "./apps";
+import { identityRows } from "./consent";
 import { Identity } from "./ConsentDialog";
 import { useLocalApi, type ConnectedApp } from "./store";
 
@@ -206,7 +207,7 @@ export default function ConnectedAppsSettings() {
       {blocked.length > 0 && (
         <SettingCard title="Blocked apps">
           {blocked.map((b) => (
-            <SettingRow key={b.appId + b.identityKey} title={b.name} detail={`Blocked ${ago(b.blockedAt)} · ${b.appId}`}>
+            <SettingRow key={b.appId + b.identityKey} title={b.name} detail={`Blocked ${ago(b.blockedAt)} · ${b.appWide ? b.appId : `only the program ${identityRows(b.identity)[0].value}`}`}>
               <button className={outlined} onClick={() => void invoke("api_unblock", { appId: b.appId })}>Unblock</button>
             </SettingRow>
           ))}

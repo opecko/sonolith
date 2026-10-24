@@ -353,8 +353,8 @@ The consent screen shows:
 - the buttons **Allow**, **Deny**, and **Deny and block this app**. They respond only after the screen has been shown
   for a second (also when the next waiting request takes its place), and none of them is a default for Enter.
 
-If the `appId` is already registered, the screen says so, and approving replaces the old token (its connections get
-`session.revoked` with reason `replaced`).
+If the `appId` is already registered, the screen says so (and shows both programs when another program asks), and
+approving replaces the old token (its connections get `session.revoked` with reason `replaced`).
 
 Write `name`, `description` and every `reason` for this screen: plain language, no jargon, in English. Good
 reasons say what the user gets: "To show the current song in your bar", not "Needs player:read".
@@ -376,8 +376,11 @@ reasons say what the user gets: "To show the current song in your bar", not "Nee
   **cooldown** with `RegistrationDenied` and `data.retryAfterMs`, without bothering the user: 10 minutes after the
   first denial, 1 hour after a second denial within 24 hours, 24 hours after each further one.
 - After an expiry, the cooldown is 1 minute.
-- A blocked app (by `appId` or app identity) gets `Blocked` for `app.register` and `session.hello`, and
-  nothing is shown to the user, until the user unblocks it in Settings → Connected apps.
+- A blocked app gets `Blocked` for `app.register` and `session.hello`, and nothing is shown to the user, until the
+  user unblocks it in Settings → Connected apps. **Deny and block this app** on a consent screen blocks the program
+  that asked (its app identity), under any `appId`; another program already registered under the same `appId` keeps
+  working. Blocking a connected app in Settings blocks its `appId` and its app identity. Either way, registrations
+  of the blocked program end and its open sessions get `session.revoked` with reason `blocked`.
 - `app.requestScopes` follows the same cooldowns.
 
 ### 6.5 Asking for more scopes later

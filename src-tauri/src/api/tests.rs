@@ -403,6 +403,42 @@ async fn revoke_scope_remove_and_unregister() {
 }
 
 #[tokio::test]
+async fn blocking_a_program_that_asks_under_a_registered_id_spares_the_registered_app() {
+    let env = start("impostor").await;
+    let token = register(&env, "com.example.real", &["player:read"]).await;
+    let mut real = session(&env, "com.example.real", &token).await;
+    // Another program asks under the same app id; the user sees both programs and blocks the newcomer.
+    let mut evil = as_program(&env, "/tmp/evil/bar");
+    let r = evil.ok("app.register", registration("com.example.real", vec![scope("library:read", true)])).await;
+    let rid = r["requestId"].as_str().unwrap().to_string();
+    let consent = env.host.wait_for("api:consent", |v| v["requestId"] == rid).await;
+    assert_eq!((consent["alreadyRegistered"].as_bool(), consent["previousIdentity"]["kind"].as_str()), (Some(true), Some("executable")));
+    env.server.resolve(&rid, Decision::Block, &[]).unwrap();
+    assert_eq!(evil.note("registration.resolved").await["status"], "blocked");
+    // The real app goes on, now and on its next connection.
+    assert_eq!(real.ok("app.info", json!({})).await["session"]["appId"], "com.example.real");
+    session(&env, "com.example.real", &token).await;
+    // The blocked program is turned away under any app id.
+    assert_eq!(code(&evil.err("app.register", registration("com.example.real", vec![scope("search", true)])).await), -32006);
+    assert_eq!(code(&evil.err("app.register", registration("com.example.other", vec![scope("search", true)])).await), -32006);
+}
+
+#[tokio::test]
+async fn blocking_the_registered_program_itself_ends_its_sessions() {
+    let env = start("blockself").await;
+    let token = register(&env, "com.example.self", &["player:read"]).await;
+    let mut s = session(&env, "com.example.self", &token).await;
+    // The same program asks again (same identity); the user blocks it.
+    let mut c = Client::connect(&env.socket).await;
+    let r = c.ok("app.register", registration("com.example.self", vec![scope("search", true)])).await;
+    env.server.resolve(r["requestId"].as_str().unwrap(), Decision::Block, &[]).unwrap();
+    assert_eq!(s.note("session.revoked").await["reason"], "blocked");
+    assert!(env.server.apps()["apps"].as_array().unwrap().is_empty());
+    let mut late = Client::connect(&env.socket).await;
+    assert_eq!(code(&late.err("session.hello", hello("com.example.self", &token)).await), -32006);
+}
+
+#[tokio::test]
 async fn identity_change_asks_again() {
     let env = start("identity").await;
     let token = register(&env, "com.example.moved", &["player:read"]).await;

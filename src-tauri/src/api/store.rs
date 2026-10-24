@@ -34,6 +34,15 @@ pub struct BlockRecord {
     pub name: String,
     pub identity: AppIdentity,
     pub blocked_at: u64,
+    /// Also blocks the app id, whatever program uses it (an app blocked in Settings). "Deny and block" on a consent
+    /// screen blocks only the requesting program, so another program registered under that id keeps working.
+    #[serde(default = "app_wide")]
+    pub app_wide: bool,
+}
+
+/// Blocks saved before `appWide` existed covered the app id too.
+fn app_wide() -> bool {
+    true
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -111,7 +120,7 @@ impl Registry {
     }
 
     pub fn is_blocked(&self, app_id: &str, identity_key: &str) -> bool {
-        self.blocked.iter().any(|b| b.app_id == app_id || b.identity_key == identity_key)
+        self.blocked.iter().any(|b| b.identity_key == identity_key || (b.app_wide && b.app_id == app_id))
     }
 
     /// How long new requests from this app or identity are on hold, if at all (SPEC.md 6.4).
@@ -137,7 +146,7 @@ impl Registry {
         self.denials.push(Denial { app_id: app_id.into(), identity_key: identity_key.into(), at: now, expired });
     }
 
-    pub fn block(&mut self, app_id: &str, name: &str, identity: &AppIdentity, now: u64) {
+    pub fn block(&mut self, app_id: &str, name: &str, identity: &AppIdentity, now: u64, app_wide: bool) {
         self.unblock(app_id);
         self.blocked.push(BlockRecord {
             app_id: app_id.into(),
@@ -145,6 +154,7 @@ impl Registry {
             name: name.into(),
             identity: identity.clone(),
             blocked_at: now,
+            app_wide,
         });
     }
 
@@ -250,11 +260,21 @@ mod tests {
     #[test]
     fn block_by_app_or_identity_and_unblock() {
         let mut r = Registry::default();
-        r.block("a", "A", &ident("exe:/a"), 1);
+        r.block("a", "A", &ident("exe:/a"), 1, true);
         assert!(r.is_blocked("a", "exe:/x"));
         assert!(r.is_blocked("z", "exe:/a"));
         r.unblock("a");
         assert!(!r.is_blocked("a", "exe:/a"));
+        // A program blocked from a consent screen: only that program, under any id.
+        r.block("b", "B", &ident("exe:/b"), 1, false);
+        assert!(r.is_blocked("z", "exe:/b"));
+        assert!(!r.is_blocked("b", "exe:/other"));
+        // Saved before the field existed: app-wide.
+        let old: BlockRecord = serde_json::from_value(serde_json::json!({
+            "appId": "c", "identityKey": "exe:/c", "name": "C", "identity": ident("exe:/c"), "blockedAt": 1,
+        }))
+        .unwrap();
+        assert!(old.app_wide);
     }
 
     #[test]
@@ -262,7 +282,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("sonolith-api-store-{}", std::process::id()));
         let path = dir.join("apps.json");
         let mut r = Registry::default();
-        r.block("a", "A", &ident("exe:/a"), 1);
+        r.block("a", "A", &ident("exe:/a"), 1, true);
         r.save(&path).unwrap();
         assert_eq!(Registry::load(&path), r);
         #[cfg(unix)]

@@ -63,13 +63,21 @@ function Request({ c, more }: { c: Consent; more: number }) {
       </div>
       <p className="select-text text-sm">{c.description}</p>
       {c.alreadyRegistered && (
-        <p className="text-sm text-[var(--c-text-muted)]">An app with this id is already connected. Allowing replaces it, and its open connections end.</p>
+        <p className="text-sm text-[var(--c-text-muted)]">
+          An app with this id is already connected{c.previousIdentity ? ", as a different program" : ""}. Allowing replaces it, and its open connections end.
+          {c.previousIdentity && " Blocking blocks only the program asking now."}
+        </p>
       )}
       {c.kind === "identity" && c.previousIdentity ? (
         <>
           <p className="text-sm">It runs from a different place than the one you allowed. Allow it again to keep its access.</p>
           <Identity identity={c.previousIdentity} label="Allowed before" />
           <Identity identity={c.identity} label="Now" />
+        </>
+      ) : c.previousIdentity ? (
+        <>
+          <Identity identity={c.previousIdentity} label="Connected now" />
+          <Identity identity={c.identity} label="Asking now" />
         </>
       ) : (
         <Identity identity={c.identity} />

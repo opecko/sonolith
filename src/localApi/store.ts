@@ -36,6 +36,8 @@ export interface BlockedApp {
   name: string;
   identity: AppIdentity;
   blockedAt: number;
+  /** Blocks the app id too (blocked in Settings); otherwise only this program (blocked on a consent screen). */
+  appWide: boolean;
 }
 
 /** A registration, scope or identity request (src-tauri/src/api/server.rs `consent_payload`). */
@@ -49,6 +51,7 @@ export interface Consent {
   homepage: string | null;
   icon: string | null;
   identity: AppIdentity;
+  /** The program allowed before: for an identity change, and for a registration under an id another program has. */
   previousIdentity: AppIdentity | null;
   alreadyRegistered: boolean;
   /** For a scope request: what the app has already. */

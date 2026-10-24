@@ -643,7 +643,8 @@ impl Server {
             "homepage": homepage,
             "icon": icon,
             "identity": p.identity,
-            "previousIdentity": existing.filter(|_| p.kind == Kind::Identity).map(|a| &a.identity),
+            // The program the user allowed before: an identity change, or another registration under a taken id.
+            "previousIdentity": existing.filter(|a| p.kind == Kind::Identity || (p.kind == Kind::Register && a.identity.key != p.identity.key)).map(|a| &a.identity),
             "alreadyRegistered": p.kind == Kind::Register && existing.is_some(),
             "grantedScopes": if p.kind == Kind::Scopes { granted } else { Vec::new() },
             "scopes": p.scopes.iter().map(|(s, req, reason)| json!({
@@ -734,8 +735,9 @@ impl Server {
                 let name = p.details.get("name").and_then(Value::as_str).map(String::from).or_else(|| {
                     self.registry.lock().unwrap().app(&p.app_id).map(|a| a.name.clone())
                 });
+                // The requesting program only: another program registered under this id is not the one asking.
                 let mut reg = self.registry.lock().unwrap();
-                reg.block(&p.app_id, name.as_deref().unwrap_or(&p.app_id), &p.identity, now);
+                reg.block(&p.app_id, name.as_deref().unwrap_or(&p.app_id), &p.identity, now, false);
                 let _ = reg.save(&self.registry_path);
                 "blocked"
             }
@@ -745,8 +747,8 @@ impl Server {
             "token": token, "grantedScopes": granted, "retryAfterMs": retry,
         });
         self.send(p.conn, protocol::notification("registration.resolved", params), false);
-        if decision == Decision::Block && p.kind != Kind::Register {
-            self.revoke_app(&p.app_id, "blocked");
+        if decision == Decision::Block {
+            self.drop_identity(&p.identity.key);
         }
         self.maybe_finish(p.conn);
         self.emit_apps_changed();
@@ -876,12 +878,33 @@ impl Server {
     }
 
     fn revoke_except(&self, app_id: &str, reason: &str, except: Option<u64>) {
+        self.revoke_where(reason, |id, c| c.app_id.as_deref() == Some(app_id) && Some(id) != except);
+    }
+
+    /// A blocked program: its registrations go, and its sessions end, under whatever app id.
+    fn drop_identity(&self, key: &str) {
+        let gone: Vec<String> = {
+            let mut reg = self.registry.lock().unwrap();
+            let ids: Vec<String> = reg.apps.iter().filter(|a| a.identity.key == key).map(|a| a.app_id.clone()).collect();
+            if !ids.is_empty() {
+                reg.apps.retain(|a| a.identity.key != key);
+                let _ = reg.save(&self.registry_path);
+            }
+            ids
+        };
+        self.revoke_where("blocked", |_, c| {
+            c.identity.as_ref().is_some_and(|i| i.key == key) || gone.iter().any(|g| c.app_id.as_deref() == Some(g.as_str()))
+        });
+    }
+
+    /// Sends `session.revoked` to every authenticated connection matching `pred` and closes them.
+    fn revoke_where(&self, reason: &str, pred: impl Fn(u64, &Conn) -> bool) {
         let msg = protocol::notification("session.revoked", json!({ "reason": reason }));
         let ids: Vec<u64> = {
             let conns = self.conns.lock().unwrap();
             conns
                 .iter()
-                .filter(|(id, c)| c.app_id.as_deref() == Some(app_id) && Some(**id) != except)
+                .filter(|(id, c)| c.app_id.is_some() && pred(**id, c))
                 .map(|(id, c)| {
                     self.send_to(c, &msg, false);
                     *id
@@ -956,7 +979,7 @@ impl Server {
             self.revoke_app(app_id, "blocked");
             let mut reg = self.registry.lock().unwrap();
             reg.remove(app_id);
-            reg.block(app_id, &a.name, &a.identity, now_ms());
+            reg.block(app_id, &a.name, &a.identity, now_ms(), true);
             let _ = reg.save(&self.registry_path);
         }
         self.emit_apps_changed();
