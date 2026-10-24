@@ -441,7 +441,10 @@ impl Server {
             (_, "session.hello") => self.hello(conn, p, identity, app_id.is_some()),
             (_, "events.subscribe") => self.subscribe(conn, p, &scopes),
             (_, "events.unsubscribe") => self.unsubscribe(conn, p),
-            (_, "player.getState") => self.player_state().ok_or_else(|| RpcError::new(Code::Unavailable).reason("starting").with("retryAfterMs", 1000)),
+            (_, "player.getState") => self
+                .player_state()
+                .map(|s| for_scopes(s, &scopes))
+                .ok_or_else(|| RpcError::new(Code::Unavailable).reason("starting").with("retryAfterMs", 1000)),
             (Handler::Frontend, name) => {
                 validate::check(name, p)?;
                 self.call_frontend(name, p, app_id.as_deref().unwrap_or(""), &scopes).await
@@ -999,7 +1002,8 @@ impl Server {
     }
 
     fn send_snapshots(&self, conn: u64, topics: &[String]) {
-        let state = self.player_state();
+        let scopes = self.conns.lock().unwrap().get(&conn).map(|c| c.scopes.clone()).unwrap_or_default();
+        let state = self.player_state().map(|s| for_scopes(s, &scopes));
         let (queue, signed_in, lyrics) = {
             let p = self.published.lock().unwrap();
             (p.queue.clone(), p.signed_in.unwrap_or(false), p.lyrics.clone())
@@ -1030,13 +1034,16 @@ impl Server {
         json!({ "trackId": id, "status": "notFound", "lyrics": null })
     }
 
-    /// Sends an event to every connection subscribed to the topic.
+    /// Sends an event to every connection subscribed to the topic. The current item goes without ratings and
+    /// episode progress to apps without `library:read`.
     fn broadcast(&self, topic: &str, method: &str, params: Value, droppable: bool) {
+        let redacted = matches!(topic, "player.state" | "player.track").then(|| protocol::notification(method, for_scopes(params.clone(), &[])));
         let msg = protocol::notification(method, params);
         let conns = self.conns.lock().unwrap();
         for c in conns.values() {
             if c.topics.contains(topic) {
-                self.send_to(c, &msg, droppable);
+                let full = redacted.is_none() || c.scopes.iter().any(|s| s == "library:read");
+                self.send_to(c, if full { &msg } else { redacted.as_ref().unwrap() }, droppable);
             }
         }
     }
@@ -1242,6 +1249,23 @@ pub enum Decision {
     Deny,
     Block,
     Expire,
+}
+
+/// Player state or `player.trackChanged` params as an app with these scopes may see them: without `library:read`,
+/// the item's rating (tracks) and played state and resume position (episodes) are null.
+fn for_scopes(mut v: Value, scopes: &[String]) -> Value {
+    if scopes.iter().any(|s| s == "library:read") {
+        return v;
+    }
+    if let Some(item) = v.get_mut("item").and_then(Value::as_object_mut) {
+        let keys: &[&str] = if item.get("type").and_then(Value::as_str) == Some("episode") { &["played", "resumePositionMs"] } else { &["rating"] };
+        for k in keys {
+            if item.contains_key(*k) {
+                item.insert(k.to_string(), Value::Null);
+            }
+        }
+    }
+    v
 }
 
 fn sorted_topics(set: &HashSet<String>) -> Vec<&'static str> {

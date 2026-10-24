@@ -312,14 +312,17 @@ async fn scopes_are_enforced_and_can_grow() {
     assert_eq!(s.err("player.getState", json!({})).await["data"]["reason"], "starting");
 
     let state = json!({
-        "status": "paused", "item": { "type": "track", "id": "abc", "title": "Song" }, "positionMs": 1000,
+        "status": "paused", "item": { "type": "track", "id": "abc", "title": "Song", "rating": "like" }, "positionMs": 1000,
         "positionAt": 0, "durationMs": 200_000, "volume": 50, "muted": false, "rate": 1,
     });
     env.server.publish("player", state);
-    assert_eq!(s.ok("player.getState", json!({})).await["positionMs"], 1000);
+    let got = s.ok("player.getState", json!({})).await;
+    assert_eq!(got["positionMs"], 1000);
+    assert!(got["item"]["rating"].is_null(), "no library:read, no rating");
     let sub = s.ok("events.subscribe", json!({ "topics": ["player.state", "account"] })).await;
     assert_eq!(sub["topics"], json!(["player.state", "account"]));
-    assert_eq!(s.note("player.stateChanged").await["item"]["id"], "abc");
+    let snap = s.note("player.stateChanged").await;
+    assert_eq!((snap["item"]["id"].as_str(), snap["item"]["rating"].is_null()), (Some("abc"), true));
     assert_eq!(s.note("account.changed").await["signedIn"], false);
 
     // More access, asked for on the open session.
