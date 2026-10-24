@@ -444,6 +444,56 @@ async fn closing_cancels_pending_and_half_close_still_delivers() {
     assert_eq!(rest[0]["params"]["status"], "approved");
 }
 
+/// Requests whose answers are big (the id comes back), sent without reading any of them.
+async fn flood(c: &mut Client, count: usize) {
+    let id = "x".repeat(600 * 1024);
+    for _ in 0..count {
+        let mut line = json!({ "jsonrpc": "2.0", "id": id, "method": "nope.nope" }).to_string();
+        line.push('\n');
+        if c.wr.as_mut().unwrap().write_all(line.as_bytes()).await.is_err() {
+            return;
+        }
+    }
+}
+
+async fn wait_for_connections(env: &Env, n: usize) {
+    for _ in 0..300 {
+        if env.server.connection_count() == n {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    panic!("{} connections, expected {n}", env.server.connection_count());
+}
+
+#[tokio::test]
+async fn a_client_that_never_reads_is_cut_off() {
+    let env = start("noread").await;
+    let mut c = Client::connect(&env.socket).await;
+    // More than 4 MiB of answers pile up: the connection ends, though the writer is stuck on the full socket.
+    flood(&mut c, 9).await;
+    wait_for_connections(&env, 0).await;
+}
+
+#[tokio::test]
+async fn turning_the_api_off_ends_sessions_of_clients_that_never_read() {
+    let env = start("off").await;
+    let token = register(&env, "com.example.stuck", &["player:control"]).await;
+    let mut c = session(&env, "com.example.stuck", &token).await;
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    *env.host.calls.lock().unwrap() = Some(tx);
+    env.server.frontend_ready(true);
+    // Below the backlog limit, but far more than the socket holds: the writer waits for a reader that never comes.
+    flood(&mut c, 3).await;
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    env.server.close_all();
+    wait_for_connections(&env, 0).await;
+    // Nothing it sends afterwards reaches the frontend (the write itself may fail: the socket is gone).
+    let _ = c.wr.as_mut().unwrap().write_all(b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"player.play\"}\n").await;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert!(rx.try_recv().is_err());
+}
+
 #[tokio::test]
 async fn malformed_lines_keep_the_connection() {
     let env = start("framing").await;

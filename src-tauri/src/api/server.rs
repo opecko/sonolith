@@ -27,6 +27,8 @@ pub const MAX_CONNECTIONS: usize = 64;
 const AUTH_TIMEOUT: Duration = Duration::from_secs(30);
 const BRIDGE_TIMEOUT: Duration = Duration::from_secs(25);
 const MAX_QUEUED: usize = 4 * 1024 * 1024;
+/// A write that makes no progress for this long means the client stopped reading: the connection ends.
+const WRITE_TIMEOUT: Duration = Duration::from_secs(10);
 /// Above this much unsent data, droppable events (position, lyric words) are skipped.
 const DROP_ABOVE: usize = 64 * 1024;
 const COALESCE: Duration = Duration::from_millis(100);
@@ -81,6 +83,8 @@ enum Out {
 
 struct Conn {
     tx: mpsc::UnboundedSender<Out>,
+    /// Set to end the connection at once: reader and writer stop and the stream is dropped, queued data or not.
+    kill: watch::Sender<bool>,
     queued: Arc<AtomicUsize>,
     identity: Option<AppIdentity>,
     app_id: Option<String>,
@@ -190,11 +194,14 @@ impl Server {
         let (rd, mut wr) = tokio::io::split(stream);
         let id = self.id();
         let (tx, mut rx) = mpsc::unbounded_channel::<Out>();
+        let (kill, mut reader_kill) = watch::channel(false);
+        let mut writer_kill = kill.subscribe();
         let queued = Arc::new(AtomicUsize::new(0));
         self.conns.lock().unwrap().insert(
             id,
             Conn {
                 tx,
+                kill,
                 queued: queued.clone(),
                 identity,
                 app_id: None,
@@ -211,22 +218,30 @@ impl Server {
         let (closed_tx, mut closed_rx) = watch::channel(false);
         tokio::pin!(hangup);
 
-        // Writer: drains the queue; ends on Close, a write error, or when every sender is gone.
+        // Writer: drains the queue; ends on Close, a write error or timeout, the kill switch, or when every sender is
+        // gone. A client that stops reading fills the socket, so a write can wait forever without the timeout.
         let writer_queued = queued.clone();
         let writer = tokio::spawn(async move {
-            while let Some(out) = rx.recv().await {
+            loop {
+                let out = tokio::select! {
+                    out = rx.recv() => out,
+                    _ = writer_kill.wait_for(|k| *k) => None,
+                };
                 match out {
-                    Out::Line(s) => {
-                        let ok = wr.write_all(s.as_bytes()).await.is_ok();
+                    Some(Out::Line(s)) => {
+                        let ok = tokio::select! {
+                            r = tokio::time::timeout(WRITE_TIMEOUT, wr.write_all(s.as_bytes())) => matches!(r, Ok(Ok(()))),
+                            _ = writer_kill.wait_for(|k| *k) => false,
+                        };
                         writer_queued.fetch_sub(s.len(), Ordering::Relaxed);
                         if !ok {
                             break;
                         }
                     }
-                    Out::Close => break,
+                    Some(Out::Close) | None => break,
                 }
             }
-            let _ = wr.shutdown().await;
+            let _ = tokio::time::timeout(Duration::from_secs(1), wr.shutdown()).await;
             let _ = closed_tx.send(true);
         });
 
@@ -249,6 +264,7 @@ impl Server {
             let line = tokio::select! {
                 l = protocol::read_line(&mut reader, &mut buf) => l,
                 _ = closed_rx.changed() => break,
+                _ = reader_kill.wait_for(|k| *k) => break,
             };
             match line {
                 Ok(Line::Message(m)) => {
@@ -297,7 +313,8 @@ impl Server {
         let mut line = msg.to_string();
         line.push('\n');
         if queued + line.len() > MAX_QUEUED {
-            let _ = c.tx.send(Out::Close);
+            // Too far behind to catch up: a graceful close would only queue behind the backlog.
+            c.kill.send_replace(true);
             return;
         }
         c.queued.fetch_add(line.len(), Ordering::Relaxed);
@@ -311,6 +328,14 @@ impl Server {
                 let _ = c.tx.send(Out::Close);
                 c.closing = true;
             }
+        }
+    }
+
+    /// Ends a connection at once, without sending what is still queued (the API is turned off).
+    fn abort(&self, conn: u64) {
+        if let Some(c) = self.conns.lock().unwrap().get_mut(&conn) {
+            c.closing = true;
+            c.kill.send_replace(true);
         }
     }
 
@@ -359,6 +384,10 @@ impl Server {
     // ------------------------------------------------------------ requests
 
     async fn on_message(self: Arc<Self>, conn: u64, line: &[u8]) {
+        // Nothing more runs for a connection that is being closed (revoked, unregistered, the API turned off).
+        if self.conns.lock().unwrap().get(&conn).is_none_or(|c| c.closing) {
+            return;
+        }
         let req = match protocol::parse(line) {
             Ok(r) => r,
             Err((id, e)) => return self.send(conn, protocol::error_response(&id, &e), false),
@@ -934,11 +963,12 @@ impl Server {
         self.host.emit("api:apps-changed", Value::Null);
     }
 
-    /// Closes every connection (the API was turned off). Tokens stay valid.
+    /// Ends every connection at once (the API was turned off), also those of clients that stopped reading. Tokens
+    /// stay valid.
     pub fn close_all(&self) {
         let ids: Vec<u64> = self.conns.lock().unwrap().keys().copied().collect();
         for id in ids {
-            self.close(id);
+            self.abort(id);
         }
     }
 

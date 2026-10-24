@@ -189,8 +189,8 @@ The endpoint and the discovery file exist only while Sonolith runs **and** the A
 ### 3.5 Lifecycle
 
 - Sonolith creates the endpoint and the discovery file when the API is turned on (or at startup when it is on), and
-  removes both when the API is turned off or Sonolith quits. Turning the API off closes every connection; tokens
-  stay valid.
+  removes both when the API is turned off or Sonolith quits. Turning the API off closes every connection at once
+  (unsent messages are dropped) and nothing a client sends afterwards is executed; tokens stay valid.
 - After a crash, a stale socket file or discovery file can remain. Sonolith removes them at its next start. A
   client that gets "connection refused" on an existing socket file MUST treat Sonolith as not available and MUST NOT
   delete the file.
@@ -647,7 +647,8 @@ Always delivered, without subscribing: [`registration.resolved`](#registrationre
 - Sonolith coalesces bursts (for example, dragging the volume slider) and sends the latest state; the last change
   always arrives.
 - If a client reads too slowly, Sonolith drops `player.position` and `lyrics.word` events for it rather than
-  queueing them. If more than 4 MiB of other messages wait for the client, Sonolith closes the connection.
+  queueing them. If more than 4 MiB of other messages wait for the client, or the client takes in nothing of a
+  message for 10 seconds, Sonolith closes the connection at once, without sending what is still waiting.
 
 ---
 
@@ -727,7 +728,7 @@ methods that need a scope with `PermissionDenied`. The method reference lists th
 | Time to authenticate | 30 seconds after connecting, unless a registration is pending | connection closed |
 | Pending registrations | 1 per app, 3 in total | `RegistrationPending` / `RateLimited` (`tooManyPending`) |
 | Answer time | Sonolith answers every request within 30 seconds | `Timeout` |
-| Unread outgoing data | 4 MiB per connection | connection closed |
+| Unread outgoing data | 4 MiB per connection, or 10 seconds without reading | connection closed at once |
 
 ### 12.1 Rate limits
 
