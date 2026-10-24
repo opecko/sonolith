@@ -60,6 +60,12 @@ fn read(entry: &keyring::Entry) -> Result<Option<String>, keyring::Error> {
 /// The ytdesk-era cookie, saved under the new service. The old entry stays (an older ytdesk still finds its
 /// sign-in after a downgrade, and nothing is lost if the new write didn't stick); signing out deletes both.
 fn migrate_old_cookie() -> Option<String> {
+    // Startup asks for the cookie from several places at once: one of them moves it, the others find it moved.
+    static MIGRATING: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _guard = MIGRATING.lock().unwrap_or_else(|e| e.into_inner());
+    if let Ok(Some(c)) = read(&entry().ok()?) {
+        return Some(c);
+    }
     let cookie = read(&old_entry().ok()?).ok()??;
     match entry().and_then(|e| e.set_secret(cookie.as_bytes()).map_err(|e| e.to_string())) {
         Ok(()) => eprintln!("keyring: moved the sign-in from \"{OLD_SERVICE}\" to \"{SERVICE}\""),
