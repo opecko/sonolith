@@ -840,6 +840,11 @@ The API is a local, per-user service. This section says plainly what it protects
   `session.hello`. Registration needs the user's explicit approval on a screen showing the app identity.
 - **Approved apps overreaching.** Every method checks the app's scopes. The user sees and controls the scopes, and
   can remove an app at any time.
+- **A reused process id.** Sonolith looks at the connecting process through the operating system, and a process id
+  can be given to another program once its process exits. On Linux (kernel 6.5 or newer) Sonolith holds a pidfd of
+  the peer and checks that it still refers to the same process after reading its details; on older kernels it uses
+  the process id from the socket credentials, which has that race. On Windows it checks that the process was created
+  before the client connected. When the check fails, the call fails with `Unavailable` (reason `peerUnverified`).
 - **Token reuse by a different program.** The token is bound to the app identity the user approved. A program
   with another identity presenting it triggers a new consent screen instead of access.
 - **Token theft from Sonolith's data.** Sonolith stores only hashes of tokens.

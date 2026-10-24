@@ -124,8 +124,8 @@ pub(super) async fn accept_unix(listener: tokio::net::UnixListener, server: Arc<
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             continue;
         };
-        let cred = stream.peer_cred().ok();
-        let peer = move || super::peer::unix_peer(cred);
+        let unix_peer = super::peer::UnixPeer::of(&stream);
+        let peer = move || super::peer::unix_peer(unix_peer);
         let hangup = hangup(std::os::fd::AsRawFd::as_raw_fd(&stream));
         tokio::spawn(server.clone().serve(stream, peer, hangup));
     }
@@ -149,7 +149,7 @@ async fn hangup(fd: std::os::fd::RawFd) {
 
 #[cfg(windows)]
 pub async fn start(server: Arc<Server>, app_version: &str) -> std::io::Result<(Endpoint, tauri::async_runtime::JoinHandle<()>)> {
-    use super::win::{default_pipe_name, pipe_client_pid, process, UserOnly};
+    use super::win::{default_pipe_name, now_filetime, pipe_client_pid, process, UserOnly};
     let attrs = UserOnly::new()?;
     let mut name = default_pipe_name();
     // Someone else holds the name: take a random one; clients read it from discovery.json.
@@ -185,7 +185,8 @@ pub async fn start(server: Arc<Server>, app_version: &str) -> std::io::Result<(E
                 }
             };
             let pid = pipe_client_pid(&connected);
-            let peer = move || pid.ok_or(super::peer::PeerError::Unknown).and_then(process);
+            let connected_at = now_filetime();
+            let peer = move || pid.ok_or(super::peer::PeerError::Unknown).and_then(|p| process(p, connected_at));
             // A pipe cannot be half-closed: end of input means the client is gone.
             tokio::spawn(server.clone().serve(connected, peer, std::future::ready(())));
         }

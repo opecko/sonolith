@@ -5,13 +5,14 @@ use super::peer::PeerError;
 use std::ffi::c_void;
 use std::os::windows::io::AsRawHandle;
 use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
-use windows_sys::Win32::Foundation::{CloseHandle, LocalFree, HANDLE};
+use windows_sys::Win32::Foundation::{CloseHandle, LocalFree, FILETIME, HANDLE};
 use windows_sys::Win32::Security::Authorization::{ConvertSidToStringSidW, ConvertStringSecurityDescriptorToSecurityDescriptorW};
 use windows_sys::Win32::Security::{GetTokenInformation, TokenUser, SECURITY_ATTRIBUTES, TOKEN_QUERY, TOKEN_USER};
 use windows_sys::Win32::System::Diagnostics::Debug::ReadProcessMemory;
 use windows_sys::Win32::System::Pipes::GetNamedPipeClientProcessId;
+use windows_sys::Win32::System::SystemInformation::GetSystemTimePreciseAsFileTime;
 use windows_sys::Win32::System::Threading::{
-    GetCurrentProcess, OpenProcess, OpenProcessToken, QueryFullProcessImageNameW, PROCESS_BASIC_INFORMATION,
+    GetCurrentProcess, GetProcessTimes, OpenProcess, OpenProcessToken, QueryFullProcessImageNameW, PROCESS_BASIC_INFORMATION,
     PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_VM_READ,
 };
 use windows_sys::Wdk::System::Threading::NtQueryInformationProcess;
@@ -111,12 +112,40 @@ pub fn pipe_client_pid(pipe: &NamedPipeServer) -> Option<u32> {
     (ok && pid != 0).then_some(pid)
 }
 
-/// A process's facts (image path, command line, working directory). Blocking.
-pub fn process(pid: u32) -> Result<ProcessInfo, PeerError> {
+fn ticks(t: FILETIME) -> u64 {
+    (u64::from(t.dwHighDateTime) << 32) | u64::from(t.dwLowDateTime)
+}
+
+/// Now, as FILETIME ticks (100 ns). Read right after a client connects: a process created later can't be that client.
+pub fn now_filetime() -> u64 {
+    let mut t = FILETIME { dwLowDateTime: 0, dwHighDateTime: 0 };
+    unsafe { GetSystemTimePreciseAsFileTime(&mut t) };
+    ticks(t)
+}
+
+/// When the process behind a handle was created (FILETIME ticks), 0 if the system won't say.
+unsafe fn creation_time(h: HANDLE) -> u64 {
+    let zero = FILETIME { dwLowDateTime: 0, dwHighDateTime: 0 };
+    let (mut created, mut exited, mut kernel, mut user) = (zero, zero, zero, zero);
+    if GetProcessTimes(h, &mut created, &mut exited, &mut kernel, &mut user) == 0 {
+        return 0;
+    }
+    ticks(created)
+}
+
+/// A process's facts (image path, command line, working directory). Blocking. `connected_at` is `now_filetime()` from
+/// when the client connected: the pid comes from the pipe, and a pid can be reused once its process exits, so the
+/// process behind it must have existed when the client connected, or it is not the client.
+pub fn process(pid: u32, connected_at: u64) -> Result<ProcessInfo, PeerError> {
     unsafe {
         let h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, 0, pid);
         let h = if h.is_null() { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) } else { h };
         if h.is_null() {
+            return Err(PeerError::Unknown);
+        }
+        // The handle keeps pointing at this process object, so the check holds for everything read below.
+        if !super::peer::started_before(creation_time(h), connected_at) {
+            CloseHandle(h);
             return Err(PeerError::Unknown);
         }
         let mut buf = vec![0u16; 32768];
