@@ -111,9 +111,16 @@ async function libraryGuard(id: string, call: Call): Promise<Awaited<ReturnType<
   return entries;
 }
 
-/** Everything a playable reference stands for, in order, at most `max` items. */
-async function tracksOf(ref: A.PlayableRef, call: Call, max = MAX_ITEMS): Promise<{ tracks: Track[]; context: { playlistId?: string; title?: string } }> {
-  max = Math.min(max, MAX_ITEMS);
+/**
+ * Everything a playable reference stands for, in order, at most `max` items (and never more than `MAX_ITEMS` of one
+ * album, playlist or podcast: `cut` says it had more). One item beyond the cap is read to know.
+ */
+async function tracksOf(ref: A.PlayableRef, call: Call, max = MAX_ITEMS): Promise<{ tracks: Track[]; context: { playlistId?: string; title?: string }; cut: boolean }> {
+  const r = await tracksUpTo(ref, call, Math.min(max, MAX_ITEMS + 1));
+  return { ...r, tracks: r.tracks.slice(0, MAX_ITEMS), cut: r.tracks.length > MAX_ITEMS };
+}
+
+async function tracksUpTo(ref: A.PlayableRef, call: Call, max: number): Promise<{ tracks: Track[]; context: { playlistId?: string; title?: string } }> {
   switch (ref.type) {
     case "track":
     case "episode":
@@ -138,8 +145,9 @@ async function tracksOf(ref: A.PlayableRef, call: Call, max = MAX_ITEMS): Promis
  * The tracks of several references in order, at most `max` together. They are looked up `LOOKUPS` at a time, and
  * references after the first `max` tracks are not looked up at all.
  */
-async function tracksOfAll(refs: A.PlayableRef[], call: Call, max: number): Promise<Track[]> {
+async function tracksOfAll(refs: A.PlayableRef[], call: Call, max: number): Promise<{ tracks: Track[]; cut: boolean }> {
   const lists: Track[][] = [];
+  let cut = false;
   let total = 0;
   let next = 0;
   const worker = async () => {
@@ -147,7 +155,9 @@ async function tracksOfAll(refs: A.PlayableRef[], call: Call, max: number): Prom
       call.signal?.throwIfAborted();
       const i = next++;
       try {
-        lists[i] = (await about(() => tracksOf(refs[i], call, max - total))).tracks;
+        const r = await about(() => tracksOf(refs[i], call, max - total));
+        lists[i] = r.tracks;
+        cut ||= r.cut;
       } catch (e) {
         next = refs.length; // the other workers stop too
         throw e;
@@ -156,7 +166,7 @@ async function tracksOfAll(refs: A.PlayableRef[], call: Call, max: number): Prom
     }
   };
   await Promise.all(Array.from({ length: Math.min(LOOKUPS, refs.length) }, worker));
-  return lists.flat().slice(0, max);
+  return { tracks: lists.flat().slice(0, max), cut };
 }
 
 /** Errors of YouTube calls about one item: unknown ids are NotFound, signed-out calls NotSignedIn. */
@@ -188,11 +198,11 @@ const queueRoom = () => Math.max(0, Math.min(MAX_CALL_ITEMS, MAX_QUEUE - player(
  */
 async function forQueue(refs: A.PlayableRef[], call: Call): Promise<{ tracks: Track[]; truncated: boolean; limit: number }> {
   const room = queueRoom();
-  const found = room > 0 ? await tracksOfAll(refs, call, room + 1) : [];
+  const found = room > 0 ? await tracksOfAll(refs, call, room + 1) : { tracks: [], cut: false };
   call.signal?.throwIfAborted();
-  // The queue may have changed during the lookup.
+  // The queue may have changed during the lookup. An album, playlist or podcast over 500 items counts too.
   const limit = queueRoom();
-  return { tracks: found.slice(0, limit), truncated: room === 0 || found.length > limit, limit };
+  return { tracks: found.tracks.slice(0, limit), truncated: room === 0 || found.cut || found.tracks.length > limit, limit };
 }
 
 function indexOfEntry(entryId: string): number {
@@ -355,7 +365,7 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     return { playlist: detail, ...r };
   },
   "playlist.create": async (p, call) => {
-    const ids = (await tracksOfAll(p.items ?? [], call, Infinity)).map((t) => t.id);
+    const ids = (await tracksOfAll(p.items ?? [], call, Infinity)).tracks.map((t) => t.id);
     call.signal?.throwIfAborted();
     const id = await useLibrary.getState().create(p.title, { description: p.description, privacy: p.privacy, videoIds: ids });
     if (!id) throw new ApiError("InternalError");

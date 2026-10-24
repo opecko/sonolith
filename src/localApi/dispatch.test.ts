@@ -244,6 +244,15 @@ describe("queue", () => {
     expect(await run("queue.playNext", { items: [{ type: "album", id: "MPREb" }] })).toMatchObject({ added: 0, truncated: true, limit: 0 });
   });
 
+  it("calls an add truncated when one album or playlist had more than 500 items", async () => {
+    playing("a");
+    const tracks = (n: number) => Array.from({ length: n }, (_, i) => song(`t${i}`));
+    h.ytm.getAlbum.mockResolvedValue({ type: "album", id: "MPREb", title: "Album", subtitle: "", tracks: tracks(501), related: [] });
+    expect(await run("queue.add", { items: [{ type: "album", id: "MPREb" }] })).toMatchObject({ added: 500, truncated: true, limit: 1000 });
+    h.ytm.getAlbum.mockResolvedValue({ type: "album", id: "MPREb", title: "Album", subtitle: "", tracks: tracks(500), related: [] });
+    expect(await run("queue.add", { items: [{ type: "album", id: "MPREb" }] })).toMatchObject({ added: 500, truncated: false });
+  });
+
   it("doesn't call an add truncated when everything just fits", async () => {
     usePlayer.setState({ queue: Array.from({ length: 4980 }, (_, i) => song(`q${i}`)), index: 0 } as never);
     h.ytm.getAlbum.mockResolvedValue({ type: "album", id: "MPREb", title: "Album", subtitle: "", tracks: Array.from({ length: 20 }, (_, i) => song(`t${i}`)), related: [] });
