@@ -58,6 +58,8 @@ interface PlayerState {
   /** One track or a whole album/playlist, at the end of the queue. */
   addToQueue: (tracks: Track | Track[]) => void;
   removeAt: (index: number) => void;
+  /** Removes everything but the current track (and stops the queue's source from refilling it); playback goes on. */
+  clearQueue: () => void;
   /** Drag & drop reorder; playback is untouched, `index` follows the playing track. */
   moveTrack: (from: number, to: number) => void;
   /** Applies the autoplay setting: OFF drops pending autoplay tracks, ON may fetch immediately. */
@@ -583,6 +585,14 @@ export const usePlayer = create<PlayerState>((set, get) => {
       const { queue, index } = get();
       if (i === index || !queue[i]) return;
       set({ queue: queue.filter((_, j) => j !== i), index: i < index ? index - 1 : index });
+    },
+    clearQueue: () => {
+      const { queue, index, context } = get();
+      const current = queue[index];
+      queueGen++; // drops autoplay and continuation pages still on their way
+      autoplaySeeds.clear();
+      unshuffled = current ? [current] : [];
+      set({ queue: unshuffled, index: current ? 0 : -1, context: { ...context, continuation: undefined, autoplay: false } });
     },
     playIndex: (index) => {
       if (get().queue[index]) start(index);
