@@ -17,7 +17,7 @@ const h = vi.hoisted(() => ({
 vi.mock("../api/client", () => ({ AuthError: h.AuthError }));
 const FakeAuthError = h.AuthError;
 vi.mock("../api/ytm", () => {
-  for (const n of ["getAlbum", "getArtist", "getEpisode", "getEpisodes", "getHistory", "getLibrary", "getPlaylist", "getPodcastShow", "getSearchSuggestions",
+  for (const n of ["getAlbum", "getArtist", "getEpisode", "getEpisodes", "getHistory", "getLibrary", "getPlaylist", "getPlaylistEntries", "getPodcastShow", "getSearchSuggestions",
     "getWatch", "rate", "removeFromPlaylist", "addToPlaylist", "search", "searchByType", "setPodcastSaved", "setSaved"]) h.ytm[n] = vi.fn();
   return h.ytm;
 });
@@ -264,6 +264,7 @@ describe("library and playlists", () => {
   });
 
   it("hides the user's own playlists from apps with only search", async () => {
+    h.ytm.getPlaylistEntries.mockResolvedValue(page([song("a")]));
     h.ytm.getPlaylist.mockResolvedValue({ type: "playlist", id: "PLmine", title: "Mine", subtitle: "3 tracks", tracks: [song("a")], loadMore: null });
     expect(await fails(run("playlist.get", { id: "PLmine" }, ["search"]))).toEqual({ name: "NotFound", reason: null });
     expect(await fails(run("playlist.get", { id: "LM" }, ["search"]))).toEqual({ name: "NotFound", reason: null });
@@ -307,11 +308,48 @@ describe("library and playlists", () => {
     expect(h.ytm.addToPlaylist).toHaveBeenCalledWith("PL1", ["a", "b", "b"]);
   });
 
-  it("removes entries by their ids", async () => {
-    expect(await run("playlist.removeTracks", { id: "PL1", entryIds: ["a", "a", "b"] })).toEqual({ removed: 2 });
-    expect(h.ytm.removeFromPlaylist).toHaveBeenCalledWith("PL1", ["a", "b"]);
+  it("lists entries with their own ids: the same song twice has two", async () => {
+    h.ytm.getPlaylist.mockResolvedValue({ type: "playlist", id: "PL1", title: "L", subtitle: "3 tracks", tracks: [song("a"), song("b"), song("a")], loadMore: null });
+    h.ytm.getPlaylistEntries.mockResolvedValue(page([song("a", { setVideoId: "S1" }), song("b", { setVideoId: "S2" }), song("a", { setVideoId: "S3" })]));
+    const r = await run("playlist.get", { id: "PL1" });
+    expect(r.items.map((e: { entryId: string; item: { id: string } }) => [e.entryId, e.item.id])).toEqual([["S1", "a"], ["S2", "b"], ["S3", "a"]]);
+    // A playlist whose entries carry no ids (nothing to edit with).
+    h.ytm.getPlaylistEntries.mockResolvedValue(page([song("a")]));
+    expect((await run("playlist.get", { id: "PL1" })).items[0].entryId).toBeNull();
+  });
+
+  it("pages entries across YouTube's pages", async () => {
+    h.ytm.getPlaylist.mockResolvedValue({ type: "playlist", id: "PL1", title: "L", subtitle: "", tracks: [], loadMore: null });
+    h.ytm.getPlaylistEntries.mockResolvedValue(page([song("a", { setVideoId: "S1" })], async () => page([song("b", { setVideoId: "S2" })])));
+    const first = await run("playlist.get", { id: "PL1", limit: 1 });
+    expect(first.items.map((e: { entryId: string }) => e.entryId)).toEqual(["S1"]);
+    const second = await run("playlist.get", { id: "PL1", limit: 1, cursor: first.nextCursor });
+    expect(second.items.map((e: { entryId: string }) => e.entryId)).toEqual(["S2"]);
+    expect(second.nextCursor).toBeNull();
+  });
+
+  it("removes exactly the entries asked for, one copy of a duplicated song at a time", async () => {
+    h.ytm.getPlaylistEntries.mockResolvedValue(page([song("a", { setVideoId: "S1" }), song("b", { setVideoId: "S2" }), song("a", { setVideoId: "S3" })]));
+    expect(await run("playlist.removeTracks", { id: "PL1", entryIds: ["S3"] })).toEqual({ removed: 1 });
+    expect(h.ytm.removeFromPlaylist).toHaveBeenCalledWith("PL1", ["S3"], true);
+    expect(h.library.adjustCount).toHaveBeenCalledWith("PL1", -1);
+    // Several at once, ids the playlist doesn't have are ignored and not counted.
+    h.ytm.removeFromPlaylist.mockClear();
+    expect(await run("playlist.removeTracks", { id: "PL1", entryIds: ["S1", "S2", "nope"] })).toEqual({ removed: 2 });
+    expect(h.ytm.removeFromPlaylist).toHaveBeenCalledWith("PL1", ["S1", "S2"], true);
+    // A video id is not an entry id.
+    h.ytm.removeFromPlaylist.mockClear();
+    expect(await run("playlist.removeTracks", { id: "PL1", entryIds: ["a"] })).toEqual({ removed: 0 });
+    expect(h.ytm.removeFromPlaylist).not.toHaveBeenCalled();
+  });
+
+  it("finds entries on later pages and refuses someone else's playlist", async () => {
+    h.ytm.getPlaylistEntries.mockResolvedValue(page([song("a", { setVideoId: "S1" })], async () => page([song("b", { setVideoId: "S2" })])));
+    expect(await run("playlist.removeTracks", { id: "PL1", entryIds: ["S2"] })).toEqual({ removed: 1 });
     h.ytm.removeFromPlaylist.mockRejectedValue(new Error("This playlist cannot be edited."));
-    expect(await fails(run("playlist.removeTracks", { id: "PLx", entryIds: ["a"] }))).toEqual({ name: "Unavailable", reason: "notEditable" });
+    expect(await fails(run("playlist.removeTracks", { id: "PLx", entryIds: ["S1"] }))).toEqual({ name: "Unavailable", reason: "notEditable" });
+    h.ytm.getPlaylistEntries.mockRejectedValue(new Error("Request failed with status code 404"));
+    expect(await fails(run("playlist.removeTracks", { id: "PLgone", entryIds: ["S1"] }))).toEqual({ name: "NotFound", reason: null });
   });
 });
 

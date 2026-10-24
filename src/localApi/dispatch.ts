@@ -2,7 +2,7 @@
 // stores and YouTube calls the UI uses. Params arrive checked against the spec (src-tauri/src/api/validate.rs).
 import type { Item as AppItem, Page, SearchGroup, Shelf, Track } from "../api/types";
 import {
-  getAlbum, getArtist, getEpisode, getEpisodes, getHistory, getLibrary, getPlaylist, getPodcastShow, getSearchSuggestions,
+  getAlbum, getArtist, getEpisode, getEpisodes, getHistory, getLibrary, getPlaylist, getPlaylistEntries, getPodcastShow, getSearchSuggestions,
   getWatch, rate, removeFromPlaylist, addToPlaylist, search, searchByType, setPodcastSaved, setSaved,
 } from "../api/ytm";
 import { findLyrics, useLyrics } from "../lyrics/store";
@@ -59,6 +59,17 @@ const playlistPage = (pl: Awaited<ReturnType<typeof getPlaylist>>): Page<Track> 
   items: pl.tracks,
   loadMore: pl.loadMore ? async () => playlistPage(await pl.loadMore!()) : null,
 });
+
+/** Every entry of a playlist (up to 100 pages), to look entries up by their ids. */
+async function allEntries(id: string): Promise<Track[]> {
+  let p = await getPlaylistEntries(id);
+  const all = [...p.items];
+  for (let i = 0; p.loadMore && i < 100; i++) {
+    p = await p.loadMore();
+    all.push(...p.items);
+  }
+  return all;
+}
 
 async function podcastEpisodes(id: string): Promise<Track[]> {
   const show = await getPodcastShow(id);
@@ -260,7 +271,8 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     const listed = useLibrary.getState().playlists?.find((x) => x.id === p.id);
     const detail: A.PlaylistDetail = { ...C.playlist({ ...pl, subtitle: listed?.subtitle ?? pl.subtitle }), description: null, privacy: null };
     const c = libraryCtx(call);
-    const r = await page(`playlist:${p.id}`, p.cursor, p.limit, async () => playlistPage(pl), (t: Track): A.PlaylistEntry => ({ entryId: t.id, item: C.mediaItem(t, c) }));
+    // Entries come from the raw page: only it has each entry's own id (the same song twice has two).
+    const r = await page(`playlist:${p.id}`, p.cursor, p.limit, () => about(() => getPlaylistEntries(p.id)), (t: Track): A.PlaylistEntry => ({ entryId: t.setVideoId ?? null, item: C.mediaItem(t, c) }));
     return { playlist: detail, ...r };
   },
   "playlist.create": async (p) => {
@@ -296,11 +308,15 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     return { added: ids.length, skipped };
   },
   "playlist.removeTracks": async (p) => {
-    const ids = [...new Set(p.entryIds)];
-    await about(() => removeFromPlaylist(p.id, ids), { editable: true });
-    useLibrary.getState().adjustCount(p.id, -ids.length);
-    useLibrary.getState().changed();
-    return { removed: ids.length };
+    // Exactly the entries asked for (not every copy of a song); ids the playlist doesn't have are ignored.
+    const want = new Set(p.entryIds);
+    const present = (await about(() => allEntries(p.id))).filter((t) => t.setVideoId && want.has(t.setVideoId)).map((t) => t.setVideoId!);
+    if (present.length) {
+      await about(() => removeFromPlaylist(p.id, present, true), { editable: true });
+      useLibrary.getState().adjustCount(p.id, -present.length);
+      useLibrary.getState().changed();
+    }
+    return { removed: present.length };
   },
 
   "search.query": async (p, call) => {
