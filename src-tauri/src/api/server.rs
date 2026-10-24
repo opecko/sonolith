@@ -121,7 +121,8 @@ pub struct Server {
     registry: Mutex<Registry>,
     conns: Mutex<HashMap<u64, Conn>>,
     pending: Mutex<HashMap<String, Pending>>,
-    bridge: Mutex<HashMap<u64, oneshot::Sender<Result<Value, RpcError>>>>,
+    /// Calls waiting for the frontend: the connection they came from, and where the answer goes.
+    bridge: Mutex<HashMap<u64, (u64, oneshot::Sender<Result<Value, RpcError>>)>>,
     buckets: Mutex<HashMap<String, Buckets>>,
     activity: Mutex<HashMap<String, VecDeque<(String, u64)>>>,
     published: Mutex<Published>,
@@ -367,6 +368,15 @@ impl Server {
     /// Cleans up after a closed connection: its pending requests are cancelled.
     fn forget(&self, conn: u64) {
         let removed = self.conns.lock().unwrap().remove(&conn);
+        // The frontend stops working on calls nobody waits for any more.
+        let calls: Vec<u64> = {
+            let mut bridge = self.bridge.lock().unwrap();
+            let ids: Vec<u64> = bridge.iter().filter(|(_, (c, _))| *c == conn).map(|(id, _)| *id).collect();
+            ids.into_iter().filter(|id| bridge.remove(id).is_some()).collect()
+        };
+        for id in calls {
+            self.host.emit("api:cancel", json!({ "id": id }));
+        }
         let cancelled: Vec<String> =
             self.pending.lock().unwrap().iter().filter(|(_, p)| p.conn == conn).map(|(k, _)| k.clone()).collect();
         for rid in cancelled {
@@ -476,7 +486,7 @@ impl Server {
                 .ok_or_else(|| RpcError::new(Code::Unavailable).reason("starting").with("retryAfterMs", 1000)),
             (Handler::Frontend, name) => {
                 validate::check(name, p)?;
-                self.call_frontend(name, p, app_id.as_deref().unwrap_or(""), &scopes).await
+                self.call_frontend(conn, name, p, app_id.as_deref().unwrap_or(""), &scopes).await
             }
             (Handler::Server, _) => Err(RpcError::new(Code::InternalError)),
         }
@@ -1245,16 +1255,19 @@ impl Server {
         self.frontend_ready.store(ready, Ordering::Relaxed);
     }
 
-    async fn call_frontend(&self, method: &str, params: &Map<String, Value>, app_id: &str, scopes: &[String]) -> Result<Value, RpcError> {
+    async fn call_frontend(&self, conn: u64, method: &str, params: &Map<String, Value>, app_id: &str, scopes: &[String]) -> Result<Value, RpcError> {
         if !self.frontend_ready.load(Ordering::Relaxed) {
             return Err(RpcError::new(Code::Unavailable).reason("starting").with("retryAfterMs", 2000));
         }
         let id = self.id();
         let (tx, rx) = oneshot::channel();
-        self.bridge.lock().unwrap().insert(id, tx);
+        self.bridge.lock().unwrap().insert(id, (conn, tx));
         self.host.emit("api:call", json!({ "id": id, "method": method, "params": params, "appId": app_id, "scopes": scopes }));
         let out = tokio::time::timeout(BRIDGE_TIMEOUT, rx).await;
-        self.bridge.lock().unwrap().remove(&id);
+        if self.bridge.lock().unwrap().remove(&id).is_some() {
+            // No answer in time: the frontend stops working on it rather than finishing for nobody.
+            self.host.emit("api:cancel", json!({ "id": id }));
+        }
         match out {
             Ok(Ok(r)) => r,
             Ok(Err(_)) => Err(RpcError::new(Code::InternalError)),
@@ -1264,7 +1277,7 @@ impl Server {
 
     /// The frontend's answer to an `api:call`.
     pub fn bridge_reply(&self, id: u64, result: Option<Value>, error: Option<Value>) {
-        if let Some(tx) = self.bridge.lock().unwrap().remove(&id) {
+        if let Some((_, tx)) = self.bridge.lock().unwrap().remove(&id) {
             let _ = tx.send(match error {
                 Some(e) => Err(RpcError::from_bridge(&e)),
                 None => Ok(result.unwrap_or(json!({}))),

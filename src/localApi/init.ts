@@ -22,12 +22,17 @@ export async function initLocalApi() {
   started = true;
   initPublishing();
   const api = useLocalApi;
+  // Calls in progress, so the server can stop one it gave up on (timeout) or whose app went away.
+  const running = new Map<number, AbortController>();
   await listen<ApiCall>("api:call", ({ payload: c }) => {
-    dispatch(c.method, c.params ?? {}, { appId: c.appId, scopes: c.scopes }).then(
+    const stop = new AbortController();
+    running.set(c.id, stop);
+    dispatch(c.method, c.params ?? {}, { appId: c.appId, scopes: c.scopes, signal: stop.signal }).then(
       (result) => invoke("api_reply", { id: c.id, result: result ?? {}, error: null }),
-      (e) => invoke("api_reply", { id: c.id, result: null, error: bridgeError(e) }),
-    ).catch(() => {});
+      (e) => (stop.signal.aborted ? undefined : invoke("api_reply", { id: c.id, result: null, error: bridgeError(e) })),
+    ).catch(() => {}).finally(() => running.delete(c.id));
   });
+  await listen<{ id: number }>("api:cancel", ({ payload }) => running.get(payload.id)?.abort());
   await listen<Consent>("api:consent", ({ payload }) =>
     api.setState((s) => ({ consents: [...s.consents.filter((c) => c.requestId !== payload.requestId), payload] })));
   await listen<{ requestId: string }>("api:consent-cancel", ({ payload }) =>

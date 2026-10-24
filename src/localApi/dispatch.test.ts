@@ -226,6 +226,54 @@ describe("queue", () => {
     expect(await fails(run("queue.add", { items: [{ type: "track", id: "gone" }] }))).toEqual({ name: "NotFound", reason: null });
   });
 
+  it("adds at most 1000 entries per call, looking up only the references it needs", async () => {
+    playing("a");
+    const big = (n: number) => ({ type: "playlist", id: "PL", title: "Big", subtitle: "", tracks: Array.from({ length: 100 }, (_, i) => song(`p${n}-${i}`)), loadMore: n < 4 ? () => Promise.resolve(big(n + 1)) : null });
+    h.ytm.getPlaylist.mockImplementation(async () => big(0));
+    const items = Array.from({ length: 50 }, (_, i) => ({ type: "playlist", id: `PL${i}` }));
+    const r = await run("queue.add", { items });
+    expect(r.added).toBe(1000);
+    expect(h.ytm.getPlaylist.mock.calls.length).toBeLessThan(10);
+  });
+
+  it("never grows the queue past 5000 entries", async () => {
+    usePlayer.setState({ queue: Array.from({ length: 4990 }, (_, i) => song(`q${i}`)), index: 0 } as never);
+    h.ytm.getAlbum.mockResolvedValue({ type: "album", id: "MPREb", title: "Album", subtitle: "", tracks: Array.from({ length: 20 }, (_, i) => song(`t${i}`)), related: [] });
+    expect((await run("queue.add", { items: [{ type: "album", id: "MPREb" }] })).added).toBe(10);
+    expect((await run("queue.add", { items: [{ type: "album", id: "MPREb" }] })).added).toBe(0);
+  });
+
+  it("looks references up a few at a time", async () => {
+    playing("a");
+    let open = 0;
+    let most = 0;
+    h.ytm.getWatch.mockImplementation(async ({ videoId }: { videoId: string }) => {
+      most = Math.max(most, ++open);
+      await new Promise((r) => setTimeout(r, 1));
+      open--;
+      return { tracks: [song(videoId)] };
+    });
+    const items = Array.from({ length: 50 }, (_, i) => ({ type: "track", id: `t${i}` }));
+    const r = await run("queue.add", { items });
+    expect(r.added).toBe(50);
+    expect(player().queue.slice(1).map((t) => t.id)).toEqual(items.map((i) => i.id));
+    expect(most).toBeLessThanOrEqual(4);
+  });
+
+  it("stops a cancelled call between YouTube requests and changes nothing", async () => {
+    const stop = new AbortController();
+    const more = vi.fn(async () => {
+      stop.abort();
+      return { type: "playlist", id: "PL1", title: "L", subtitle: "", tracks: [song("b")], loadMore: async () => ({ type: "playlist", id: "PL1", title: "L", subtitle: "", tracks: [song("c")], loadMore: null }) };
+    });
+    h.ytm.getPlaylist.mockResolvedValue({ type: "playlist", id: "PL1", title: "L", subtitle: "", tracks: [song("a")], loadMore: more });
+    await expect(dispatch("queue.add", { items: [{ type: "playlist", id: "PL1" }] }, { ...call(), signal: stop.signal })).rejects.toThrow();
+    await expect(dispatch("player.playItem", { item: { type: "playlist", id: "PL1" } }, { ...call(), signal: stop.signal })).rejects.toThrow();
+    expect(more).toHaveBeenCalledTimes(1);
+    expect(player().queue).toEqual([]);
+    expect(player().playQueue).not.toHaveBeenCalled();
+  });
+
   it("plays next, moves, clears and sets autoplay", async () => {
     playing("abc", 0);
     h.ytm.getWatch.mockResolvedValue({ tracks: [song("x")] });

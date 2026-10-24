@@ -495,6 +495,22 @@ async fn turning_the_api_off_ends_sessions_of_clients_that_never_read() {
 }
 
 #[tokio::test]
+async fn closing_cancels_frontend_work_in_flight() {
+    let env = start("cancel").await;
+    let token = register(&env, "com.example.busy", &["queue:write"]).await;
+    let mut c = session(&env, "com.example.busy", &token).await;
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    *env.host.calls.lock().unwrap() = Some(tx);
+    env.server.frontend_ready(true);
+    // The frontend gets the call and never answers; the app goes away meanwhile.
+    c.send("queue.add", json!({ "items": [{ "type": "playlist", "id": "PL1" }] })).await;
+    let call = tokio::time::timeout(WAIT, rx.recv()).await.unwrap().unwrap();
+    drop(c);
+    let id = call["id"].clone();
+    env.host.wait_for("api:cancel", |v| v["id"] == id).await;
+}
+
+#[tokio::test]
 async fn malformed_lines_keep_the_connection() {
     let env = start("framing").await;
     let mut c = Client::connect(&env.socket).await;

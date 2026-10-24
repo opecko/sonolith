@@ -728,7 +728,8 @@ methods that need a scope with `PermissionDenied`. The method reference lists th
 | Connections in total | 64 | new connections are closed at once |
 | Time to authenticate | 30 seconds after connecting, unless a registration is pending | connection closed |
 | Pending registrations | 1 per app, 3 in total | `RegistrationPending` / `RateLimited` (`tooManyPending`) |
-| Answer time | Sonolith answers every request within 30 seconds | `Timeout` |
+| Answer time | Sonolith answers every request within 30 seconds | `Timeout`; Sonolith stops working on the request |
+| Queue | 1000 entries added per call, 5000 entries in all | the rest is left out (`added` says how many arrived) |
 | Unread outgoing data | 4 MiB per connection, or 10 seconds without reading | connection closed at once |
 
 ### 12.1 Rate limits
@@ -1857,7 +1858,7 @@ Response:
 
 Adds items to the end of the queue.
 
-An album, playlist or podcast adds all its items (at most 500). If autoplay entries are at the end, the new items go before them.
+An album, playlist or podcast adds all its items (at most 500). If autoplay entries are at the end, the new items go before them. One call adds at most 1000 entries and never grows the queue past 5000 entries; items beyond that are left out (and not looked up), and `added` says how many arrived.
 
 | Scope | Session | Rate class |
 |---|---|---|
@@ -1912,6 +1913,8 @@ Response:
 #### `queue.playNext`
 
 Inserts items right after the current item.
+
+The same limits as `queue.add`: at most 500 items per album, playlist or podcast, 1000 entries per call, and a queue of at most 5000 entries.
 
 | Scope | Session | Rate class |
 |---|---|---|

@@ -18,6 +18,8 @@ import type * as A from "./schema.gen";
 export interface Call {
   appId: string;
   scopes: A.Scope[];
+  /** Aborted when the server gave up on the call (timeout) or the app's connection closed. */
+  signal?: AbortSignal;
 }
 
 type P<M extends A.MethodName> = A.Methods[M]["params"];
@@ -30,6 +32,12 @@ const requireCurrent = (): Track => current() ?? (() => { throw nothingPlaying()
 const libraryCtx = (call: Call) => ctx(call.scopes.includes("library:read"));
 /** Album, playlist and podcast items added at most per reference (api/SPEC.md queue.add). */
 const MAX_ITEMS = 500;
+/** Entries one queue.add / queue.playNext adds at most, whatever the references hold. */
+const MAX_CALL_ITEMS = 1000;
+/** Apps don't grow the queue past this (the UI itself isn't limited). */
+const MAX_QUEUE = 5000;
+/** References looked up at once: 50 playlists must not mean 50 parallel YouTube requests. */
+const LOOKUPS = 4;
 
 /** A playlist id without the `VL` browse prefix, which YouTube also accepts ("VLLM" is liked songs too). */
 const playlistId = (id: string) => id.replace(/^(VL)+/, "");
@@ -53,14 +61,16 @@ async function mediaTrack(ref: { type: "track" | "episode"; id: string }): Promi
   return ref.type === "episode" ? { ...t, podcast: true } : t;
 }
 
-async function allPages(first: Page<Track>): Promise<Track[]> {
+/** Items from `first` and its following pages, at most `max`; stops between pages once the call is cancelled. */
+async function allPages(first: Page<Track>, max: number, signal?: AbortSignal): Promise<Track[]> {
   let p = first;
   const all = [...p.items];
-  while (p.loadMore && all.length < MAX_ITEMS) {
+  while (p.loadMore && all.length < max) {
+    signal?.throwIfAborted();
     p = await p.loadMore();
     all.push(...p.items);
   }
-  return all.slice(0, MAX_ITEMS);
+  return all.slice(0, max);
 }
 
 const playlistPage = (pl: Awaited<ReturnType<typeof getPlaylist>>): Page<Track> => ({
@@ -69,22 +79,23 @@ const playlistPage = (pl: Awaited<ReturnType<typeof getPlaylist>>): Page<Track> 
 });
 
 /** Every entry of a playlist (up to 100 pages), to look entries up by their ids. */
-async function allEntries(id: string): Promise<Track[]> {
+async function allEntries(id: string, signal?: AbortSignal): Promise<Track[]> {
   let p: Page<Track> = await getPlaylistEntries(id);
   const all = [...p.items];
   for (let i = 0; p.loadMore && i < 100; i++) {
+    signal?.throwIfAborted();
     p = await p.loadMore();
     all.push(...p.items);
   }
   return all;
 }
 
-async function podcastEpisodes(id: string): Promise<Track[]> {
+async function podcastEpisodes(id: string, max: number, signal?: AbortSignal): Promise<Track[]> {
   const show = await getPodcastShow(id);
   if (!show.title) throw notFound();
   const withShow = (t: Track): Track => ({ ...t, show: t.show ?? { id, title: show.title } });
   const first: Page<Track> = { items: show.episodes, loadMore: show.next ? () => getEpisodes(show.next!) : null };
-  return (await allPages(first)).map(withShow);
+  return (await allPages(first, max, signal)).map(withShow);
 }
 
 /**
@@ -100,8 +111,9 @@ async function libraryGuard(id: string, call: Call): Promise<Awaited<ReturnType<
   return entries;
 }
 
-/** Everything a playable reference stands for, in order. */
-async function tracksOf(ref: A.PlayableRef, call: Call): Promise<{ tracks: Track[]; context: { playlistId?: string; title?: string } }> {
+/** Everything a playable reference stands for, in order, at most `max` items. */
+async function tracksOf(ref: A.PlayableRef, call: Call, max = MAX_ITEMS): Promise<{ tracks: Track[]; context: { playlistId?: string; title?: string } }> {
+  max = Math.min(max, MAX_ITEMS);
   switch (ref.type) {
     case "track":
     case "episode":
@@ -109,17 +121,42 @@ async function tracksOf(ref: A.PlayableRef, call: Call): Promise<{ tracks: Track
     case "album": {
       const a = await getAlbum(ref.id);
       if (!a.title && !a.tracks.length) throw notFound();
-      return { tracks: a.tracks.slice(0, MAX_ITEMS), context: { title: a.title } };
+      return { tracks: a.tracks.slice(0, max), context: { title: a.title } };
     }
     case "playlist": {
       const id = playlistId(ref.id);
       await libraryGuard(id, call);
       const pl = await getPlaylist(id);
-      return { tracks: await allPages(playlistPage(pl)), context: { playlistId: id, title: pl.title } };
+      return { tracks: await allPages(playlistPage(pl), max, call.signal), context: { playlistId: id, title: pl.title } };
     }
     case "podcast":
-      return { tracks: await podcastEpisodes(ref.id), context: {} };
+      return { tracks: await podcastEpisodes(ref.id, max, call.signal), context: {} };
   }
+}
+
+/**
+ * The tracks of several references in order, at most `max` together. They are looked up `LOOKUPS` at a time, and
+ * references after the first `max` tracks are not looked up at all.
+ */
+async function tracksOfAll(refs: A.PlayableRef[], call: Call, max: number): Promise<Track[]> {
+  const lists: Track[][] = [];
+  let total = 0;
+  let next = 0;
+  const worker = async () => {
+    while (next < refs.length && total < max) {
+      call.signal?.throwIfAborted();
+      const i = next++;
+      try {
+        lists[i] = (await about(() => tracksOf(refs[i], call, max - total))).tracks;
+      } catch (e) {
+        next = refs.length; // the other workers stop too
+        throw e;
+      }
+      total += lists[i].length;
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(LOOKUPS, refs.length) }, worker));
+  return lists.flat().slice(0, max);
 }
 
 /** Errors of YouTube calls about one item: unknown ids are NotFound, signed-out calls NotSignedIn. */
@@ -141,6 +178,9 @@ function queueEntries(call: Call): A.QueueEntry[] {
   const c = libraryCtx(call);
   return queue.map((t, index) => ({ index, entryId: ids[index], item: C.mediaItem(t, c), autoplay: t.source === "autoplay" }));
 }
+
+/** How many entries one call may still add: per-call and queue limits. */
+const queueRoom = () => Math.max(0, Math.min(MAX_CALL_ITEMS, MAX_QUEUE - player().queue.length));
 
 function indexOfEntry(entryId: string): number {
   return queueEntryIds().indexOf(entryId);
@@ -223,6 +263,7 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
   },
   "player.playItem": async (p, call) => {
     const { tracks, context } = await about(() => tracksOf(p.item, call));
+    call.signal?.throwIfAborted();
     if (!tracks.length) throw new ApiError("Unavailable", "notPlayable");
     const single = p.item.type === "track" || p.item.type === "episode";
     let index = 0;
@@ -241,16 +282,17 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     return { ...queueSummary(), ...slice(queueEntries(call), from, p.limit, rev) };
   },
   "queue.add": async (p, call) => {
-    const lists = await Promise.all(p.items.map((r) => about(() => tracksOf(r, call))));
+    const tracks = await tracksOfAll(p.items, call, queueRoom());
+    call.signal?.throwIfAborted();
     const before = player().queue.length;
-    player().addToQueue(lists.flatMap((l) => l.tracks));
+    player().addToQueue(tracks.slice(0, queueRoom()));
     return { added: player().queue.length - before, queue: queueSummary() };
   },
   "queue.playNext": async (p, call) => {
-    const lists = await Promise.all(p.items.map((r) => about(() => tracksOf(r, call))));
-    const tracks = lists.flatMap((l) => l.tracks);
+    const tracks = await tracksOfAll(p.items, call, queueRoom());
+    call.signal?.throwIfAborted();
     const before = player().queue.length;
-    player().playNext(tracks);
+    player().playNext(tracks.slice(0, queueRoom()));
     return { added: Math.max(player().queue.length - before, 0), queue: queueSummary() };
   },
   "queue.move": (p) => {
@@ -301,8 +343,9 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     const r = await page(`playlist:${id}:${lib ? "library" : "public"}`, p.cursor, p.limit, first, (t: Track): A.PlaylistEntry => ({ entryId: t.setVideoId ?? null, item: C.mediaItem(t, c) }));
     return { playlist: detail, ...r };
   },
-  "playlist.create": async (p) => {
-    const ids = await Promise.all((p.items ?? []).map((r) => about(() => mediaTrack(r)).then((t) => t.id)));
+  "playlist.create": async (p, call) => {
+    const ids = (await tracksOfAll(p.items ?? [], call, Infinity)).map((t) => t.id);
+    call.signal?.throwIfAborted();
     const id = await useLibrary.getState().create(p.title, { description: p.description, privacy: p.privacy, videoIds: ids });
     if (!id) throw new ApiError("InternalError");
     return { type: "playlist", id, title: p.title, author: null, trackCount: ids.length, thumbnailUrl: null, editable: true };
@@ -315,17 +358,18 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     await about(() => useLibrary.getState().remove(p.id), { editable: true });
     return {};
   },
-  "playlist.addTracks": async (p) => {
+  "playlist.addTracks": async (p, call) => {
     let ids = [...new Set(p.items.map((i) => i.id))];
     let skipped = p.items.length - ids.length;
     if (!p.allowDuplicates) {
-      const have = new Set((await about(async () => allPages(playlistPage(await getPlaylist(p.id))))).map((t) => t.id));
+      const have = new Set((await about(async () => allPages(playlistPage(await getPlaylist(p.id)), MAX_ITEMS, call.signal))).map((t) => t.id));
       skipped += ids.filter((id) => have.has(id)).length;
       ids = ids.filter((id) => !have.has(id));
     } else {
       ids = p.items.map((i) => i.id);
       skipped = 0;
     }
+    call.signal?.throwIfAborted();
     if (ids.length) {
       await about(() => addToPlaylist(p.id, ids), { editable: true });
       useLibrary.getState().adjustCount(p.id, ids.length);
@@ -333,10 +377,11 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     }
     return { added: ids.length, skipped };
   },
-  "playlist.removeTracks": async (p) => {
+  "playlist.removeTracks": async (p, call) => {
     // Exactly the entries asked for (not every copy of a song); ids the playlist doesn't have are ignored.
     const want = new Set(p.entryIds);
-    const present = (await about(() => allEntries(p.id))).filter((t) => t.setVideoId && want.has(t.setVideoId)).map((t) => t.setVideoId!);
+    const present = (await about(() => allEntries(p.id, call.signal))).filter((t) => t.setVideoId && want.has(t.setVideoId)).map((t) => t.setVideoId!);
+    call.signal?.throwIfAborted();
     if (present.length) {
       await about(() => removeFromPlaylist(p.id, present, true), { editable: true });
       useLibrary.getState().adjustCount(p.id, -present.length);
