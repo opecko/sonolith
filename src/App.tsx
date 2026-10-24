@@ -12,6 +12,7 @@ import NowPlaying from "./views/NowPlaying";
 import { useUi } from "./stores/ui";
 import Toast from "./components/Toast";
 import { initLyrics } from "./lyrics/store";
+import { initLocalApi } from "./localApi/init";
 import { initShortcuts } from "./shortcuts/init";
 import ShortcutFeedback from "./shortcuts/ShortcutFeedback";
 import { browseLinks } from "./components/TrackByline";
@@ -40,6 +41,7 @@ export default function App() {
     void initOnboarding();
     initShortcuts();
     initLyrics();
+    void initLocalApi();
   }, []);
   // One delegated handler for every artist / album link in the app (TrackByline): rows carry only data-* attributes.
   return (

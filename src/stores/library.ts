@@ -7,7 +7,7 @@ interface LibraryState {
   playlists: Item[] | null;
   error: string | null;
   load: () => Promise<void>;
-  create: (title: string) => Promise<string | undefined>;
+  create: (title: string, opts?: Parameters<typeof createPlaylist>[1]) => Promise<string | undefined>;
   /** A playlist's contents changed (song added or removed): its track count in the list is stale. */
   changed: () => void;
   /** Deletes the playlist on YouTube Music and drops it from the list right away. */
@@ -78,10 +78,11 @@ export const useLibrary = create<LibraryState>((set, get) => ({
         inflight = null;
       }
     })()),
-  create: async (title) => {
-    const id = await createPlaylist(title);
+  create: async (title, opts) => {
+    const id = await createPlaylist(title, opts);
     if (id) {
-      const item: Item = { type: "playlist", id, title, subtitle: "Playlist" };
+      const n = opts?.videoIds?.length ?? 0;
+      const item: Item = { type: "playlist", id, title, subtitle: n ? countedSubtitle("Playlist", n) : "Playlist" };
       fresh.set(id, { item, until: Date.now() + FRESH_MS });
       set({ playlists: [item, ...(get().playlists ?? []).filter((p) => p.id !== id)] });
     }
