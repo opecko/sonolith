@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/opecko/sonolith/master/api/schema/discovery.schema.json",
+  "title": "Sonolith API: discovery file",
+  "description": "The contents of `discovery.json`, written by Sonolith while the API is on.",
+  "type": "object",
+  "required": ["apiVersion", "appVersion", "transport", "path", "pid", "startedAt"],
+  "properties": {
+    "apiVersion": { "$ref": "common.schema.json#/$defs/ApiVersion" },
+    "appVersion": { "type": "string" },
+    "transport": { "description": "`unix` (Unix domain socket) or `pipe` (Windows named pipe).", "type": "string", "enum": ["unix", "pipe"] },
+    "path": { "description": "The socket path or the full pipe name to connect to.", "type": "string" },
+    "pid": { "description": "Sonolith's process id.", "type": "integer", "minimum": 1 },
+    "startedAt": { "description": "When the API started listening.", "$ref": "common.schema.json#/$defs/TimestampMs" }
+  }
+}

@@ -1,0 +1,294 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/opecko/sonolith/master/api/schema/media.schema.json",
+  "title": "Sonolith API: music and podcast items",
+  "$defs": {
+    "ItemType": {
+      "description": "What an item is. `track` is a song or music video, `episode` a podcast episode, `podcast` a podcast show.",
+      "type": "string",
+      "enum": ["track", "episode", "album", "playlist", "artist", "podcast"]
+    },
+    "Ref": {
+      "description": "A reference to any item by type and YouTube id.",
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "$ref": "#/$defs/ItemType" },
+        "id": { "$ref": "#/$defs/ItemId" }
+      }
+    },
+    "MediaRef": {
+      "description": "A reference to one playable item: a track or an episode.",
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["track", "episode"] },
+        "id": { "$ref": "#/$defs/ItemId" }
+      }
+    },
+    "PlayableRef": {
+      "description": "A reference to something that can be played or queued: a track, an episode, or a whole album, playlist or podcast.",
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["track", "episode", "album", "playlist", "podcast"] },
+        "id": { "$ref": "#/$defs/ItemId" }
+      }
+    },
+    "RateableRef": {
+      "description": "A reference to something that can be rated: a track or an episode (like, dislike), or an album, playlist or podcast (like saves it to the library).",
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["track", "episode", "album", "playlist", "podcast"] },
+        "id": { "$ref": "#/$defs/ItemId" }
+      }
+    },
+    "ItemId": {
+      "description": "A YouTube id. Opaque: never parse it or build it from parts.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "Rating": {
+      "description": "The user's rating. `none` means neither liked nor disliked.",
+      "type": "string",
+      "enum": ["like", "dislike", "none"]
+    },
+    "ArtistCredit": {
+      "description": "An artist named on an item. `id` is null when YouTube Music shows the name without a link.",
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": ["string", "null"] },
+        "name": { "type": "string" }
+      }
+    },
+    "AlbumCredit": {
+      "description": "The album a track belongs to. `id` is null when YouTube Music shows the title without a link.",
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "type": ["string", "null"] },
+        "title": { "type": "string" }
+      }
+    },
+    "PodcastCredit": {
+      "description": "The podcast show an episode belongs to.",
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "type": ["string", "null"] },
+        "title": { "type": "string" }
+      }
+    },
+    "Track": {
+      "description": "A song or a music video.",
+      "type": "object",
+      "required": ["type", "id", "title", "artists", "album", "durationMs", "thumbnailUrl", "explicit", "video", "rating"],
+      "properties": {
+        "type": { "const": "track" },
+        "id": { "$ref": "#/$defs/ItemId", "description": "The YouTube video id." },
+        "title": { "type": "string" },
+        "artists": { "type": "array", "items": { "$ref": "#/$defs/ArtistCredit" } },
+        "album": { "description": "The album, or null for music videos and singles without one.", "oneOf": [{ "$ref": "#/$defs/AlbumCredit" }, { "type": "null" }] },
+        "durationMs": { "description": "The length, or null when unknown.", "oneOf": [{ "$ref": "common.schema.json#/$defs/DurationMs" }, { "type": "null" }] },
+        "thumbnailUrl": { "$ref": "common.schema.json#/$defs/ThumbnailUrl" },
+        "explicit": { "type": "boolean" },
+        "video": { "description": "True for a music video (official or uploaded) rather than the audio track itself.", "type": "boolean" },
+        "rating": { "description": "The user's rating, or null when unknown or when the app lacks `library:read`.", "oneOf": [{ "$ref": "#/$defs/Rating" }, { "type": "null" }] }
+      }
+    },
+    "Episode": {
+      "description": "A podcast episode.",
+      "type": "object",
+      "required": ["type", "id", "title", "podcast", "author", "durationMs", "thumbnailUrl", "publishedText", "played", "resumePositionMs"],
+      "properties": {
+        "type": { "const": "episode" },
+        "id": { "$ref": "#/$defs/ItemId", "description": "The YouTube video id." },
+        "title": { "type": "string" },
+        "podcast": { "description": "The show, or null when unknown.", "oneOf": [{ "$ref": "#/$defs/PodcastCredit" }, { "type": "null" }] },
+        "author": { "description": "The channel that publishes the show, or null.", "type": ["string", "null"] },
+        "durationMs": { "oneOf": [{ "$ref": "common.schema.json#/$defs/DurationMs" }, { "type": "null" }] },
+        "thumbnailUrl": { "$ref": "common.schema.json#/$defs/ThumbnailUrl" },
+        "publishedText": { "description": "Display text such as `Mar 3, 2026` or `3 days ago`. Display only; do not parse.", "type": ["string", "null"] },
+        "played": { "description": "Whether the user finished it, or null when unknown or when the app lacks `library:read`.", "type": ["boolean", "null"] },
+        "resumePositionMs": { "description": "Where playback resumes, or null when not started, unknown, or the app lacks `library:read`.", "oneOf": [{ "$ref": "common.schema.json#/$defs/DurationMs" }, { "type": "null" }] }
+      }
+    },
+    "MediaItem": {
+      "description": "One playable item: a Track or an Episode. Check `type`.",
+      "oneOf": [{ "$ref": "#/$defs/Track" }, { "$ref": "#/$defs/Episode" }]
+    },
+    "Album": {
+      "description": "An album, single or EP.",
+      "type": "object",
+      "required": ["type", "id", "title", "artists", "albumType", "year", "thumbnailUrl", "explicit"],
+      "properties": {
+        "type": { "const": "album" },
+        "id": { "$ref": "#/$defs/ItemId" },
+        "title": { "type": "string" },
+        "artists": { "type": "array", "items": { "$ref": "#/$defs/ArtistCredit" } },
+        "albumType": { "description": "The release type, or null when unknown.", "type": ["string", "null"], "enum": ["album", "single", "ep", null] },
+        "year": { "description": "The release year, or null when unknown.", "type": ["integer", "null"] },
+        "thumbnailUrl": { "$ref": "common.schema.json#/$defs/ThumbnailUrl" },
+        "explicit": { "type": "boolean" }
+      }
+    },
+    "Playlist": {
+      "description": "A playlist.",
+      "type": "object",
+      "required": ["type", "id", "title", "author", "trackCount", "thumbnailUrl", "editable"],
+      "properties": {
+        "type": { "const": "playlist" },
+        "id": { "$ref": "#/$defs/ItemId" },
+        "title": { "type": "string" },
+        "author": { "description": "Who made it, or null.", "type": ["string", "null"] },
+        "trackCount": { "description": "The number of items, or null when unknown.", "type": ["integer", "null"], "minimum": 0 },
+        "thumbnailUrl": { "$ref": "common.schema.json#/$defs/ThumbnailUrl" },
+        "editable": { "description": "True when the signed-in user can change it, or null when unknown.", "type": ["boolean", "null"] }
+      }
+    },
+    "Artist": {
+      "description": "An artist.",
+      "type": "object",
+      "required": ["type", "id", "name", "thumbnailUrl", "subscribersText"],
+      "properties": {
+        "type": { "const": "artist" },
+        "id": { "$ref": "#/$defs/ItemId", "description": "The YouTube channel id." },
+        "name": { "type": "string" },
+        "thumbnailUrl": { "$ref": "common.schema.json#/$defs/ThumbnailUrl" },
+        "subscribersText": { "description": "Display text such as `1.2M subscribers`, or null. Display only.", "type": ["string", "null"] }
+      }
+    },
+    "Podcast": {
+      "description": "A podcast show.",
+      "type": "object",
+      "required": ["type", "id", "title", "author", "thumbnailUrl"],
+      "properties": {
+        "type": { "const": "podcast" },
+        "id": { "$ref": "#/$defs/ItemId" },
+        "title": { "type": "string" },
+        "author": { "description": "The channel that publishes it, or null.", "type": ["string", "null"] },
+        "thumbnailUrl": { "$ref": "common.schema.json#/$defs/ThumbnailUrl" }
+      }
+    },
+    "Item": {
+      "description": "Any item. Check `type` to tell them apart.",
+      "oneOf": [
+        { "$ref": "#/$defs/Track" },
+        { "$ref": "#/$defs/Episode" },
+        { "$ref": "#/$defs/Album" },
+        { "$ref": "#/$defs/Playlist" },
+        { "$ref": "#/$defs/Artist" },
+        { "$ref": "#/$defs/Podcast" }
+      ]
+    },
+    "AlbumDetail": {
+      "description": "An album with its tracks.",
+      "allOf": [
+        { "$ref": "#/$defs/Album" },
+        {
+          "type": "object",
+          "required": ["description", "trackCount", "durationMs", "tracks"],
+          "properties": {
+            "description": { "type": ["string", "null"] },
+            "trackCount": { "type": "integer", "minimum": 0 },
+            "durationMs": { "description": "The total length, or null when unknown.", "oneOf": [{ "$ref": "common.schema.json#/$defs/DurationMs" }, { "type": "null" }] },
+            "tracks": { "description": "Every track, in album order.", "type": "array", "items": { "$ref": "#/$defs/Track" } }
+          }
+        }
+      ]
+    },
+    "PlaylistDetail": {
+      "description": "A playlist's details (its items come in pages).",
+      "allOf": [
+        { "$ref": "#/$defs/Playlist" },
+        {
+          "type": "object",
+          "required": ["description", "privacy"],
+          "properties": {
+            "description": { "type": ["string", "null"] },
+            "privacy": { "description": "Who can see it, or null when unknown.", "type": ["string", "null"], "enum": ["public", "unlisted", "private", null] }
+          }
+        }
+      ]
+    },
+    "ArtistSection": {
+      "description": "One shelf on an artist page.",
+      "type": "object",
+      "required": ["kind", "title", "items"],
+      "properties": {
+        "kind": {
+          "description": "What the shelf holds. Treat unknown values as `other`.",
+          "type": "string",
+          "enum": ["songs", "albums", "singles", "videos", "playlists", "episodes", "related", "other"]
+        },
+        "title": { "description": "The shelf title as YouTube Music shows it.", "type": "string" },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/Item" } }
+      }
+    },
+    "ArtistDetail": {
+      "description": "An artist page.",
+      "allOf": [
+        { "$ref": "#/$defs/Artist" },
+        {
+          "type": "object",
+          "required": ["description", "sections"],
+          "properties": {
+            "description": { "type": ["string", "null"] },
+            "sections": { "type": "array", "items": { "$ref": "#/$defs/ArtistSection" } }
+          }
+        }
+      ]
+    },
+    "PodcastDetail": {
+      "description": "A podcast show's details (its episodes come in pages).",
+      "allOf": [
+        { "$ref": "#/$defs/Podcast" },
+        {
+          "type": "object",
+          "required": ["description"],
+          "properties": {
+            "description": { "type": ["string", "null"] }
+          }
+        }
+      ]
+    },
+    "EpisodeDetail": {
+      "description": "An episode with its description.",
+      "allOf": [
+        { "$ref": "#/$defs/Episode" },
+        {
+          "type": "object",
+          "required": ["description"],
+          "properties": {
+            "description": { "type": ["string", "null"] }
+          }
+        }
+      ]
+    },
+    "PlaylistEntry": {
+      "description": "One item in a playlist. `entryId` identifies this occurrence (a playlist can hold the same track twice); pass it to `playlist.removeTracks`.",
+      "type": "object",
+      "required": ["entryId", "item"],
+      "properties": {
+        "entryId": { "description": "Null when the playlist cannot be edited.", "type": ["string", "null"] },
+        "item": { "$ref": "#/$defs/MediaItem" }
+      }
+    },
+    "HistoryEntry": {
+      "description": "One item in the listening history.",
+      "type": "object",
+      "required": ["item", "sectionText"],
+      "properties": {
+        "item": { "$ref": "#/$defs/MediaItem" },
+        "sectionText": { "description": "The group it is listed under, such as `Today` or `Last week`, or null. Display only.", "type": ["string", "null"] }
+      }
+    }
+  }
+}

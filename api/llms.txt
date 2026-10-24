@@ -1,0 +1,268 @@
+# Sonolith local API (v1.0.0, draft)
+
+> Sonolith is a desktop YouTube Music client for Linux and Windows. Its local API lets other programs on the same
+> computer see and control playback, the queue, the library, search, and lyrics with timings, with live events.
+> Apps must register and the user approves them on a consent screen. This file is a compact summary for writing an
+> integration; the full spec is SPEC.md (https://github.com/opecko/sonolith/blob/master/api/SPEC.md).
+
+## Connect
+
+- Linux: Unix domain stream socket `$XDG_RUNTIME_DIR/sonolith/api.sock` (fallback `/tmp/sonolith-<uid>/api.sock`;
+  check the dir is yours and 0700).
+- Windows: named pipe; read its name from `%LOCALAPPDATA%\Sonolith\api\discovery.json` (`path`), never build it.
+  Check the pipe server process id equals `pid` in that file before sending the token, when you can.
+- Discovery file (Linux: `$XDG_RUNTIME_DIR/sonolith/discovery.json`):
+  `{"apiVersion":"1.0.0","appVersion":"2.4.0","transport":"unix"|"pipe","path":"…","pid":4242,"startedAt":1793021000000}`.
+- No endpoint = Sonolith not running or API off (Settings → Connected apps → "Allow other apps to connect"). Retry
+  with backoff 1 s doubling to 60 s, ±20% jitter. Never start Sonolith yourself more than once per user action.
+  Never delete the socket file.
+
+## Protocol
+
+- JSON-RPC 2.0, params by name (object) only, one UTF-8 JSON message per line (`\n`), max 1 MiB per message.
+- No batches. Request ids are strings or integers. Responses can come in any order; match by `id`.
+- Sonolith sends only responses and notifications (events), never requests.
+- Half-closing your write side is fine (shell pipes): Sonolith answers, delivers a pending `registration.resolved`,
+  then closes.
+- Unknown params are rejected (InvalidParams/unknownParam). Clients MUST ignore unknown result fields and unknown
+  notifications.
+- Every field the schema defines is always present in results/events; `null` = unknown / not applicable.
+- Positions/lengths: integer ms, fields end in `Ms`. Timestamps: epoch ms, fields end in `At`. `*Text` fields are
+  display-only English strings (hl=en); never parse them. Ids are opaque YouTube ids; always keep `type` with `id`.
+- Paging: `{cursor?, limit? (1–100, default 50)}` -> `{items, nextCursor|null}`. A page may be shorter than `limit`
+  even when more follow; continue until `nextCursor` is null. `InvalidParams` reason `cursorExpired` = restart.
+- `apiVersion` in register/hello is the `MAJOR.MINOR` you wrote against, e.g. "1.0". Minor versions only add things.
+
+## Registration flow
+
+1. Only after a user action ("Connect to Sonolith" button): `app.register {appId, name, description, publisher,
+   homepage?, icon? (PNG data URI ≤ 65536 chars), scopes: [{scope, required, reason}], apiVersion}`.
+2. Result `{status:"pending", requestId, expiresAt}`. Keep the SAME connection open (closing cancels it). The user
+   sees a notification and a consent screen with your name, publisher, icon, verified executable path, and one line
+   per scope with your `reason`; optional scopes can be unticked. Expires after 5 min.
+3. Wait for notification `registration.resolved {requestId, kind, status, token, grantedScopes, retryAfterMs}`:
+   - `approved`: store `token` (sent only once) in a secret store (Linux Secret Service, Windows Credential
+     Manager/DPAPI; fallback: user-only file), then `session.hello`.
+   - `denied`: cooldown (`retryAfterMs`: 10 min, then 1 h, then 24 h). `blocked`: stop. `expired`: offer to retry.
+4. Every connection: `session.hello {appId, token, apiVersion}` first. Sonolith finishes it before reading the
+   next line, so you may pipeline requests after it.
+   - Unauthorized / NotRegistered -> delete token, show "Disconnected from Sonolith", wait for the user.
+   - RegistrationPending (reason identityChanged) -> your executable path changed; keep the connection open,
+     wait for `registration.resolved` kind "identity", then hello again with the same token.
+5. More scopes later: `app.requestScopes {scopes}` (only after a user action) -> pending/granted, then
+   `registration.resolved` kind "scopes" and `session.scopesChanged`.
+6. "Disconnect from Sonolith" button (REQUIRED): `app.unregister`, then delete the token (even if Sonolith is down).
+7. On `session.revoked`: stop, delete the token, show "Disconnected from Sonolith". Never re-register automatically.
+
+Minimal session (one line each):
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"session.hello","params":{"appId":"com.example.mybar","token":"snl_8dmJuD9Z2UkFfCj61pn7Zn_0hI0YOf9Cuw_XU3Uerv0","apiVersion":"1.0"}}
+{"jsonrpc":"2.0","id":2,"method":"events.subscribe","params":{"topics":["player.track","player.state"]}}
+{"jsonrpc":"2.0","id":3,"method":"player.toggle"}
+```
+
+## Scopes (label = what the user sees)
+
+<!-- BEGIN GENERATED: scopes -->
+- player:read ("See what's playing"): The current item, playback state, position, volume, shuffle and repeat.
+- player:control ("Control playback"): Play, pause, skip, seek, volume, shuffle, repeat, episode speed, and starting a track, album, playlist or episode (which replaces the queue).
+- queue:read ("See your queue"): The queue and autoplay.
+- queue:write ("Change your queue"): Add, move and remove queue entries, clear the queue, turn autoplay on or off.
+- library:read ("Access your library"): Playlists, liked songs, albums, artists, podcasts, episodes for later, history, and your ratings in returned items.
+- library:write ("Change your library", sensitive): Create, rename and delete playlists, add and remove playlist items, like and dislike, save albums, playlists and podcasts.
+- search ("Search YouTube Music"): Search, suggestions, and album, artist, podcast, episode and public playlist pages.
+- lyrics:read ("Show lyrics"): Lyrics with timings for the current or any track, and live line and word events.
+<!-- END GENERATED: scopes -->
+
+Without `library:read`, `Track.rating`, `Episode.played` and `Episode.resumePositionMs` are null.
+`playlist.get` works with `library:read` (any playlist) or `search` (public/unlisted only).
+
+## Methods
+
+Format: `name(params) -> result [scope] summary`. `?` = optional param.
+
+<!-- BEGIN GENERATED: methods -->
+- app.info() -> ServerInfo [no session] Describes this Sonolith: API version, supported methods and topics, and the caller's session.
+- app.register(appId: string, name: string, description: string, publisher: string, homepage?: string, icon?: string, scopes: ScopeRequest[], apiVersion: string) -> RegistrationPending [no session] Asks the user to let this app connect. Returns `pending` at once; the outcome arrives as `registration.resolved`.
+- app.requestScopes(scopes: ScopeRequest[]) -> RequestScopesResult [session] Asks the user for more scopes. Shows a consent screen with only the new ones.
+- app.unregister() -> {} [session] Removes this app from Sonolith and invalidates its token.
+- session.hello(appId: string, token: string, apiVersion: string) -> HelloResult [no session] Authenticates the connection with the app's token.
+- events.subscribe(topics: Topic[], positionHz?: integer (1–4)) -> SubscribeResult [session] Subscribes the connection to event topics. Sends a snapshot of each new topic right after the response.
+- events.unsubscribe(topics: Topic[]) -> SubscribeResult [session] Removes topics from the connection's subscriptions.
+- player.getState() -> PlayerState [player:read] Returns the full player state.
+- player.play() -> {} [player:control] Starts or resumes playback.
+- player.pause() -> {} [player:control] Pauses playback. Pausing while paused is not an error.
+- player.toggle() -> {} [player:control] Plays when paused, pauses when playing.
+- player.next() -> {} [player:control] Skips to the next item in the queue.
+- player.previous() -> {} [player:control] Goes back like the Previous button: restarts the current item when more than 3 seconds have played, otherwise plays the previous item.
+- player.seek(positionMs?: integer (ms), offsetMs?: integer) -> {} [player:control] Seeks in the current item. Pass exactly one of `positionMs` and `offsetMs`.
+- player.setVolume(volume?: Volume, muted?: boolean) -> {} [player:control] Sets the volume, mute, or both. Pass at least one.
+- player.setShuffle(enabled: boolean) -> {} [player:control] Turns shuffle on or off.
+- player.setRepeat(mode: RepeatMode) -> {} [player:control] Sets the repeat mode.
+- player.setRate(rate: EpisodeRate) -> {} [player:control] Sets the playback speed for podcast episodes. Tracks always play at 1.
+- player.playItem(item: PlayableRef, startId?: string, shuffle?: boolean, positionMs?: integer (ms)) -> {} [player:control] Plays a track, episode, album, playlist or podcast. Replaces the queue.
+- queue.get(fromIndex?: integer, cursor?: string, limit?: integer (1–100)) -> QueueSummary & {items: QueueEntry[], nextCursor: string | null} [queue:read] Returns the queue, one page at a time.
+- queue.add(items: PlayableRef[]) -> {added: integer, queue: QueueSummary} [queue:write] Adds items to the end of the queue.
+- queue.playNext(items: PlayableRef[]) -> {added: integer, queue: QueueSummary} [queue:write] Inserts items right after the current item.
+- queue.move(entryId: string, toIndex: integer) -> {queue: QueueSummary} [queue:write] Moves one entry to a new index.
+- queue.remove(entryIds: string[]) -> {removed: integer, queue: QueueSummary} [queue:write] Removes entries from the queue.
+- queue.clear() -> {queue: QueueSummary} [queue:write] Removes every entry except the current one. Playback continues.
+- queue.setAutoplay(enabled: boolean) -> {queue: QueueSummary} [queue:write] Turns autoplay on or off.
+- library.playlists(cursor?: string, limit?: integer (1–100)) -> {items: Playlist[], nextCursor: string | null} [library:read] Lists the playlists in the user's library.
+- library.likedSongs(cursor?: string, limit?: integer (1–100)) -> {items: MediaItem[], nextCursor: string | null} [library:read] Lists the user's liked songs, newest first.
+- library.albums(cursor?: string, limit?: integer (1–100)) -> {items: Album[], nextCursor: string | null} [library:read] Lists the albums in the user's library.
+- library.artists(cursor?: string, limit?: integer (1–100)) -> {items: Artist[], nextCursor: string | null} [library:read] Lists the artists in the user's library.
+- library.podcasts(cursor?: string, limit?: integer (1–100)) -> {items: Podcast[], nextCursor: string | null} [library:read] Lists the podcast shows in the user's library.
+- library.episodesForLater(cursor?: string, limit?: integer (1–100)) -> {items: Episode[], nextCursor: string | null} [library:read] Lists the episodes the user saved for later.
+- library.history(cursor?: string, limit?: integer (1–100)) -> {items: HistoryEntry[], nextCursor: string | null} [library:read] Lists the user's listening history, newest first.
+- playlist.get(id: string, cursor?: string, limit?: integer (1–100)) -> {playlist: PlaylistDetail, items: PlaylistEntry[], nextCursor: string | null} [library:read or search] Returns a playlist and its items, one page at a time.
+- playlist.create(title: string, description?: string, privacy?: "public" | "unlisted" | "private", items?: MediaRef[]) -> Playlist [library:write] Creates a playlist in the user's library.
+- playlist.rename(id: string, title: string) -> {} [library:write] Renames a playlist the user owns.
+- playlist.delete(id: string) -> {} [library:write] Deletes a playlist the user owns. This cannot be undone.
+- playlist.addTracks(id: string, items: MediaRef[], allowDuplicates?: boolean) -> {added: integer, skipped: integer} [library:write] Adds tracks or episodes to the end of a playlist the user owns.
+- playlist.removeTracks(id: string, entryIds: string[]) -> {removed: integer} [library:write] Removes entries from a playlist the user owns.
+- search.query(query: string, type?: "all" | "songs" | "videos" | "albums" | "artists" | "playlists" | "podcasts" | "episodes", cursor?: string, limit?: integer (1–100)) -> {topResult: Item | null, items: Item[], nextCursor: string | null} [search] Searches YouTube Music.
+- search.suggestions(query: string) -> {queries: string[], items: Item[]} [search] Returns search suggestions for partial text.
+- browse.album(id: string) -> AlbumDetail [search] Returns an album with all its tracks.
+- browse.artist(id: string) -> ArtistDetail [search] Returns an artist page: description and shelves (top songs, albums, singles, videos, related artists, …).
+- browse.podcast(id: string, cursor?: string, limit?: integer (1–100)) -> {podcast: PodcastDetail, items: Episode[], nextCursor: string | null} [search] Returns a podcast show and its episodes, newest first, one page at a time.
+- browse.episode(id: string) -> EpisodeDetail [search] Returns an episode with its description.
+- rating.set(item: RateableRef, rating: Rating) -> {} [library:write] Likes, dislikes or clears the rating of an item.
+- lyrics.get(trackId?: string) -> LyricsResult [lyrics:read] Returns lyrics with timings for the current item or a given track.
+<!-- END GENERATED: methods -->
+
+## Events
+
+`events.subscribe {topics, positionHz? (1–4)}` -> then one snapshot event per new topic, then events on change.
+Events are JSON-RPC notifications: `{"jsonrpc":"2.0","method":"player.trackChanged","params":{…}}`.
+Not replayed after reconnect; subscribe again. Extrapolate position: `positionMs + (now - positionAt) * rate`.
+
+<!-- BEGIN GENERATED: events -->
+- player.stateChanged: PlayerState [topic player.state, player:read] The player state changed (anything but the position moving on).
+- player.trackChanged: {item: MediaItem | null} [topic player.track, player:read] A different item became current (or none).
+- player.position: PositionEvent [topic player.position, player:read] The playback position, at the subscribed rate while playing.
+- player.volumeChanged: {volume: Volume, muted: boolean} [topic player.volume, player:read] The volume or mute changed.
+- queue.changed: QueueSummary & {reason: QueueChangeReason} [topic queue, queue:read] The queue's entries or current index changed.
+- lyrics.changed: LyricsResult [topic lyrics, lyrics:read] Lyrics for the current item were found, improved, or cleared.
+- lyrics.line: LyricsLineEvent [topic lyrics.line, lyrics:read] The line being sung changed.
+- lyrics.word: LyricsWordEvent [topic lyrics.word, lyrics:read] A word or syllable started.
+- account.changed: AccountState [topic account, no scope] The user signed in to or out of YouTube in Sonolith.
+- registration.resolved: RegistrationOutcome [always delivered] A registration, scope or identity request was answered or expired.
+- session.revoked: RevokeInfo [always delivered] The app's access was revoked. Sonolith closes the connection right after.
+- session.scopesChanged: ScopesChanged [always delivered] The app's granted scopes changed.
+<!-- END GENERATED: events -->
+
+## Types
+
+<!-- BEGIN GENERATED: types -->
+- ItemType = "track" | "episode" | "album" | "playlist" | "artist" | "podcast"
+- Ref {type: ItemType, id: string}
+- MediaRef {type: "track" | "episode", id: string}
+- PlayableRef {type: "track" | "episode" | "album" | "playlist" | "podcast", id: string}
+- RateableRef {type: "track" | "episode" | "album" | "playlist" | "podcast", id: string}
+- Rating = "like" | "dislike" | "none"
+- ArtistCredit {id: string | null, name: string}
+- AlbumCredit {id: string | null, title: string}
+- PodcastCredit {id: string | null, title: string}
+- Track {type: "track", id: string, title: string, artists: ArtistCredit[], album: AlbumCredit | null, durationMs: integer (ms) | null, thumbnailUrl: string | null, explicit: boolean, video: boolean, rating: Rating | null}
+- Episode {type: "episode", id: string, title: string, podcast: PodcastCredit | null, author: string | null, durationMs: integer (ms) | null, thumbnailUrl: string | null, publishedText: string | null, played: boolean | null, resumePositionMs: integer (ms) | null}
+- MediaItem = Track | Episode
+- Album {type: "album", id: string, title: string, artists: ArtistCredit[], albumType: "album" | "single" | "ep" | null, year: integer | null, thumbnailUrl: string | null, explicit: boolean}
+- Playlist {type: "playlist", id: string, title: string, author: string | null, trackCount: integer | null, thumbnailUrl: string | null, editable: boolean | null}
+- Artist {type: "artist", id: string, name: string, thumbnailUrl: string | null, subscribersText: string | null}
+- Podcast {type: "podcast", id: string, title: string, author: string | null, thumbnailUrl: string | null}
+- Item = Track | Episode | Album | Playlist | Artist | Podcast
+- AlbumDetail = Album + {description: string | null, trackCount: integer, durationMs: integer (ms) | null, tracks: Track[]}
+- PlaylistDetail = Playlist + {description: string | null, privacy: "public" | "unlisted" | "private" | null}
+- ArtistSection {kind: "songs" | "albums" | "singles" | "videos" | "playlists" | "episodes" | "related" | "other", title: string, items: Item[]}
+- ArtistDetail = Artist + {description: string | null, sections: ArtistSection[]}
+- PodcastDetail = Podcast + {description: string | null}
+- EpisodeDetail = Episode + {description: string | null}
+- PlaylistEntry {entryId: string | null, item: MediaItem}
+- HistoryEntry {item: MediaItem, sectionText: string | null}
+- PlaybackStatus = "playing" | "paused" | "buffering" | "stopped"
+- RepeatMode = "off" | "all" | "one"
+- EpisodeRate = 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2 | 2.5 | 3
+- PlayerState {status: PlaybackStatus, item: MediaItem | null, positionMs: integer (ms), positionAt: integer (ms since epoch), durationMs: integer (ms) | null, volume: Volume, muted: boolean, shuffle: boolean, repeat: RepeatMode, rate: number, episodeRate: EpisodeRate, canGoNext: boolean, canGoPrevious: boolean, queueIndex: integer | null, queueLength: integer, autoplay: boolean}
+- QueueEntry {index: integer, entryId: string, item: MediaItem, autoplay: boolean}
+- QueueSummary {revision: integer, currentIndex: integer | null, length: integer, autoplay: boolean}
+- QueueChangeReason = "replaced" | "added" | "removed" | "moved" | "cleared" | "advanced" | "autoplay" | "other"
+- PositionEvent {positionMs: integer (ms), positionAt: integer (ms since epoch), durationMs: integer (ms) | null, rate: number, status: PlaybackStatus}
+- LyricsTier = "word" | "line" | "unsynced"
+- LyricWord {startMs: integer (ms), endMs: integer (ms), text: string}
+- LyricLine {startMs: integer (ms) | null, endMs: integer (ms) | null, text: string, words: LyricWord[], background: LyricWord[]}
+- Lyrics {trackId: string, tier: LyricsTier, provider: string, providerName: string, attribution: string | null, lines: LyricLine[]}
+- LyricsResult {trackId: string, status: "found" | "notFound" | "instrumental", lyrics: Lyrics | null}
+- LyricsLineEvent {trackId: string, lineIndex: integer | null, text: string | null, startMs: integer (ms) | null, endMs: integer (ms) | null, positionMs: integer (ms)}
+- LyricsWordEvent {trackId: string, lineIndex: integer, wordIndex: integer, background: boolean, positionMs: integer (ms)}
+- ScopeRequest {scope: Scope, required: boolean, reason: string}
+- RegistrationPending {status: "pending", requestId: string, expiresAt: integer (ms since epoch)}
+- RequestScopesResult {status: "pending" | "granted", requestId: string | null, expiresAt: integer (ms since epoch) | null, grantedScopes: Scope[]}
+- RegistrationOutcome {requestId: string, kind: "register" | "scopes" | "identity", status: "approved" | "denied" | "blocked" | "expired", token: string | null, grantedScopes: Scope[] | null, retryAfterMs: integer | null}
+- HelloResult {apiVersion: string, appVersion: string, appId: string, grantedScopes: Scope[], signedIn: boolean}
+- SessionInfo {appId: string, grantedScopes: Scope[], signedIn: boolean}
+- ServerInfo {apiVersion: string, appVersion: string, platform: "linux" | "windows", methods: string[], topics: Topic[], session: SessionInfo | null}
+- Topic = "player.state" | "player.track" | "player.position" | "player.volume" | "queue" | "lyrics" | "lyrics.line" | "lyrics.word" | "account"
+- SubscribeResult {topics: Topic[], positionHz: integer (1–4)}
+- RevokeInfo {reason: "removed" | "blocked" | "unregistered" | "replaced"}
+- ScopesChanged {grantedScopes: Scope[], added: Scope[], removed: Scope[]}
+- AccountState {signedIn: boolean}
+<!-- END GENERATED: types -->
+
+## Errors
+
+`error.data` always has `name` and `reason`; match on `code` or `data.name`. Common to all methods: InvalidRequest,
+InvalidParams, InternalError, RateLimited, Unavailable, Timeout (+ SessionRequired, PermissionDenied where relevant).
+
+<!-- BEGIN GENERATED: errors -->
+- -32700 ParseError: The line is not valid UTF-8 JSON. -> Fix the client. The connection stays open.
+- -32600 InvalidRequest: Not a valid JSON-RPC 2.0 request object, a batch, a message over the size limit (Sonolith then closes the connection), or a call not allowed in the connection's state. -> Fix the client. See `data.reason`.
+- -32601 MethodNotFound: No such method in this Sonolith. -> Check `app.info` `methods`; the method may be newer than this Sonolith.
+- -32602 InvalidParams: Missing, unknown or invalid parameters, or an expired cursor. -> Fix the call. `data.path` points at the parameter; `data.reason` is `cursorExpired` when a cursor is too old.
+- -32603 InternalError: Sonolith failed unexpectedly. -> Retry later; report it if it repeats.
+- -32001 NotRegistered: The `appId` is not registered (never registered, unregistered, or removed by the user). -> Delete the stored token. Show "Disconnected from Sonolith". Register again only after a user action.
+- -32002 Unauthorized: The token is wrong or has been revoked. -> Delete the stored token. Show "Disconnected from Sonolith". Register again only after a user action.
+- -32003 PermissionDenied: The app lacks the scope in `data.scope`. -> Do not retry. Hide the feature, or ask for the scope with `app.requestScopes` after a user action.
+- -32004 RegistrationPending: A request is already waiting for the user, or the app's executable changed and the user must approve it again. -> Wait for `registration.resolved` with `data.requestId` on the connection that made the request.
+- -32005 RegistrationDenied: The user denied a recent request; asking again is on hold. -> Do not ask again before `data.retryAfterMs`, and then only after a user action.
+- -32006 Blocked: The user blocked this app. -> Stop. Tell the user the app can be unblocked in Sonolith's Settings → Connected apps.
+- -32007 NotSignedIn: The method needs a YouTube account and the user is signed out. -> Tell the user to sign in in Sonolith; subscribe to `account` to know when they do.
+- -32008 NotFound: The item does not exist or is not visible to this app. -> Do not retry with the same id.
+- -32009 RateLimited: The app exceeded its rate limit or its in-flight request limit. -> Wait `data.retryAfterMs`, then retry.
+- -32010 Unavailable: The action is not possible right now (for example, nothing is playing, or Sonolith is still starting). -> See `data.reason`; retry after `data.retryAfterMs` when present.
+- -32011 Timeout: YouTube, a lyrics source or Sonolith did not answer in time. -> Retry later with backoff.
+- -32012 SessionRequired: The method needs an authenticated session. -> Call `session.hello` first.
+- -32013 UnsupportedVersion: Sonolith does not support the requested API major version. -> Tell the user to update Sonolith or the app. `data.supported` lists the supported majors.
+<!-- END GENERATED: errors -->
+
+## Limits
+
+16 requests in flight per connection; 8 connections per app; authenticate within 30 s; answers within 30 s.
+Rate classes per app: local 50/s, control 10/s, network 2/s, account 1 per 2 s (30/min), auth 1/s per connection.
+On RateLimited wait `data.retryAfterMs`. Prefer events over polling.
+
+## Examples
+
+Complete clients (Python, Node/TypeScript) and shell one-liners: https://github.com/opecko/sonolith/tree/master/api/examples
+
+## Integration checklist
+
+1. Connect via discovery.json (Windows: only its pipe name; check server pid).
+2. One JSON message per line, ≤ 1 MiB; match by id; ignore unknown fields/notifications.
+3. Register only on a user action, with a stable appId, clear name/description/publisher and a plain reason per
+   scope; ask only for what you use.
+4. Keep the connection open while pending; handle approved/denied/blocked/expired.
+5. Store the token in a secret store (fallback: user-only file); never log or show it.
+6. `session.hello` first on every connection; handle Unauthorized, NotRegistered, Blocked, RegistrationPending,
+   UnsupportedVersion.
+7. Use only grantedScopes; handle session.scopesChanged and PermissionDenied.
+8. On session.revoked / Unauthorized / NotRegistered: stop, delete token, show "Disconnected from Sonolith".
+9. Never re-register automatically.
+10. Visible "Disconnect from Sonolith" -> app.unregister + delete token.
+11. Reconnect with backoff (1 s -> 60 s, jitter); never spawn Sonolith repeatedly; resubscribe after reconnect.
+12. Use events, not polling.
+13. Respect rate limits (retryAfterMs).
+14. Handle Unavailable, Timeout, NotSignedIn, NotFound, cursorExpired.
+15. Test with Sonolith not running, API off, and Sonolith quitting mid-session.
+16. Test deny, block, expiry, unticked optional scope, removal in Sonolith while connected, disconnect.

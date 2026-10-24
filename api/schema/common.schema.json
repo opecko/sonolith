@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/opecko/sonolith/master/api/schema/common.schema.json",
+  "title": "Sonolith API: common types",
+  "$defs": {
+    "TimestampMs": {
+      "description": "A point in time: milliseconds since the Unix epoch (UTC).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "DurationMs": {
+      "description": "A length of time or a position in milliseconds.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "Cursor": {
+      "description": "An opaque pagination cursor. Pass it back unchanged to get the next page. Never build or parse it.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "Limit": {
+      "description": "The maximum number of items in one page (1–100). A page can hold fewer items even when more exist.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 50
+    },
+    "NextCursor": {
+      "description": "The cursor for the next page, or null when this is the last page.",
+      "type": ["string", "null"],
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "ThumbnailUrl": {
+      "description": "An absolute HTTPS URL of the largest available artwork image, or null when there is none.",
+      "type": ["string", "null"],
+      "format": "uri"
+    },
+    "Scope": {
+      "description": "A permission an app can be granted. See \"Scopes\" for what each one allows and what the user sees.",
+      "type": "string",
+      "enum": [
+        "player:read",
+        "player:control",
+        "queue:read",
+        "queue:write",
+        "library:read",
+        "library:write",
+        "search",
+        "lyrics:read"
+      ]
+    },
+    "AppId": {
+      "description": "A stable reverse-DNS app id: lowercase, at least three dot-separated labels, at most 128 characters, for example `com.example.mybar`. The `dev.sonolith.` prefix is reserved.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*){2,}$",
+      "maxLength": 128
+    },
+    "ApiVersionRequest": {
+      "description": "The API version the client was written for, as `MAJOR.MINOR`, for example `1.0`.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "ApiVersion": {
+      "description": "The full API version Sonolith implements, as semantic version `MAJOR.MINOR.PATCH`.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "Empty": {
+      "description": "An empty object: the method succeeded and has nothing to return.",
+      "type": "object",
+      "properties": {}
+    },
+    "ErrorData": {
+      "description": "The `data` member of every Sonolith error. `name` and `reason` are always present; the other members appear only on the errors that define them.",
+      "type": "object",
+      "required": ["name", "reason"],
+      "properties": {
+        "name": {
+          "description": "The error name, for example `PermissionDenied`. Match on this or on the numeric code.",
+          "type": "string"
+        },
+        "reason": {
+          "description": "A machine-readable detail, for example `cursorExpired`, or null. See \"Error reasons\".",
+          "type": ["string", "null"]
+        },
+        "retryAfterMs": {
+          "description": "RateLimited, RegistrationDenied, Unavailable: wait at least this long before trying again.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "scope": {
+          "description": "PermissionDenied: the scope the method or topic needs.",
+          "$ref": "#/$defs/Scope"
+        },
+        "requestId": {
+          "description": "RegistrationPending: the id of the pending request; its outcome arrives as `registration.resolved`.",
+          "type": "string"
+        },
+        "expiresAt": {
+          "description": "RegistrationPending: when the pending request expires.",
+          "$ref": "#/$defs/TimestampMs"
+        },
+        "supported": {
+          "description": "UnsupportedVersion: the API major versions Sonolith supports, for example `[\"1\"]`.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "path": {
+          "description": "InvalidParams: a JSON Pointer to the offending parameter, for example `/items/0/id`.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,5510 @@
+{
+  "openrpc": "1.3.2",
+  "info": {
+    "title": "Sonolith local API",
+    "version": "1.0.0",
+    "description": "A local JSON-RPC 2.0 API over a Unix domain socket (Linux) or a named pipe (Windows), one JSON message per line. Apps register and the user approves them; see SPEC.md for the full protocol. Server-to-client notifications are listed under `x-events`.",
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/opecko/sonolith/blob/master/LICENSE"
+    }
+  },
+  "servers": [
+    {
+      "name": "linux",
+      "url": "unix:${XDG_RUNTIME_DIR}/sonolith/api.sock",
+      "summary": "Unix domain socket; see discovery.json for the actual path."
+    },
+    {
+      "name": "windows",
+      "url": "pipe:\\\\.\\pipe\\sonolith-api-<user>",
+      "summary": "Named pipe; read discovery.json for the actual name."
+    }
+  ],
+  "methods": [
+    {
+      "name": "app.info",
+      "summary": "Describes this Sonolith: API version, supported methods and topics, and the caller's session.",
+      "tags": [
+        {
+          "name": "app"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/session.schema.json#/$defs/ServerInfo"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        }
+      ],
+      "examples": [
+        {
+          "name": "app.info example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {
+              "apiVersion": "1.0.0",
+              "appVersion": "2.4.0",
+              "platform": "linux",
+              "methods": [
+                "app.info",
+                "app.register",
+                "session.hello",
+                "player.getState"
+              ],
+              "topics": [
+                "player.state",
+                "player.track",
+                "player.position"
+              ],
+              "session": null
+            }
+          }
+        }
+      ],
+      "x-scope": null,
+      "x-requires-session": false,
+      "x-rate-class": "local",
+      "description": "Works before `session.hello`, so a client can check the API version first. `session` is null until the connection is authenticated."
+    },
+    {
+      "name": "app.register",
+      "summary": "Asks the user to let this app connect. Returns `pending` at once; the outcome arrives as `registration.resolved`.",
+      "tags": [
+        {
+          "name": "app"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "appId",
+          "required": true,
+          "description": "The app's stable id. Use the same id in every version of the app.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/AppId"
+          }
+        },
+        {
+          "name": "name",
+          "required": true,
+          "description": "The app's name as the user knows it. 1–48 characters.",
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 48
+          }
+        },
+        {
+          "name": "description",
+          "required": true,
+          "description": "What the app is, in one sentence. 1–200 characters.",
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        {
+          "name": "publisher",
+          "required": true,
+          "description": "Who makes the app: a person, a team or a company. 1–64 characters.",
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        {
+          "name": "homepage",
+          "required": false,
+          "description": "The app's web page. `https://` only, at most 200 characters.",
+          "schema": {
+            "type": "string",
+            "pattern": "^https://",
+            "maxLength": 200,
+            "format": "uri"
+          }
+        },
+        {
+          "name": "icon",
+          "required": false,
+          "description": "A square PNG data URI, at most 65536 characters. No remote URLs.",
+          "schema": {
+            "$ref": "schema/session.schema.json#/$defs/Icon"
+          }
+        },
+        {
+          "name": "scopes",
+          "required": true,
+          "description": "The scopes the app wants, each with `required` and a `reason`. Each scope at most once.",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "schema/session.schema.json#/$defs/ScopeRequest"
+            },
+            "minItems": 1,
+            "maxItems": 8
+          }
+        },
+        {
+          "name": "apiVersion",
+          "required": true,
+          "description": "The API version the client was written for, for example `1.0`.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/ApiVersionRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/session.schema.json#/$defs/RegistrationPending"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/UnsupportedVersion"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/Blocked"
+        },
+        {
+          "$ref": "#/components/errors/RegistrationDenied"
+        },
+        {
+          "$ref": "#/components/errors/RegistrationPending"
+        }
+      ],
+      "examples": [
+        {
+          "name": "app.register example",
+          "params": [
+            {
+              "name": "appId",
+              "value": "com.example.mybar"
+            },
+            {
+              "name": "name",
+              "value": "My Bar"
+            },
+            {
+              "name": "description",
+              "value": "A status bar for Wayland compositors."
+            },
+            {
+              "name": "publisher",
+              "value": "Example Labs"
+            },
+            {
+              "name": "homepage",
+              "value": "https://example.com/mybar"
+            },
+            {
+              "name": "scopes",
+              "value": [
+                {
+                  "scope": "player:read",
+                  "required": true,
+                  "reason": "To show the current song in your bar"
+                },
+                {
+                  "scope": "player:control",
+                  "required": false,
+                  "reason": "To play, pause and skip from your bar"
+                }
+              ]
+            },
+            {
+              "name": "apiVersion",
+              "value": "1.0"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "status": "pending",
+              "requestId": "req_5Jt2xQ",
+              "expiresAt": 1793022300000
+            }
+          }
+        }
+      ],
+      "x-scope": null,
+      "x-requires-session": false,
+      "x-rate-class": "auth",
+      "description": "Sonolith identifies the calling process through the operating system, shows a system notification and a consent screen, and answers with `pending`. The client MUST keep this connection open until `registration.resolved` arrives on it: if the connection closes, Sonolith cancels the request and withdraws the consent screen. A request expires after 5 minutes.\n\nRegistering an `appId` that is already registered also goes through consent. When the user approves, the old token stops working (its connections get `session.revoked` with reason `replaced`) and the new one is sent.\n\nA client MUST call this only after a user action (for example, a \"Connect to Sonolith\" button), never on its own at startup or after an error."
+    },
+    {
+      "name": "app.requestScopes",
+      "summary": "Asks the user for more scopes. Shows a consent screen with only the new ones.",
+      "tags": [
+        {
+          "name": "app"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "scopes",
+          "required": true,
+          "description": "The additional scopes, each with `required` and a `reason`.",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "schema/session.schema.json#/$defs/ScopeRequest"
+            },
+            "minItems": 1,
+            "maxItems": 8
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/session.schema.json#/$defs/RequestScopesResult"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/RegistrationDenied"
+        },
+        {
+          "$ref": "#/components/errors/RegistrationPending"
+        }
+      ],
+      "examples": [
+        {
+          "name": "app.requestScopes example",
+          "params": [
+            {
+              "name": "scopes",
+              "value": [
+                {
+                  "scope": "lyrics:read",
+                  "required": true,
+                  "reason": "To show the current lyric line in your bar"
+                }
+              ]
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "status": "pending",
+              "requestId": "req_9Wm4Lc",
+              "expiresAt": 1793022300000,
+              "grantedScopes": [
+                "player:read",
+                "player:control"
+              ]
+            }
+          }
+        }
+      ],
+      "x-scope": null,
+      "x-requires-session": true,
+      "x-rate-class": "auth",
+      "description": "Scopes the app already has are ignored. When nothing new is asked, the result is `granted` and nothing is shown. Otherwise the result is `pending` and the outcome arrives as `registration.resolved` with `kind` `scopes`; on approval `session.scopesChanged` follows. The connection MUST stay open while the request is pending. Call this only after a user action."
+    },
+    {
+      "name": "app.unregister",
+      "summary": "Removes this app from Sonolith and invalidates its token.",
+      "tags": [
+        {
+          "name": "app"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        }
+      ],
+      "examples": [
+        {
+          "name": "app.unregister example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": null,
+      "x-requires-session": true,
+      "x-rate-class": "auth",
+      "description": "Call this from the app's \"Disconnect from Sonolith\" button, then delete the stored token. Sonolith answers, shows the user \"<name> disconnected from Sonolith\", closes this connection, and sends `session.revoked` (reason `unregistered`) to the app's other connections."
+    },
+    {
+      "name": "session.hello",
+      "summary": "Authenticates the connection with the app's token.",
+      "tags": [
+        {
+          "name": "session"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "appId",
+          "required": true,
+          "description": "The id the app registered with.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/AppId"
+          }
+        },
+        {
+          "name": "token",
+          "required": true,
+          "description": "The token from `registration.resolved`.",
+          "schema": {
+            "$ref": "schema/session.schema.json#/$defs/Token"
+          }
+        },
+        {
+          "name": "apiVersion",
+          "required": true,
+          "description": "The API version the client was written for, for example `1.0`.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/ApiVersionRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/session.schema.json#/$defs/HelloResult"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/UnsupportedVersion"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/Blocked"
+        },
+        {
+          "$ref": "#/components/errors/RegistrationPending"
+        },
+        {
+          "$ref": "#/components/errors/Unauthorized"
+        },
+        {
+          "$ref": "#/components/errors/NotRegistered"
+        }
+      ],
+      "examples": [
+        {
+          "name": "session.hello example",
+          "params": [
+            {
+              "name": "appId",
+              "value": "com.example.mybar"
+            },
+            {
+              "name": "token",
+              "value": "snl_8dmJuD9Z2UkFfCj61pn7Zn_0hI0YOf9Cuw_XU3Uerv0"
+            },
+            {
+              "name": "apiVersion",
+              "value": "1.0"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "apiVersion": "1.0.0",
+              "appVersion": "2.4.0",
+              "appId": "com.example.mybar",
+              "grantedScopes": [
+                "player:read",
+                "player:control"
+              ],
+              "signedIn": true
+            }
+          }
+        }
+      ],
+      "x-scope": null,
+      "x-requires-session": false,
+      "x-rate-class": "auth",
+      "description": "Send it first on every new connection. Sonolith checks the token and that the calling executable is the one the user approved. Sonolith finishes `session.hello` before it reads the next message, so a client MAY send further requests right after it without waiting.\n\nIf the executable path changed (the app was updated or moved), the user is asked again and the call fails with `RegistrationPending` (reason `identityChanged`). Keep the connection open, wait for `registration.resolved` (`kind` `identity`), and on approval call `session.hello` again with the same token."
+    },
+    {
+      "name": "events.subscribe",
+      "summary": "Subscribes the connection to event topics. Sends a snapshot of each new topic right after the response.",
+      "tags": [
+        {
+          "name": "events"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "topics",
+          "required": true,
+          "description": "The topics to add.",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "schema/session.schema.json#/$defs/Topic"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        },
+        {
+          "name": "positionHz",
+          "required": false,
+          "description": "`player.position` events per second while playing, 1–4. Default 1. Applies to the whole connection.",
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "default": 1
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/session.schema.json#/$defs/SubscribeResult"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "events.subscribe example",
+          "params": [
+            {
+              "name": "topics",
+              "value": [
+                "player.state",
+                "player.position",
+                "lyrics.line"
+              ]
+            },
+            {
+              "name": "positionHz",
+              "value": 2
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "topics": [
+                "player.state",
+                "player.position",
+                "lyrics.line"
+              ],
+              "positionHz": 2
+            }
+          }
+        }
+      ],
+      "x-scope": null,
+      "x-requires-session": true,
+      "x-rate-class": "local",
+      "description": "Each topic needs the scope shown in the topic table; if any topic is not allowed, the whole call fails with `PermissionDenied` and nothing changes. Subscribing to a topic the connection already has is not an error (no new snapshot is sent for it). Subscriptions belong to the connection and end with it."
+    },
+    {
+      "name": "events.unsubscribe",
+      "summary": "Removes topics from the connection's subscriptions.",
+      "tags": [
+        {
+          "name": "events"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "topics",
+          "required": true,
+          "description": "The topics to remove. Topics the connection does not have are ignored.",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "schema/session.schema.json#/$defs/Topic"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/session.schema.json#/$defs/SubscribeResult"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        }
+      ],
+      "examples": [
+        {
+          "name": "events.unsubscribe example",
+          "params": [
+            {
+              "name": "topics",
+              "value": [
+                "lyrics.line"
+              ]
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "topics": [
+                "player.state",
+                "player.position"
+              ],
+              "positionHz": 2
+            }
+          }
+        }
+      ],
+      "x-scope": null,
+      "x-requires-session": true,
+      "x-rate-class": "local"
+    },
+    {
+      "name": "player.getState",
+      "summary": "Returns the full player state.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/player.schema.json#/$defs/PlayerState"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.getState example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {
+              "status": "playing",
+              "item": {
+                "type": "track",
+                "id": "Xk3vT9pQm2A",
+                "title": "Glass Harbor",
+                "artists": [
+                  {
+                    "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                    "name": "Northern Static"
+                  }
+                ],
+                "album": {
+                  "id": "MPREb_4pL8gzRtw9a",
+                  "title": "Low Tide Radio"
+                },
+                "durationMs": 214000,
+                "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                "explicit": false,
+                "video": false,
+                "rating": "like"
+              },
+              "positionMs": 61250,
+              "positionAt": 1793022000000,
+              "durationMs": 214000,
+              "volume": 70,
+              "muted": false,
+              "shuffle": false,
+              "repeat": "off",
+              "rate": 1,
+              "episodeRate": 1.25,
+              "canGoNext": true,
+              "canGoPrevious": true,
+              "queueIndex": 3,
+              "queueLength": 25,
+              "autoplay": true
+            }
+          }
+        }
+      ],
+      "x-scope": "player:read",
+      "x-requires-session": true,
+      "x-rate-class": "local"
+    },
+    {
+      "name": "player.play",
+      "summary": "Starts or resumes playback.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.play example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control"
+    },
+    {
+      "name": "player.pause",
+      "summary": "Pauses playback. Pausing while paused is not an error.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.pause example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control"
+    },
+    {
+      "name": "player.toggle",
+      "summary": "Plays when paused, pauses when playing.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.toggle example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control"
+    },
+    {
+      "name": "player.next",
+      "summary": "Skips to the next item in the queue.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.next example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control",
+      "description": "With repeat `all` it wraps to the first item; with autoplay on, Sonolith may first add related tracks."
+    },
+    {
+      "name": "player.previous",
+      "summary": "Goes back like the Previous button: restarts the current item when more than 3 seconds have played, otherwise plays the previous item.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.previous example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control"
+    },
+    {
+      "name": "player.seek",
+      "summary": "Seeks in the current item. Pass exactly one of `positionMs` and `offsetMs`.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "positionMs",
+          "required": false,
+          "description": "The position to seek to. Clamped to the item's length.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/DurationMs"
+          }
+        },
+        {
+          "name": "offsetMs",
+          "required": false,
+          "description": "A relative jump; negative goes back. The result is clamped to the item.",
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.seek example",
+          "params": [
+            {
+              "name": "positionMs",
+              "value": 90000
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control",
+      "x-params-constraints": {
+        "oneOf": [
+          {
+            "required": [
+              "positionMs"
+            ]
+          },
+          {
+            "required": [
+              "offsetMs"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "player.setVolume",
+      "summary": "Sets the volume, mute, or both. Pass at least one.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "volume",
+          "required": false,
+          "description": "The volume, 0–100. Setting a volume above 0 also unmutes.",
+          "schema": {
+            "$ref": "schema/player.schema.json#/$defs/Volume"
+          }
+        },
+        {
+          "name": "muted",
+          "required": false,
+          "description": "Mute or unmute.",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.setVolume example",
+          "params": [
+            {
+              "name": "volume",
+              "value": 55
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control",
+      "x-params-constraints": {
+        "minProperties": 1
+      }
+    },
+    {
+      "name": "player.setShuffle",
+      "summary": "Turns shuffle on or off.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "enabled",
+          "required": true,
+          "description": "enabled",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.setShuffle example",
+          "params": [
+            {
+              "name": "enabled",
+              "value": true
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control"
+    },
+    {
+      "name": "player.setRepeat",
+      "summary": "Sets the repeat mode.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "mode",
+          "required": true,
+          "description": "mode",
+          "schema": {
+            "$ref": "schema/player.schema.json#/$defs/RepeatMode"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.setRepeat example",
+          "params": [
+            {
+              "name": "mode",
+              "value": "all"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control"
+    },
+    {
+      "name": "player.setRate",
+      "summary": "Sets the playback speed for podcast episodes. Tracks always play at 1.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "rate",
+          "required": true,
+          "description": "One of the listed speeds.",
+          "schema": {
+            "$ref": "schema/player.schema.json#/$defs/EpisodeRate"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.setRate example",
+          "params": [
+            {
+              "name": "rate",
+              "value": 1.5
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control",
+      "description": "The speed is a Sonolith setting: it applies to the current episode at once and to every episode after it. Setting it while a track plays is allowed and takes effect at the next episode."
+    },
+    {
+      "name": "player.playItem",
+      "summary": "Plays a track, episode, album, playlist or podcast. Replaces the queue.",
+      "tags": [
+        {
+          "name": "player"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "item",
+          "required": true,
+          "description": "What to play.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/PlayableRef"
+          }
+        },
+        {
+          "name": "startId",
+          "required": false,
+          "description": "For an album, playlist or podcast: the id of the track or episode to start with. Default: the first.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        },
+        {
+          "name": "shuffle",
+          "required": false,
+          "description": "For an album, playlist or podcast: shuffle it and turn shuffle on. Default false.",
+          "schema": {
+            "type": "boolean"
+          }
+        },
+        {
+          "name": "positionMs",
+          "required": false,
+          "description": "Where to start in the first item.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/DurationMs"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "player.playItem example",
+          "params": [
+            {
+              "name": "item",
+              "value": {
+                "type": "album",
+                "id": "MPREb_4pL8gzRtw9a"
+              }
+            },
+            {
+              "name": "startId",
+              "value": "Rb7nW2kLq9E"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "player:control",
+      "x-requires-session": true,
+      "x-rate-class": "control",
+      "description": "A track or episode starts a new queue with that item; with autoplay on, Sonolith continues with related tracks. An album, playlist or podcast fills the queue with its items in order (a podcast: its episodes, newest first). An episode resumes where the user left off unless `positionMs` is given."
+    },
+    {
+      "name": "queue.get",
+      "summary": "Returns the queue, one page at a time.",
+      "tags": [
+        {
+          "name": "queue"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "fromIndex",
+          "required": false,
+          "description": "Start at this index instead of 0, for example `currentIndex` to get what plays next. Ignored with `cursor`.",
+          "schema": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The QueueSummary fields, plus `items` and `nextCursor`.",
+        "schema": {
+          "allOf": [
+            {
+              "$ref": "schema/player.schema.json#/$defs/QueueSummary"
+            },
+            {
+              "type": "object",
+              "required": [
+                "items",
+                "nextCursor"
+              ],
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "schema/player.schema.json#/$defs/QueueEntry"
+                  },
+                  "description": "The entries of this page, in queue order."
+                },
+                "nextCursor": {
+                  "$ref": "schema/common.schema.json#/$defs/NextCursor"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "queue.get example",
+          "params": [
+            {
+              "name": "fromIndex",
+              "value": 3
+            },
+            {
+              "name": "limit",
+              "value": 2
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "revision": 57,
+              "currentIndex": 3,
+              "length": 25,
+              "autoplay": true,
+              "items": [
+                {
+                  "index": 3,
+                  "entryId": "q_118",
+                  "item": {
+                    "type": "track",
+                    "id": "Xk3vT9pQm2A",
+                    "title": "Glass Harbor",
+                    "artists": [
+                      {
+                        "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                        "name": "Northern Static"
+                      }
+                    ],
+                    "album": {
+                      "id": "MPREb_4pL8gzRtw9a",
+                      "title": "Low Tide Radio"
+                    },
+                    "durationMs": 214000,
+                    "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                    "explicit": false,
+                    "video": false,
+                    "rating": "like"
+                  },
+                  "autoplay": false
+                },
+                {
+                  "index": 4,
+                  "entryId": "q_119",
+                  "item": {
+                    "type": "track",
+                    "id": "Rb7nW2kLq9E",
+                    "title": "Paper Satellites",
+                    "artists": [
+                      {
+                        "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                        "name": "Northern Static"
+                      }
+                    ],
+                    "album": {
+                      "id": "MPREb_4pL8gzRtw9a",
+                      "title": "Low Tide Radio"
+                    },
+                    "durationMs": 187000,
+                    "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                    "explicit": false,
+                    "video": false,
+                    "rating": "none"
+                  },
+                  "autoplay": true
+                }
+              ],
+              "nextCursor": "cXVldWU6NTc6NQ"
+            }
+          }
+        }
+      ],
+      "x-scope": "queue:read",
+      "x-requires-session": true,
+      "x-rate-class": "local",
+      "description": "A cursor is tied to the queue's `revision`. If the queue changes between pages, the next page fails with `InvalidParams` (`cursorExpired`); start again."
+    },
+    {
+      "name": "queue.add",
+      "summary": "Adds items to the end of the queue.",
+      "tags": [
+        {
+          "name": "queue"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "items",
+          "required": true,
+          "description": "What to add, in order.",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "schema/media.schema.json#/$defs/PlayableRef"
+            },
+            "minItems": 1,
+            "maxItems": 50
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "added",
+            "queue"
+          ],
+          "properties": {
+            "added": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "How many entries were added."
+            },
+            "queue": {
+              "$ref": "schema/player.schema.json#/$defs/QueueSummary"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "queue.add example",
+          "params": [
+            {
+              "name": "items",
+              "value": [
+                {
+                  "type": "track",
+                  "id": "Rb7nW2kLq9E"
+                }
+              ]
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "added": 1,
+              "queue": {
+                "revision": 58,
+                "currentIndex": 3,
+                "length": 26,
+                "autoplay": true
+              }
+            }
+          }
+        }
+      ],
+      "x-scope": "queue:write",
+      "x-requires-session": true,
+      "x-rate-class": "control",
+      "description": "An album, playlist or podcast adds all its items (at most 500). If autoplay entries are at the end, the new items go before them."
+    },
+    {
+      "name": "queue.playNext",
+      "summary": "Inserts items right after the current item.",
+      "tags": [
+        {
+          "name": "queue"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "items",
+          "required": true,
+          "description": "What to insert, in order.",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "schema/media.schema.json#/$defs/PlayableRef"
+            },
+            "minItems": 1,
+            "maxItems": 50
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "added",
+            "queue"
+          ],
+          "properties": {
+            "added": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "queue": {
+              "$ref": "schema/player.schema.json#/$defs/QueueSummary"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "queue.playNext example",
+          "params": [
+            {
+              "name": "items",
+              "value": [
+                {
+                  "type": "album",
+                  "id": "MPREb_4pL8gzRtw9a"
+                }
+              ]
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "added": 10,
+              "queue": {
+                "revision": 58,
+                "currentIndex": 3,
+                "length": 35,
+                "autoplay": true
+              }
+            }
+          }
+        }
+      ],
+      "x-scope": "queue:write",
+      "x-requires-session": true,
+      "x-rate-class": "control"
+    },
+    {
+      "name": "queue.move",
+      "summary": "Moves one entry to a new index.",
+      "tags": [
+        {
+          "name": "queue"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "entryId",
+          "required": true,
+          "description": "The entry to move.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "toIndex",
+          "required": true,
+          "description": "Its index after the move. Clamped to the queue.",
+          "schema": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "queue"
+          ],
+          "properties": {
+            "queue": {
+              "$ref": "schema/player.schema.json#/$defs/QueueSummary"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "queue.move example",
+          "params": [
+            {
+              "name": "entryId",
+              "value": "q_119"
+            },
+            {
+              "name": "toIndex",
+              "value": 4
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "queue": {
+                "revision": 59,
+                "currentIndex": 3,
+                "length": 25,
+                "autoplay": true
+              }
+            }
+          }
+        }
+      ],
+      "x-scope": "queue:write",
+      "x-requires-session": true,
+      "x-rate-class": "control"
+    },
+    {
+      "name": "queue.remove",
+      "summary": "Removes entries from the queue.",
+      "tags": [
+        {
+          "name": "queue"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "entryIds",
+          "required": true,
+          "description": "The entries to remove.",
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "removed",
+            "queue"
+          ],
+          "properties": {
+            "removed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "queue": {
+              "$ref": "schema/player.schema.json#/$defs/QueueSummary"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "queue.remove example",
+          "params": [
+            {
+              "name": "entryIds",
+              "value": [
+                "q_119"
+              ]
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "removed": 1,
+              "queue": {
+                "revision": 60,
+                "currentIndex": 3,
+                "length": 24,
+                "autoplay": true
+              }
+            }
+          }
+        }
+      ],
+      "x-scope": "queue:write",
+      "x-requires-session": true,
+      "x-rate-class": "control",
+      "description": "Removing the current entry plays the next one (or stops at the end). Unknown `entryIds` are ignored."
+    },
+    {
+      "name": "queue.clear",
+      "summary": "Removes every entry except the current one. Playback continues.",
+      "tags": [
+        {
+          "name": "queue"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "queue"
+          ],
+          "properties": {
+            "queue": {
+              "$ref": "schema/player.schema.json#/$defs/QueueSummary"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "queue.clear example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {
+              "queue": {
+                "revision": 61,
+                "currentIndex": 0,
+                "length": 1,
+                "autoplay": true
+              }
+            }
+          }
+        }
+      ],
+      "x-scope": "queue:write",
+      "x-requires-session": true,
+      "x-rate-class": "control"
+    },
+    {
+      "name": "queue.setAutoplay",
+      "summary": "Turns autoplay on or off.",
+      "tags": [
+        {
+          "name": "queue"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "enabled",
+          "required": true,
+          "description": "enabled",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "queue"
+          ],
+          "properties": {
+            "queue": {
+              "$ref": "schema/player.schema.json#/$defs/QueueSummary"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "queue.setAutoplay example",
+          "params": [
+            {
+              "name": "enabled",
+              "value": false
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "queue": {
+                "revision": 62,
+                "currentIndex": 3,
+                "length": 12,
+                "autoplay": false
+              }
+            }
+          }
+        }
+      ],
+      "x-scope": "queue:write",
+      "x-requires-session": true,
+      "x-rate-class": "control",
+      "description": "Turning it off removes the autoplay entries that have not played yet."
+    },
+    {
+      "name": "library.playlists",
+      "summary": "Lists the playlists in the user's library.",
+      "tags": [
+        {
+          "name": "library"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "items",
+            "nextCursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/Playlist"
+              }
+            },
+            "nextCursor": {
+              "$ref": "schema/common.schema.json#/$defs/NextCursor"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "library.playlists example",
+          "params": [
+            {
+              "name": "limit",
+              "value": 1
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "items": [
+                {
+                  "type": "playlist",
+                  "id": "PLx9KmQ2vT7bN4cR8wZ3yL5aD1fG6hJ0eS",
+                  "title": "Late Night Drive",
+                  "author": "You",
+                  "trackCount": 38,
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                  "editable": true
+                }
+              ],
+              "nextCursor": "bGliOnBsOjE"
+            }
+          }
+        }
+      ],
+      "x-scope": "library:read",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "library.likedSongs",
+      "summary": "Lists the user's liked songs, newest first.",
+      "tags": [
+        {
+          "name": "library"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "items",
+            "nextCursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/MediaItem"
+              }
+            },
+            "nextCursor": {
+              "$ref": "schema/common.schema.json#/$defs/NextCursor"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "library.likedSongs example",
+          "params": [
+            {
+              "name": "limit",
+              "value": 1
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "items": [
+                {
+                  "type": "track",
+                  "id": "Xk3vT9pQm2A",
+                  "title": "Glass Harbor",
+                  "artists": [
+                    {
+                      "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                      "name": "Northern Static"
+                    }
+                  ],
+                  "album": {
+                    "id": "MPREb_4pL8gzRtw9a",
+                    "title": "Low Tide Radio"
+                  },
+                  "durationMs": 214000,
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                  "explicit": false,
+                  "video": false,
+                  "rating": "like"
+                }
+              ],
+              "nextCursor": "bGliOmxpa2VkOjE"
+            }
+          }
+        }
+      ],
+      "x-scope": "library:read",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "library.albums",
+      "summary": "Lists the albums in the user's library.",
+      "tags": [
+        {
+          "name": "library"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "items",
+            "nextCursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/Album"
+              }
+            },
+            "nextCursor": {
+              "$ref": "schema/common.schema.json#/$defs/NextCursor"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "library.albums example",
+          "params": [
+            {
+              "name": "limit",
+              "value": 1
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "items": [
+                {
+                  "type": "album",
+                  "id": "MPREb_4pL8gzRtw9a",
+                  "title": "Low Tide Radio",
+                  "artists": [
+                    {
+                      "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                      "name": "Northern Static"
+                    }
+                  ],
+                  "albumType": "album",
+                  "year": 2025,
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                  "explicit": false
+                }
+              ],
+              "nextCursor": null
+            }
+          }
+        }
+      ],
+      "x-scope": "library:read",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "library.artists",
+      "summary": "Lists the artists in the user's library.",
+      "tags": [
+        {
+          "name": "library"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "items",
+            "nextCursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/Artist"
+              }
+            },
+            "nextCursor": {
+              "$ref": "schema/common.schema.json#/$defs/NextCursor"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "library.artists example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {
+              "items": [
+                {
+                  "type": "artist",
+                  "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                  "name": "Northern Static",
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                  "subscribersText": "182K subscribers"
+                }
+              ],
+              "nextCursor": null
+            }
+          }
+        }
+      ],
+      "x-scope": "library:read",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "library.podcasts",
+      "summary": "Lists the podcast shows in the user's library.",
+      "tags": [
+        {
+          "name": "library"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "items",
+            "nextCursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/Podcast"
+              }
+            },
+            "nextCursor": {
+              "$ref": "schema/common.schema.json#/$defs/NextCursor"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "library.podcasts example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {
+              "items": [
+                {
+                  "type": "podcast",
+                  "id": "PLp4dC8sT2mVx7Kq9wZ3nB5yR1gF6hJ0aE",
+                  "title": "The Long Signal",
+                  "author": "Long Signal Media",
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544"
+                }
+              ],
+              "nextCursor": null
+            }
+          }
+        }
+      ],
+      "x-scope": "library:read",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "library.episodesForLater",
+      "summary": "Lists the episodes the user saved for later.",
+      "tags": [
+        {
+          "name": "library"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "items",
+            "nextCursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/Episode"
+              }
+            },
+            "nextCursor": {
+              "$ref": "schema/common.schema.json#/$defs/NextCursor"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "library.episodesForLater example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {
+              "items": [
+                {
+                  "type": "episode",
+                  "id": "Lm8Qw2Xc7Vb",
+                  "title": "Episode 42: Signals in the Noise",
+                  "podcast": {
+                    "id": "PLp4dC8sT2mVx7Kq9wZ3nB5yR1gF6hJ0aE",
+                    "title": "The Long Signal"
+                  },
+                  "author": "Long Signal Media",
+                  "durationMs": 3412000,
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                  "publishedText": "Mar 3, 2026",
+                  "played": false,
+                  "resumePositionMs": 1260000
+                }
+              ],
+              "nextCursor": null
+            }
+          }
+        }
+      ],
+      "x-scope": "library:read",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "library.history",
+      "summary": "Lists the user's listening history, newest first.",
+      "tags": [
+        {
+          "name": "library"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "items",
+            "nextCursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/HistoryEntry"
+              }
+            },
+            "nextCursor": {
+              "$ref": "schema/common.schema.json#/$defs/NextCursor"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "library.history example",
+          "params": [
+            {
+              "name": "limit",
+              "value": 2
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "items": [
+                {
+                  "item": {
+                    "type": "track",
+                    "id": "Xk3vT9pQm2A",
+                    "title": "Glass Harbor",
+                    "artists": [
+                      {
+                        "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                        "name": "Northern Static"
+                      }
+                    ],
+                    "album": {
+                      "id": "MPREb_4pL8gzRtw9a",
+                      "title": "Low Tide Radio"
+                    },
+                    "durationMs": 214000,
+                    "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                    "explicit": false,
+                    "video": false,
+                    "rating": "like"
+                  },
+                  "sectionText": "Today"
+                },
+                {
+                  "item": {
+                    "type": "episode",
+                    "id": "Lm8Qw2Xc7Vb",
+                    "title": "Episode 42: Signals in the Noise",
+                    "podcast": {
+                      "id": "PLp4dC8sT2mVx7Kq9wZ3nB5yR1gF6hJ0aE",
+                      "title": "The Long Signal"
+                    },
+                    "author": "Long Signal Media",
+                    "durationMs": 3412000,
+                    "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                    "publishedText": "Mar 3, 2026",
+                    "played": false,
+                    "resumePositionMs": 1260000
+                  },
+                  "sectionText": "Yesterday"
+                }
+              ],
+              "nextCursor": "aGlzdDoy"
+            }
+          }
+        }
+      ],
+      "x-scope": "library:read",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "playlist.get",
+      "summary": "Returns a playlist and its items, one page at a time.",
+      "tags": [
+        {
+          "name": "playlist"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "id",
+          "required": true,
+          "description": "The playlist id.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        },
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "playlist",
+            "items",
+            "nextCursor"
+          ],
+          "properties": {
+            "playlist": {
+              "$ref": "schema/media.schema.json#/$defs/PlaylistDetail",
+              "description": "The playlist; repeated on every page."
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/PlaylistEntry"
+              }
+            },
+            "nextCursor": {
+              "$ref": "schema/common.schema.json#/$defs/NextCursor"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "playlist.get example",
+          "params": [
+            {
+              "name": "id",
+              "value": "PLx9KmQ2vT7bN4cR8wZ3yL5aD1fG6hJ0eS"
+            },
+            {
+              "name": "limit",
+              "value": 1
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "playlist": {
+                "type": "playlist",
+                "id": "PLx9KmQ2vT7bN4cR8wZ3yL5aD1fG6hJ0eS",
+                "title": "Late Night Drive",
+                "author": "You",
+                "trackCount": 38,
+                "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                "editable": true,
+                "description": "For the long way home.",
+                "privacy": "private"
+              },
+              "items": [
+                {
+                  "entryId": "56B44F6D10557CC6",
+                  "item": {
+                    "type": "track",
+                    "id": "Xk3vT9pQm2A",
+                    "title": "Glass Harbor",
+                    "artists": [
+                      {
+                        "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                        "name": "Northern Static"
+                      }
+                    ],
+                    "album": {
+                      "id": "MPREb_4pL8gzRtw9a",
+                      "title": "Low Tide Radio"
+                    },
+                    "durationMs": 214000,
+                    "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                    "explicit": false,
+                    "video": false,
+                    "rating": "like"
+                  }
+                }
+              ],
+              "nextCursor": "cGw6MQ"
+            }
+          }
+        }
+      ],
+      "x-scope": [
+        "library:read",
+        "search"
+      ],
+      "x-requires-session": true,
+      "x-rate-class": "network",
+      "description": "With `library:read`, any playlist the user can see works, including private ones and liked songs. With only `search`, only public and unlisted playlists work; others give `NotFound`."
+    },
+    {
+      "name": "playlist.create",
+      "summary": "Creates a playlist in the user's library.",
+      "tags": [
+        {
+          "name": "playlist"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "title",
+          "required": true,
+          "description": "1–150 characters.",
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          }
+        },
+        {
+          "name": "description",
+          "required": false,
+          "description": "At most 5000 characters.",
+          "schema": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        {
+          "name": "privacy",
+          "required": false,
+          "description": "Default `private`.",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "public",
+              "unlisted",
+              "private"
+            ],
+            "default": "private"
+          }
+        },
+        {
+          "name": "items",
+          "required": false,
+          "description": "Tracks or episodes to put in it, in order.",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "schema/media.schema.json#/$defs/MediaRef"
+            },
+            "maxItems": 100
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/media.schema.json#/$defs/Playlist"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "playlist.create example",
+          "params": [
+            {
+              "name": "title",
+              "value": "Bar picks"
+            },
+            {
+              "name": "items",
+              "value": [
+                {
+                  "type": "track",
+                  "id": "Xk3vT9pQm2A"
+                }
+              ]
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "type": "playlist",
+              "id": "PLr2Vw8Nq4Kd7Ls1Xc9Bz3Mf6Ht5Jy0Ga",
+              "title": "Bar picks",
+              "author": "You",
+              "trackCount": 1,
+              "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+              "editable": true
+            }
+          }
+        }
+      ],
+      "x-scope": "library:write",
+      "x-requires-session": true,
+      "x-rate-class": "account"
+    },
+    {
+      "name": "playlist.rename",
+      "summary": "Renames a playlist the user owns.",
+      "tags": [
+        {
+          "name": "playlist"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "id",
+          "required": true,
+          "description": "id",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        },
+        {
+          "name": "title",
+          "required": true,
+          "description": "The new title, 1–150 characters.",
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "playlist.rename example",
+          "params": [
+            {
+              "name": "id",
+              "value": "PLx9KmQ2vT7bN4cR8wZ3yL5aD1fG6hJ0eS"
+            },
+            {
+              "name": "title",
+              "value": "Later Night Drive"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "library:write",
+      "x-requires-session": true,
+      "x-rate-class": "account"
+    },
+    {
+      "name": "playlist.delete",
+      "summary": "Deletes a playlist the user owns. This cannot be undone.",
+      "tags": [
+        {
+          "name": "playlist"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "id",
+          "required": true,
+          "description": "id",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "playlist.delete example",
+          "params": [
+            {
+              "name": "id",
+              "value": "PLr2Vw8Nq4Kd7Ls1Xc9Bz3Mf6Ht5Jy0Ga"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "library:write",
+      "x-requires-session": true,
+      "x-rate-class": "account"
+    },
+    {
+      "name": "playlist.addTracks",
+      "summary": "Adds tracks or episodes to the end of a playlist the user owns.",
+      "tags": [
+        {
+          "name": "playlist"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "id",
+          "required": true,
+          "description": "The playlist id.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        },
+        {
+          "name": "items",
+          "required": true,
+          "description": "What to add, in order.",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "schema/media.schema.json#/$defs/MediaRef"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        {
+          "name": "allowDuplicates",
+          "required": false,
+          "description": "Add items the playlist already has. Default false: they are skipped.",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "added",
+            "skipped"
+          ],
+          "properties": {
+            "added": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "skipped": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Items skipped as duplicates."
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "playlist.addTracks example",
+          "params": [
+            {
+              "name": "id",
+              "value": "PLx9KmQ2vT7bN4cR8wZ3yL5aD1fG6hJ0eS"
+            },
+            {
+              "name": "items",
+              "value": [
+                {
+                  "type": "track",
+                  "id": "Rb7nW2kLq9E"
+                },
+                {
+                  "type": "track",
+                  "id": "Xk3vT9pQm2A"
+                }
+              ]
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "added": 1,
+              "skipped": 1
+            }
+          }
+        }
+      ],
+      "x-scope": "library:write",
+      "x-requires-session": true,
+      "x-rate-class": "account"
+    },
+    {
+      "name": "playlist.removeTracks",
+      "summary": "Removes entries from a playlist the user owns.",
+      "tags": [
+        {
+          "name": "playlist"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "id",
+          "required": true,
+          "description": "The playlist id.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        },
+        {
+          "name": "entryIds",
+          "required": true,
+          "description": "`entryId` values from `playlist.get`.",
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "removed"
+          ],
+          "properties": {
+            "removed": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "playlist.removeTracks example",
+          "params": [
+            {
+              "name": "id",
+              "value": "PLx9KmQ2vT7bN4cR8wZ3yL5aD1fG6hJ0eS"
+            },
+            {
+              "name": "entryIds",
+              "value": [
+                "56B44F6D10557CC6"
+              ]
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "removed": 1
+            }
+          }
+        }
+      ],
+      "x-scope": "library:write",
+      "x-requires-session": true,
+      "x-rate-class": "account"
+    },
+    {
+      "name": "search.query",
+      "summary": "Searches YouTube Music.",
+      "tags": [
+        {
+          "name": "search"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "query",
+          "required": true,
+          "description": "The search text, 1–200 characters.",
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        {
+          "name": "type",
+          "required": false,
+          "description": "What to search for. Default `all`.",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "all",
+              "songs",
+              "videos",
+              "albums",
+              "artists",
+              "playlists",
+              "podcasts",
+              "episodes"
+            ],
+            "default": "all"
+          }
+        },
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "topResult",
+            "items",
+            "nextCursor"
+          ],
+          "properties": {
+            "topResult": {
+              "oneOf": [
+                {
+                  "$ref": "schema/media.schema.json#/$defs/Item"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The best match when `type` is `all`, otherwise null."
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/Item"
+              }
+            },
+            "nextCursor": {
+              "$ref": "schema/common.schema.json#/$defs/NextCursor"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "search.query example",
+          "params": [
+            {
+              "name": "query",
+              "value": "northern static glass harbor"
+            },
+            {
+              "name": "type",
+              "value": "songs"
+            },
+            {
+              "name": "limit",
+              "value": 1
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "topResult": null,
+              "items": [
+                {
+                  "type": "track",
+                  "id": "Xk3vT9pQm2A",
+                  "title": "Glass Harbor",
+                  "artists": [
+                    {
+                      "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                      "name": "Northern Static"
+                    }
+                  ],
+                  "album": {
+                    "id": "MPREb_4pL8gzRtw9a",
+                    "title": "Low Tide Radio"
+                  },
+                  "durationMs": 214000,
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                  "explicit": false,
+                  "video": false,
+                  "rating": "like"
+                }
+              ],
+              "nextCursor": "c3JjaDoxOjE"
+            }
+          }
+        }
+      ],
+      "x-scope": "search",
+      "x-requires-session": true,
+      "x-rate-class": "network",
+      "description": "With `type` `all` the result is one page of mixed items (the best matches of each kind) plus an optional `topResult`, and `nextCursor` is always null. With any other `type` the results are paged and `topResult` is null."
+    },
+    {
+      "name": "search.suggestions",
+      "summary": "Returns search suggestions for partial text.",
+      "tags": [
+        {
+          "name": "search"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "query",
+          "required": true,
+          "description": "The text typed so far.",
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "queries",
+            "items"
+          ],
+          "properties": {
+            "queries": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Suggested search texts."
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/Item"
+              },
+              "description": "Suggested items."
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "search.suggestions example",
+          "params": [
+            {
+              "name": "query",
+              "value": "northern sta"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "queries": [
+                "northern static",
+                "northern static glass harbor"
+              ],
+              "items": [
+                {
+                  "type": "artist",
+                  "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                  "name": "Northern Static",
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                  "subscribersText": "182K subscribers"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "x-scope": "search",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "browse.album",
+      "summary": "Returns an album with all its tracks.",
+      "tags": [
+        {
+          "name": "browse"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "id",
+          "required": true,
+          "description": "The album id.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/media.schema.json#/$defs/AlbumDetail"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "browse.album example",
+          "params": [
+            {
+              "name": "id",
+              "value": "MPREb_4pL8gzRtw9a"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "type": "album",
+              "id": "MPREb_4pL8gzRtw9a",
+              "title": "Low Tide Radio",
+              "artists": [
+                {
+                  "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                  "name": "Northern Static"
+                }
+              ],
+              "albumType": "album",
+              "year": 2025,
+              "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+              "explicit": false,
+              "description": null,
+              "trackCount": 2,
+              "durationMs": 401000,
+              "tracks": [
+                {
+                  "type": "track",
+                  "id": "Xk3vT9pQm2A",
+                  "title": "Glass Harbor",
+                  "artists": [
+                    {
+                      "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                      "name": "Northern Static"
+                    }
+                  ],
+                  "album": {
+                    "id": "MPREb_4pL8gzRtw9a",
+                    "title": "Low Tide Radio"
+                  },
+                  "durationMs": 214000,
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                  "explicit": false,
+                  "video": false,
+                  "rating": "like"
+                },
+                {
+                  "type": "track",
+                  "id": "Rb7nW2kLq9E",
+                  "title": "Paper Satellites",
+                  "artists": [
+                    {
+                      "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                      "name": "Northern Static"
+                    }
+                  ],
+                  "album": {
+                    "id": "MPREb_4pL8gzRtw9a",
+                    "title": "Low Tide Radio"
+                  },
+                  "durationMs": 187000,
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                  "explicit": false,
+                  "video": false,
+                  "rating": "none"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "x-scope": "search",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "browse.artist",
+      "summary": "Returns an artist page: description and shelves (top songs, albums, singles, videos, related artists, …).",
+      "tags": [
+        {
+          "name": "browse"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "id",
+          "required": true,
+          "description": "The artist's channel id.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/media.schema.json#/$defs/ArtistDetail"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "browse.artist example",
+          "params": [
+            {
+              "name": "id",
+              "value": "UCq7kZ3mX9vYbL2nT5cR8wQA"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "type": "artist",
+              "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+              "name": "Northern Static",
+              "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+              "subscribersText": "182K subscribers",
+              "description": "Dream pop from the coast.",
+              "sections": [
+                {
+                  "kind": "songs",
+                  "title": "Top songs",
+                  "items": [
+                    {
+                      "type": "track",
+                      "id": "Xk3vT9pQm2A",
+                      "title": "Glass Harbor",
+                      "artists": [
+                        {
+                          "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                          "name": "Northern Static"
+                        }
+                      ],
+                      "album": {
+                        "id": "MPREb_4pL8gzRtw9a",
+                        "title": "Low Tide Radio"
+                      },
+                      "durationMs": 214000,
+                      "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                      "explicit": false,
+                      "video": false,
+                      "rating": "like"
+                    }
+                  ]
+                },
+                {
+                  "kind": "albums",
+                  "title": "Albums",
+                  "items": [
+                    {
+                      "type": "album",
+                      "id": "MPREb_4pL8gzRtw9a",
+                      "title": "Low Tide Radio",
+                      "artists": [
+                        {
+                          "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+                          "name": "Northern Static"
+                        }
+                      ],
+                      "albumType": "album",
+                      "year": 2025,
+                      "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                      "explicit": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "x-scope": "search",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "browse.podcast",
+      "summary": "Returns a podcast show and its episodes, newest first, one page at a time.",
+      "tags": [
+        {
+          "name": "browse"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "id",
+          "required": true,
+          "description": "The podcast id.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        },
+        {
+          "name": "cursor",
+          "required": false,
+          "description": "The `nextCursor` of the previous page. Omit for the first page.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Cursor"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "description": "The maximum number of items. Default 50.",
+          "schema": {
+            "$ref": "schema/common.schema.json#/$defs/Limit"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "type": "object",
+          "required": [
+            "podcast",
+            "items",
+            "nextCursor"
+          ],
+          "properties": {
+            "podcast": {
+              "$ref": "schema/media.schema.json#/$defs/PodcastDetail",
+              "description": "The show; repeated on every page."
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "schema/media.schema.json#/$defs/Episode"
+              }
+            },
+            "nextCursor": {
+              "$ref": "schema/common.schema.json#/$defs/NextCursor"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "browse.podcast example",
+          "params": [
+            {
+              "name": "id",
+              "value": "PLp4dC8sT2mVx7Kq9wZ3nB5yR1gF6hJ0aE"
+            },
+            {
+              "name": "limit",
+              "value": 1
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "podcast": {
+                "type": "podcast",
+                "id": "PLp4dC8sT2mVx7Kq9wZ3nB5yR1gF6hJ0aE",
+                "title": "The Long Signal",
+                "author": "Long Signal Media",
+                "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                "description": "Conversations about sound and radio."
+              },
+              "items": [
+                {
+                  "type": "episode",
+                  "id": "Lm8Qw2Xc7Vb",
+                  "title": "Episode 42: Signals in the Noise",
+                  "podcast": {
+                    "id": "PLp4dC8sT2mVx7Kq9wZ3nB5yR1gF6hJ0aE",
+                    "title": "The Long Signal"
+                  },
+                  "author": "Long Signal Media",
+                  "durationMs": 3412000,
+                  "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+                  "publishedText": "Mar 3, 2026",
+                  "played": false,
+                  "resumePositionMs": 1260000
+                }
+              ],
+              "nextCursor": "cG9kOjE"
+            }
+          }
+        }
+      ],
+      "x-scope": "search",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "browse.episode",
+      "summary": "Returns an episode with its description.",
+      "tags": [
+        {
+          "name": "browse"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "id",
+          "required": true,
+          "description": "The episode id.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/media.schema.json#/$defs/EpisodeDetail"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "browse.episode example",
+          "params": [
+            {
+              "name": "id",
+              "value": "Lm8Qw2Xc7Vb"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "type": "episode",
+              "id": "Lm8Qw2Xc7Vb",
+              "title": "Episode 42: Signals in the Noise",
+              "podcast": {
+                "id": "PLp4dC8sT2mVx7Kq9wZ3nB5yR1gF6hJ0aE",
+                "title": "The Long Signal"
+              },
+              "author": "Long Signal Media",
+              "durationMs": 3412000,
+              "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+              "publishedText": "Mar 3, 2026",
+              "played": false,
+              "resumePositionMs": 1260000,
+              "description": "Where radio static comes from, and why we keep listening."
+            }
+          }
+        }
+      ],
+      "x-scope": "search",
+      "x-requires-session": true,
+      "x-rate-class": "network"
+    },
+    {
+      "name": "rating.set",
+      "summary": "Likes, dislikes or clears the rating of an item.",
+      "tags": [
+        {
+          "name": "rating"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "item",
+          "required": true,
+          "description": "What to rate.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/RateableRef"
+          }
+        },
+        {
+          "name": "rating",
+          "required": true,
+          "description": "rating",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/Rating"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/common.schema.json#/$defs/Empty"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/NotSignedIn"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "rating.set example",
+          "params": [
+            {
+              "name": "item",
+              "value": {
+                "type": "track",
+                "id": "Xk3vT9pQm2A"
+              }
+            },
+            {
+              "name": "rating",
+              "value": "like"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ],
+      "x-scope": "library:write",
+      "x-requires-session": true,
+      "x-rate-class": "account",
+      "description": "For a track or episode, `like` adds it to liked songs. For an album, playlist or podcast, `like` saves it to the library and `none` removes it; `dislike` is not allowed for them (`InvalidParams`)."
+    },
+    {
+      "name": "lyrics.get",
+      "summary": "Returns lyrics with timings for the current item or a given track.",
+      "tags": [
+        {
+          "name": "lyrics"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "trackId",
+          "required": false,
+          "description": "The track's id. Default: the current item.",
+          "schema": {
+            "$ref": "schema/media.schema.json#/$defs/ItemId"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result.",
+        "schema": {
+          "$ref": "schema/lyrics.schema.json#/$defs/LyricsResult"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/components/errors/InternalError"
+        },
+        {
+          "$ref": "#/components/errors/InvalidParams"
+        },
+        {
+          "$ref": "#/components/errors/InvalidRequest"
+        },
+        {
+          "$ref": "#/components/errors/SessionRequired"
+        },
+        {
+          "$ref": "#/components/errors/Timeout"
+        },
+        {
+          "$ref": "#/components/errors/Unavailable"
+        },
+        {
+          "$ref": "#/components/errors/RateLimited"
+        },
+        {
+          "$ref": "#/components/errors/NotFound"
+        },
+        {
+          "$ref": "#/components/errors/PermissionDenied"
+        }
+      ],
+      "examples": [
+        {
+          "name": "lyrics.get example",
+          "params": [],
+          "result": {
+            "name": "result",
+            "value": {
+              "trackId": "Xk3vT9pQm2A",
+              "status": "found",
+              "lyrics": {
+                "trackId": "Xk3vT9pQm2A",
+                "tier": "word",
+                "provider": "lrclib",
+                "providerName": "LRCLIB",
+                "attribution": null,
+                "lines": [
+                  {
+                    "startMs": 12400,
+                    "endMs": 15900,
+                    "text": "Lights on the water",
+                    "words": [
+                      {
+                        "startMs": 12400,
+                        "endMs": 12900,
+                        "text": "Lights "
+                      },
+                      {
+                        "startMs": 12900,
+                        "endMs": 13300,
+                        "text": "on "
+                      },
+                      {
+                        "startMs": 13300,
+                        "endMs": 13600,
+                        "text": "the "
+                      },
+                      {
+                        "startMs": 13600,
+                        "endMs": 15900,
+                        "text": "water"
+                      }
+                    ],
+                    "background": [
+                      {
+                        "startMs": 15000,
+                        "endMs": 15900,
+                        "text": "(water)"
+                      }
+                    ]
+                  },
+                  {
+                    "startMs": 16100,
+                    "endMs": null,
+                    "text": "Nobody calls it home",
+                    "words": [
+                      {
+                        "startMs": 16100,
+                        "endMs": 16600,
+                        "text": "Nobody "
+                      },
+                      {
+                        "startMs": 16600,
+                        "endMs": 17000,
+                        "text": "calls "
+                      },
+                      {
+                        "startMs": 17000,
+                        "endMs": 17300,
+                        "text": "it "
+                      },
+                      {
+                        "startMs": 17300,
+                        "endMs": 18800,
+                        "text": "home"
+                      }
+                    ],
+                    "background": []
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "x-scope": "lyrics:read",
+      "x-requires-session": true,
+      "x-rate-class": "network",
+      "description": "Sonolith searches its lyrics sources and returns the best result: word-synced over line-synced over unsynced. The lookup can take several seconds. Episodes have no lyrics (`notFound`). For the current item, `lyrics.changed` reports later improvements."
+    }
+  ],
+  "components": {
+    "errors": {
+      "ParseError": {
+        "code": -32700,
+        "message": "ParseError",
+        "data": {
+          "name": "ParseError",
+          "meaning": "The line is not valid UTF-8 JSON."
+        }
+      },
+      "InvalidRequest": {
+        "code": -32600,
+        "message": "InvalidRequest",
+        "data": {
+          "name": "InvalidRequest",
+          "meaning": "Not a valid JSON-RPC 2.0 request object, a batch, a message over the size limit (Sonolith then closes the connection), or a call not allowed in the connection's state."
+        }
+      },
+      "MethodNotFound": {
+        "code": -32601,
+        "message": "MethodNotFound",
+        "data": {
+          "name": "MethodNotFound",
+          "meaning": "No such method in this Sonolith."
+        }
+      },
+      "InvalidParams": {
+        "code": -32602,
+        "message": "InvalidParams",
+        "data": {
+          "name": "InvalidParams",
+          "meaning": "Missing, unknown or invalid parameters, or an expired cursor."
+        }
+      },
+      "InternalError": {
+        "code": -32603,
+        "message": "InternalError",
+        "data": {
+          "name": "InternalError",
+          "meaning": "Sonolith failed unexpectedly."
+        }
+      },
+      "NotRegistered": {
+        "code": -32001,
+        "message": "NotRegistered",
+        "data": {
+          "name": "NotRegistered",
+          "meaning": "The `appId` is not registered (never registered, unregistered, or removed by the user)."
+        }
+      },
+      "Unauthorized": {
+        "code": -32002,
+        "message": "Unauthorized",
+        "data": {
+          "name": "Unauthorized",
+          "meaning": "The token is wrong or has been revoked."
+        }
+      },
+      "PermissionDenied": {
+        "code": -32003,
+        "message": "PermissionDenied",
+        "data": {
+          "name": "PermissionDenied",
+          "meaning": "The app lacks the scope in `data.scope`."
+        }
+      },
+      "RegistrationPending": {
+        "code": -32004,
+        "message": "RegistrationPending",
+        "data": {
+          "name": "RegistrationPending",
+          "meaning": "A request is already waiting for the user, or the app's executable changed and the user must approve it again."
+        }
+      },
+      "RegistrationDenied": {
+        "code": -32005,
+        "message": "RegistrationDenied",
+        "data": {
+          "name": "RegistrationDenied",
+          "meaning": "The user denied a recent request; asking again is on hold."
+        }
+      },
+      "Blocked": {
+        "code": -32006,
+        "message": "Blocked",
+        "data": {
+          "name": "Blocked",
+          "meaning": "The user blocked this app."
+        }
+      },
+      "NotSignedIn": {
+        "code": -32007,
+        "message": "NotSignedIn",
+        "data": {
+          "name": "NotSignedIn",
+          "meaning": "The method needs a YouTube account and the user is signed out."
+        }
+      },
+      "NotFound": {
+        "code": -32008,
+        "message": "NotFound",
+        "data": {
+          "name": "NotFound",
+          "meaning": "The item does not exist or is not visible to this app."
+        }
+      },
+      "RateLimited": {
+        "code": -32009,
+        "message": "RateLimited",
+        "data": {
+          "name": "RateLimited",
+          "meaning": "The app exceeded its rate limit or its in-flight request limit."
+        }
+      },
+      "Unavailable": {
+        "code": -32010,
+        "message": "Unavailable",
+        "data": {
+          "name": "Unavailable",
+          "meaning": "The action is not possible right now (for example, nothing is playing, or Sonolith is still starting)."
+        }
+      },
+      "Timeout": {
+        "code": -32011,
+        "message": "Timeout",
+        "data": {
+          "name": "Timeout",
+          "meaning": "YouTube, a lyrics source or Sonolith did not answer in time."
+        }
+      },
+      "SessionRequired": {
+        "code": -32012,
+        "message": "SessionRequired",
+        "data": {
+          "name": "SessionRequired",
+          "meaning": "The method needs an authenticated session."
+        }
+      },
+      "UnsupportedVersion": {
+        "code": -32013,
+        "message": "UnsupportedVersion",
+        "data": {
+          "name": "UnsupportedVersion",
+          "meaning": "Sonolith does not support the requested API major version."
+        }
+      }
+    }
+  },
+  "x-events": [
+    {
+      "name": "player.stateChanged",
+      "summary": "The player state changed (anything but the position moving on).",
+      "description": "Sent when any `PlayerState` field changes, except `positionMs` and `positionAt` advancing during playback. A seek sends it. Bursts are coalesced to at most 10 per second; the last state always arrives.",
+      "topic": "player.state",
+      "scope": "player:read",
+      "params": {
+        "$ref": "schema/player.schema.json#/$defs/PlayerState"
+      },
+      "example": {
+        "status": "paused",
+        "item": {
+          "type": "track",
+          "id": "Xk3vT9pQm2A",
+          "title": "Glass Harbor",
+          "artists": [
+            {
+              "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+              "name": "Northern Static"
+            }
+          ],
+          "album": {
+            "id": "MPREb_4pL8gzRtw9a",
+            "title": "Low Tide Radio"
+          },
+          "durationMs": 214000,
+          "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+          "explicit": false,
+          "video": false,
+          "rating": "like"
+        },
+        "positionMs": 61250,
+        "positionAt": 1793022000000,
+        "durationMs": 214000,
+        "volume": 70,
+        "muted": false,
+        "shuffle": false,
+        "repeat": "off",
+        "rate": 1,
+        "episodeRate": 1.25,
+        "canGoNext": true,
+        "canGoPrevious": true,
+        "queueIndex": 3,
+        "queueLength": 25,
+        "autoplay": true
+      }
+    },
+    {
+      "name": "player.trackChanged",
+      "summary": "A different item became current (or none).",
+      "description": "A different item became current (or none).",
+      "topic": "player.track",
+      "scope": "player:read",
+      "params": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "oneOf": [
+              {
+                "$ref": "schema/media.schema.json#/$defs/MediaItem"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The new current item, or null."
+          }
+        }
+      },
+      "example": {
+        "item": {
+          "type": "track",
+          "id": "Rb7nW2kLq9E",
+          "title": "Paper Satellites",
+          "artists": [
+            {
+              "id": "UCq7kZ3mX9vYbL2nT5cR8wQA",
+              "name": "Northern Static"
+            }
+          ],
+          "album": {
+            "id": "MPREb_4pL8gzRtw9a",
+            "title": "Low Tide Radio"
+          },
+          "durationMs": 187000,
+          "thumbnailUrl": "https://lh3.googleusercontent.com/example-artwork=w544-h544",
+          "explicit": false,
+          "video": false,
+          "rating": "none"
+        }
+      }
+    },
+    {
+      "name": "player.position",
+      "summary": "The playback position, at the subscribed rate while playing.",
+      "description": "Sent `positionHz` times per second while playing, and once on pause, seek and item change. Not sent while paused or stopped. Between events, extrapolate: `positionMs + (now - positionAt) * rate`.",
+      "topic": "player.position",
+      "scope": "player:read",
+      "params": {
+        "$ref": "schema/player.schema.json#/$defs/PositionEvent"
+      },
+      "example": {
+        "positionMs": 61750,
+        "positionAt": 1793022000500,
+        "durationMs": 214000,
+        "rate": 1,
+        "status": "playing"
+      }
+    },
+    {
+      "name": "player.volumeChanged",
+      "summary": "The volume or mute changed.",
+      "description": "Bursts (for example, dragging the volume slider) are coalesced to at most 10 per second.",
+      "topic": "player.volume",
+      "scope": "player:read",
+      "params": {
+        "type": "object",
+        "required": [
+          "volume",
+          "muted"
+        ],
+        "properties": {
+          "volume": {
+            "$ref": "schema/player.schema.json#/$defs/Volume"
+          },
+          "muted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "example": {
+        "volume": 55,
+        "muted": false
+      }
+    },
+    {
+      "name": "queue.changed",
+      "summary": "The queue's entries or current index changed.",
+      "description": "Carries the summary only; call `queue.get` for the entries. Bursts are coalesced; `revision` tells whether a copy is current.",
+      "topic": "queue",
+      "scope": "queue:read",
+      "params": {
+        "allOf": [
+          {
+            "$ref": "schema/player.schema.json#/$defs/QueueSummary"
+          },
+          {
+            "type": "object",
+            "required": [
+              "reason"
+            ],
+            "properties": {
+              "reason": {
+                "$ref": "schema/player.schema.json#/$defs/QueueChangeReason"
+              }
+            }
+          }
+        ]
+      },
+      "example": {
+        "revision": 58,
+        "currentIndex": 4,
+        "length": 25,
+        "autoplay": true,
+        "reason": "advanced"
+      }
+    },
+    {
+      "name": "lyrics.changed",
+      "summary": "Lyrics for the current item were found, improved, or cleared.",
+      "description": "Sent when the current item changes (`status` `notFound` with `lyrics` null until lyrics are found), when lyrics are found, and when a better tier replaces them. The snapshot on subscribe carries what Sonolith has now.",
+      "topic": "lyrics",
+      "scope": "lyrics:read",
+      "params": {
+        "$ref": "schema/lyrics.schema.json#/$defs/LyricsResult"
+      },
+      "example": {
+        "trackId": "Xk3vT9pQm2A",
+        "status": "found",
+        "lyrics": {
+          "trackId": "Xk3vT9pQm2A",
+          "tier": "word",
+          "provider": "lrclib",
+          "providerName": "LRCLIB",
+          "attribution": null,
+          "lines": [
+            {
+              "startMs": 12400,
+              "endMs": 15900,
+              "text": "Lights on the water",
+              "words": [
+                {
+                  "startMs": 12400,
+                  "endMs": 12900,
+                  "text": "Lights "
+                },
+                {
+                  "startMs": 12900,
+                  "endMs": 13300,
+                  "text": "on "
+                },
+                {
+                  "startMs": 13300,
+                  "endMs": 13600,
+                  "text": "the "
+                },
+                {
+                  "startMs": 13600,
+                  "endMs": 15900,
+                  "text": "water"
+                }
+              ],
+              "background": [
+                {
+                  "startMs": 15000,
+                  "endMs": 15900,
+                  "text": "(water)"
+                }
+              ]
+            },
+            {
+              "startMs": 16100,
+              "endMs": null,
+              "text": "Nobody calls it home",
+              "words": [
+                {
+                  "startMs": 16100,
+                  "endMs": 16600,
+                  "text": "Nobody "
+                },
+                {
+                  "startMs": 16600,
+                  "endMs": 17000,
+                  "text": "calls "
+                },
+                {
+                  "startMs": 17000,
+                  "endMs": 17300,
+                  "text": "it "
+                },
+                {
+                  "startMs": 17300,
+                  "endMs": 18800,
+                  "text": "home"
+                }
+              ],
+              "background": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "lyrics.line",
+      "summary": "The line being sung changed.",
+      "description": "Sent while playing synced lyrics (tier `word` or `line`), when a line starts, when a break starts (`lineIndex` null), and right after a seek.",
+      "topic": "lyrics.line",
+      "scope": "lyrics:read",
+      "params": {
+        "$ref": "schema/lyrics.schema.json#/$defs/LyricsLineEvent"
+      },
+      "example": {
+        "trackId": "Xk3vT9pQm2A",
+        "lineIndex": 0,
+        "text": "Lights on the water",
+        "startMs": 12400,
+        "endMs": 15900,
+        "positionMs": 12410
+      }
+    },
+    {
+      "name": "lyrics.word",
+      "summary": "A word or syllable started.",
+      "description": "Sent while playing `word`-tier lyrics, for main and background vocals. This topic is busy (often 3–8 events per second); for smooth karaoke, animate from `player.position` and the word timings instead, and use this only to correct drift.",
+      "topic": "lyrics.word",
+      "scope": "lyrics:read",
+      "params": {
+        "$ref": "schema/lyrics.schema.json#/$defs/LyricsWordEvent"
+      },
+      "example": {
+        "trackId": "Xk3vT9pQm2A",
+        "lineIndex": 0,
+        "wordIndex": 1,
+        "background": false,
+        "positionMs": 12905
+      }
+    },
+    {
+      "name": "account.changed",
+      "summary": "The user signed in to or out of YouTube in Sonolith.",
+      "description": "The user signed in to or out of YouTube in Sonolith.",
+      "topic": "account",
+      "scope": null,
+      "params": {
+        "$ref": "schema/session.schema.json#/$defs/AccountState"
+      },
+      "example": {
+        "signedIn": false
+      }
+    },
+    {
+      "name": "registration.resolved",
+      "summary": "A registration, scope or identity request was answered or expired.",
+      "description": "Sent only to the connection that made the request; no subscription needed. On `approved` with a `token`, store the token before anything else, then call `session.hello`.",
+      "topic": null,
+      "scope": null,
+      "params": {
+        "$ref": "schema/session.schema.json#/$defs/RegistrationOutcome"
+      },
+      "example": {
+        "requestId": "req_5Jt2xQ",
+        "kind": "register",
+        "status": "approved",
+        "token": "snl_8dmJuD9Z2UkFfCj61pn7Zn_0hI0YOf9Cuw_XU3Uerv0",
+        "grantedScopes": [
+          "player:read",
+          "player:control"
+        ],
+        "retryAfterMs": null
+      }
+    },
+    {
+      "name": "session.revoked",
+      "summary": "The app's access was revoked. Sonolith closes the connection right after.",
+      "description": "Sent to every connection of the app; no subscription needed. The client MUST stop using Sonolith, delete the stored token, and tell the user \"Disconnected from Sonolith\".",
+      "topic": null,
+      "scope": null,
+      "params": {
+        "$ref": "schema/session.schema.json#/$defs/RevokeInfo"
+      },
+      "example": {
+        "reason": "removed"
+      }
+    },
+    {
+      "name": "session.scopesChanged",
+      "summary": "The app's granted scopes changed.",
+      "description": "Sent to every connection of the app; no subscription needed. Subscriptions to topics whose scope was removed end without further notice.",
+      "topic": null,
+      "scope": null,
+      "params": {
+        "$ref": "schema/session.schema.json#/$defs/ScopesChanged"
+      },
+      "example": {
+        "grantedScopes": [
+          "player:read"
+        ],
+        "added": [],
+        "removed": [
+          "player:control"
+        ]
+      }
+    }
+  ],
+  "x-scopes": [
+    {
+      "scope": "player:read",
+      "label": "See what's playing",
+      "sensitive": false,
+      "allows": "The current item, playback state, position, volume, shuffle and repeat."
+    },
+    {
+      "scope": "player:control",
+      "label": "Control playback",
+      "sensitive": false,
+      "allows": "Play, pause, skip, seek, volume, shuffle, repeat, episode speed, and starting a track, album, playlist or episode (which replaces the queue)."
+    },
+    {
+      "scope": "queue:read",
+      "label": "See your queue",
+      "sensitive": false,
+      "allows": "The queue and autoplay."
+    },
+    {
+      "scope": "queue:write",
+      "label": "Change your queue",
+      "sensitive": false,
+      "allows": "Add, move and remove queue entries, clear the queue, turn autoplay on or off."
+    },
+    {
+      "scope": "library:read",
+      "label": "Access your library",
+      "sensitive": false,
+      "allows": "Playlists, liked songs, albums, artists, podcasts, episodes for later, history, and your ratings in returned items."
+    },
+    {
+      "scope": "library:write",
+      "label": "Change your library",
+      "sensitive": true,
+      "allows": "Create, rename and delete playlists, add and remove playlist items, like and dislike, save albums, playlists and podcasts."
+    },
+    {
+      "scope": "search",
+      "label": "Search YouTube Music",
+      "sensitive": false,
+      "allows": "Search, suggestions, and album, artist, podcast, episode and public playlist pages."
+    },
+    {
+      "scope": "lyrics:read",
+      "label": "Show lyrics",
+      "sensitive": false,
+      "allows": "Lyrics with timings for the current or any track, and live line and word events."
+    }
+  ],
+  "x-rate-classes": [
+    {
+      "name": "local",
+      "limit": "50 per second, bursts of 100",
+      "applies": "Reads of Sonolith's own state."
+    },
+    {
+      "name": "control",
+      "limit": "10 per second, bursts of 20",
+      "applies": "Player and queue commands."
+    },
+    {
+      "name": "network",
+      "limit": "2 per second, bursts of 10",
+      "applies": "Reads that may reach YouTube or a lyrics source."
+    },
+    {
+      "name": "account",
+      "limit": "1 every 2 seconds, bursts of 5 (30 per minute)",
+      "applies": "Changes to the user's YouTube account."
+    },
+    {
+      "name": "auth",
+      "limit": "1 per second, bursts of 5, per connection",
+      "applies": "Registration and authentication."
+    }
+  ],
+  "x-error-reasons": [
+    {
+      "reason": "messageTooLarge",
+      "error": "InvalidRequest",
+      "meaning": "The message was over 1 MiB. Sonolith closes the connection."
+    },
+    {
+      "reason": "batchNotSupported",
+      "error": "InvalidRequest",
+      "meaning": "The message was a JSON array (a batch)."
+    },
+    {
+      "reason": "alreadyAuthenticated",
+      "error": "InvalidRequest",
+      "meaning": "`session.hello` or `app.register` on a connection that already has a session."
+    },
+    {
+      "reason": "cursorExpired",
+      "error": "InvalidParams",
+      "meaning": "The cursor is too old or the list changed; start again from the first page."
+    },
+    {
+      "reason": "unknownParam",
+      "error": "InvalidParams",
+      "meaning": "A parameter this Sonolith does not know (it may be newer than this Sonolith)."
+    },
+    {
+      "reason": "identityChanged",
+      "error": "RegistrationPending",
+      "meaning": "The app's executable path changed; the user is asked to approve it again."
+    },
+    {
+      "reason": "starting",
+      "error": "Unavailable",
+      "meaning": "Sonolith is still starting up."
+    },
+    {
+      "reason": "nothingPlaying",
+      "error": "Unavailable",
+      "meaning": "The method needs a current item and there is none."
+    },
+    {
+      "reason": "notEditable",
+      "error": "Unavailable",
+      "meaning": "The playlist cannot be changed by the user (for example, it belongs to someone else)."
+    },
+    {
+      "reason": "notPlayable",
+      "error": "Unavailable",
+      "meaning": "YouTube does not allow playing this item."
+    },
+    {
+      "reason": "peerUnverified",
+      "error": "Unavailable",
+      "meaning": "Sonolith could not identify the calling process, so it cannot register it."
+    },
+    {
+      "reason": "tooManyPending",
+      "error": "RateLimited",
+      "meaning": "Too many registration requests are already waiting for the user."
+    },
+    {
+      "reason": "tooManyInFlight",
+      "error": "RateLimited",
+      "meaning": "The connection has 16 requests in flight already."
+    },
+    {
+      "reason": "tooManyConnections",
+      "error": "RateLimited",
+      "meaning": "The app has 8 open connections already."
+    }
+  ]
+}

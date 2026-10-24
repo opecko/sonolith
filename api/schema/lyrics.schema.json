@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/opecko/sonolith/master/api/schema/lyrics.schema.json",
+  "title": "Sonolith API: lyrics",
+  "$defs": {
+    "LyricsTier": {
+      "description": "How precisely the lyrics are timed: `word` (every word or syllable has a time), `line` (every line has a start time) or `unsynced` (plain text, no times).",
+      "type": "string",
+      "enum": ["word", "line", "unsynced"]
+    },
+    "LyricWord": {
+      "description": "A word or syllable with its timing. Times are track positions. `text` includes its trailing space, if any, so joining the texts of a line gives the line.",
+      "type": "object",
+      "required": ["startMs", "endMs", "text"],
+      "properties": {
+        "startMs": { "$ref": "common.schema.json#/$defs/DurationMs" },
+        "endMs": { "$ref": "common.schema.json#/$defs/DurationMs" },
+        "text": { "type": "string" }
+      }
+    },
+    "LyricLine": {
+      "description": "One line of lyrics. In `unsynced` lyrics, `startMs` and `endMs` are null and `words` and `background` are empty.",
+      "type": "object",
+      "required": ["startMs", "endMs", "text", "words", "background"],
+      "properties": {
+        "startMs": { "description": "When the line starts, or null in unsynced lyrics.", "oneOf": [{ "$ref": "common.schema.json#/$defs/DurationMs" }, { "type": "null" }] },
+        "endMs": { "description": "When the line ends, or null when the source does not say (then it lasts until the next line starts).", "oneOf": [{ "$ref": "common.schema.json#/$defs/DurationMs" }, { "type": "null" }] },
+        "text": { "description": "The main vocal line. Can be empty for an instrumental break.", "type": "string" },
+        "words": { "description": "Word or syllable timings of `text`. Empty unless the tier is `word`.", "type": "array", "items": { "$ref": "#/$defs/LyricWord" } },
+        "background": { "description": "Background vocals sung over this line, timed like `words`. Often empty.", "type": "array", "items": { "$ref": "#/$defs/LyricWord" } }
+      }
+    },
+    "Lyrics": {
+      "description": "Lyrics for one track in Sonolith's normalized model, whatever the source format was.",
+      "type": "object",
+      "required": ["trackId", "tier", "provider", "providerName", "attribution", "lines"],
+      "properties": {
+        "trackId": { "$ref": "media.schema.json#/$defs/ItemId" },
+        "tier": { "$ref": "#/$defs/LyricsTier" },
+        "provider": { "description": "A short, stable id of the lyrics source, for example `lrclib`. The set grows over time; treat unknown values as opaque.", "type": "string" },
+        "providerName": { "description": "The source's display name, for example `LRCLIB`.", "type": "string" },
+        "attribution": { "description": "Credit text the source asks to show, for example `Lyrics provided by …`, or null. Show it when not null.", "type": ["string", "null"] },
+        "lines": { "description": "The lines in order. Sorted by `startMs` when synced.", "type": "array", "items": { "$ref": "#/$defs/LyricLine" } }
+      }
+    },
+    "LyricsResult": {
+      "description": "The answer to a lyrics lookup.",
+      "type": "object",
+      "required": ["trackId", "status", "lyrics"],
+      "properties": {
+        "trackId": { "$ref": "media.schema.json#/$defs/ItemId" },
+        "status": { "description": "`found`, `notFound`, or `instrumental` (the track has no vocals).", "type": "string", "enum": ["found", "notFound", "instrumental"] },
+        "lyrics": { "description": "The lyrics when `status` is `found`, otherwise null.", "oneOf": [{ "$ref": "#/$defs/Lyrics" }, { "type": "null" }] }
+      }
+    },
+    "LyricsLineEvent": {
+      "description": "Parameters of `lyrics.line`.",
+      "type": "object",
+      "required": ["trackId", "lineIndex", "text", "startMs", "endMs", "positionMs"],
+      "properties": {
+        "trackId": { "$ref": "media.schema.json#/$defs/ItemId" },
+        "lineIndex": { "description": "The index into `Lyrics.lines` of the line being sung, or null before the first line and during breaks.", "type": ["integer", "null"], "minimum": 0 },
+        "text": { "description": "That line's text, or null when `lineIndex` is null.", "type": ["string", "null"] },
+        "startMs": { "oneOf": [{ "$ref": "common.schema.json#/$defs/DurationMs" }, { "type": "null" }] },
+        "endMs": { "oneOf": [{ "$ref": "common.schema.json#/$defs/DurationMs" }, { "type": "null" }] },
+        "positionMs": { "description": "The playback position when the event was sent.", "$ref": "common.schema.json#/$defs/DurationMs" }
+      }
+    },
+    "LyricsWordEvent": {
+      "description": "Parameters of `lyrics.word`.",
+      "type": "object",
+      "required": ["trackId", "lineIndex", "wordIndex", "background", "positionMs"],
+      "properties": {
+        "trackId": { "$ref": "media.schema.json#/$defs/ItemId" },
+        "lineIndex": { "type": "integer", "minimum": 0 },
+        "wordIndex": { "description": "The index into the line's `words`, or into its `background` when `background` is true.", "type": "integer", "minimum": 0 },
+        "background": { "type": "boolean" },
+        "positionMs": { "$ref": "common.schema.json#/$defs/DurationMs" }
+      }
+    }
+  }
+}

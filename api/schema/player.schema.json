@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/opecko/sonolith/master/api/schema/player.schema.json",
+  "title": "Sonolith API: player and queue",
+  "$defs": {
+    "PlaybackStatus": {
+      "description": "`playing`, `paused`, `buffering` (loading or waiting for data; playback resumes by itself) or `stopped` (nothing loaded).",
+      "type": "string",
+      "enum": ["playing", "paused", "buffering", "stopped"]
+    },
+    "RepeatMode": {
+      "description": "`off`, `all` (repeat the queue) or `one` (repeat the current item).",
+      "type": "string",
+      "enum": ["off", "all", "one"]
+    },
+    "EpisodeRate": {
+      "description": "A playback speed for podcast episodes. Tracks always play at 1.",
+      "type": "number",
+      "enum": [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3]
+    },
+    "Volume": {
+      "description": "The volume from 0 (silent) to 100 (full).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "PlayerState": {
+      "description": "Everything about the player at one moment.",
+      "type": "object",
+      "required": ["status", "item", "positionMs", "positionAt", "durationMs", "volume", "muted", "shuffle", "repeat", "rate", "episodeRate", "canGoNext", "canGoPrevious", "queueIndex", "queueLength", "autoplay"],
+      "properties": {
+        "status": { "$ref": "#/$defs/PlaybackStatus" },
+        "item": { "description": "The current item, or null when nothing is loaded.", "oneOf": [{ "$ref": "media.schema.json#/$defs/MediaItem" }, { "type": "null" }] },
+        "positionMs": { "description": "The playback position when the state was taken.", "$ref": "common.schema.json#/$defs/DurationMs" },
+        "positionAt": { "description": "When `positionMs` was measured. While `status` is `playing`, the position now is `positionMs + (now - positionAt) * rate`.", "$ref": "common.schema.json#/$defs/TimestampMs" },
+        "durationMs": { "description": "The current item's length, or null when unknown or nothing is loaded.", "oneOf": [{ "$ref": "common.schema.json#/$defs/DurationMs" }, { "type": "null" }] },
+        "volume": { "$ref": "#/$defs/Volume" },
+        "muted": { "type": "boolean" },
+        "shuffle": { "type": "boolean" },
+        "repeat": { "$ref": "#/$defs/RepeatMode" },
+        "rate": { "description": "The speed the current item plays at: 1 for tracks, `episodeRate` for episodes.", "type": "number", "exclusiveMinimum": 0 },
+        "episodeRate": { "$ref": "#/$defs/EpisodeRate" },
+        "canGoNext": { "type": "boolean" },
+        "canGoPrevious": { "type": "boolean" },
+        "queueIndex": { "description": "The current item's index in the queue, or null when the queue is empty.", "type": ["integer", "null"], "minimum": 0 },
+        "queueLength": { "type": "integer", "minimum": 0 },
+        "autoplay": { "description": "Whether Sonolith adds related tracks when the queue runs out.", "type": "boolean" }
+      }
+    },
+    "QueueEntry": {
+      "description": "One entry in the queue. `entryId` identifies this occurrence (the queue can hold the same track twice) and stays the same when entries move.",
+      "type": "object",
+      "required": ["index", "entryId", "item", "autoplay"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "entryId": { "type": "string" },
+        "item": { "$ref": "media.schema.json#/$defs/MediaItem" },
+        "autoplay": { "description": "True when autoplay added it (related tracks after the user's own).", "type": "boolean" }
+      }
+    },
+    "QueueSummary": {
+      "description": "The queue's shape without its items.",
+      "type": "object",
+      "required": ["revision", "currentIndex", "length", "autoplay"],
+      "properties": {
+        "revision": { "description": "Grows by at least one whenever the entries or `currentIndex` change. Compare revisions to know whether a copy is current.", "type": "integer", "minimum": 0 },
+        "currentIndex": { "description": "The index of the current item, or null when the queue is empty.", "type": ["integer", "null"], "minimum": 0 },
+        "length": { "type": "integer", "minimum": 0 },
+        "autoplay": { "type": "boolean" }
+      }
+    },
+    "QueueChangeReason": {
+      "description": "Why the queue changed. Treat unknown values as `other`.",
+      "type": "string",
+      "enum": ["replaced", "added", "removed", "moved", "cleared", "advanced", "autoplay", "other"]
+    },
+    "PositionEvent": {
+      "description": "Parameters of `player.position`.",
+      "type": "object",
+      "required": ["positionMs", "positionAt", "durationMs", "rate", "status"],
+      "properties": {
+        "positionMs": { "$ref": "common.schema.json#/$defs/DurationMs" },
+        "positionAt": { "$ref": "common.schema.json#/$defs/TimestampMs" },
+        "durationMs": { "oneOf": [{ "$ref": "common.schema.json#/$defs/DurationMs" }, { "type": "null" }] },
+        "rate": { "type": "number", "exclusiveMinimum": 0 },
+        "status": { "$ref": "#/$defs/PlaybackStatus" }
+      }
+    }
+  }
+}

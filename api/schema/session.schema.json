@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/opecko/sonolith/master/api/schema/session.schema.json",
+  "title": "Sonolith API: registration, sessions and events",
+  "$defs": {
+    "ScopeRequest": {
+      "description": "A scope the app asks for, with the reason shown to the user.",
+      "type": "object",
+      "required": ["scope", "required", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "scope": { "$ref": "common.schema.json#/$defs/Scope" },
+        "required": { "description": "True: the app cannot work without it and the user cannot untick it. False: the user can untick it.", "type": "boolean" },
+        "reason": { "description": "Why the app needs it, in one short sentence the user reads, for example `To show the current song in your bar`. 1–120 characters.", "type": "string", "minLength": 1, "maxLength": 120 }
+      }
+    },
+    "Icon": {
+      "description": "A square PNG icon as a data URI (`data:image/png;base64,…`), at least 64×64 px (256×256 recommended), at most 65536 characters. Remote URLs are not accepted.",
+      "type": "string",
+      "pattern": "^data:image/png;base64,[A-Za-z0-9+/]+={0,2}$",
+      "maxLength": 65536
+    },
+    "RegistrationPending": {
+      "description": "The request is waiting for the user. Its outcome arrives as `registration.resolved` with the same `requestId`.",
+      "type": "object",
+      "required": ["status", "requestId", "expiresAt"],
+      "properties": {
+        "status": { "const": "pending" },
+        "requestId": { "type": "string" },
+        "expiresAt": { "$ref": "common.schema.json#/$defs/TimestampMs" }
+      }
+    },
+    "RequestScopesResult": {
+      "description": "`granted` when the app already has every requested scope (nothing is shown to the user), otherwise `pending`.",
+      "type": "object",
+      "required": ["status", "requestId", "expiresAt", "grantedScopes"],
+      "properties": {
+        "status": { "type": "string", "enum": ["pending", "granted"] },
+        "requestId": { "description": "Set when `status` is `pending`, otherwise null.", "type": ["string", "null"] },
+        "expiresAt": { "description": "Set when `status` is `pending`, otherwise null.", "oneOf": [{ "$ref": "common.schema.json#/$defs/TimestampMs" }, { "type": "null" }] },
+        "grantedScopes": { "description": "The scopes the app has now.", "type": "array", "items": { "$ref": "common.schema.json#/$defs/Scope" } }
+      }
+    },
+    "RegistrationOutcome": {
+      "description": "Parameters of `registration.resolved`.",
+      "type": "object",
+      "required": ["requestId", "kind", "status", "token", "grantedScopes", "retryAfterMs"],
+      "properties": {
+        "requestId": { "type": "string" },
+        "kind": {
+          "description": "`register` (from `app.register`), `scopes` (from `app.requestScopes`) or `identity` (from `session.hello` after the app's executable changed).",
+          "type": "string",
+          "enum": ["register", "scopes", "identity"]
+        },
+        "status": {
+          "description": "`approved`, `denied` (the user said no), `blocked` (the user said no and blocked the app) or `expired` (nobody answered in time).",
+          "type": "string",
+          "enum": ["approved", "denied", "blocked", "expired"]
+        },
+        "token": { "description": "The new client token when `kind` is `register` and `status` is `approved`, otherwise null. Sent only this once.", "oneOf": [{ "$ref": "#/$defs/Token" }, { "type": "null" }] },
+        "grantedScopes": { "description": "The app's scopes after an approval, otherwise null.", "oneOf": [{ "type": "array", "items": { "$ref": "common.schema.json#/$defs/Scope" } }, { "type": "null" }] },
+        "retryAfterMs": { "description": "When `status` is `denied` or `expired`: how long until the app may ask again. Otherwise null.", "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "Token": {
+      "description": "A client token: `snl_` followed by 43 base64url characters (256 random bits). A secret: store it like a password.",
+      "type": "string",
+      "pattern": "^snl_[A-Za-z0-9_-]{43}$"
+    },
+    "HelloResult": {
+      "description": "The authenticated session.",
+      "type": "object",
+      "required": ["apiVersion", "appVersion", "appId", "grantedScopes", "signedIn"],
+      "properties": {
+        "apiVersion": { "$ref": "common.schema.json#/$defs/ApiVersion" },
+        "appVersion": { "description": "Sonolith's own version. Informational; check `apiVersion` for compatibility.", "type": "string" },
+        "appId": { "$ref": "common.schema.json#/$defs/AppId" },
+        "grantedScopes": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/Scope" } },
+        "signedIn": { "description": "Whether the user is signed in to a YouTube account in Sonolith.", "type": "boolean" }
+      }
+    },
+    "SessionInfo": {
+      "description": "The calling app's session.",
+      "type": "object",
+      "required": ["appId", "grantedScopes", "signedIn"],
+      "properties": {
+        "appId": { "$ref": "common.schema.json#/$defs/AppId" },
+        "grantedScopes": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/Scope" } },
+        "signedIn": { "type": "boolean" }
+      }
+    },
+    "ServerInfo": {
+      "description": "What this Sonolith offers.",
+      "type": "object",
+      "required": ["apiVersion", "appVersion", "platform", "methods", "topics", "session"],
+      "properties": {
+        "apiVersion": { "$ref": "common.schema.json#/$defs/ApiVersion" },
+        "appVersion": { "type": "string" },
+        "platform": { "type": "string", "enum": ["linux", "windows"] },
+        "methods": { "description": "Every method this Sonolith supports.", "type": "array", "items": { "type": "string" } },
+        "topics": { "description": "Every event topic this Sonolith supports.", "type": "array", "items": { "$ref": "#/$defs/Topic" } },
+        "session": { "description": "The calling app's session, or null before `session.hello`.", "oneOf": [{ "$ref": "#/$defs/SessionInfo" }, { "type": "null" }] }
+      }
+    },
+    "Topic": {
+      "description": "An event topic to subscribe to.",
+      "type": "string",
+      "enum": ["player.state", "player.track", "player.position", "player.volume", "queue", "lyrics", "lyrics.line", "lyrics.word", "account"]
+    },
+    "SubscribeResult": {
+      "description": "The connection's subscriptions after the call.",
+      "type": "object",
+      "required": ["topics", "positionHz"],
+      "properties": {
+        "topics": { "type": "array", "items": { "$ref": "#/$defs/Topic" } },
+        "positionHz": { "description": "How many `player.position` events per second this connection gets while playing.", "type": "integer", "minimum": 1, "maximum": 4 }
+      }
+    },
+    "RevokeInfo": {
+      "description": "Parameters of `session.revoked`.",
+      "type": "object",
+      "required": ["reason"],
+      "properties": {
+        "reason": {
+          "description": "`removed` (the user removed the app in Sonolith), `blocked` (the user blocked it), `unregistered` (the app unregistered itself on another connection) or `replaced` (the app registered again and got a new token). Treat unknown values as `removed`.",
+          "type": "string",
+          "enum": ["removed", "blocked", "unregistered", "replaced"]
+        }
+      }
+    },
+    "ScopesChanged": {
+      "description": "Parameters of `session.scopesChanged`.",
+      "type": "object",
+      "required": ["grantedScopes", "added", "removed"],
+      "properties": {
+        "grantedScopes": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/Scope" } },
+        "added": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/Scope" } },
+        "removed": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/Scope" } }
+      }
+    },
+    "AccountState": {
+      "description": "Parameters of `account.changed`.",
+      "type": "object",
+      "required": ["signedIn"],
+      "properties": {
+        "signedIn": { "type": "boolean" }
+      }
+    }
+  }
+}
