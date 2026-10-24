@@ -734,7 +734,7 @@ methods that need a scope with `PermissionDenied`. The method reference lists th
 | Time to authenticate | 30 seconds after connecting, not counting a pending registration (the 30 seconds start again when it ends) | connection closed |
 | Pending registrations | 1 per app, 3 in total | `RegistrationPending` / `RateLimited` (`tooManyPending`) |
 | Answer time | Sonolith answers every request within 30 seconds | `Timeout`; Sonolith stops working on the request |
-| Queue | 1000 entries added per call, 5000 entries in all | the rest is left out (`added` says how many arrived) |
+| Queue | 1000 entries added per call, 5000 entries in all | the rest is left out; `truncated` and `limit` in the result say so |
 | Unread outgoing data | 4 MiB per connection, or 10 seconds without reading | connection closed at once |
 
 ### 12.1 Rate limits
@@ -1865,7 +1865,7 @@ Response:
 
 Adds items to the end of the queue.
 
-An album, playlist or podcast adds all its items (at most 500). If autoplay entries are at the end, the new items go before them. One call adds at most 1000 entries and never grows the queue past 5000 entries; items beyond that are left out (and not looked up), and `added` says how many arrived.
+An album, playlist or podcast adds all its items (at most 500). If autoplay entries are at the end, the new items go before them. One call adds at most 1000 entries and never grows the queue past 5000 entries; items beyond that are left out (and not looked up): then `truncated` is true, and `limit` says how many entries the call could add.
 
 | Scope | Session | Rate class |
 |---|---|---|
@@ -1882,6 +1882,8 @@ An album, playlist or podcast adds all its items (at most 500). If autoplay entr
 | Field | Type | Description |
 |---|---|---|
 | `added` | integer | How many entries were added. |
+| `truncated` | boolean | True when the limits left items out (1000 entries per call, 5000 in the queue). |
+| `limit` | integer (0–1000) | How many entries this call could add: 1000, or fewer when the queue is close to 5000. |
 | `queue` | [QueueSummary](#queuesummary) | The queue's shape without its items. |
 
 **Errors**
@@ -1907,6 +1909,8 @@ Response:
   "id": 21,
   "result": {
     "added": 1,
+    "truncated": false,
+    "limit": 1000,
     "queue": {
       "revision": 58,
       "currentIndex": 3,
@@ -1937,7 +1941,9 @@ The same limits as `queue.add`: at most 500 items per album, playlist or podcast
 
 | Field | Type | Description |
 |---|---|---|
-| `added` | integer |  |
+| `added` | integer | How many entries were added. |
+| `truncated` | boolean | True when the limits left items out (1000 entries per call, 5000 in the queue). |
+| `limit` | integer (0–1000) | How many entries this call could add: 1000, or fewer when the queue is close to 5000. |
 | `queue` | [QueueSummary](#queuesummary) | The queue's shape without its items. |
 
 **Errors**
@@ -1963,6 +1969,8 @@ Response:
   "id": 22,
   "result": {
     "added": 10,
+    "truncated": false,
+    "limit": 1000,
     "queue": {
       "revision": 58,
       "currentIndex": 3,

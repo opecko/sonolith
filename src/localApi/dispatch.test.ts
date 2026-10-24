@@ -221,7 +221,7 @@ describe("queue", () => {
   it("adds items and reports how many arrived", async () => {
     playing("a");
     h.ytm.getWatch.mockResolvedValue({ tracks: [song("x")] });
-    expect(await run("queue.add", { items: [{ type: "track", id: "x" }] })).toMatchObject({ added: 1, queue: { length: 2 } });
+    expect(await run("queue.add", { items: [{ type: "track", id: "x" }] })).toMatchObject({ added: 1, truncated: false, limit: 1000, queue: { length: 2 } });
     h.ytm.getWatch.mockResolvedValue({ tracks: [] });
     expect(await fails(run("queue.add", { items: [{ type: "track", id: "gone" }] }))).toEqual({ name: "NotFound", reason: null });
   });
@@ -232,15 +232,22 @@ describe("queue", () => {
     h.ytm.getPlaylist.mockImplementation(async () => big(0));
     const items = Array.from({ length: 50 }, (_, i) => ({ type: "playlist", id: `PL${i}` }));
     const r = await run("queue.add", { items });
-    expect(r.added).toBe(1000);
+    expect(r).toMatchObject({ added: 1000, truncated: true, limit: 1000 });
     expect(h.ytm.getPlaylist.mock.calls.length).toBeLessThan(10);
   });
 
   it("never grows the queue past 5000 entries", async () => {
     usePlayer.setState({ queue: Array.from({ length: 4990 }, (_, i) => song(`q${i}`)), index: 0 } as never);
     h.ytm.getAlbum.mockResolvedValue({ type: "album", id: "MPREb", title: "Album", subtitle: "", tracks: Array.from({ length: 20 }, (_, i) => song(`t${i}`)), related: [] });
-    expect((await run("queue.add", { items: [{ type: "album", id: "MPREb" }] })).added).toBe(10);
-    expect((await run("queue.add", { items: [{ type: "album", id: "MPREb" }] })).added).toBe(0);
+    expect(await run("queue.add", { items: [{ type: "album", id: "MPREb" }] })).toMatchObject({ added: 10, truncated: true, limit: 10 });
+    expect(await run("queue.add", { items: [{ type: "album", id: "MPREb" }] })).toMatchObject({ added: 0, truncated: true, limit: 0 });
+    expect(await run("queue.playNext", { items: [{ type: "album", id: "MPREb" }] })).toMatchObject({ added: 0, truncated: true, limit: 0 });
+  });
+
+  it("doesn't call an add truncated when everything just fits", async () => {
+    usePlayer.setState({ queue: Array.from({ length: 4980 }, (_, i) => song(`q${i}`)), index: 0 } as never);
+    h.ytm.getAlbum.mockResolvedValue({ type: "album", id: "MPREb", title: "Album", subtitle: "", tracks: Array.from({ length: 20 }, (_, i) => song(`t${i}`)), related: [] });
+    expect(await run("queue.add", { items: [{ type: "album", id: "MPREb" }] })).toMatchObject({ added: 20, truncated: false, limit: 20 });
   });
 
   it("looks references up a few at a time", async () => {

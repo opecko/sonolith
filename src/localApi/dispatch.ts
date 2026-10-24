@@ -182,6 +182,19 @@ function queueEntries(call: Call): A.QueueEntry[] {
 /** How many entries one call may still add: per-call and queue limits. */
 const queueRoom = () => Math.max(0, Math.min(MAX_CALL_ITEMS, MAX_QUEUE - player().queue.length));
 
+/**
+ * What a queue.add / queue.playNext adds, and whether the limits left items out. One track more than fits is looked
+ * up, so a list that just fits isn't called truncated; with no room at all nothing is looked up.
+ */
+async function forQueue(refs: A.PlayableRef[], call: Call): Promise<{ tracks: Track[]; truncated: boolean; limit: number }> {
+  const room = queueRoom();
+  const found = room > 0 ? await tracksOfAll(refs, call, room + 1) : [];
+  call.signal?.throwIfAborted();
+  // The queue may have changed during the lookup.
+  const limit = queueRoom();
+  return { tracks: found.slice(0, limit), truncated: room === 0 || found.length > limit, limit };
+}
+
 function indexOfEntry(entryId: string): number {
   return queueEntryIds().indexOf(entryId);
 }
@@ -282,18 +295,16 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     return { ...queueSummary(), ...slice(queueEntries(call), from, p.limit, rev) };
   },
   "queue.add": async (p, call) => {
-    const tracks = await tracksOfAll(p.items, call, queueRoom());
-    call.signal?.throwIfAborted();
+    const { tracks, truncated, limit } = await forQueue(p.items, call);
     const before = player().queue.length;
-    player().addToQueue(tracks.slice(0, queueRoom()));
-    return { added: player().queue.length - before, queue: queueSummary() };
+    player().addToQueue(tracks);
+    return { added: player().queue.length - before, truncated, limit, queue: queueSummary() };
   },
   "queue.playNext": async (p, call) => {
-    const tracks = await tracksOfAll(p.items, call, queueRoom());
-    call.signal?.throwIfAborted();
+    const { tracks, truncated, limit } = await forQueue(p.items, call);
     const before = player().queue.length;
-    player().playNext(tracks.slice(0, queueRoom()));
-    return { added: Math.max(player().queue.length - before, 0), queue: queueSummary() };
+    player().playNext(tracks);
+    return { added: Math.max(player().queue.length - before, 0), truncated, limit, queue: queueSummary() };
   },
   "queue.move": (p) => {
     const from = indexOfEntry(p.entryId);

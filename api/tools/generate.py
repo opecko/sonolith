@@ -88,6 +88,9 @@ PODCAST = {"type": "podcast", "id": "PLp4dC8sT2mVx7Kq9wZ3nB5yR1gF6hJ0aE", "title
 NOW = 1793022000000
 TOKEN = "snl_8dmJuD9Z2UkFfCj61pn7Zn_0hI0YOf9Cuw_XU3Uerv0"
 QUEUE_SUMMARY = {"revision": 57, "currentIndex": 3, "length": 25, "autoplay": True}
+# queue.add / queue.playNext: what the per-call and queue limits did.
+TRUNCATED = ({"type": "boolean"}, "True when the limits left items out (1000 entries per call, 5000 in the queue).")
+QUEUE_LIMIT = ({"type": "integer", "minimum": 0, "maximum": 1000}, "How many entries this call could add: 1000, or fewer when the queue is close to 5000.")
 PLAYER_STATE = {
     "status": "playing", "item": TRACK, "positionMs": 61250, "positionAt": NOW, "durationMs": 214000,
     "volume": 70, "muted": False, "shuffle": False, "repeat": "off", "rate": 1, "episodeRate": 1.25,
@@ -357,19 +360,19 @@ METHODS = [
           {"index": 3, "entryId": "q_118", "item": TRACK, "autoplay": False},
           {"index": 4, "entryId": "q_119", "item": TRACK2, "autoplay": True}], "nextCursor": "cXVldWU6NTc6NQ"}),
     M("queue.add", "Adds items to the end of the queue.", scope="queue:write", rate="control",
-      description="An album, playlist or podcast adds all its items (at most 500). If autoplay entries are at the end, the new items go before them. One call adds at most 1000 entries and never grows the queue past 5000 entries; items beyond that are left out (and not looked up), and `added` says how many arrived.",
+      description="An album, playlist or podcast adds all its items (at most 500). If autoplay entries are at the end, the new items go before them. One call adds at most 1000 entries and never grows the queue past 5000 entries; items beyond that are left out (and not looked up): then `truncated` is true, and `limit` says how many entries the call could add.",
       params=[P("items", array(ref("media", "PlayableRef"), minItems=1, maxItems=50), True, "What to add, in order.")],
-      result=obj(added=({"type": "integer", "minimum": 0}, "How many entries were added."), queue=(ref("player", "QueueSummary"), "")),
+      result=obj(added=({"type": "integer", "minimum": 0}, "How many entries were added."), truncated=TRUNCATED, limit=QUEUE_LIMIT, queue=(ref("player", "QueueSummary"), "")),
       errors=[("NotFound", "one of the items does not exist, or is the user's own playlist, liked songs, episodes for later or a personal mix while the app lacks `library:read` (see `playlist.get`); nothing is added")],
       example_params={"items": [{"type": "track", "id": "Rb7nW2kLq9E"}]},
-      example_result={"added": 1, "queue": {**QUEUE_SUMMARY, "revision": 58, "length": 26}}),
+      example_result={"added": 1, "truncated": False, "limit": 1000, "queue": {**QUEUE_SUMMARY, "revision": 58, "length": 26}}),
     M("queue.playNext", "Inserts items right after the current item.", scope="queue:write", rate="control",
       description="The same limits as `queue.add`: at most 500 items per album, playlist or podcast, 1000 entries per call, and a queue of at most 5000 entries.",
       params=[P("items", array(ref("media", "PlayableRef"), minItems=1, maxItems=50), True, "What to insert, in order.")],
-      result=obj(added=({"type": "integer", "minimum": 0}, ""), queue=(ref("player", "QueueSummary"), "")),
+      result=obj(added=({"type": "integer", "minimum": 0}, "How many entries were added."), truncated=TRUNCATED, limit=QUEUE_LIMIT, queue=(ref("player", "QueueSummary"), "")),
       errors=[("NotFound", "one of the items does not exist, or is the user's own playlist, liked songs, episodes for later or a personal mix while the app lacks `library:read` (see `playlist.get`); nothing is added")],
       example_params={"items": [{"type": "album", "id": "MPREb_4pL8gzRtw9a"}]},
-      example_result={"added": 10, "queue": {**QUEUE_SUMMARY, "revision": 58, "length": 35}}),
+      example_result={"added": 10, "truncated": False, "limit": 1000, "queue": {**QUEUE_SUMMARY, "revision": 58, "length": 35}}),
     M("queue.move", "Moves one entry to a new index.", scope="queue:write", rate="control",
       params=[P("entryId", {"type": "string"}, True, "The entry to move."),
               P("toIndex", {"type": "integer", "minimum": 0}, True, "Its index after the move. Clamped to the queue.")],

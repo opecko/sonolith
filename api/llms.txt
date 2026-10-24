@@ -124,8 +124,8 @@ Format: `name(params) -> result [scope] summary`. `?` = optional param.
 - player.setRate(rate: EpisodeRate) -> {} [player:control] Sets the playback speed for podcast episodes. Tracks always play at 1.
 - player.playItem(item: PlayableRef, startId?: string, shuffle?: boolean, positionMs?: integer (ms)) -> {} [player:control] Plays a track, episode, album, playlist or podcast. Replaces the queue.
 - queue.get(fromIndex?: integer, cursor?: string, limit?: integer (1–100)) -> QueueSummary & {items: QueueEntry[], nextCursor: string | null} [queue:read] Returns the queue, one page at a time.
-- queue.add(items: PlayableRef[]) -> {added: integer, queue: QueueSummary} [queue:write] Adds items to the end of the queue.
-- queue.playNext(items: PlayableRef[]) -> {added: integer, queue: QueueSummary} [queue:write] Inserts items right after the current item.
+- queue.add(items: PlayableRef[]) -> {added: integer, truncated: boolean, limit: integer (0–1000), queue: QueueSummary} [queue:write] Adds items to the end of the queue.
+- queue.playNext(items: PlayableRef[]) -> {added: integer, truncated: boolean, limit: integer (0–1000), queue: QueueSummary} [queue:write] Inserts items right after the current item.
 - queue.move(entryId: string, toIndex: integer) -> {queue: QueueSummary} [queue:write] Moves one entry to a new index.
 - queue.remove(entryIds: string[]) -> {removed: integer, queue: QueueSummary} [queue:write] Removes entries from the queue.
 - queue.clear() -> {queue: QueueSummary} [queue:write] Removes every entry except the current one. Playback continues.
@@ -262,7 +262,8 @@ InvalidParams, InternalError, RateLimited, Unavailable, Timeout (+ SessionRequir
 
 16 requests in flight per connection; 8 connections per app; authenticate within 30 s (a pending registration doesn't
 count; the 30 s restart when it ends); answers within 30 s. A client that leaves over 4 MiB unread, or reads nothing for
-10 s while Sonolith writes, is disconnected. queue.add/playNext: at most 1000 entries per call, queue at most 5000.
+10 s while Sonolith writes, is disconnected. queue.add/playNext: at most 1000 entries per call, queue at most 5000; the result's `truncated`/`limit` say when
+items were left out.
 Answers over 1 MiB come as InternalError `resultTooLarge`. app.register texts (name, description, publisher, reasons)
 are single-line plain text: no control or invisible formatting characters.
 Rate classes per app: local 50/s, control 10/s, network 2/s, account 1 per 2 s (30/min), auth 1/s per connection.

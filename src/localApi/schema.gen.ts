@@ -181,9 +181,9 @@ export interface Methods {
   /** Returns the queue, one page at a time. */
   "queue.get": { params: { fromIndex?: number; cursor?: Cursor; limit?: Limit }; result: QueueSummary & { items: QueueEntry[]; nextCursor: NextCursor } };
   /** Adds items to the end of the queue. */
-  "queue.add": { params: { items: PlayableRef[] }; result: { added: number; queue: QueueSummary } };
+  "queue.add": { params: { items: PlayableRef[] }; result: { added: number; truncated: boolean; limit: number; queue: QueueSummary } };
   /** Inserts items right after the current item. */
-  "queue.playNext": { params: { items: PlayableRef[] }; result: { added: number; queue: QueueSummary } };
+  "queue.playNext": { params: { items: PlayableRef[] }; result: { added: number; truncated: boolean; limit: number; queue: QueueSummary } };
   /** Moves one entry to a new index. */
   "queue.move": { params: { entryId: string; toIndex: number }; result: { queue: QueueSummary } };
   /** Removes entries from the queue. */

@@ -1821,6 +1821,8 @@
           "type": "object",
           "required": [
             "added",
+            "truncated",
+            "limit",
             "queue"
           ],
           "properties": {
@@ -1828,6 +1830,16 @@
               "type": "integer",
               "minimum": 0,
               "description": "How many entries were added."
+            },
+            "truncated": {
+              "type": "boolean",
+              "description": "True when the limits left items out (1000 entries per call, 5000 in the queue)."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000,
+              "description": "How many entries this call could add: 1000, or fewer when the queue is close to 5000."
             },
             "queue": {
               "$ref": "schema/player.schema.json#/$defs/QueueSummary"
@@ -1882,6 +1894,8 @@
             "name": "result",
             "value": {
               "added": 1,
+              "truncated": false,
+              "limit": 1000,
               "queue": {
                 "revision": 58,
                 "currentIndex": 3,
@@ -1895,7 +1909,7 @@
       "x-scope": "queue:write",
       "x-requires-session": true,
       "x-rate-class": "control",
-      "description": "An album, playlist or podcast adds all its items (at most 500). If autoplay entries are at the end, the new items go before them. One call adds at most 1000 entries and never grows the queue past 5000 entries; items beyond that are left out (and not looked up), and `added` says how many arrived."
+      "description": "An album, playlist or podcast adds all its items (at most 500). If autoplay entries are at the end, the new items go before them. One call adds at most 1000 entries and never grows the queue past 5000 entries; items beyond that are left out (and not looked up): then `truncated` is true, and `limit` says how many entries the call could add."
     },
     {
       "name": "queue.playNext",
@@ -1928,12 +1942,25 @@
           "type": "object",
           "required": [
             "added",
+            "truncated",
+            "limit",
             "queue"
           ],
           "properties": {
             "added": {
               "type": "integer",
-              "minimum": 0
+              "minimum": 0,
+              "description": "How many entries were added."
+            },
+            "truncated": {
+              "type": "boolean",
+              "description": "True when the limits left items out (1000 entries per call, 5000 in the queue)."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000,
+              "description": "How many entries this call could add: 1000, or fewer when the queue is close to 5000."
             },
             "queue": {
               "$ref": "schema/player.schema.json#/$defs/QueueSummary"
@@ -1988,6 +2015,8 @@
             "name": "result",
             "value": {
               "added": 10,
+              "truncated": false,
+              "limit": 1000,
               "queue": {
                 "revision": 58,
                 "currentIndex": 3,
