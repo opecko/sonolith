@@ -13,6 +13,7 @@ import { useUi } from "./stores/ui";
 import Toast from "./components/Toast";
 import { initLyrics } from "./lyrics/store";
 import { initLocalApi } from "./localApi/init";
+import ConsentDialog from "./localApi/ConsentDialog";
 import { initShortcuts } from "./shortcuts/init";
 import ShortcutFeedback from "./shortcuts/ShortcutFeedback";
 import { browseLinks } from "./components/TrackByline";
@@ -59,6 +60,7 @@ export default function App() {
       <UpdateDialog />
       <WhatsNewDialog />
       <ConfirmDialog />
+      <ConsentDialog />
       <Toast />
       <ShortcutFeedback />
       {onboarding && <Suspense fallback={null}><Onboarding /></Suspense>}
