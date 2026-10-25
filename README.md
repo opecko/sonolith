@@ -110,19 +110,19 @@ npx tsc --noEmit                  # type check
 cd src-tauri && cargo test        # Rust tests
 ```
 
-To skip the sign-in window during development, put your cookie in `YTM_COOKIE` (or a git-ignored `.env.local`);
-it's used only when the keyring is empty.
+To skip the sign-in window during development, start the app with your cookie in the `YTM_COOKIE` environment
+variable (used only when the keyring is empty); the debug scripts also read a git-ignored `.env.local`. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to get one safely.
 
 ### Build installers
 
-- On any OS: `npm run tauri build` builds the installer for that OS in `src-tauri/target/release/bundle/`.
-- All packages at once (Arch-based Linux host: Windows `.exe` via cross-compile, `.deb`, Arch package via makepkg):
-  `scripts/release.sh`. Packages land in `release/<version>/` with `SHA256SUMS`.
-  Bump the version in `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `package.json` and
-  `packaging/arch*/PKGBUILD` first.
-- After publishing a release, `scripts/aur.sh <version> --push` updates the AUR packages (`packaging/aur/`).
-- **Actions → Release → Run workflow** builds everything on GitHub for an existing tag and attaches it to the
-  release.
+`npm run tauri build` builds the installer for your OS in `src-tauri/target/release/bundle/`.
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome, including ones made with an AI assistant. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions and the pull request process, and
+[SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
 ## License
 
