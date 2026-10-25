@@ -13,7 +13,8 @@ packaging/*/src/
 packaging/*/*.pkg.tar.zst
 packaging/out/
 release/
-CLAUDE.md
 PLAN.md
-docs/
+# Maintainer-only notes and personal assistant rules (docs/dev/ is tracked)
+docs/private/
+CLAUDE.local.md
 __pycache__/
