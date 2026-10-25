@@ -1,6 +1,6 @@
 /*
  * Material 3 Expressive foundations: color roles, corner scale and type scale. Only the M3 style
- * (html[data-ui-style="m3"]) uses them for components; Classic ignores them. Values: docs/m3-expressive.md.
+ * (html[data-ui-style="m3"]) uses them for components; Classic ignores them. Values: docs/dev/m3-expressive.md.
  */
 
 /* Color roles derived from the --c-* tokens (recipes in m3.ts; a test keeps both in sync). Declared again on a

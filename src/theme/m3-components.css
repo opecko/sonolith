@@ -151,7 +151,7 @@
 /* ---------- Connected button group (player transport) ---------- */
 
 [data-ui-style="m3"] .m3-connected { gap: 2px; }
-/* Outer corners morph (--r-now), inner corners stay at the connected-group inner radius (8, docs/m3-expressive.md):
+/* Outer corners morph (--r-now), inner corners stay at the connected-group inner radius (8, docs/dev/m3-expressive.md):
    the group reads as one piece. --pill (half the button height, set by the component) clamps the full corner. */
 [data-ui-style="m3"] :is(.m3-cg-start, .m3-cg-end) {
   --r-rest: min(var(--m3-corner-full), var(--pill, 20px));

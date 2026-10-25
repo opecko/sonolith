@@ -126,7 +126,7 @@ function ClassicSlider(props: SliderProps) {
   );
 }
 
-/** Track height, handle height, track corner and the gap around the handle, in px (docs/m3-expressive.md). */
+/** Track height, handle height, track corner and the gap around the handle, in px (docs/dev/m3-expressive.md). */
 const M3_SIZES = { xs: [16, 44, 8, 6], sm: [12, 32, 6, 4], seek: [4, 16, 2, 4] } as const;
 
 /**

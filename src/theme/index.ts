@@ -100,7 +100,7 @@ export function fontStack(font: string, family: string): string | null {
 /** index.css --font; keep in sync. */
 export const APP_FONT = `"Inter", "Roboto", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif`;
 
-/** M3 corner scale in px at the default 8px corner setting (docs/m3-expressive.md); m3.css has the same defaults. */
+/** M3 corner scale in px at the default 8px corner setting (docs/dev/m3-expressive.md); m3.css has the same defaults. */
 export const M3_CORNERS = { none: 0, xs: 4, sm: 8, md: 12, lg: 16, "lg-plus": 20, xl: 28, "xl-plus": 32, "2xl": 48, full: 9999 } as const;
 
 /** The M3 corner scale follows the corner radius setting (8px = M3's own values, 0 = square everything). */

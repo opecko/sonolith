@@ -8,7 +8,7 @@ export interface SpringParams {
   stiffness: number;
 }
 
-/** M3 Expressive spring tokens (docs/m3-expressive.md). Spatial = position/size/shape, effects = color/opacity. */
+/** M3 Expressive spring tokens (docs/dev/m3-expressive.md). Spatial = position/size/shape, effects = color/opacity. */
 export const SPRINGS = {
   fastSpatial: { damping: 0.6, stiffness: 800 },
   defaultSpatial: { damping: 0.8, stiffness: 380 },

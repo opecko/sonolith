@@ -1,5 +1,5 @@
 //! One `Source` per provider: a request to its public endpoint, its format through `parse`, and a check that the
-//! result is the playing song (`matching`). Endpoints and shapes: docs/lyrics-providers.md.
+//! result is the playing song (`matching`).
 
 use super::matching::{artists_match, duration_ok, titles_match};
 use super::model::Request;
