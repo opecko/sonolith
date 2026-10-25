@@ -278,7 +278,7 @@ async function run(): Promise<void> {
       conn = await Connection.open();
     } catch (e) {
       if (!(e instanceof NotAvailable)) throw e;
-      say(`Sonolith is not available (not running, or “Allow other apps to connect” is off). Retrying in ${Math.round(delay / 1000)} s.`);
+      say(`Sonolith is not available (not running, or “Let other apps connect to Sonolith” is off). Retrying in ${Math.round(delay / 1000)} s.`);
       await sleep(delay * (0.8 + Math.random() * 0.4));
       delay = Math.min(delay * 2, 60_000);
       continue;

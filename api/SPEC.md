@@ -184,7 +184,7 @@ The endpoint and the discovery file exist only while Sonolith runs **and** the A
 - A client MUST NOT start Sonolith on its own. It MAY offer the user a "Start Sonolith" action, and MUST NOT start
   Sonolith more than once per user action.
 - While Sonolith is not available, a client SHOULD tell the user something like "Sonolith is not running, or
-  'Allow other apps to connect' is off in its Settings → Connected apps."
+  'Let other apps connect to Sonolith' is off in its Settings → Connected apps."
 
 ### 3.5 Lifecycle
 

@@ -17,7 +17,7 @@ public static extern bool GetNamedPipeServerProcessId(IntPtr pipe, out uint serv
 
 function Open-SonolithPipe {
     $file = Join-Path $env:LOCALAPPDATA 'Sonolith\api\discovery.json'
-    if (-not (Test-Path $file)) { throw "Sonolith is not running, or 'Allow other apps to connect' is off in its Settings > Connected apps." }
+    if (-not (Test-Path $file)) { throw "Sonolith is not running, or 'Let other apps connect to Sonolith' is off in its Settings > Connected apps." }
     $info = Get-Content $file -Raw | ConvertFrom-Json
     $name = $info.path -replace '^\\\\\.\\pipe\\', ''
     $pipe = New-Object System.IO.Pipes.NamedPipeClientStream('.', $name, [System.IO.Pipes.PipeDirection]::InOut)

@@ -302,7 +302,7 @@ async def run(store):
         try:
             conn = await Connection.open()
         except NotAvailable:
-            say(f"Sonolith is not available (not running, or “Allow other apps to connect” is off). Retrying in {delay:.0f} s.")
+            say(f"Sonolith is not available (not running, or “Let other apps connect to Sonolith” is off). Retrying in {delay:.0f} s.")
             await asyncio.sleep(delay * random.uniform(0.8, 1.2))
             delay = min(delay * 2, 60)
             continue

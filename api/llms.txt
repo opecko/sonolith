@@ -13,7 +13,7 @@
   Check the pipe server process id equals `pid` in that file before sending the token, when you can.
 - Discovery file (Linux: `$XDG_RUNTIME_DIR/sonolith/discovery.json`):
   `{"apiVersion":"1.0.0","appVersion":"2.4.0","transport":"unix"|"pipe","path":"…","pid":4242,"startedAt":1793021000000}`.
-- No endpoint = Sonolith not running or API off (Settings → Connected apps → "Allow other apps to connect"). Retry
+- No endpoint = Sonolith not running or API off (Settings → Connected apps → "Let other apps connect to Sonolith"). Retry
   with backoff 1 s doubling to 60 s, ±20% jitter. Never start Sonolith yourself more than once per user action.
   Never delete the socket file.
 

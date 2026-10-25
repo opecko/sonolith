@@ -2,7 +2,7 @@
 
 Complete clients that do the whole flow from [SPEC.md](../SPEC.md): connect → register → wait for approval → store
 the token → subscribe to events → handle revoke → unregister. Turn the API on first: Sonolith → Settings → Connected
-apps → **Allow other apps to connect**.
+apps → **Let other apps connect to Sonolith**.
 
 | Example | Needs | Run |
 |---|---|---|
