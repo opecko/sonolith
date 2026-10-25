@@ -285,7 +285,7 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     return {};
   },
   "player.playItem": async (p, call) => {
-    const { tracks, context } = await about(() => tracksOf(p.item, call));
+    const { tracks, context, cut } = await about(() => tracksOf(p.item, call, MAX_ITEMS + 1));
     call.signal?.throwIfAborted();
     if (!tracks.length) throw new ApiError("Unavailable", "notPlayable");
     const single = p.item.type === "track" || p.item.type === "episode";
@@ -296,7 +296,7 @@ const handlers: { [M in A.MethodName]?: Handler<M> } = {
     } else if (!single && p.shuffle) index = Math.floor(Math.random() * tracks.length);
     if (!single && p.shuffle && !player().shuffle) player().toggleShuffle();
     player().playQueue(tracks, index, context, p.positionMs !== undefined ? p.positionMs / 1000 : undefined);
-    return {};
+    return { truncated: cut, limit: MAX_ITEMS };
   },
 
   "queue.get": (p, call) => {

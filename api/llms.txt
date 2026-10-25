@@ -122,7 +122,7 @@ Format: `name(params) -> result [scope] summary`. `?` = optional param.
 - player.setShuffle(enabled: boolean) -> {} [player:control] Turns shuffle on or off.
 - player.setRepeat(mode: RepeatMode) -> {} [player:control] Sets the repeat mode.
 - player.setRate(rate: EpisodeRate) -> {} [player:control] Sets the playback speed for podcast episodes. Tracks always play at 1.
-- player.playItem(item: PlayableRef, startId?: string, shuffle?: boolean, positionMs?: integer (ms)) -> {} [player:control] Plays a track, episode, album, playlist or podcast. Replaces the queue.
+- player.playItem(item: PlayableRef, startId?: string, shuffle?: boolean, positionMs?: integer (ms)) -> {truncated: boolean, limit: integer (0–500)} [player:control] Plays a track, episode, album, playlist or podcast. Replaces the queue.
 - queue.get(fromIndex?: integer, cursor?: string, limit?: integer (1–100)) -> QueueSummary & {items: QueueEntry[], nextCursor: string | null} [queue:read] Returns the queue, one page at a time.
 - queue.add(items: PlayableRef[]) -> {added: integer, truncated: boolean, limit: integer (0–1000), queue: QueueSummary} [queue:write] Adds items to the end of the queue.
 - queue.playNext(items: PlayableRef[]) -> {added: integer, truncated: boolean, limit: integer (0–1000), queue: QueueSummary} [queue:write] Inserts items right after the current item.

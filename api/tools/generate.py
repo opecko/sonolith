@@ -90,6 +90,8 @@ TOKEN = "snl_8dmJuD9Z2UkFfCj61pn7Zn_0hI0YOf9Cuw_XU3Uerv0"
 QUEUE_SUMMARY = {"revision": 57, "currentIndex": 3, "length": 25, "autoplay": True}
 # queue.add / queue.playNext: what the per-call and queue limits did.
 TRUNCATED = ({"type": "boolean"}, "True when the limits left items out (1000 entries per call, 5000 in the queue).")
+PLAY_TRUNCATED = ({"type": "boolean"}, "True when the album, playlist or podcast has more than `limit` items, so the queue got only the first `limit`.")
+PLAY_LIMIT = ({"type": "integer", "minimum": 0, "maximum": 500}, "The most items one album, playlist or podcast puts in the queue: 500.")
 QUEUE_LIMIT = ({"type": "integer", "minimum": 0, "maximum": 1000}, "How many entries this call could add: 1000, or fewer when the queue is close to 5000.")
 PLAYER_STATE = {
     "status": "playing", "item": TRACK, "positionMs": 61250, "positionAt": NOW, "durationMs": 214000,
@@ -336,10 +338,10 @@ METHODS = [
       params=[P("rate", ref("player", "EpisodeRate"), True, "One of the listed speeds.")],
       example_params={"rate": 1.5}, example_result={}),
     M("player.playItem", "Plays a track, episode, album, playlist or podcast. Replaces the queue.",
-      scope="player:control", rate="control", result=EMPTY,
+      scope="player:control", rate="control", result=obj(truncated=PLAY_TRUNCATED, limit=PLAY_LIMIT),
       description=(
           "A track or episode starts a new queue with that item; with autoplay on, Sonolith continues with related tracks. "
-          "An album, playlist or podcast fills the queue with its items in order (a podcast: its episodes, newest first). "
+          "An album, playlist or podcast fills the queue with its items in order (a podcast: its episodes, newest first), at most 500; `truncated` is true when it has more. "
           "An episode resumes where the user left off unless `positionMs` is given."),
       params=[
           P("item", ref("media", "PlayableRef"), True, "What to play."),
@@ -348,7 +350,7 @@ METHODS = [
           P("positionMs", ref("common", "DurationMs"), False, "Where to start in the first item."),
       ],
       errors=[("NotFound", "the item does not exist, or it is the user's own playlist, liked songs, episodes for later or a personal mix while the app lacks `library:read` (see `playlist.get`)"), ("Unavailable", "`notPlayable`")],
-      example_params={"item": {"type": "album", "id": "MPREb_4pL8gzRtw9a"}, "startId": "Rb7nW2kLq9E"}, example_result={}),
+      example_params={"item": {"type": "album", "id": "MPREb_4pL8gzRtw9a"}, "startId": "Rb7nW2kLq9E"}, example_result={"truncated": False, "limit": 500}),
     # ---------------------------------------------------------------- queue
     M("queue.get", "Returns the queue, one page at a time.", scope="queue:read", rate="local",
       description="A cursor is tied to the queue's `revision`. If the queue changes between pages, the next page fails with `InvalidParams` (`cursorExpired`); start again.",

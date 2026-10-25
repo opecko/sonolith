@@ -1714,7 +1714,7 @@ Response:
 
 Plays a track, episode, album, playlist or podcast. Replaces the queue.
 
-A track or episode starts a new queue with that item; with autoplay on, Sonolith continues with related tracks. An album, playlist or podcast fills the queue with its items in order (a podcast: its episodes, newest first). An episode resumes where the user left off unless `positionMs` is given.
+A track or episode starts a new queue with that item; with autoplay on, Sonolith continues with related tracks. An album, playlist or podcast fills the queue with its items in order (a podcast: its episodes, newest first), at most 500; `truncated` is true when it has more. An episode resumes where the user left off unless `positionMs` is given.
 
 | Scope | Session | Rate class |
 |---|---|---|
@@ -1731,7 +1731,10 @@ A track or episode starts a new queue with that item; with autoplay on, Sonolith
 
 **Result**
 
-An empty object `{}`.
+| Field | Type | Description |
+|---|---|---|
+| `truncated` | boolean | True when the album, playlist or podcast has more than `limit` items, so the queue got only the first `limit`. |
+| `limit` | integer (0–500) | The most items one album, playlist or podcast puts in the queue: 500. |
 
 **Errors**
 
@@ -1752,7 +1755,7 @@ Request:
 Response:
 
 ```json
-{"jsonrpc":"2.0","id":19,"result":{}}
+{"jsonrpc":"2.0","id":19,"result":{"truncated":false,"limit":500}}
 ```
 
 ### Queue (`queue.*`)

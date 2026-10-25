@@ -173,6 +173,17 @@ describe("player.playItem", () => {
     expect(context).toEqual({ playlistId: "PL1", title: "List" });
   });
 
+  it("plays the first 500 of a 600-track album and says so; 500 exactly is not truncated", async () => {
+    const album = (n: number) => ({ type: "album", id: "MPREb", title: "Big", subtitle: "", tracks: Array.from({ length: n }, (_, i) => song(`t${i}`)), related: [] });
+    h.ytm.getAlbum.mockResolvedValue(album(600));
+    expect(await run("player.playItem", { item: { type: "album", id: "MPREb" } })).toEqual({ truncated: true, limit: 500 });
+    expect(player().playQueue.mock.calls[0][0]).toHaveLength(500);
+    h.ytm.getAlbum.mockResolvedValue(album(500));
+    expect(await run("player.playItem", { item: { type: "album", id: "MPREb" } })).toEqual({ truncated: false, limit: 500 });
+    h.ytm.getWatch.mockResolvedValue({ tracks: [song("x")] });
+    expect(await run("player.playItem", { item: { type: "track", id: "x" } })).toEqual({ truncated: false, limit: 500 });
+  });
+
   it("plays a podcast's episodes with the show attached", async () => {
     h.ytm.getPodcastShow.mockResolvedValue({ title: "Show", episodes: [song("e1", { podcast: true })], next: null, chips: [], saved: false });
     await run("player.playItem", { item: { type: "podcast", id: "PLshow" } });

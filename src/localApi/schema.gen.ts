@@ -177,7 +177,7 @@ export interface Methods {
   /** Sets the playback speed for podcast episodes. Tracks always play at 1. */
   "player.setRate": { params: { rate: EpisodeRate }; result: Empty };
   /** Plays a track, episode, album, playlist or podcast. Replaces the queue. */
-  "player.playItem": { params: { item: PlayableRef; startId?: ItemId; shuffle?: boolean; positionMs?: DurationMs }; result: Empty };
+  "player.playItem": { params: { item: PlayableRef; startId?: ItemId; shuffle?: boolean; positionMs?: DurationMs }; result: { truncated: boolean; limit: number } };
   /** Returns the queue, one page at a time. */
   "queue.get": { params: { fromIndex?: number; cursor?: Cursor; limit?: Limit }; result: QueueSummary & { items: QueueEntry[]; nextCursor: NextCursor } };
   /** Adds items to the end of the queue. */
