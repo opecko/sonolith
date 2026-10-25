@@ -28,7 +28,37 @@ export function activityLines(activity: { method: string; at: number }[]): { met
   return out;
 }
 
-/** "Connected now" / "2 connections" / "Not connected". */
+/** "Connected now" / "2 connections" / "Not running". */
 export function connectionText(n: number): string {
-  return n === 0 ? "Not connected" : n === 1 ? "Connected now" : `Connected now (${n} connections)`;
+  return n === 0 ? "Not running" : n === 1 ? "Connected now" : `Connected now (${n} connections)`;
+}
+
+/** "Allowed to: see what's playing, control playback", with the permission names from the spec. */
+export function allowedSummary(scopes: readonly Scope[]): string {
+  const rows = scopeRows(scopes);
+  if (rows.length === 0) return "Not allowed to do anything";
+  return `Allowed to: ${rows.map((s) => s.label.charAt(0).toLowerCase() + s.label.slice(1)).join(", ")}`;
+}
+
+/** A wait as a clock: "0:42", "10:00", "1:00:00". Rounded up, so it never shows 0:00 while still waiting. */
+export function clock(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = String(total % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
+}
+
+/** An app that may not ask again yet, with when it may (`Date.now()` time). */
+export interface Hold {
+  appId: string;
+  name: string;
+  /** Nobody answered (rather than a denial). */
+  expired: boolean;
+  until: number;
+}
+
+/** "Denied · can ask again in 0:42". */
+export function holdText(h: Pick<Hold, "expired" | "until">, now = Date.now()): string {
+  return `${h.expired ? "Not answered" : "Denied"} · can ask again in ${clock(h.until - now)}`;
 }

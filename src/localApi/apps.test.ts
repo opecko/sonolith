@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activityLines, ago, connectionText, scopeRows } from "./apps";
+import { activityLines, ago, allowedSummary, clock, connectionText, holdText, scopeRows } from "./apps";
 
 describe("ago", () => {
   const now = Date.UTC(2026, 9, 24, 12);
@@ -23,5 +23,20 @@ it("folds repeated calls", () => {
 });
 
 it("says who is connected", () => {
-  expect([0, 1, 3].map(connectionText)).toEqual(["Not connected", "Connected now", "Connected now (3 connections)"]);
+  expect([0, 1, 3].map(connectionText)).toEqual(["Not running", "Connected now", "Connected now (3 connections)"]);
+});
+
+it("sums up what an app may do in words, with the spec's permission names", () => {
+  expect(allowedSummary(["player:control", "player:read"])).toBe("Allowed to: see what's playing, control playback");
+  expect(allowedSummary(["search"])).toBe("Allowed to: search YouTube Music");
+  expect(allowedSummary([])).toBe("Not allowed to do anything");
+});
+
+it("shows waits as a clock, rounded up", () => {
+  expect([42_000, 41_001, 600_000, 3_600_000, 0, -5].map(clock)).toEqual(["0:42", "0:42", "10:00", "1:00:00", "0:00", "0:00"]);
+});
+
+it("says when a denied app can ask again", () => {
+  expect(holdText({ expired: false, until: 1_042_000 }, 1_000_000)).toBe("Denied · can ask again in 0:42");
+  expect(holdText({ expired: true, until: 1_060_000 }, 1_000_000)).toBe("Not answered · can ask again in 1:00");
 });

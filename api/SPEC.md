@@ -344,14 +344,15 @@ Rules:
 The consent screen shows:
 
 - the app's icon, name, publisher and homepage, as the app declared them;
-- the **app identity** (section 6.6): the executable path, for example `/usr/bin/mybar` or
-  `C:\Program Files\MyBar\mybar.exe`; for a script, the interpreter and the script path; for an AppImage, the
-  AppImage file; for a Flatpak, the Flatpak app id;
-- "<name> wants to:", followed by one line per scope: the scope's label from the [scope table](#8-scopes) and the
-  app's `reason` under it;
+- "<name> wants to connect to Sonolith. It would like to:", followed by one line per scope: the scope's label from
+  the [scope table](#8-scopes) and the app's `reason` under it;
 - a checkbox per optional scope (ticked by default) that the user can untick; required scopes have no checkbox;
 - sensitive scopes (`library:write`) marked with a warning;
-- the buttons **Allow**, **Deny**, and **Deny and block this app**. They respond only after the screen has been shown
+- the **app identity** (section 6.6) under "Technical details", collapsed for a new app: the executable path, for
+  example `/usr/bin/mybar` or `C:\Program Files\MyBar\mybar.exe`; for a script, the interpreter and the script
+  path; for an AppImage, the AppImage file; for a Flatpak, the Flatpak app id. When the identity is the question
+  (an identity change, or another program under a registered `appId`), both programs are shown openly;
+- the buttons **Allow**, **Not now** (a denial), and **Block this app**. They respond only after the screen has been shown
   for a second (also when the next waiting request takes its place), and none of them is a default for Enter.
 
 If the `appId` is already registered, the screen says so (and shows both programs when another program asks), and
@@ -382,7 +383,7 @@ reasons say what the user gets: "To show the current song in your bar", not "Nee
 - The user can lift a cooldown at once in Settings → Connected apps (**Allow it to ask again**). The app is not
   told; its next request after a user action simply goes through.
 - A blocked app gets `Blocked` for `app.register` and `session.hello`, and nothing is shown to the user, until the
-  user unblocks it in Settings → Connected apps. **Deny and block this app** on a consent screen blocks the program
+  user unblocks it in Settings → Connected apps. **Block this app** on a consent screen blocks the program
   that asked (its app identity), under any `appId`; another program already registered under the same `appId` keeps
   working. Blocking a connected app in Settings blocks its `appId` and its app identity. Either way, registrations
   of the blocked program end and its open sessions get `session.revoked` with reason `blocked`.
@@ -391,7 +392,7 @@ reasons say what the user gets: "To show the current song in your bar", not "Nee
 ### 6.5 Asking for more scopes later
 
 An authenticated app can ask for scopes it was not granted with [`app.requestScopes`](#apprequestscopes). The user
-sees a consent screen with only the new scopes (Allow, Deny). The outcome arrives as `registration.resolved` with
+sees a consent screen with only the new scopes (Allow, Not now). The outcome arrives as `registration.resolved` with
 `kind` `scopes`, and an approval is followed by `session.scopesChanged`. The same rules apply: only after a user
 action, keep the connection open, cooldown after a denial.
 
@@ -493,7 +494,7 @@ different program uses the token):
 
 1. `session.hello` fails with `RegistrationPending` (reason `identityChanged`, with `data.requestId` and
    `data.expiresAt`).
-2. The user sees "<name> was updated or moved" with the old and the new identity, and Allow, Deny, Deny and block.
+2. The user sees "<name> was updated or moved" with the old and the new identity, and Allow, Not now, Block this app.
 3. The client keeps the connection open and waits for `registration.resolved` with `kind` `identity`.
 4. On `approved`, the token stays the same and is now bound to the new identity; the client calls `session.hello`
    again. On `denied` or `expired`, the token still works from the old identity only.

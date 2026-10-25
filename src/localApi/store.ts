@@ -1,6 +1,7 @@
 // The local API as the UI sees it: on/off and where it listens, and the consent requests waiting for the user.
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
+import type { Hold } from "./apps";
 import type { AppIdentity, Scope } from "./schema.gen";
 
 export interface ApiStatus {
@@ -74,6 +75,8 @@ interface LocalApiState {
   frontSince: number;
   apps: ConnectedApp[];
   blocked: BlockedApp[];
+  /** Apps that were denied (or not answered) recently and may not ask again yet. */
+  onHold: Hold[];
   /** The saved list of apps couldn't be read at startup: what happened to it. */
   registryProblem: string | null;
   refresh: () => Promise<void>;
@@ -91,11 +94,19 @@ export const useLocalApi = create<LocalApiState>((set, get) => ({
   frontSince: 0,
   apps: [],
   blocked: [],
+  onHold: [],
   registryProblem: null,
   refresh: async () => set({ status: await invoke<ApiStatus>("api_status") }),
   loadApps: async () => {
-    const r = await invoke<{ apps: ConnectedApp[]; blocked: BlockedApp[]; registryProblem: string | null }>("api_apps");
-    set({ apps: r.apps, blocked: r.blocked, registryProblem: r.registryProblem });
+    const r = await invoke<{
+      apps: ConnectedApp[];
+      blocked: BlockedApp[];
+      onHold?: { appId: string; name: string; expired: boolean; retryAfterMs: number }[];
+      registryProblem: string | null;
+    }>("api_apps");
+    const now = Date.now();
+    const onHold = (r.onHold ?? []).map((h) => ({ appId: h.appId, name: h.name, expired: h.expired, until: now + h.retryAfterMs }));
+    set({ apps: r.apps, blocked: r.blocked, onHold, registryProblem: r.registryProblem });
   },
   setEnabled: async (enabled) => {
     try {

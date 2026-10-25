@@ -21,10 +21,13 @@ echo $SNL_SOCK    # should be .../sonolith/api.sock
 ```
 
 - [ ] Sonolith → Settings → **Connected apps**: switch **off** by default. `ls $SNL_SOCK` fails (no endpoint).
-- [ ] Turn the switch **on**. A "Socket" row appears with the path; the copy button puts it in the clipboard
+- [ ] With no app connected the page shows only the explanation ("Nothing can connect without your approval") and the
+      switch; **For developers** at the bottom is collapsed.
+- [ ] Turn the switch **on**, open **For developers**: a "Socket" row shows the path; the copy button puts it in the clipboard
       (`wl-paste`) and shows "Copied to clipboard". `ls -l $SNL_SOCK` shows `srw-------`. `cat $XDG_RUNTIME_DIR/sonolith/discovery.json` has `pid` = Sonolith's pid (`pgrep -x sonolith`).
-- [ ] "API reference" opens the SPEC in the browser.
-- [ ] The page looks right in **Classic** and **Material** (Settings → Look → style), light and dark.
+- [ ] "API documentation" opens the SPEC in the browser.
+- [ ] The page looks right in **Classic** and **Material** (Settings → Look → style), light and dark, and in a 480 px wide
+      window; Tab reaches every button and the disclosures open with Enter / Space.
 
 ## 1. Consent: deny, cooldown, allow, block
 
@@ -33,22 +36,23 @@ snl-register                  # all scopes offered
 ```
 
 - [ ] A system notification "Manual test wants to connect to Sonolith" appears; clicking it shows the window.
-- [ ] The dialog shows: app name, "by Me", description; **Program** `/usr/bin/socat1` (or `/usr/bin/socat`); "Manual test wants to:" with
-      one line per scope (label + reason); `player:read` has no checkbox, the others are ticked; **Change your library** has the warning icon.
+- [ ] The dialog shows: "Manual test wants to connect to Sonolith", "by Me", description; "It would like to:" with one line per
+      scope (label + reason); `player:read` has no checkbox, the others are ticked; **Change your library** has the warning line.
+      **Technical details** (collapsed) shows **Program** `/usr/bin/socat1` (or `/usr/bin/socat`). Buttons: Allow, Not now, Block this app.
 - [ ] Esc and a click outside do nothing (only the buttons answer).
-- [ ] Press **Deny**. The terminal says status `denied`, `retryAfterMs` ≈ 600000, no token.
+- [ ] Press **Not now**. The terminal says status `denied`, `retryAfterMs` ≈ 60000, no token.
 - [ ] Run `snl-register` again at once: `RegistrationDenied` straight away, **no dialog** appears.
 - [ ] Restart the app (the cooldown persists), run it again: still `RegistrationDenied`.
-- [ ] Settings → Connected apps shows no app yet. To clear the cooldown for the next steps: quit Sonolith, delete the denial from
-      `~/.local/share/dev.sonolith.app/api-apps.json` (`"denials": []`), start it again. (Or wait 10 min.)
+- [ ] Settings → Connected apps shows "Manual test" as "Denied · can ask again in 0:5x", counting down. Press **Allow it
+      to ask again**: the row goes away and `snl-register` shows the dialog again at once. (Or wait the minute out.)
 - [ ] `snl-register queue:read library:read`: only those two optional scopes are asked. **Untick** `library:read`, press **Allow**.
       Terminal: `approved`, `grantedScopes` = `["player:read","queue:read"]`, a `snl_…` token; `cat $SNL_TOKEN_FILE` has it.
 - [ ] `grep -c snl_ ~/.local/share/dev.sonolith.app/api-apps.json` prints 0: the token is stored only as a hash.
 - [ ] `snl app.info | jq .session` shows the granted scopes and the identity. `snl player.getState` works (while something plays: item, position, status).
 - [ ] `snl library.playlists` → `PermissionDenied`, `data.scope` `library:read`. `snl player.play` → `PermissionDenied` (`player:control`).
 - [ ] Settings → Connected apps lists "Manual test" with a green dot (a connection is open during a call only, so refresh: the dot is off when idle),
-      "Not connected", last used "just now".
-- [ ] **Block:** run `snl-register` while registered (it asks again and says an app with this id is connected), press **Deny and block this app**.
+      "Allowed to: see what's playing, see your queue" and "Not running".
+- [ ] **Block:** run `snl-register` while registered (it asks again and says an app with this id is connected), press **Block this app**.
       Then `snl-register` → `Blocked`, no dialog. `snl app.info` still works (no session needed) but `snl player.getState` → `hello: failed` with `Blocked`.
       Settings → **Blocked apps** lists it; **Unblock** removes it. Then register again and **Allow** everything for the next steps.
 
@@ -138,16 +142,16 @@ snl playlist.delete '{"id":"'$id2'"}'
 
 Terminal A: `snl-follow player.state account`. Terminal B for the commands.
 
-- [ ] Settings → Connected apps → **Manual test**: the detail page shows the program, Connected "Connected now", the scopes with a **Revoke** each,
-      and recent activity listing the calls you made in this session (repeated calls folded as `×N`).
-- [ ] **Revoke** "Change your library" (confirm the dialog). Terminal A prints `session.scopesChanged` with `removed:["library:write"]`.
+- [ ] Settings → Connected apps → **Manual test**: the detail page shows "Connected now", the permissions with a **Remove** each;
+      **Technical details** shows the program and the calls you made in this session (repeated calls folded as `×N`).
+- [ ] **Remove** "Change your library" (confirm the dialog). Terminal A prints `session.scopesChanged` with `removed:["library:write"]`.
       Terminal B: `snl rating.set …` → `PermissionDenied`, `data.scope` `library:write`.
-- [ ] Revoke `player:read` while A follows `player.state`: A gets `scopesChanged`, and no more `player.stateChanged` events arrive.
+- [ ] Remove "See what's playing" while A follows `player.state`: A gets `scopesChanged`, and no more `player.stateChanged` events arrive.
 - [ ] Run `snl-register` again (an app with this id is already connected): the dialog says so, and **Allow** replaces the token: A gets
       `session.revoked` with reason `replaced`, and the old token no longer works.
-- [ ] **Remove** (detail page → Remove, confirm). Terminal A prints `session.revoked` (`removed`) and ends. `snl app.info` → `session: null`;
+- [ ] **Remove app** (detail page, confirm). Terminal A prints `session.revoked` (`removed`) and ends. `snl app.info` → `session: null`;
       `snl player.getState` → `hello: failed` with `NotRegistered` (the token is dead). The app is gone from the list.
-- [ ] Register again (Allow all), then **Block** from the detail page: A gets `session.revoked` (`blocked`); `snl-register` → `Blocked`; Blocked apps lists it; **Unblock**.
+- [ ] Register again (Allow all), then **Block app** from the detail page: A gets `session.revoked` (`blocked`); `snl-register` → `Blocked`; Blocked apps lists it; **Unblock**.
 - [ ] Register two test apps (change `SNL_APP`: `set -g SNL_APP com.example.manualtwo; set -g SNL_TOKEN_FILE ~/.config/sonolith-manual/token2`), then **Remove all** (confirm): both gone, blocked apps stay.
 - [ ] **App disconnects itself:** register, `snl-unregister` → `{}`; the app is gone from Settings and a toast says "Manual test disconnected from Sonolith".
 

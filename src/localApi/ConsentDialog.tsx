@@ -1,6 +1,7 @@
 import { AlertTriangle, AppWindow } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { consentTitle, identityRows } from "./consent";
+import Disclosure from "./Disclosure";
 import { SCOPES, type AppIdentity, type Scope } from "./schema.gen";
 import { CONSENT_ARM_MS, useLocalApi, type Consent } from "./store";
 
@@ -64,7 +65,7 @@ function Request({ c, more }: { c: Consent; more: number }) {
       <p className="select-text text-sm">{c.description}</p>
       {c.alreadyRegistered && (
         <p className="text-sm text-[var(--c-text-muted)]">
-          An app with this id is already connected{c.previousIdentity ? ", as a different program" : ""}. Allowing replaces it, and its open connections end.
+          This app is already connected{c.previousIdentity ? ", but from a different program" : ""}. Allowing replaces it, and it has to reconnect.
           {c.previousIdentity && " Blocking blocks only the program asking now."}
         </p>
       )}
@@ -74,28 +75,28 @@ function Request({ c, more }: { c: Consent; more: number }) {
           <Identity identity={c.previousIdentity} label="Allowed before" />
           <Identity identity={c.identity} label="Now" />
         </>
-      ) : c.previousIdentity ? (
+      ) : c.previousIdentity && (
         <>
           <Identity identity={c.previousIdentity} label="Connected now" />
           <Identity identity={c.identity} label="Asking now" />
         </>
-      ) : (
-        <Identity identity={c.identity} />
       )}
       {c.scopes.length > 0 && (
         <div className="flex flex-col gap-2">
-          <div className="text-sm font-medium">{c.name} wants to:</div>
+          <div className="text-sm font-medium">{c.kind === "register" ? "It would like to:" : "It would also like to:"}</div>
           {c.scopes.map((s) => (
             <label key={s.scope} className={`flex items-start gap-3 rounded-md px-1 py-1 ${s.required ? "" : "cursor-pointer hover:bg-[var(--c-hover)]"}`}>
               {s.required ? <span className="size-4 shrink-0" /> : (
                 <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-[var(--c-accent)]" checked={!unticked.has(s.scope)} onChange={() => toggle(s.scope)} />
               )}
               <span className="min-w-0">
-                <span className="flex items-center gap-1.5 text-sm font-medium">
-                  {s.label}
-                  {s.sensitive && <AlertTriangle size={14} className="text-[var(--c-error)]" aria-label="Sensitive" />}
-                </span>
+                <span className="block text-sm font-medium">{s.label}</span>
                 <span className="block select-text text-xs text-[var(--c-text-muted)]">{s.reason}</span>
+                {s.sensitive && (
+                  <span className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-[var(--c-error)]">
+                    <AlertTriangle size={14} className="shrink-0" aria-hidden /> Can make changes to your YouTube Music account
+                  </span>
+                )}
               </span>
             </label>
           ))}
@@ -104,11 +105,16 @@ function Request({ c, more }: { c: Consent; more: number }) {
           )}
         </div>
       )}
+      {!c.previousIdentity && (
+        <Disclosure title="Technical details">
+          <Identity identity={c.identity} />
+        </Disclosure>
+      )}
       <div className="mt-1 flex flex-wrap items-center justify-end gap-2">
         <button disabled={!armed} className={`${btn} m3-btn m3-text mr-auto text-[var(--c-error)] hover:bg-[var(--c-hover)] disabled:opacity-50`} onClick={() => void answer(c.requestId, "block", [])}>
-          Deny and block this app
+          Block this app
         </button>
-        <button disabled={!armed} className={`${btn} m3-btn m3-text border border-[var(--c-outline)] hover:bg-[var(--c-hover)] disabled:opacity-50`} onClick={() => void answer(c.requestId, "deny", [])}>Deny</button>
+        <button disabled={!armed} className={`${btn} m3-btn m3-text border border-[var(--c-outline)] hover:bg-[var(--c-hover)] disabled:opacity-50`} onClick={() => void answer(c.requestId, "deny", [])}>Not now</button>
         <button disabled={!armed} className={`${btn} m3-btn m3-filled bg-button text-on-button hover:bg-button/90 disabled:opacity-50`} onClick={() => void answer(c.requestId, "allow", chosen)}>Allow</button>
       </div>
     </div>
