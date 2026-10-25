@@ -132,6 +132,7 @@ pub fn run() {
             api::api_revoke_scope,
             api::api_block,
             api::api_unblock,
+            api::api_allow_asking_again,
         ])
         .build(context)
         .expect("error while running tauri application")

@@ -374,9 +374,13 @@ reasons say what the user gets: "To show the current song in your bar", not "Nee
 ### 6.4 Spam protection
 
 - After a denial, new requests from the same `appId` **or** the same app identity are refused for a
-  **cooldown** with `RegistrationDenied` and `data.retryAfterMs`, without bothering the user: 10 minutes after the
-  first denial, 1 hour after a second denial within 24 hours, 24 hours after each further one.
+  **cooldown** with `RegistrationDenied` and `data.retryAfterMs`, without bothering the user: 1 minute after the
+  first denial, 10 minutes after the second, 1 hour after each further one. The count starts again after an
+  approval, or when 24 hours pass without a denial. Show the wait to the user ("You can ask again in 40 s") from
+  `retryAfterMs`; never hardcode it.
 - After an expiry, the cooldown is 1 minute.
+- The user can lift a cooldown at once in Settings → Connected apps (**Allow it to ask again**). The app is not
+  told; its next request after a user action simply goes through.
 - A blocked app gets `Blocked` for `app.register` and `session.hello`, and nothing is shown to the user, until the
   user unblocks it in Settings → Connected apps. **Deny and block this app** on a consent screen blocks the program
   that asked (its app identity), under any `appId`; another program already registered under the same `appId` keeps

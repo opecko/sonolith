@@ -16,5 +16,7 @@ The first version of the local API. Not yet in a released Sonolith.
   `lyrics:read`.
 - Methods: `app.*`, `session.hello`, `events.*`, `player.*`, `queue.*`, `library.*`, `playlist.*`, `search.*`,
   `browse.*`, `rating.set`, `lyrics.get`.
+- Spam protection: after a denial the app waits `retryAfterMs` before asking again (1 min, then 10 min, then 1 h;
+  the count starts again after an approval or a day without a denial); the user can lift it in Settings.
 - Event topics: `player.state`, `player.track`, `player.position`, `player.volume`, `queue`, `lyrics`, `lyrics.line`,
   `lyrics.word`, `account`.

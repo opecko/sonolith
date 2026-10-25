@@ -9,6 +9,13 @@ pub const MINUTE: u64 = 60_000;
 pub const HOUR: u64 = 60 * MINUTE;
 pub const DAY: u64 = 24 * HOUR;
 
+/// How long asking again is on hold after the 1st, 2nd and any further denial in a row (SPEC.md 6.4).
+pub const DENIAL_HOLDS: [u64; 3] = [MINUTE, 10 * MINUTE, HOUR];
+/// After an expiry (nobody answered).
+pub const EXPIRY_HOLD: u64 = MINUTE;
+/// Denials further apart than this start the count again.
+pub const DENIAL_RESET: u64 = DAY;
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AppRecord {
@@ -53,6 +60,9 @@ pub struct Denial {
     pub at: u64,
     /// Expiries hold off new requests for a minute; denials escalate.
     pub expired: bool,
+    /// The app's name at the time, for Settings. Missing in denials saved before it existed.
+    #[serde(default)]
+    pub name: String,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -151,27 +161,63 @@ impl Registry {
         self.blocked.iter().any(|b| b.identity_key == identity_key || (b.app_wide && b.app_id == app_id))
     }
 
-    /// How long new requests from this app or identity are on hold, if at all (SPEC.md 6.4).
+    /// How long new requests from this app or identity are on hold, if at all (SPEC.md 6.4). Denials escalate while
+    /// each comes within a day of the one before; an expiry holds for a minute and doesn't count.
     pub fn cooldown(&self, app_id: &str, identity_key: &str, now: u64) -> Option<u64> {
-        let mine: Vec<&Denial> =
+        let mut mine: Vec<&Denial> =
             self.denials.iter().filter(|d| d.app_id == app_id || d.identity_key == identity_key).collect();
-        let last = mine.iter().max_by_key(|d| d.at)?;
+        mine.sort_by_key(|d| std::cmp::Reverse(d.at));
+        let last = mine.first()?;
         let hold = if last.expired {
-            MINUTE
+            EXPIRY_HOLD
         } else {
-            match mine.iter().filter(|d| !d.expired && d.at + DAY > last.at).count() {
-                0 | 1 => 10 * MINUTE,
-                2 => HOUR,
-                _ => DAY,
+            let mut streak = 0;
+            let mut next = last.at;
+            for d in mine.iter().filter(|d| !d.expired) {
+                if next - d.at > DENIAL_RESET {
+                    break;
+                }
+                streak += 1;
+                next = d.at;
             }
+            DENIAL_HOLDS[(streak - 1).min(DENIAL_HOLDS.len() - 1)]
         };
         let until = last.at + hold;
         (until > now).then(|| until - now)
     }
 
-    pub fn record_denial(&mut self, app_id: &str, identity_key: &str, now: u64, expired: bool) {
-        self.denials.retain(|d| d.at + DAY > now);
-        self.denials.push(Denial { app_id: app_id.into(), identity_key: identity_key.into(), at: now, expired });
+    pub fn record_denial(&mut self, app_id: &str, identity_key: &str, name: &str, now: u64, expired: bool) {
+        self.denials.retain(|d| d.at + DENIAL_RESET > now);
+        self.denials.push(Denial { app_id: app_id.into(), identity_key: identity_key.into(), at: now, expired, name: name.into() });
+    }
+
+    /// Forgets the denials of an app and of the programs that asked under its id: after an approval, or when the user
+    /// lets it ask again from Settings.
+    pub fn forget_denials(&mut self, app_id: &str, identity_key: Option<&str>) {
+        let keys: Vec<String> = self
+            .denials
+            .iter()
+            .filter(|d| d.app_id == app_id)
+            .map(|d| d.identity_key.clone())
+            .chain(identity_key.map(String::from))
+            .collect();
+        self.denials.retain(|d| d.app_id != app_id && !keys.contains(&d.identity_key));
+    }
+
+    /// Apps on hold right now, newest denial per app id, with the time left.
+    pub fn on_hold(&self, now: u64) -> Vec<(&Denial, u64)> {
+        let mut seen: Vec<&str> = Vec::new();
+        let mut latest: Vec<&Denial> = self.denials.iter().collect();
+        latest.sort_by_key(|d| std::cmp::Reverse(d.at));
+        latest
+            .into_iter()
+            .filter(|d| {
+                let new = !seen.contains(&d.app_id.as_str());
+                seen.push(&d.app_id);
+                new
+            })
+            .filter_map(|d| self.cooldown(&d.app_id, &d.identity_key, now).map(|w| (d, w)))
+            .collect()
     }
 
     pub fn block(&mut self, app_id: &str, name: &str, identity: &AppIdentity, now: u64, app_wide: bool) {
@@ -269,24 +315,66 @@ mod tests {
         let mut r = Registry::default();
         let t0 = 1_000_000_000;
         assert_eq!(r.cooldown("a", "exe:/a", t0), None);
-        r.record_denial("a", "exe:/a", t0, false);
-        assert_eq!(r.cooldown("a", "exe:/a", t0), Some(10 * MINUTE));
+        r.record_denial("a", "exe:/a", "A", t0, false);
+        assert_eq!(r.cooldown("a", "exe:/a", t0), Some(MINUTE));
         // The same identity under another appId is on hold too.
-        assert_eq!(r.cooldown("other", "exe:/a", t0 + MINUTE), Some(9 * MINUTE));
-        assert_eq!(r.cooldown("a", "exe:/a", t0 + 10 * MINUTE), None);
-        r.record_denial("a", "exe:/a", t0 + 11 * MINUTE, false);
-        assert_eq!(r.cooldown("a", "exe:/a", t0 + 11 * MINUTE), Some(HOUR));
-        r.record_denial("a", "exe:/a", t0 + 2 * HOUR, false);
-        assert_eq!(r.cooldown("a", "exe:/a", t0 + 2 * HOUR), Some(DAY));
+        assert_eq!(r.cooldown("other", "exe:/a", t0 + 20_000), Some(40_000));
+        assert_eq!(r.cooldown("a", "exe:/a", t0 + MINUTE), None);
+        r.record_denial("a", "exe:/a", "A", t0 + 2 * MINUTE, false);
+        assert_eq!(r.cooldown("a", "exe:/a", t0 + 2 * MINUTE), Some(10 * MINUTE));
+        r.record_denial("a", "exe:/a", "A", t0 + HOUR, false);
+        assert_eq!(r.cooldown("a", "exe:/a", t0 + HOUR), Some(HOUR));
+        // Capped at an hour.
+        r.record_denial("a", "exe:/a", "A", t0 + 3 * HOUR, false);
+        assert_eq!(r.cooldown("a", "exe:/a", t0 + 3 * HOUR), Some(HOUR));
+        // An expiry holds for a minute, whatever came before.
         let mut r = Registry::default();
-        r.record_denial("b", "exe:/b", t0, true);
+        r.record_denial("b", "exe:/b", "B", t0, true);
         assert_eq!(r.cooldown("b", "exe:/b", t0 + 1000), Some(MINUTE - 1000));
-        // Denials older than a day are forgotten.
+        r.record_denial("b", "exe:/b", "B", t0 + MINUTE, false);
+        assert_eq!(r.cooldown("b", "exe:/b", t0 + MINUTE), Some(MINUTE), "expiries don't escalate");
+    }
+
+    #[test]
+    fn a_day_without_a_denial_starts_the_count_again() {
         let mut r = Registry::default();
-        r.record_denial("c", "exe:/c", t0, false);
-        r.record_denial("c", "exe:/c", t0 + 2 * DAY, false);
+        let t0 = 1_000_000_000;
+        r.record_denial("c", "exe:/c", "C", t0, false);
+        r.record_denial("c", "exe:/c", "C", t0 + HOUR, false);
+        assert_eq!(r.cooldown("c", "exe:/c", t0 + HOUR), Some(10 * MINUTE));
+        r.record_denial("c", "exe:/c", "C", t0 + HOUR + DAY + 1, false);
         assert_eq!(r.denials.len(), 1);
-        assert_eq!(r.cooldown("c", "exe:/c", t0 + 2 * DAY), Some(10 * MINUTE));
+        assert_eq!(r.cooldown("c", "exe:/c", t0 + HOUR + DAY + 1), Some(MINUTE));
+        // A chain of denials each within a day keeps escalating even past 24 h in total.
+        let mut r = Registry::default();
+        r.record_denial("d", "exe:/d", "D", t0, false);
+        r.denials.push(Denial { app_id: "d".into(), identity_key: "exe:/d".into(), at: t0 + 20 * HOUR, expired: false, name: "D".into() });
+        r.denials.push(Denial { app_id: "d".into(), identity_key: "exe:/d".into(), at: t0 + 40 * HOUR, expired: false, name: "D".into() });
+        assert_eq!(r.cooldown("d", "exe:/d", t0 + 40 * HOUR), Some(HOUR));
+    }
+
+    #[test]
+    fn forgetting_denials_clears_the_hold() {
+        let mut r = Registry::default();
+        let t0 = 1_000_000_000;
+        r.record_denial("a", "exe:/a", "A", t0, false);
+        r.record_denial("b", "exe:/b", "B", t0, false);
+        // The same program asked under another id: forgetting "a" frees it as well.
+        r.record_denial("a2", "exe:/a", "A", t0 + 1, false);
+        assert_eq!(r.on_hold(t0 + 1).len(), 3);
+        r.forget_denials("a", None);
+        assert_eq!(r.cooldown("a", "exe:/a", t0 + 1), None);
+        assert_eq!(r.cooldown("a2", "exe:/x", t0 + 1), None);
+        let held = r.on_hold(t0 + 1);
+        assert_eq!(held.len(), 1);
+        assert_eq!((held[0].0.name.as_str(), held[0].1), ("B", MINUTE - 1));
+        // After an approval, by identity too.
+        r.record_denial("z", "exe:/b", "B", t0 + 2, false);
+        r.forget_denials("b", Some("exe:/b"));
+        assert!(r.denials.is_empty());
+        // Denials saved before the name existed still load.
+        let old: Denial = serde_json::from_value(serde_json::json!({"appId": "a", "identityKey": "k", "at": 1, "expired": false})).unwrap();
+        assert_eq!(old.name, "");
     }
 
     #[test]

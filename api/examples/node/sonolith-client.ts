@@ -192,6 +192,11 @@ class Connection {
 
 const say = (text: string) => console.log(text);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** `retryAfterMs` for people: "40 s" or "10 min", rounded up. */
+const waitText = (ms: number) => {
+  const seconds = Math.ceil(ms / 1000);
+  return seconds < 60 ? `${seconds} s` : `${Math.ceil(seconds / 60)} min`;
+};
 
 /** Asks the user for access. Call it only because the user asked (here: the `register` command). */
 async function register(): Promise<boolean> {
@@ -203,7 +208,7 @@ async function register(): Promise<boolean> {
     } catch (e) {
       if (!(e instanceof RpcError)) throw e;
       if (e.name === "Blocked") say("Sonolith blocked this app. You can unblock it in Sonolith's Settings → Connected apps.");
-      else if (e.name === "RegistrationDenied") say(`Access was denied recently. You can try again in ${Math.ceil(e.data.retryAfterMs / 60000)} min.`);
+      else if (e.name === "RegistrationDenied") say(`Access was denied recently. You can try again in ${waitText(e.data.retryAfterMs)}.`);
       else if (e.name === "RegistrationPending") say("A request from this app is already waiting. Answer it in Sonolith.");
       else throw e;
       return false;
@@ -220,7 +225,7 @@ async function register(): Promise<boolean> {
         return true;
       }
       if (p.status === "blocked") say("Sonolith blocked this app. You can unblock it in Sonolith's Settings → Connected apps.");
-      else if (p.status === "denied") say(`Access was denied. You can try again in ${Math.ceil(p.retryAfterMs / 60000)} min.`);
+      else if (p.status === "denied") say(`Access was denied. You can try again in ${waitText(p.retryAfterMs)}.`);
       else say("Nobody answered in time. Run `register` again to retry.");
       return false;
     }

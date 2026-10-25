@@ -207,6 +207,11 @@ pub async fn api_block(app: AppHandle, app_id: String) {
 }
 
 #[tauri::command]
+pub async fn api_allow_asking_again(app: AppHandle, app_id: String) {
+    server(&app).allow_asking_again(&app_id);
+}
+
+#[tauri::command]
 pub async fn api_unblock(app: AppHandle, app_id: String) {
     server(&app).unblock(&app_id);
 }

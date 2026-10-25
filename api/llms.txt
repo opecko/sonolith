@@ -45,7 +45,7 @@
 3. Wait for notification `registration.resolved {requestId, kind, status, token, grantedScopes, retryAfterMs}`:
    - `approved`: store `token` (sent only once) in a secret store (Linux Secret Service, Windows Credential
      Manager/DPAPI; fallback: user-only file), then `session.hello`.
-   - `denied`: cooldown (`retryAfterMs`: 10 min, then 1 h, then 24 h). `blocked`: stop. `expired`: offer to retry.
+   - `denied`: cooldown (`retryAfterMs`: 1 min, then 10 min, then 1 h; show it, never hardcode it). `blocked`: stop. `expired`: offer to retry.
 4. Every connection: `session.hello {appId, token, apiVersion}` first. Sonolith finishes it before reading the
    next line, so you may pipeline requests after it.
    - Unauthorized / NotRegistered -> delete token, show "Disconnected from Sonolith", wait for the user.

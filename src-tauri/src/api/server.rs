@@ -730,6 +730,11 @@ impl Server {
         let mut retry = Value::Null;
         let status = match decision {
             Decision::Allow => {
+                {
+                    let mut reg = self.registry.lock().unwrap();
+                    reg.forget_denials(&p.app_id, Some(&p.identity.key));
+                    let _ = reg.save(&self.registry_path);
+                }
                 // Required scopes are always granted; optional ones only when the user left them ticked.
                 let scopes: Vec<String> = p
                     .scopes
@@ -774,7 +779,9 @@ impl Server {
             }
             Decision::Deny | Decision::Expire => {
                 let mut reg = self.registry.lock().unwrap();
-                reg.record_denial(&p.app_id, &p.identity.key, now, decision == Decision::Expire);
+                let name = p.details.get("name").and_then(Value::as_str).map(String::from);
+                let name = name.or_else(|| reg.app(&p.app_id).map(|a| a.name.clone())).unwrap_or_else(|| p.app_id.clone());
+                reg.record_denial(&p.app_id, &p.identity.key, &name, now, decision == Decision::Expire);
                 retry = json!(reg.cooldown(&p.app_id, &p.identity.key, now).unwrap_or(0));
                 let _ = reg.save(&self.registry_path);
                 if decision == Decision::Expire { "expired" } else { "denied" }
@@ -1061,6 +1068,15 @@ impl Server {
         self.emit_apps_changed();
     }
 
+    /// Lets an app that was denied recently ask again right away (Settings → Connected apps).
+    pub fn allow_asking_again(&self, app_id: &str) {
+        let mut reg = self.registry.lock().unwrap();
+        reg.forget_denials(app_id, None);
+        let _ = reg.save(&self.registry_path);
+        drop(reg);
+        self.emit_apps_changed();
+    }
+
     /// Registered and blocked apps with live connection state and recent activity, for Settings.
     pub fn apps(&self) -> Value {
         let reg = self.registry.lock().unwrap().clone();
@@ -1083,7 +1099,15 @@ impl Server {
                 })
             })
             .collect();
-        json!({ "apps": apps, "blocked": reg.blocked, "registryProblem": self.registry_problem })
+        let on_hold: Vec<Value> = reg
+            .on_hold(now_ms())
+            .into_iter()
+            .map(|(d, wait)| json!({
+                "appId": d.app_id, "name": if d.name.is_empty() { &d.app_id } else { &d.name },
+                "expired": d.expired, "retryAfterMs": wait,
+            }))
+            .collect();
+        json!({ "apps": apps, "blocked": reg.blocked, "onHold": on_hold, "registryProblem": self.registry_problem })
     }
 
     fn emit_apps_changed(&self) {

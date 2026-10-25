@@ -281,11 +281,19 @@ async fn deny_cooldown_block_and_unblock() {
 
     env.server.resolve(r["requestId"].as_str().unwrap(), Decision::Deny, &[]).unwrap();
     let out = c.note("registration.resolved").await;
-    assert_eq!((out["status"].as_str(), out["retryAfterMs"].as_u64()), (Some("denied"), Some(600_000)));
+    assert_eq!((out["status"].as_str(), out["retryAfterMs"].as_u64()), (Some("denied"), Some(60_000)));
     assert!(out["token"].is_null());
     let again = c.err("app.register", registration("com.example.denied", vec![scope("search", true)])).await;
     assert_eq!(code(&again), -32005);
-    assert!(again["data"]["retryAfterMs"].as_u64().unwrap() > 590_000);
+    assert!(again["data"]["retryAfterMs"].as_u64().unwrap() > 50_000);
+    let held = &env.server.apps()["onHold"][0];
+    assert_eq!((held["appId"].as_str(), held["name"].as_str(), held["expired"].as_bool()), (Some("com.example.denied"), Some("Test bar"), Some(false)));
+    // Settings → "Allow it to ask again" lifts the hold at once; an approval then starts the count again.
+    env.server.allow_asking_again("com.example.denied");
+    assert_eq!(env.server.apps()["onHold"], json!([]));
+    let r = c.ok("app.register", registration("com.example.denied", vec![scope("search", true)])).await;
+    env.server.resolve(r["requestId"].as_str().unwrap(), Decision::Allow, &[]).unwrap();
+    assert_eq!(c.note("registration.resolved").await["status"], "approved");
 
     // Denials hold back the whole program too, so the next app runs as another one.
     let mut b = as_program(&env, "/opt/other/app");
