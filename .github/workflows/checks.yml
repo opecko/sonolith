@@ -1,14 +1,51 @@
-# Fast checks on every push and pull request. The full test suite runs in the release workflow.
+# The verify step from CONTRIBUTING.md, on every push to the default branch and on every pull request (forks
+# included: no secrets are used, the token is read-only). The full test suite runs in the release workflow.
 name: Checks
 
 on:
   push:
+    branches: [master]
   pull_request:
 
 permissions:
   contents: read
 
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  frontend:
+    name: Type check and unit tests (tsc, vitest)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+
+  rust:
+    name: Rust compiles (cargo check)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: System libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+            librsvg2-dev libssl-dev libdbus-1-dev libxdo-dev patchelf
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: mkdir -p dist # tauri.conf.json's frontendDist; cargo check doesn't need the real build
+      - run: cargo check
+        working-directory: src-tauri
+
   api-spec:
     name: API spec is generated and its examples are valid
     runs-on: ubuntu-24.04
