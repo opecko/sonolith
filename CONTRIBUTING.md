@@ -58,7 +58,8 @@ pip install -r api/tools/requirements.txt      # for the API spec check
 npm run tauri dev
 ```
 
-The first build compiles all Rust dependencies and takes several minutes. Frontend edits hot-reload; Rust edits
+The first build compiles all Rust dependencies: it takes several minutes and about 5 GB of disk in
+`src-tauri/target/` (more than a small `/tmp` tmpfs holds, if you point `CARGO_TARGET_DIR` there). Frontend edits hot-reload; Rust edits
 rebuild and restart the app. Without signing in, browsing, search and playback work anonymously; Library and History
 need an account.
 
