@@ -42,7 +42,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-      - run: mkdir -p dist # tauri.conf.json's frontendDist; cargo check doesn't need the real build
       - run: cargo check
         working-directory: src-tauri
 

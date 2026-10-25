@@ -17,9 +17,6 @@ This is exactly what CI runs (`.github/workflows/checks.yml`). The last step nee
 `cd src-tauri && cargo test`. On Linux you can check the Windows build with `cargo xwin check --target
 x86_64-pc-windows-msvc` in `src-tauri/` (optional; needs `cargo install cargo-xwin`).
 
-`cargo check` needs the frontend build directory to exist (`tauri.conf.json` points `frontendDist` at `dist/`). If
-you have never built the frontend, `mkdir -p dist` is enough for a check.
-
 ## Run the app
 
 ```

@@ -128,8 +128,6 @@ in `src-tauri/` (needs [cargo-xwin](https://github.com/rust-cross/cargo-xwin)) t
 If you changed the API schemas or `generate.py`, run `python3 api/tools/generate.py` first and commit the
 regenerated files.
 
-If `cargo check` complains that `../dist` doesn't exist, run `mkdir dist` once.
-
 ## Pull requests
 
 1. **Fork** the repository and create a branch from the up-to-date default branch (`master`) of `upstream`, named
