@@ -1,5 +1,5 @@
-import { CircleCheck, History, Keyboard, Library, Loader2, LogIn, MousePointerClick, Palette as PaletteIcon, Sparkles, User } from "lucide-react";
-import { useMemo, type ReactNode } from "react";
+import { CircleCheck, History, Plug, Keyboard, Library, Loader2, LogIn, MousePointerClick, Palette as PaletteIcon, Sparkles, User } from "lucide-react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { getAccount } from "../api/ytm";
 import { ModeToggle, PaletteGrid } from "../components/appearance/PaletteGallery";
 import { LAYOUTS, LayoutPreview, STYLES } from "../components/appearance/StyleOptions";
@@ -9,6 +9,7 @@ import Slider from "../components/Slider";
 import Switch from "../components/Switch";
 import { UiStyleScope } from "../components/UiStyle";
 import { useAsync } from "../hooks/useData";
+import { useLocalApi } from "../localApi/store";
 import { KaraokeChoices } from "../lyrics/KaraokeSetting";
 import { useAuth } from "../stores/auth";
 import { setAppearance, useSettings } from "../stores/settings";
@@ -220,6 +221,26 @@ export function LyricsStep() {
           label={() => "type-title-small-em mb-2"} />
         <p className="type-body-medium mt-4 text-[var(--m3-on-surface-variant)]">Which lyrics providers to ask, and in what order, is in Settings → Lyrics.</p>
       </div>
+    </div>
+  );
+}
+
+export function AppsStep() {
+  const status = useLocalApi((s) => s.status);
+  const setEnabled = useLocalApi((s) => s.setEnabled);
+  useEffect(() => void useLocalApi.getState().refresh().catch(() => {}), []);
+  const on = !!status?.enabled;
+  return (
+    <div>
+      <StepTitle sub="Apps, widgets and scripts can show what's playing in Sonolith or control it, for example a media widget in your bar.">Connected apps</StepTitle>
+      <Option title="Let other apps connect to Sonolith"
+        detail="Off by default. If you want to use apps made for Sonolith, turn this on. Each app still has to ask you first, and you choose what it may do.">
+        <Switch on={on} onChange={(v) => void setEnabled(v)} label="Let other apps connect to Sonolith" disabled={!status} />
+      </Option>
+      {on && status?.error && <p className="type-body-medium mt-2 text-[var(--m3-error)]" role="alert">Could not start: {status.error}</p>}
+      <p className="type-body-medium mt-4 flex items-center gap-2 text-[var(--m3-on-surface-variant)]">
+        <Plug size={18} className="shrink-0" aria-hidden /> You can change this and see allowed apps in Settings → Connected apps.
+      </p>
     </div>
   );
 }

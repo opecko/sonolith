@@ -5,7 +5,7 @@ import { Spring, useSwap } from "../motion";
 import { useAuth } from "../stores/auth";
 import { openSettings, useNav } from "../stores/nav";
 import { finishOnboarding, useOnboarding } from "./store";
-import { ColorsStep, Done, LyricsStep, NowPlayingStep, SignIn, StyleStep, Welcome } from "./steps";
+import { AppsStep, ColorsStep, Done, LyricsStep, NowPlayingStep, SignIn, StyleStep, Welcome } from "./steps";
 
 const STEPS = [
   { id: "welcome", label: "Welcome" },
@@ -14,13 +14,14 @@ const STEPS = [
   { id: "colors", label: "Colors" },
   { id: "nowplaying", label: "Now Playing" },
   { id: "lyrics", label: "Lyrics" },
+  { id: "apps", label: "Connected apps" },
   { id: "done", label: "Done" },
 ] as const;
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /**
- * First-run welcome: a full-window layer (M3 style) over the app, seven short steps. Every choice is applied and
+ * First-run welcome: a full-window layer (M3 style) over the app, eight short steps. Every choice is applied and
  * saved as it's made; "Skip setup" (every step) and "Start listening" end it for good. Keyboard: Tab stays inside,
  * Enter goes on (unless a control has the focus), Esc asks whether to skip. Steps swap on a spring and the layer
  * fades in and out on one, all instant with animations off. Loaded lazily: only a fresh install ever pays for it.
@@ -120,6 +121,7 @@ export default function Onboarding() {
             {STEPS[step].id === "colors" && <ColorsStep onMore={() => close(() => openSettings("colors", "palette"))} />}
             {STEPS[step].id === "nowplaying" && <NowPlayingStep />}
             {STEPS[step].id === "lyrics" && <LyricsStep />}
+            {STEPS[step].id === "apps" && <AppsStep />}
             {STEPS[step].id === "done" && <Done />}
           </div>
         </main>
