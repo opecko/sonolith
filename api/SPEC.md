@@ -99,7 +99,8 @@ After `events.subscribe` you get one snapshot event per topic, then an event whe
 
 That is the whole protocol. A real app adds what this walk-through skips: storing the token securely, reconnecting
 with backoff, handling `session.revoked`, and a "Disconnect from Sonolith" button. The
-[integration checklist](#18-integration-checklist) lists everything, and [examples/](examples/) has complete clients.
+[integration checklist](#18-integration-checklist) lists everything, and [examples/](examples/) has complete clients;
+[examples/python-tui/](examples/python-tui/) uses every feature of the API.
 
 ---
 

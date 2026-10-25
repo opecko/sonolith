@@ -272,6 +272,7 @@ On RateLimited wait `data.retryAfterMs`. Prefer events over polling.
 ## Examples
 
 Complete clients (Python, Node/TypeScript) and shell one-liners: https://github.com/opecko/sonolith/tree/master/api/examples
+Reference client using every feature (Python, plain-text terminal UI): https://github.com/opecko/sonolith/tree/master/api/examples/python-tui
 
 ## Integration checklist
 

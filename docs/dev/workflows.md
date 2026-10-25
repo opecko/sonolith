@@ -90,6 +90,8 @@ Testing the API implementation:
   auto-approves consent (`SONOLITH_TEST_CONSENT=deny` denies; `touch /tmp/snl/remove` removes all apps, `touch
   /tmp/snl/stop` ends it). Run a client with `XDG_RUNTIME_DIR=/tmp/snl XDG_CONFIG_HOME=/tmp/snl/cfg`. Keep the path
   short: the AF_UNIX limit is 108 bytes.
+- The reference client `api/examples/python-tui/` (standard library only) has its own tests: `python3 -m unittest`
+  in that folder (a fake server in Python; never a real account). It also runs against the live test server above.
 - Things only the running app can show (account writes, the real consent dialog, Settings):
   [api-manual-test.md](api-manual-test.md).
 

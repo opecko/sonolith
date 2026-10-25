@@ -8,9 +8,10 @@ apps → **Let other apps connect to Sonolith**.
 |---|---|---|
 | [python/sonolith_client.py](python/sonolith_client.py) | Python 3.9+, standard library (uses `keyring` for the token when installed) | `python3 sonolith_client.py register` |
 | [node/sonolith-client.ts](node/sonolith-client.ts) | Node.js 22.18+ or 23.6+, no packages | `node sonolith-client.ts register` |
+| [python-tui/](python-tui/) | Python 3.10+, standard library | the reference client: every API feature in a plain-text terminal UI; see its README |
 | [shell/](shell/) | `socat` (Linux) or PowerShell (Windows) | read-only one-liners; see its README |
 
-Both clients have the same commands:
+The Python and Node clients have the same commands:
 
 - `register`: the user action that asks Sonolith for access (a consent screen appears), stores the token, then runs.
 - `run`: connects with the stored token, subscribes to the current track, state and lyric line, and prints events.
