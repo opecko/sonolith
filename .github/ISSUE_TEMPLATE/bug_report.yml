@@ -1,0 +1,63 @@
+name: Bug report
+description: Something doesn't work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. For security problems **don't** use this form: see SECURITY.md.
+        Never paste your YouTube cookie or tokens.
+  - type: input
+    id: version
+    attributes:
+      label: Sonolith version
+      description: Settings → About
+      placeholder: "2.3.0"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS and desktop environment
+      description: For example "Arch Linux, Hyprland (Wayland)", "Ubuntu 24.04, GNOME", "Windows 11".
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - Windows installer (.exe)
+        - Debian package (.deb)
+        - AUR (sonolith / sonolith-bin)
+        - Built from source
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+  - type: input
+    id: style
+    attributes:
+      label: UI style and Now Playing layout
+      description: Settings → Appearance (Material 3 or Classic; Material, Bento or Classic layout). For visual bugs.
+  - type: textarea
+    id: log
+    attributes:
+      label: Playback log (for playback problems)
+      description: |
+        The log is `playback.log` in the app's log folder: Linux `~/.local/share/dev.sonolith.app/logs/`,
+        Windows `%LOCALAPPDATA%\dev.sonolith.app\logs\`. Paste the last lines around the problem. It contains no
+        cookies, but skim it before posting.
+      render: text
