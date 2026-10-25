@@ -266,7 +266,7 @@ export default function ConnectedAppsSettings() {
           <div className="flex items-start gap-4 px-5 py-4">
             <ShieldCheck size={32} className="mt-0.5 shrink-0 text-[var(--c-text-muted)]" aria-hidden />
             <div className="min-w-0 text-sm">
-              <p>Widgets, bars and scripts can show what's playing or control Sonolith. Nothing is connected right now.</p>
+              <p>Apps, widgets and scripts can show what's playing or control Sonolith. Nothing is connected right now.</p>
               <p className="mt-1 text-[var(--c-text-muted)]">Nothing can connect without your approval: each app asks first, and you choose what it may do.</p>
             </div>
           </div>
