@@ -25,6 +25,8 @@ own. It's not a wrapped browser tab, so it starts quickly and uses little memory
   import/export, accent from the cover art, corner radius, compact density and interface size
 - **Discord Rich Presence**: shows what you're listening to on your profile (can be turned off)
 - **Desktop integration**: media keys, system tray, OS media controls with cover art
+- **Connected apps**: widgets, bars and scripts can show what's playing and control Sonolith through a local API,
+  only with your approval (off by default)
 - Remembers your queue and position between restarts
 
 ## Download
@@ -68,6 +70,18 @@ macOS isn't supported yet.
 - **Settings** also let you switch off Discord status or listening history, and turn off GPU rendering if you're
   gaming at the same time.
 
+## Connected apps
+
+Other programs on your computer (a media widget in your bar, a script, a terminal client) can show what's playing,
+the lyrics, your queue and library, and control playback through Sonolith's local API. It is **off by default**:
+turn on **Settings → Connected apps → Let other apps connect to Sonolith** (or in the setup at first start) if you
+want to use such an app.
+
+Nothing can connect without your approval. The first time an app asks, Sonolith shows what it wants to do; you allow
+it, choose what it may do, say "Not now", or block it. Settings → Connected apps lists the apps you've allowed, lets
+you take back single permissions, remove or block an app, and turn the whole thing off again. The API only listens
+on your computer, never on the network.
+
 ## Troubleshooting
 
 - **A song won't play**: Sonolith retries automatically. If some songs still fail, open **Settings → Advanced** and
@@ -81,7 +95,8 @@ macOS isn't supported yet.
 ## Privacy
 
 Sonolith talks only to YouTube / Google (and to Discord on your computer, if Rich Presence is on). There is no
-analytics or telemetry, and no Sonolith server.
+analytics or telemetry, and no Sonolith server. Connected apps are local only, off by default, and each one needs
+your approval.
 
 Sonolith is an unofficial app and isn't affiliated with or endorsed by Google or YouTube.
 
@@ -91,6 +106,11 @@ Sonolith is an unofficial app and isn't affiliated with or endorsed by Google or
 
 Built with [Tauri 2](https://tauri.app) (Rust) + React + TypeScript. Music data comes from YouTube's InnerTube API
 via [youtubei.js](https://github.com/LuanRT/YouTube.js).
+
+**Building an app for Sonolith?** The local API (JSON-RPC over a Unix socket on Linux, a named pipe on Windows) is
+specified in [`api/SPEC.md`](api/SPEC.md), with a short summary for AI assistants in [`api/llms.txt`](api/llms.txt)
+and complete example clients in [`api/examples/`](api/examples/), including a terminal client that uses every
+feature ([`api/examples/python-tui/`](api/examples/python-tui/)).
 
 ### Prerequisites
 
