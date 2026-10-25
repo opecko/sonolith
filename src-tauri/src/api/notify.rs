@@ -90,20 +90,71 @@ mod imp {
 #[cfg(windows)]
 mod imp {
     use super::*;
+    use std::sync::Once;
+    use tauri::Manager;
     use tauri_winrt_notification::Toast;
+
+    /// Toasts need the app's AppUserModelID to be known to Windows, or Windows drops them without an error. The
+    /// installer sets it on the Start menu shortcut, but only on a fresh install (an update through the updater
+    /// creates no shortcut), so it is also registered here, under HKCU\Software\Classes\AppUserModelId, which works
+    /// without a shortcut.
+    fn register(app_id: &str) -> Result<(), String> {
+        use windows_sys::Win32::System::Registry::{
+            RegCloseKey, RegCreateKeyExW, RegSetValueExW, HKEY, HKEY_CURRENT_USER, KEY_SET_VALUE, REG_OPTION_NON_VOLATILE, REG_SZ,
+        };
+        let wide = |s: &str| s.encode_utf16().chain(Some(0)).collect::<Vec<u16>>();
+        let path = wide(&format!("Software\\Classes\\AppUserModelId\\{app_id}"));
+        let mut key: HKEY = std::ptr::null_mut();
+        // SAFETY: valid NUL-terminated strings and out-pointers; the key is closed below.
+        let rc = unsafe {
+            RegCreateKeyExW(HKEY_CURRENT_USER, path.as_ptr(), 0, std::ptr::null(), REG_OPTION_NON_VOLATILE, KEY_SET_VALUE, std::ptr::null(), &mut key, std::ptr::null_mut())
+        };
+        if rc != 0 {
+            return Err(format!("couldn't register for notifications (error {rc})"));
+        }
+        let name = wide("DisplayName");
+        let value = wide("Sonolith");
+        // SAFETY: `key` is open; the data is a NUL-terminated UTF-16 string and its size in bytes.
+        let rc = unsafe { RegSetValueExW(key, name.as_ptr(), 0, REG_SZ, value.as_ptr().cast(), (value.len() * 2) as u32) };
+        // SAFETY: opened above.
+        unsafe { RegCloseKey(key) };
+        if rc != 0 {
+            return Err(format!("couldn't register for notifications (error {rc})"));
+        }
+        Ok(())
+    }
+
+    /// Notifications fail silently otherwise: a release build has no console, so the reason goes to the app's log.
+    fn log(app: &AppHandle, line: &str) {
+        use std::io::Write;
+        let Ok(dir) = app.path().app_log_dir() else { return };
+        let _ = std::fs::create_dir_all(&dir);
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(dir.join("api.log")) {
+            let _ = writeln!(f, "{} {line}", crate::api::server::now_ms());
+        }
+    }
 
     impl Notifications {
         pub fn show(&self, app: &AppHandle, request_id: &str, title: &str, body: &str) {
-            let (app, rid) = (app.clone(), request_id.to_string());
-            // The installer registers the app's identifier as its AppUserModelID, which toasts need.
-            let _ = Toast::new(&app.config().identifier)
+            static REGISTERED: Once = Once::new();
+            let app_id = app.config().identifier.clone();
+            REGISTERED.call_once(|| {
+                if let Err(e) = register(&app_id) {
+                    log(app, &e);
+                }
+            });
+            let (handle, rid) = (app.clone(), request_id.to_string());
+            let shown = Toast::new(&app_id)
                 .title(title)
                 .text1(body)
                 .on_activated(move |_| {
-                    open(&app, &rid);
+                    open(&handle, &rid);
                     Ok(())
                 })
                 .show();
+            if let Err(e) = shown {
+                log(app, &format!("couldn't show a notification: {e}"));
+            }
         }
 
         pub fn close(&self, _request_id: &str) {}

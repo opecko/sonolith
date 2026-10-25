@@ -150,5 +150,9 @@ Sliders also `preventDefault()` on pointerdown (and focus themselves), so a drag
   the `VL` prefix (`VLLM` is liked songs): normalize before any check (`playlistId` in dispatch.ts).
 - Identity derivation (/proc, `canonicalize` on paths from argv) is blocking and can hang: it runs via
   `spawn_blocking` with a 2 s timeout and 8 slots (`Server::identify`), never in the accept loop.
+- **Windows drops toasts silently when the AppUserModelID is unknown.** The NSIS installer sets it only on the Start
+  menu shortcut it creates on a fresh install (updates create none), so `notify.rs` also registers the id under
+  `HKCU\Software\Classes\AppUserModelId\<identifier>` before the first toast. Failures go to `api.log` in the app's
+  log directory (a release build has no console).
 - Consent answers are ignored for 1 s after the request on screen changes (`CONSENT_ARM_MS`, store.ts); tests of the
   dialog flow need fake timers.
