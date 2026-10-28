@@ -13,7 +13,7 @@ import Thumb from "../components/Thumb";
 import TrackList from "../components/TrackList";
 import { Byline } from "../components/TrackByline";
 import { useAsync, usePaged } from "../hooks/useData";
-import { activateItem, playEpisode } from "../stores/actions";
+import { activateItem, playEpisode, playItem, queueCollection } from "../stores/actions";
 import { usePlayer } from "../stores/player";
 
 const GROUP_TITLE: Record<SearchGroup, string> = {
@@ -43,6 +43,10 @@ function CardButtons({ top, actions }: { top: Item; actions: CardAction[] }) {
           ) : null;
         const run = () => {
           if (a.kind === "play" && isTrack(top)) activateItem(top);
+          // An album or playlist plays its own list, as its page does: the card's endpoint is YouTube's queue for
+          // it, which without Premium has the songs' music videos instead (songVersions.ts swaps those on the page).
+          else if ((top.type === "album" || top.type === "playlist") && (a.kind === "play" || a.kind === "shuffle"))
+            void (a.kind === "play" ? playItem(top) : queueCollection(top, "shuffle"));
           else if (a.playlistId) void usePlayer.getState().startRadio({ type: "mix", id: a.playlistId, params: a.params }, top.title);
         };
         const icon = a.kind === "shuffle" ? <Shuffle size={18} aria-hidden /> : a.kind === "mix" ? <Radio size={18} aria-hidden /> : <Play size={18} fill="currentColor" aria-hidden />;
