@@ -4,6 +4,8 @@
 //! polls the playlist, fetches each new segment in order and writes it without its ID3 tag: a plain `audio/aac`
 //! stream every webview plays. It starts a few segments behind the live edge (something to buffer) and ends when
 //! the player closes the connection.
+use std::collections::HashMap;
+use std::sync::Mutex;
 use std::time::Duration;
 
 use tauri_plugin_http::reqwest;
@@ -14,6 +16,16 @@ use tokio::net::TcpStream;
 const START_BEHIND: usize = 3;
 /// Playlist fetches that may fail in a row before the stream ends (the player then moves on).
 const MAX_FAILURES: u32 = 5;
+
+/// For each local live stream (by its id): the sequence number of the segment it started with, and the segment length.
+/// A live video starts at the segment matching the audio's position, which needs to know where the audio began
+/// (segments share sequence numbers across a broadcast's renditions).
+static STARTS: Mutex<Option<HashMap<String, (u64, u64)>>> = Mutex::new(None);
+
+/// Where the local live stream `id` started: (sequence number, segment seconds); None before its first segment.
+pub(crate) fn started_at(id: &str) -> Option<(u64, u64)> {
+    STARTS.lock().unwrap().as_ref()?.get(id).copied()
+}
 
 /// A media playlist: the sequence number of its first segment, the target segment length and the segment URLs.
 #[derive(Debug, PartialEq)]
@@ -76,9 +88,10 @@ pub(crate) fn new_segments(p: &MediaPlaylist, next: Option<u64>) -> (std::ops::R
     (from..len, last.max(next.unwrap_or(0)))
 }
 
-/// Streams the live playlist at `url` to the player until it hangs up or the playlist stops answering.
-pub(crate) async fn serve(mut sock: TcpStream, client: reqwest::Client, url: String, head_only: bool, allowed: fn(&str) -> bool) -> Result<(), String> {
-    let mut next: Option<u64> = None;
+/// Streams the live playlist at `url` to the player until it hangs up or the playlist stops answering, from segment
+/// `from` when given (waiting for it if it isn't out yet), else a few behind the live edge.
+pub(crate) async fn serve(mut sock: TcpStream, client: reqwest::Client, url: String, id: String, from: Option<u64>, head_only: bool, allowed: fn(&str) -> bool) -> Result<(), String> {
+    let mut next: Option<u64> = from;
     let mut failures = 0;
     let mut started = false;
     loop {
@@ -99,7 +112,7 @@ pub(crate) async fn serve(mut sock: TcpStream, client: reqwest::Client, url: Str
         };
         failures = 0;
         let (range, after) = new_segments(&playlist, next);
-        for seg in &playlist.segments[range] {
+        for (i, seg) in playlist.segments.iter().enumerate().take(range.end).skip(range.start) {
             if !allowed(seg) {
                 continue;
             }
@@ -108,6 +121,7 @@ pub(crate) async fn serve(mut sock: TcpStream, client: reqwest::Client, url: Str
             let audio = strip_id3(&bytes);
             if !started {
                 started = true;
+                STARTS.lock().unwrap().get_or_insert_with(HashMap::new).insert(id.clone(), (playlist.first_seq + i as u64, playlist.target_secs));
                 let head = format!(
                     "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n",
                     content_type(audio)
@@ -144,6 +158,8 @@ mod tests {
         let p = parse_playlist(PLAYLIST);
         // First fetch: a few behind the edge.
         assert_eq!(new_segments(&p, None), (2..5, 105));
+        // Asked to start ahead of the playlist: wait for it.
+        assert_eq!(new_segments(&p, Some(107)), (5..5, 107));
         // Later: only what's new; nothing when caught up.
         assert_eq!(new_segments(&p, Some(103)), (3..5, 105));
         assert_eq!(new_segments(&p, Some(105)), (5..5, 105));

@@ -106,6 +106,7 @@ pub fn run() {
             lyrics::lyrics_clear_cache,
             proxy::proxy_url,
             proxy::proxy_live_url,
+            proxy::proxy_live_info,
             proxy::stream_probe,
             ytdlp::ytdlp_status,
             ytdlp::ytdlp_install,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cooldown, FIRST_GUESS, learn, MAX_LEAD_S, SEEK_COOLDOWN_S, tolerance, videoSync, type SyncInput } from "./videoSync";
+import { cooldown, FIRST_GUESS, learn, liveVideoSync, MAX_LEAD_S, SEEK_COOLDOWN_S, tolerance, videoSync, type SyncInput } from "./videoSync";
 
 const base: SyncInput = { audioTime: 60, audioRate: 1, audioPlaying: true, videoTime: 60, videoBusy: false, sinceSeek: Infinity, learnt: FIRST_GUESS };
 
@@ -71,5 +71,15 @@ describe("learning where seeks land", () => {
       l = learn(l, behind);
     }
     expect(Math.abs(late - l.lead)).toBeLessThan(0.05);
+  });
+});
+
+describe("liveVideoSync", () => {
+  it("waits while ahead or paused, plays in step, reconnects when far behind", () => {
+    expect(liveVideoSync({ audioTime: 10, videoTime: 12, audioPlaying: true })).toBe("wait");
+    expect(liveVideoSync({ audioTime: 10, videoTime: 10.1, audioPlaying: true })).toBe("play");
+    expect(liveVideoSync({ audioTime: 10, videoTime: 9, audioPlaying: true })).toBe("play");
+    expect(liveVideoSync({ audioTime: 10, videoTime: 5, audioPlaying: true })).toBe("reconnect");
+    expect(liveVideoSync({ audioTime: 10, videoTime: 10, audioPlaying: false })).toBe("wait");
   });
 });

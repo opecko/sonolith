@@ -119,7 +119,7 @@ spawning processes, CORS-free streaming).
 | --- | --- |
 | `lib.rs` | Builder: single-instance (second launch shows the window), plugins (http, opener, global-shortcut), setup (MPRIS, tray, render flags), close-to-tray, command registration, `log_playback`. |
 | `auth.rs` | Google sign-in window, cookie in the OS keyring (service `sonolith`; an empty one is filled from the old `ytdesk` entry on read, which stays until sign-out clears both) (`auth_get_cookie`, `auth_set_cookie`, `auth_clear`, `auth_login`). |
-| `live.rs` | Live stations: polls an HLS audio playlist and serves its segments (ID3 stripped) as one endless `audio/aac` stream at the proxy's `/l/<id>` (`proxy_live_url`); WebKitGTK's `<audio>` refuses HLS. Parsers unit-tested. |
+| `live.rs` | Live stations: polls an HLS playlist and serves its segments (ID3 stripped) as one endless stream (`audio/aac`, or `video/mp2t` for a live video) at the proxy's `/l/<id>[?from=<seq>]` (`proxy_live_url`); `proxy_live_info` says which segment a stream began with, to line the video up with the audio. WebKitGTK's `<audio>` refuses HLS. Parsers unit-tested. |
 | `proxy.rs` | Local HTTP Range proxy for streams the webview refuses directly, and for the visualizer's copy of the stream (it sends CORS headers, googlevideo doesn't for the app) (`proxy_url`, `stream_probe`). |
 | `ytdlp.rs` | Managed yt-dlp binary (install, weekly `-U`, custom path, JS runtime detection, temp cookies) — `ytdlp_status/install/update/set_path/stream_url`. |
 | `mpris.rs` | Linux: native MPRIS over zbus (`org.mpris.MediaPlayer2.sonolith`); `mpris_update` snapshots in, `mpris` events out. |

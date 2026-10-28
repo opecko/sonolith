@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { getClient } from "./client";
-import { lowestVariant, pickHlsAudio } from "./hls";
+import { lowestVariant, pickHlsAudio, pickHlsVideo } from "./hls";
 
 export type Codec = "opus" | "aac";
 export type StreamSource = "innertube" | "yt-dlp";
@@ -216,4 +216,20 @@ async function resolveVideo(videoId: string): Promise<string> {
   const url = await f.decipher(yt.session.player);
   if (!url) throw new Error("Could not resolve the video stream");
   return url;
+}
+
+/**
+ * A live stream's picture: the playlist of its best variant up to 720p (a googlevideo URL; TrackVideo has the proxy
+ * play it as one stream from a given segment, since adaptive formats of a live stream are single segments).
+ */
+export async function getLiveVideoPlaylist(videoId: string): Promise<string> {
+  const yt = await getClient();
+  for (const client of CLIENTS) {
+    const info = await yt.getBasicInfo(videoId, { client }).catch(() => null);
+    const hls = info?.streaming_data?.hls_manifest_url;
+    const master = hls ? await fetchText(hls) : null;
+    const url = master && pickHlsVideo(master);
+    if (url) return url;
+  }
+  throw new Error("There's no video for this live stream.");
 }

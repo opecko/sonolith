@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lowestVariant, pickHlsAudio } from "./hls";
+import { lowestVariant, pickHlsAudio, pickHlsVideo } from "./hls";
 
 // Trimmed from a live station's master playlist (2026-10-28); URLs shortened.
 const MASTER = `#EXTM3U
@@ -35,5 +35,13 @@ describe("lowestVariant", () => {
   it("takes the cheapest variant", () => {
     expect(lowestVariant(MASTER)).toContain("itag/269");
     expect(lowestVariant("#EXTM3U\n")).toBeNull();
+  });
+});
+
+describe("pickHlsVideo", () => {
+  it("takes the best variant up to 720p, else the smallest", () => {
+    expect(pickHlsVideo(MASTER)).toContain("itag/229");
+    expect(pickHlsVideo(MASTER, 100)).toContain("itag/269");
+    expect(pickHlsVideo("#EXTM3U\n")).toBeNull();
   });
 });

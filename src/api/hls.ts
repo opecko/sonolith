@@ -58,3 +58,21 @@ export function lowestVariant(master: string): string | null {
   }
   return best;
 }
+
+/**
+ * The picture for a live stream's video mode: the best variant up to `maxHeight` lines (720p decodes fine in
+ * software), else the smallest. Null when the playlist lists no variants.
+ */
+export function pickHlsVideo(master: string, maxHeight = 720): string | null {
+  const lines = master.split(/\r?\n/);
+  const variants: { uri: string; height: number; bandwidth: number }[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].startsWith("#EXT-X-STREAM-INF:")) continue;
+    const a = attrs(lines[i].slice(18));
+    const uri = lines[i + 1]?.trim();
+    if (!uri || uri.startsWith("#")) continue;
+    variants.push({ uri, height: Number(a.get("RESOLUTION")?.split("x")[1] ?? 0), bandwidth: Number(a.get("BANDWIDTH") ?? 0) });
+  }
+  const fits = variants.filter((v) => v.height <= maxHeight).sort((x, y) => y.bandwidth - x.bandwidth);
+  return fits[0]?.uri ?? [...variants].sort((x, y) => x.height - y.height)[0]?.uri ?? null;
+}

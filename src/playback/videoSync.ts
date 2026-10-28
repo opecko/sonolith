@@ -76,3 +76,19 @@ export function learn(l: Learnt, behind: number): Learnt {
   const lead = Math.min(MAX_LEAD_S, Math.max(MIN_LEAD_S, l.lead + behind * 0.8));
   return { lead, misses: Math.abs(behind) > TOLERANCE_S ? Math.min(l.misses + 1, 4) : 0 };
 }
+
+/**
+ * A live stream's video: it plays from the proxy as one endless stream that starts at a segment boundary just ahead
+ * of the audio (`TrackVideo`), so it can't seek. It waits (paused) while it's ahead, plays while in step, and asks
+ * for a new connection, again just ahead, when it has fallen behind (a stall).
+ * Times are from each stream's own start, the video's shifted by where it began relative to the audio.
+ */
+export function liveVideoSync(i: { audioTime: number; videoTime: number; audioPlaying: boolean }): "play" | "wait" | "reconnect" {
+  if (!i.audioPlaying) return "wait";
+  const d = i.videoTime - i.audioTime;
+  if (d > TOLERANCE_S) return "wait";
+  if (d < -LIVE_BEHIND_S) return "reconnect";
+  return "play";
+}
+/** How far a live video may fall behind before it reconnects (it can't seek). */
+export const LIVE_BEHIND_S = 2;

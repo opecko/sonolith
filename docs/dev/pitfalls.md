@@ -93,6 +93,11 @@ find a new one.
   as one endless `audio/aac` stream (`src-tauri/src/live.rs`: each ~5 s segment is an ID3 tag + ADTS, the tag is
   dropped). The VISIONOS client's master playlist has audio-only renditions, YTMUSIC's only muxed variants.
   yt-dlp says "Video unavailable" or "Requested format is not available" for them.
+- **A live stream's video is HLS too**: its adaptive video formats are single ~5 s segments (the picture froze at
+  the end of one). The proxy streams the variant playlist (MPEG-TS, video only from VISIONOS) the same way, started
+  at a given segment (`/l/<id>?from=<seq>`): segments share sequence numbers across renditions, and
+  `proxy_live_info` says which segment the audio's stream began with, so the video starts just ahead of the audio
+  and waits for it (`components/TrackVideo.tsx` LiveVideo, `videoSync.ts` liveVideoSync).
 - Chips exist only on radio queues; `/next` on bare videos/albums carries an automix seed instead.
 
 ## youtubei.js

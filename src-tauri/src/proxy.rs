@@ -86,6 +86,9 @@ async fn serve(mut sock: TcpStream, client: reqwest::Client) -> Result<(), Strin
     }
     // /l/<id>: a live stream's HLS playlist, served as one endless audio stream (live.rs).
     let live = path.starts_with("/l/");
+    // Live streams may say which segment to start from: /l/<id>?from=<sequence number>.
+    let (path, query) = path.split_once('?').unwrap_or((path.as_str(), ""));
+    let from = query.split('&').find_map(|kv| kv.strip_prefix("from=")).and_then(|v| v.parse().ok());
     let id = path.strip_prefix("/s/").or_else(|| path.strip_prefix("/l/")).unwrap_or("");
     let url = PROXY.get().and_then(|p| p.urls.lock().unwrap().iter().find(|(i, _)| i == id).map(|(_, u)| u.clone()));
     let Some(url) = url else {
@@ -93,7 +96,7 @@ async fn serve(mut sock: TcpStream, client: reqwest::Client) -> Result<(), Strin
         return Ok(());
     };
     if live {
-        return crate::live::serve(sock, client, url, method == "HEAD", allowed).await;
+        return crate::live::serve(sock, client, url, id.to_owned(), from, method == "HEAD", allowed).await;
     }
     let mut req = client.get(&url);
     if let Some(r) = headers.get("range") {
@@ -136,6 +139,14 @@ pub async fn proxy_url(url: String) -> Result<String, String> {
 #[tauri::command]
 pub async fn proxy_live_url(url: String) -> Result<String, String> {
     register(url, "l").await
+}
+
+/// Where a local live stream (a URL from `proxy_live_url`) started: its first segment's sequence number and the
+/// segment length in seconds, once it has sent one.
+#[tauri::command]
+pub fn proxy_live_info(url: String) -> Result<(u64, u64), String> {
+    let id = url.rsplit_once("/l/").map(|(_, id)| id.split('?').next().unwrap_or(id)).ok_or("not a live stream URL")?;
+    crate::live::started_at(id).ok_or_else(|| "the live stream hasn't started".into())
 }
 
 async fn register(url: String, kind: &str) -> Result<String, String> {
