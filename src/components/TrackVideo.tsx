@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
-import { getLiveVideoPlaylist, getVideoStreamUrl } from "../api/stream";
+import { getLiveVideoPlaylist, getVideoStreamUrl, logPlayback } from "../api/stream";
 import { FIRST_GUESS, learn, liveVideoSync, videoSync } from "../playback/videoSync";
 import { currentStream, getAudio, usePlayer } from "../stores/player";
 import { Spinner } from "./LoadingIndicator";
@@ -193,8 +193,12 @@ function LiveVideo({ videoId }: { videoId: string }) {
       offset.current = (from - start) * secs;
       base.current = null;
       const local = await invoke<string>("proxy_live_url", { url: playlist });
+      logPlayback(`${videoId} live video: audio began at segment ${start} (${secs} s), audio at ${a.currentTime.toFixed(1)} s, video from ${from} (attempt ${attempt})`);
       if (alive) setSrc(`${local}?from=${from}&attempt=${attempt}`);
-    })().catch((e) => alive && setError(e instanceof Error ? e.message : String(e)));
+    })().catch((e) => {
+      logPlayback(`${videoId} live video failed: ${e instanceof Error ? e.message : String(e)}`);
+      if (alive) setError(e instanceof Error ? e.message : String(e));
+    });
     return () => {
       alive = false;
     };
@@ -210,16 +214,23 @@ function LiveVideo({ videoId }: { videoId: string }) {
       lastReconnect = performance.now();
       setAttempt((n) => n + 1);
     };
+    const audioPlaying = () => !a.paused && !a.ended && a.readyState >= 3;
     const tick = () => {
-      if (document.hidden || v.readyState < 2) {
+      if (document.hidden) {
         if (!v.paused) v.pause();
+        return;
+      }
+      // No frame yet: an endless stream may not load at all until asked to play, so it plays (the audio playing)
+      // until the first frame is in; from then on the base below keeps the timing right.
+      if (v.readyState < 2) {
+        if (audioPlaying() && v.paused) void v.play().catch(() => {});
         return;
       }
       base.current ??= v.currentTime;
       const act = liveVideoSync({
         audioTime: a.currentTime - offset.current,
         videoTime: v.currentTime - base.current,
-        audioPlaying: !a.paused && !a.ended && a.readyState >= 3,
+        audioPlaying: audioPlaying(),
       });
       if (act === "play" && v.paused) void v.play().catch(() => {});
       else if (act === "wait" && !v.paused) v.pause();
@@ -245,5 +256,10 @@ function LiveVideo({ videoId }: { videoId: string }) {
     };
   }, [src]);
 
-  return <VideoFrame videoRef={ref} src={src} loaded={loaded} error={error} onError={() => setError("This video can't be played.")} onLoaded={() => setLoaded(true)} />;
+  const onError = () => {
+    const err = ref.current?.error;
+    logPlayback(`${videoId} live video MediaError code=${err?.code ?? "?"} msg=${err?.message ?? ""}`);
+    setError("This video can't be played.");
+  };
+  return <VideoFrame videoRef={ref} src={src} loaded={loaded} error={error} onError={onError} onLoaded={() => setLoaded(true)} />;
 }

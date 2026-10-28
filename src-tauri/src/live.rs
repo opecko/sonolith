@@ -122,6 +122,7 @@ pub(crate) async fn serve(mut sock: TcpStream, client: reqwest::Client, url: Str
             if !started {
                 started = true;
                 STARTS.lock().unwrap().get_or_insert_with(HashMap::new).insert(id.clone(), (playlist.first_seq + i as u64, playlist.target_secs));
+                eprintln!("live {id}: from segment {} ({})", playlist.first_seq + i as u64, content_type(audio));
                 let head = format!(
                     "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n",
                     content_type(audio)
