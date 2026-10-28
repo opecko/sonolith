@@ -32,13 +32,17 @@ export class Interpolator {
   }
 }
 
-let el: HTMLAudioElement | null = null;
+/** The playing element (the player swaps two for crossfades, so it's asked each time). */
+let current: () => HTMLAudioElement | null = () => null;
 const interp = new Interpolator();
 const subs = new Set<(sec: number) => void>();
 let stopFrames: (() => void) | null = null;
 
 /** The smooth playback position, in seconds. */
-export const playheadTime = () => (el ? interp.sample(el.currentTime, performance.now(), el.playbackRate, !el.paused) : 0);
+export const playheadTime = () => {
+  const el = current();
+  return el ? interp.sample(el.currentTime, performance.now(), el.playbackRate, !el.paused) : 0;
+};
 
 function emit() {
   if (!subs.size) return;
@@ -52,6 +56,7 @@ function emit() {
  * ticker pauses with them); otherwise listeners hear the clock on its events (timeupdate, seek, pause, rate).
  */
 function updateLoop() {
+  const el = current();
   const want = subs.size > 0 && !!el && !el.paused;
   if (want && !stopFrames) stopFrames = ticker(emit);
   else if (!want && stopFrames) {
@@ -60,17 +65,17 @@ function updateLoop() {
   }
 }
 
-/** Called once by the player with its audio element. */
-export function bindPlayhead(audio: HTMLAudioElement) {
-  el = audio;
+/** Called once by the player: its playing element, and how to listen to whichever element that is. */
+export function bindPlayhead(get: () => HTMLAudioElement, on: (type: string, fn: () => void) => void) {
+  current = get;
   const snap = () => {
     interp.reset();
     emit();
     updateLoop();
   };
-  for (const ev of ["seeking", "seeked", "ratechange", "pause", "play", "playing", "loadstart", "emptied", "durationchange"]) audio.addEventListener(ev, snap);
+  for (const ev of ["seeking", "seeked", "ratechange", "pause", "play", "playing", "loadstart", "emptied", "durationchange"]) on(ev, snap);
   // Without frames (paused loop, animations off) the coarse clock still moves the listeners.
-  audio.addEventListener("timeupdate", () => !stopFrames && emit());
+  on("timeupdate", () => !stopFrames && emit());
 }
 
 /** Listen to the playhead (every frame while playing, else on clock events); called once right away. */

@@ -5,6 +5,7 @@ import { DEFAULT_SHORTCUTS, normalizeShortcuts, type ShortcutSettings } from "..
 import { DEFAULT_APPEARANCE, normalizeAppearance, type Appearance } from "../theme/appearance";
 import { DEFAULT_VISUALIZER, normalizeVisualizer, type VisualizerSettings } from "../visualizer/settings";
 import { DEFAULT_SAVE_BUTTON, normalizeSaveButton, type SaveButtonSettings } from "./saveButton";
+import { CROSSFADE_MAX_S } from "../playback/crossfade";
 
 export interface Settings {
   autoplay: boolean;
@@ -40,10 +41,12 @@ export interface Settings {
   visualizer: VisualizerSettings;
   /** Now Playing's Save button: open the playlist picker, save straight into one playlist, or no button. */
   saveButton: SaveButtonSettings;
+  /** Crossfade between songs, seconds (0: off; Settings → Playback; playback/crossfade.ts). */
+  crossfade: number;
 }
 
 const KEY = "settings";
-const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS, karaokeStyle: "sweep", lyricsEnabled: true, visualizer: DEFAULT_VISUALIZER, saveButton: DEFAULT_SAVE_BUTTON };
+const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS, karaokeStyle: "sweep", lyricsEnabled: true, visualizer: DEFAULT_VISUALIZER, saveButton: DEFAULT_SAVE_BUTTON, crossfade: 0 };
 
 /** Stored JSON → Settings. Missing keys (older versions) get the defaults; normalizing drops malformed values. */
 export function parseSettings(stored: unknown): Settings {
@@ -64,6 +67,7 @@ export function parseSettings(stored: unknown): Settings {
     lyricsEnabled: s.lyricsEnabled !== false,
     visualizer: normalizeVisualizer(s.visualizer),
     saveButton: normalizeSaveButton(s.saveButton),
+    crossfade: typeof s.crossfade === "number" && s.crossfade >= 0 ? Math.min(CROSSFADE_MAX_S, Math.round(s.crossfade)) : 0,
   };
 }
 
@@ -83,8 +87,8 @@ function read(): Settings {
 
 function write() {
   try {
-    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton } = useSettings.getState();
-    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton }));
+    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton, crossfade } = useSettings.getState();
+    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton, crossfade }));
   } catch {
     /* storage unavailable */
   }

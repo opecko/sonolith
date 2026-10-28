@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { currentStream, getAudio } from "../stores/player";
+import { currentStream, getAudio, onAudioEvent } from "../stores/player";
 
 /**
  * The visualizer's ear: a silent copy of the song Sonolith is playing (never other apps' audio), kept in step
@@ -49,7 +49,7 @@ function setup(): boolean {
     source.connect(a);
     a.connect(mute);
     mute.connect(c.destination);
-    getAudio().addEventListener("seeked", () => users > 0 && ready && sync(true));
+    onAudioEvent("seeked", () => users > 0 && ready && sync(true));
     ctx = c;
     copy = el;
     analyser = a;

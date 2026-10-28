@@ -62,7 +62,6 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
     const release = acquire();
-    const audio = getAudio();
     const halo = at === "halo" || at === "halo-inner";
     const levels = new Float32Array(BANDS[at]);
     const target = new Float32Array(BANDS[at]);
@@ -141,7 +140,7 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
         if (!blank) ctx.clearRect(0, 0, canvas.width, canvas.height);
         blank = true;
         // Paused and settled: nothing to draw until playback resumes.
-        if (audio.paused) halt();
+        if (getAudio().paused) halt();
         return;
       }
       blank = false;

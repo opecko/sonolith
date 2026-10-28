@@ -9,7 +9,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { ColorSettings, LookSettings, NowPlayingSettings } from "../components/appearance/AppearanceSettings";
 import AutoplayToggle from "../components/AutoplayToggle";
 import ChangelogDialog from "../components/ChangelogDialog";
+import Slider from "../components/Slider";
 import Switch from "../components/Switch";
+import { CROSSFADE_MAX_S } from "../playback/crossfade";
 import { ErrorBox, Loading } from "../components/Status";
 import { useAsync } from "../hooks/useData";
 import { rerunOnboarding } from "../onboarding/store";
@@ -107,7 +109,7 @@ function YtdlpSettings() {
 }
 
 function PlaybackSettings() {
-  const { saveHistory, afterEpisode, set } = useSettings();
+  const { saveHistory, afterEpisode, crossfade, set } = useSettings();
   return (
     <>
       <SettingCard title="Music">
@@ -116,6 +118,11 @@ function PlaybackSettings() {
         </SettingRow>
         <SettingRow id="saveHistory" title="Save listening history" detail="Played songs go to your YouTube Music history, which also improves recommendations. Needs you to be signed in.">
           <Switch on={saveHistory} onChange={(v) => set({ saveHistory: v })} label="Save listening history" />
+        </SettingRow>
+        <SettingRow id="crossfade" title="Crossfade"
+          detail={crossfade ? "Songs blend into each other. The next song loads in the background near the end of the current one." : "Off: one song ends, the next starts."}>
+          <Slider className="w-40" value={crossfade} max={CROSSFADE_MAX_S} step={1} onCommit={(v) => set({ crossfade: Math.round(v) })} label="Crossfade"
+            tooltip="value" format={(v) => (Math.round(v) ? `${Math.round(v)} s` : "Off")} />
         </SettingRow>
       </SettingCard>
       <SettingCard title="Podcasts">
@@ -251,7 +258,7 @@ const GROUPS: { tone: string; items: Category[] }[] = [
     { id: "nowplaying", title: "Now Playing", detail: "Layout, ambient light, Save button, visualizer", icon: Disc3, page: () => <NowPlayingSettings /> },
   ] },
   { tone: "green", items: [
-    { id: "playback", title: "Playback", detail: "Autoplay, history, podcasts", icon: Play, page: () => <PlaybackSettings /> },
+    { id: "playback", title: "Playback", detail: "Autoplay, crossfade, history, podcasts", icon: Play, page: () => <PlaybackSettings /> },
     { id: "lyrics", title: "Lyrics", detail: "Karaoke style, providers", icon: MicVocal, page: () => <LyricsProviderSettings /> },
   ] },
   { tone: "orange", items: [

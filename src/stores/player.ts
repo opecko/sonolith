@@ -11,6 +11,7 @@ import { savedResume, savePosition } from "./episodeProgress";
 import { nextEpisode } from "./podcastQueue";
 import { pipelineStuck, reconcileStatus, toggleAction } from "./playState";
 import { bindPlayhead } from "../playback/playhead";
+import { fadeGains, fadeLength, shouldPrepare, shouldStartFade } from "../playback/crossfade";
 import { useProgress } from "./progress";
 import { append, dedupe, insertNext, reorder } from "./queueOps";
 import { makeSnapshot, readSnapshot, SNAPSHOT_KEY } from "./queueSnapshot";
@@ -97,8 +98,28 @@ const DECODE_HINT = /Linux/.test(navigator.userAgent)
   ? "WebKitGTK could not decode this stream. Install gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad and gstreamer1.0-libav."
   : "This song couldn't be played. Try again in a moment.";
 
-const audio = new Audio();
-bindPlayhead(audio);
+/**
+ * Two elements: the one playing (`audio`, what everything else means by "the audio element") and a spare that loads
+ * the next song ahead of a crossfade (playback/crossfade.ts). They swap roles when a fade starts.
+ */
+const elements = [new Audio(), new Audio()] as const;
+let audio: HTMLAudioElement = elements[0];
+let spare: HTMLAudioElement = elements[1];
+for (const el of elements) el.preload = "auto";
+
+/** Listens to whichever element is playing at the time (on both, filtered), so listeners survive crossfade swaps. */
+export function onAudioEvent(type: string, fn: (e: Event) => void) {
+  for (const el of elements) el.addEventListener(type, (e) => el === audio && fn(e));
+}
+
+/** The user's volume, and each element's share of it (below 1 while it fades in or out). */
+let userVolume = 0.8;
+const gain = new Map<HTMLAudioElement, number>(elements.map((el) => [el, 1]));
+function applyVolume(el: HTMLAudioElement) {
+  el.volume = Math.max(0, Math.min(1, userVolume * (gain.get(el) ?? 1)));
+}
+
+bindPlayhead(() => audio, onAudioEvent);
 
 /** Where playback really is, in seconds; unlike useProgress it keeps moving while the window is hidden. */
 export const playbackTime = () => audio.currentTime;
@@ -108,7 +129,6 @@ export function onPlaybackTick(fn: () => void): () => void {
   tickListeners.add(fn);
   return () => tickListeners.delete(fn);
 }
-audio.preload = "auto";
 
 /** Original (unshuffled) sequence, used to restore order when shuffle is turned off. */
 let unshuffled: Track[] = [];
@@ -162,7 +182,8 @@ const saved = (() => {
 })();
 
 export const usePlayer = create<PlayerState>((set, get) => {
-  audio.volume = readVolume();
+  userVolume = readVolume();
+  elements.forEach(applyVolume);
   if (saved) {
     unshuffled = saved.queue;
     useProgress.setState({ position: 0, duration: saved.queue[saved.index].durationSec ?? 0 });
@@ -175,14 +196,123 @@ export const usePlayer = create<PlayerState>((set, get) => {
     return repeat === "all" && queue.length > 0 ? 0 : null;
   };
 
+  // ---------- crossfade (playback/crossfade.ts) ----------
+  /** The next song, loading or loaded in the spare element. */
+  let prepared: { index: number; id: string; stream: Stream } | null = null;
+  let preparing: string | null = null;
+  /** A fade in progress: the outgoing element (the spare until it ends) and its timer. */
+  let fade: { out: HTMLAudioElement; timer: ReturnType<typeof setInterval> } | null = null;
+
+  /** Songs only: episodes resume and have their own speed, live streams don't end, "repeat one" restarts. */
+  const crossfadeEligible = () => {
+    const t = get().queue[get().index];
+    return !!t && !t.podcast && !current?.live && get().repeat !== "one";
+  };
+
+  function silence(el: HTMLAudioElement) {
+    el.pause();
+    el.removeAttribute("src");
+    el.load();
+    gain.set(el, 1);
+    applyVolume(el);
+  }
+
+  /** Forgets the prepared song (the spare stops loading it); during a fade the spare is the outgoing song, left alone. */
+  function dropPrepared() {
+    prepared = null;
+    preparing = null;
+    if (!fade && spare.getAttribute("src")) silence(spare);
+  }
+
+  /** The prepared song is `index` in the queue as it is now, and the spare has its start. */
+  const preparedFor = (index: number) =>
+    !!prepared && prepared.index === index && get().queue[index]?.id === prepared.id && spare.readyState >= 2 && !fade;
+
+  async function prepare(index: number) {
+    const t = get().queue[index];
+    if (!t || t.podcast || fade || preparing === t.id || (prepared?.id === t.id && prepared.index === index)) return;
+    preparing = t.id;
+    try {
+      const stream = await getStreamUrl(t.id);
+      if (preparing !== t.id || stream.live || fade) return;
+      prepared = { index, id: t.id, stream };
+      gain.set(spare, 0);
+      applyVolume(spare);
+      spare.src = stream.url;
+      spare.load();
+    } catch {
+      /* no crossfade into this one: it starts the usual way when the current song ends */
+    } finally {
+      if (preparing === t.id) preparing = null;
+    }
+  }
+
+  /** Starts the prepared song on the spare element, which becomes the player; the old one fades out over `len` s. */
+  function crossfadeTo(len: number) {
+    const p = prepared!;
+    prepared = null;
+    const out = audio;
+    audio = spare;
+    spare = out;
+    gain.set(audio, len > 0 ? 0 : 1);
+    applyVolume(audio);
+    audio.currentTime = 0;
+    void audio.play().catch(() => {});
+    if (len > 0) {
+      const t0 = performance.now();
+      // A timer, not the frame loop: the fade must run with the window hidden too.
+      const step = () => {
+        const progress = (performance.now() - t0) / (len * 1000);
+        const g = fadeGains(progress);
+        gain.set(out, g.out);
+        gain.set(audio, g.in);
+        applyVolume(out);
+        applyVolume(audio);
+        if (progress >= 1) endFade();
+      };
+      fade = { out, timer: setInterval(step, 50) };
+      step();
+    } else silence(out);
+    start(p.index, 0, p.stream);
+  }
+
+  /** Ends a fade now (done, paused, or another song asked for): the outgoing song stops, the new one at full volume. */
+  function endFade() {
+    if (!fade) return;
+    clearInterval(fade.timer);
+    const out = fade.out;
+    fade = null;
+    silence(out);
+    gain.set(audio, 1);
+    applyVolume(audio);
+  }
+
+  /** On the clock: load the next song from ~80 % on (or a seek there), fade into it near the end. */
+  function crossfadeTick() {
+    const crossfade = useSettings.getState().crossfade;
+    if (crossfade <= 0 || fade) return;
+    const clock = { crossfade, position: audio.currentTime, duration: audio.duration, eligible: crossfadeEligible() };
+    const next = peekNext();
+    if (next !== null && shouldPrepare(clock)) void prepare(next);
+    if (next !== null && preparedFor(next) && shouldStartFade(clock)) crossfadeTo(fadeLength(crossfade, audio.duration));
+  }
+  // Paused mid-fade: the outgoing song stops too (it would otherwise play on alone).
+  onAudioEvent("pause", () => endFade());
+  // The spare failing to load the next song: no crossfade into it.
+  for (const el of elements) el.addEventListener("error", () => el === spare && !fade && (prepared = null));
+  useSettings.subscribe((s, prev) => s.crossfade !== prev.crossfade && s.crossfade <= 0 && dropPrepared());
+
   function fail(text: string) {
     const track = get().queue[get().index];
     logPlayback(`${track?.id ?? "?"} ${text}`);
     set({ status: "error", error: text });
   }
 
-  /** Resolves (or reuses) a stream and starts it. `proxy` routes it through the local Rust proxy. */
-  async function load(index: number, resumeAt = 0, opts: { alternate?: boolean; proxy?: boolean; reuse?: Stream } = {}) {
+  /**
+   * Resolves (or reuses) a stream and starts it. `proxy` routes it through the local Rust proxy; `adopt` is a stream
+   * the (just swapped in) element already plays, from a crossfade.
+   */
+  async function load(index: number, resumeAt = 0, opts: { alternate?: boolean; proxy?: boolean; reuse?: Stream; adopt?: Stream } = {}) {
     const track = get().queue[index];
     if (!track) return;
     const mine = ++gen;
@@ -190,12 +320,14 @@ export const usePlayer = create<PlayerState>((set, get) => {
     useProgress.setState({ position: resumeAt, duration: track.durationSec ?? 0 });
     updateMediaSession(track);
     try {
-      let stream = opts.reuse ?? (await getStreamUrl(track.id, { alternate: opts.alternate }));
+      let stream = opts.adopt ?? opts.reuse ?? (await getStreamUrl(track.id, { alternate: opts.alternate }));
       if (opts.proxy && !stream.proxied) stream = await viaProxy(stream);
       if (mine !== gen) return;
       current = stream;
       if (!!stream.live !== get().live) set({ live: !!stream.live });
-      audio.src = stream.url;
+      if (!opts.adopt) audio.src = stream.url;
+      // An adopted element told its length while it was the spare (unheard): take it now.
+      else if (Number.isFinite(audio.duration) && audio.duration > 0) useProgress.setState({ duration: audio.duration });
       applyRate(); // a new src resets playbackRate
       if (resumeAt > 0) {
         audio.addEventListener("loadedmetadata", () => (audio.currentTime = resumeAt), { once: true });
@@ -209,14 +341,20 @@ export const usePlayer = create<PlayerState>((set, get) => {
     }
   }
 
-  function start(index: number, startAt?: number) {
+  function start(index: number, startAt?: number, adopt?: Stream) {
+    if (!adopt) {
+      endFade();
+      // The prepared next song asked for (Next, a click on it): it starts at once from the spare element.
+      if (!startAt && preparedFor(index)) return crossfadeTo(0);
+      dropPrepared();
+    }
     retries = 0;
     stuckRecoveries = 0;
     pausedAt = null;
     prefetchedFor = -1;
     // Episodes continue where they were left (stores/episodeProgress).
     const t = get().queue[index];
-    void load(index, startAt ?? (t?.podcast ? savedResume(t.id) : 0));
+    void load(index, startAt ?? (t?.podcast ? savedResume(t.id) : 0), { adopt });
     const id = get().queue[index]?.id;
     if (id) history = pushHistory(history, id);
     void refreshWatch();
@@ -397,12 +535,12 @@ export const usePlayer = create<PlayerState>((set, get) => {
     })());
   }
 
-  audio.addEventListener("playing", () => set({ status: "playing" }));
+  onAudioEvent("playing", () => set({ status: "playing" }));
   // A live stream resumed after a longer pause would play on from where it stopped; like YouTube Music, go back to
   // live. It's one endless stream from the proxy (no seeking), so that's a new connection, which starts at the edge.
   let livePausedAt = 0;
-  audio.addEventListener("pause", () => (livePausedAt = current?.live ? Date.now() : 0));
-  audio.addEventListener("play", () => {
+  onAudioEvent("pause", () => (livePausedAt = current?.live ? Date.now() : 0));
+  onAudioEvent("play", () => {
     if (!current?.live || !livePausedAt || Date.now() - livePausedAt < LIVE_BEHIND_S * 1000) return;
     livePausedAt = 0;
     audio.src = current.url;
@@ -418,12 +556,12 @@ export const usePlayer = create<PlayerState>((set, get) => {
     episodeSavedAt = now;
     savePosition(t.id, audio.ended ? audio.duration : audio.currentTime, audio.duration);
   }
-  audio.addEventListener("pause", () => {
+  onAudioEvent("pause", () => {
     saveEpisode(true);
     pausedAt = audio.currentTime;
     if (!audio.ended && get().status === "playing") set({ status: "paused" });
   });
-  audio.addEventListener("play", () => {
+  onAudioEvent("play", () => {
     pausedAt = null;
     syncStatus();
   });
@@ -449,10 +587,10 @@ export const usePlayer = create<PlayerState>((set, get) => {
     audio.src = audio.currentSrc;
     set({ status: "paused" });
   }
-  audio.addEventListener("seeking", () => {
+  onAudioEvent("seeking", () => {
     if (audio.paused) pausedAt = audio.currentTime;
   });
-  audio.addEventListener("durationchange", () => {
+  onAudioEvent("durationchange", () => {
     if (Number.isFinite(audio.duration)) useProgress.setState({ duration: audio.duration });
   });
   // The clock only changes once per displayed second and not at all while the window is hidden:
@@ -465,16 +603,17 @@ export const usePlayer = create<PlayerState>((set, get) => {
     useProgress.setState({ position: sec });
   };
   document.addEventListener("visibilitychange", () => !document.hidden && pushClock());
-  audio.addEventListener("seeked", () => {
+  onAudioEvent("seeked", () => {
     shownSecond = -1;
     pushClock();
     syncStatus();
   });
-  audio.addEventListener("timeupdate", () => {
+  onAudioEvent("timeupdate", () => {
     if (!document.hidden) pushClock();
     syncStatus();
     checkStuck();
     saveEpisode(false);
+    crossfadeTick();
     for (const fn of tickListeners) fn();
     const { index } = get();
     if (prefetchedFor !== index && audio.currentTime > Math.min(30, audio.duration / 2 || 30)) {
@@ -484,12 +623,12 @@ export const usePlayer = create<PlayerState>((set, get) => {
       if (track) prefetchStream(track.id);
     }
   });
-  audio.addEventListener("ended", () => {
+  onAudioEvent("ended", () => {
     saveEpisode(true);
     void advance(true);
   });
   // Recovery ladder for <audio> errors: same URL via local proxy → fresh URL from the other resolver (proxied).
-  audio.addEventListener("error", () => {
+  onAudioEvent("error", () => {
     const err = audio.error;
     const code = err?.code;
     const { index } = get();
@@ -517,7 +656,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     index: saved?.index ?? -1,
     status: "idle",
     error: null,
-    volume: audio.volume,
+    volume: userVolume,
     muted: false,
     shuffle: saved?.shuffle ?? false,
     repeat: saved?.repeat ?? "off",
@@ -678,12 +817,14 @@ export const usePlayer = create<PlayerState>((set, get) => {
       useProgress.setState({ position: sec });
     },
     toggleMute: () => {
-      audio.muted = !audio.muted;
-      set({ muted: audio.muted });
+      const muted = !audio.muted;
+      for (const el of elements) el.muted = muted;
+      set({ muted });
     },
     setVolume: (v) => {
-      audio.volume = v;
-      if (audio.muted && v > 0) audio.muted = false;
+      userVolume = v;
+      elements.forEach(applyVolume);
+      if (audio.muted && v > 0) for (const el of elements) el.muted = false;
       set({ volume: v, muted: audio.muted });
       try {
         localStorage.setItem("volume", String(v));

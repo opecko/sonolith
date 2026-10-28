@@ -5,7 +5,7 @@ import type { Track } from "../api/types";
 import { useLyrics } from "../lyrics/store";
 import { useAuth } from "../stores/auth";
 import { useEpisodeProgress, resumeAt } from "../stores/episodeProgress";
-import { getAudio, onPlaybackTick, playbackTime, ratingOf, usePlayer } from "../stores/player";
+import { getAudio, onAudioEvent, onPlaybackTick, playbackTime, ratingOf, usePlayer } from "../stores/player";
 import { useSettings } from "../stores/settings";
 import { lyricsResult, mediaItem, type Ctx } from "./convert";
 import type { EpisodeRate, PlayerState, QueueSummary } from "./schema.gen";
@@ -135,10 +135,10 @@ export function initPublishing() {
   });
   useAuth.subscribe((s, p) => s.status !== p.status && send("account", { signedIn: s.status === "signedIn" }));
   useLyrics.subscribe(publishLyrics);
-  const audio = getAudio();
-  audio.addEventListener("waiting", () => ((buffering = true), publishPlayer()));
-  audio.addEventListener("playing", () => ((buffering = false), publishPlayer()));
-  for (const e of ["seeked", "ratechange", "durationchange", "pause"]) audio.addEventListener(e, publishPlayer);
+  // On whichever element plays (the player swaps two for crossfades).
+  onAudioEvent("waiting", () => ((buffering = true), publishPlayer()));
+  onAudioEvent("playing", () => ((buffering = false), publishPlayer()));
+  for (const e of ["seeked", "ratechange", "durationchange", "pause"]) onAudioEvent(e, publishPlayer);
   // The server extrapolates from the last state; when playback drifts from that (stalls), it hears the truth.
   onPlaybackTick(() => {
     if (!active || !last || last.status !== "playing") return;
