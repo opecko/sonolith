@@ -81,6 +81,10 @@ fn migrate_old_cookie() -> Option<String> {
  * (0600), in the app's config dir, as browsers keep their cookies on such systems. Without it the sign-in failed with
  * a keyring error, the sign-in window stayed open on YouTube Music, and every later attempt opened already signed in.
  */
+/// Linux keeps the copy with every sign-in (a locked KWallet at startup is the case it's for); Windows' Credential
+/// Manager and the macOS Keychain don't get locked away like that, so there it's written only if they fail.
+const ALWAYS_COPY: bool = cfg!(target_os = "linux");
+
 fn fallback_path() -> Option<std::path::PathBuf> {
     let base = if cfg!(target_os = "windows") { dirs::data_dir() } else { dirs::config_dir() };
     base.map(|d| d.join(crate::IDENTIFIER).join("sign-in"))
@@ -118,7 +122,7 @@ pub fn auth_get_cookie() -> Result<Option<String>, String> {
     match entry().map(|e| read(&e)) {
         Ok(Ok(Some(c))) => {
             // Signed in before the copy existed: made now, so a keyring locked at a later start doesn't sign out.
-            if fallback_path().is_some_and(|p| !p.exists()) {
+            if ALWAYS_COPY && fallback_path().is_some_and(|p| !p.exists()) {
                 let _ = write_fallback(&c);
             }
             return Ok(Some(c));
@@ -139,8 +143,15 @@ pub fn auth_get_cookie() -> Result<Option<String>, String> {
 pub fn auth_set_cookie(cookie: String) -> Result<(), String> {
     // set_password would store UTF-16 on Windows (2 bytes/char), and the ~1.6 KB cookie header would then exceed
     // the Credential Manager's 2560-byte blob limit. Raw UTF-8 fits on every platform.
-    // Both: the keyring, and the copy for when the keyring can't be used (see fallback_path).
+    // The keyring, and the copy for when the keyring can't be used (see fallback_path, ALWAYS_COPY).
     let keyring = entry().and_then(|e| e.set_secret(cookie.as_bytes()).map_err(|e| e.to_string()));
+    if keyring.is_ok() && !ALWAYS_COPY {
+        // A copy from a time the keyring failed mustn't outlive this sign-in.
+        if let Some(p) = fallback_path() {
+            let _ = std::fs::remove_file(p);
+        }
+        return Ok(());
+    }
     let file = write_fallback(&cookie);
     match (keyring, file) {
         (Ok(()), Ok(())) => Ok(()),

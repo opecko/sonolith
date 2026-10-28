@@ -37,9 +37,10 @@ fn append_playback_log(path: &Option<std::path::PathBuf>, line: &str) -> Result<
 pub(crate) const IDENTIFIER: &str = "dev.sonolith.app";
 
 /// A line in the playback log from Rust code without an AppHandle (sign-in problems): the same file the frontend
-/// writes to, in Tauri's app log dir (`$XDG_DATA_HOME/<identifier>/logs`, `%APPDATA%` on Windows).
+/// writes to, in Tauri's app log dir (`$XDG_DATA_HOME/<identifier>/logs`, `%LOCALAPPDATA%\<identifier>\logs` on
+/// Windows).
 pub(crate) fn log_line(line: &str) {
-    let dir = if cfg!(target_os = "windows") { dirs::config_dir() } else { dirs::data_dir() };
+    let dir = if cfg!(target_os = "windows") { dirs::data_local_dir() } else { dirs::data_dir() };
     let _ = append_playback_log(&playback_log_path(dir.map(|d| d.join(IDENTIFIER).join("logs"))), line);
 }
 
