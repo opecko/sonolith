@@ -398,7 +398,6 @@
 [data-ui-style="m3"] .bento-sq[aria-pressed="true"] { --ct: var(--m3-secondary); color: var(--m3-on-secondary); }
 [data-ui-style="m3"] .bento-play { --r-press: var(--m3-corner-md); }
 
-.bento-queue.bento-queue-open { min-height: 0; }
 /* The lyrics preview fills its tile when the tile is given height (wide windows); elsewhere it shows a few lines. */
 .bento-lyrics-text { max-height: 7.5em; }
 

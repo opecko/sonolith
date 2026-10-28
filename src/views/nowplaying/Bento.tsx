@@ -22,8 +22,8 @@ function Tile({ area, className = "", children, label }: { area: string; classNa
 }
 
 /** Opens with a small spring "pop" (scale + opacity written per frame from the shared loop). */
-function usePop() {
-  const ref = useRef<HTMLDivElement>(null);
+function usePop<T extends HTMLElement = HTMLDivElement>() {
+  const ref = useRef<T>(null);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -39,35 +39,6 @@ function usePop() {
     return () => s.stop();
   }, []);
   return ref;
-}
-
-/**
- * Springs an element's height between its natural heights in two states (a rAF spring writing `height`, with
- * `flex: none` so flex sizing doesn't fight it; both cleared at rest). Call `before()` right before the state
- * changes so the old height is known.
- */
-function useHeightSpring<T extends HTMLElement>(state: unknown) {
-  const ref = useRef<T>(null);
-  const from = useRef<number | null>(null);
-  const spring = useRef<Spring | null>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el || from.current === null) return;
-    const start = from.current;
-    from.current = null;
-    // The new natural height, then back to where it was for the first frame.
-    el.style.height = el.style.flex = "";
-    const end = el.offsetHeight;
-    el.style.flex = "none";
-    el.style.height = `${start}px`;
-    spring.current ??= new Spring(start, "defaultSpatial", (h) => (el.style.height = `${Math.max(0, h)}px`), { precision: 0.5 });
-    if (!spring.current.animating) spring.current.value = start;
-    spring.current.to(end, () => {
-      el.style.height = el.style.flex = "";
-    });
-  }, [state]);
-  useLayoutEffect(() => () => spring.current?.stop(), []);
-  return { ref, before: () => (from.current = ref.current?.offsetHeight ?? null) };
 }
 
 /** As many of the next tracks as fit; a click plays one. */
@@ -160,27 +131,35 @@ const UpNextPane = memo(function UpNextPane({ open }: { open: boolean }) {
 });
 const RelatedPane = memo(RelatedTab);
 
+type QueueView = "upnext" | "related";
+
 /**
  * Up next | Related in one tile. Its own component, so a switch re-renders only this tile's header. Both panes stay
  * mounted once shown and only their visibility flips (stacked in one grid cell: a switch lays nothing out and
  * mounts nothing); Related (whole shelves of cards) mounts hidden first and the switch waits two frames, so that
- * work never lands in the animation's frames.
+ * work never lands in the animation's frames. `open` is the big tile (like expanded lyrics, everything but the
+ * cover), a separate instance; the chosen tab lives in the layout so it carries over.
  */
-const QueueTile = memo(function QueueTile({ open, onToggle, tileRef }: { open: boolean; onToggle: () => void; tileRef: RefObject<HTMLElement | null> }) {
+const QueueTile = memo(function QueueTile({ open, onToggle, tab, setTab, tileRef }: {
+  open: boolean;
+  onToggle: () => void;
+  tab: QueueView;
+  setTab: (v: QueueView) => void;
+  tileRef?: RefObject<HTMLElement | null>;
+}) {
   const { videoId, related } = useTrackExtras();
   const queueLeft = usePlayer((s) => Math.max(0, s.queue.length - s.index - 1));
-  const [tab, setTab] = useState<"upnext" | "related">("upnext");
   const view = tab === "related" && !related ? "upnext" : tab;
   const swap = useSwap(view, view === "related" ? 1 : -1);
-  const [relatedMounted, setRelatedMounted] = useState(false);
-  const setView = (v: "upnext" | "related") => {
+  const [relatedMounted, setRelatedMounted] = useState(view === "related");
+  const setView = (v: QueueView) => {
     if (v === "related" && !relatedMounted) {
       setRelatedMounted(true);
       requestAnimationFrame(() => requestAnimationFrame(() => setTab("related")));
     } else setTab(v);
   };
   return (
-    <section ref={tileRef} aria-label={view === "related" ? "Related" : "Up next"} className={`bento-tile np-glass bento-queue flex min-h-0 flex-col overflow-hidden ${open ? "bento-queue-open" : ""}`}>
+    <section ref={tileRef} aria-label={view === "related" ? "Related" : "Up next"} className={`bento-tile np-glass ${open ? "bento-main" : "bento-queue"} flex min-h-0 flex-col overflow-hidden`}>
       <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
         <div className="m3-segmented flex" role="tablist" aria-label="Up next or related">
           <button role="tab" className="m3-seg" aria-pressed={view === "upnext"} aria-selected={view === "upnext"} onClick={() => setView("upnext")}>
@@ -206,11 +185,17 @@ const QueueTile = memo(function QueueTile({ open, onToggle, tileRef }: { open: b
   );
 });
 
+/** The queue as the big tile, opening with the same pop as the lyrics. */
+function ExpandedQueue(props: { onToggle: () => void; tab: QueueView; setTab: (v: QueueView) => void }) {
+  const ref = usePop<HTMLElement>();
+  return <QueueTile open tileRef={ref} {...props} />;
+}
+
 /**
  * Bento layout: M3 surface-container tiles. The cover, square and as tall as the view; beside it a column with the
  * track info (big title, artist · album, like/dislike/⋮, playback errors) and the controls (seek bar, the five
  * transport buttons, volume, podcast speed), both only as tall as their content, and Up next | Related taking the
- * rest (springs open to the whole queue with reordering, chips and autoplay). Autoplay and the lyrics preview get a
+ * rest (opens as the big tile, like the lyrics, with the whole queue, reordering, chips and autoplay). Autoplay and the lyrics preview get a
  * third column on wide windows and sit under Up next on medium ones (Lyrics then opens from the info tile). Bento
  * replaces the bottom player bar, so everything the bar offers is in here; the bottom strip keeps the close button
  * clear of the tiles. Tiles reflow into fewer columns on small windows.
@@ -221,16 +206,12 @@ export default function BentoLayout() {
   const { contextTitle, status, error, podcast } = usePlayer(
     useShallow((s) => ({ contextTitle: s.context.title || s.watch?.header?.subtitle, status: s.status, error: s.error, podcast: !!s.queue[s.index]?.podcast })),
   );
-  // Full lyrics in the big tile; Up next and Related share the right column's first tile.
-  const [big, setBig] = useState(false);
-  const expanded = big && !!lyrics;
-  const [queueOpen, setQueueOpen] = useState(false);
-  const queueTile = useHeightSpring<HTMLElement>(queueOpen);
+  // The big tile (everything but the cover): the full lyrics, or Up next | Related with the whole queue.
+  const [big, setBig] = useState<"lyrics" | "queue" | null>(null);
+  const expanded = big === "queue" || (big === "lyrics" && !!lyrics);
+  const [queueTab, setQueueTab] = useState<QueueView>("upnext");
   // Stable, so the memoized queue tile doesn't re-render with the rest of the layout.
-  const toggleQueue = useCallback(() => {
-    queueTile.before();
-    setQueueOpen((o) => !o);
-  }, []);
+  const toggleQueue = useCallback(() => setBig((b) => (b === "queue" ? null : "queue")), []);
 
   return (
     <UiStyleScope value="m3" className="np-bento relative flex min-h-0 min-w-0 flex-1 flex-col">
@@ -253,7 +234,7 @@ export default function BentoLayout() {
                     <div className="-ml-2 mt-2 flex min-h-10 flex-wrap items-center gap-x-3 gap-y-1">
                       <TrackActions track={track} />
                       {lyrics && (
-                        <button className="bento-lyrics-btn m3-btn m3-tonal h-10" onClick={() => setBig(true)}><MicVocal size={18} aria-hidden /> Lyrics</button>
+                        <button className="bento-lyrics-btn m3-btn m3-tonal h-10" onClick={() => setBig("lyrics")}><MicVocal size={18} aria-hidden /> Lyrics</button>
                       )}
                       <div className="min-w-0 flex-1">
                         {error ? <PlaybackError error={error} /> : status === "loading" && <p className="type-body-medium text-[var(--m3-on-surface-variant)]">Loading…</p>}
@@ -270,12 +251,13 @@ export default function BentoLayout() {
                   {podcast && <PodcastSpeed />}
                 </div>
               </Tile>
-              <QueueTile open={queueOpen} onToggle={toggleQueue} tileRef={queueTile.ref} />
+              <QueueTile open={false} onToggle={toggleQueue} tab={queueTab} setTab={setQueueTab} />
             </div>
           )}
-          {expanded && <Expanded onClose={() => setBig(false)} />}
+          {big === "queue" && <ExpandedQueue onToggle={toggleQueue} tab={queueTab} setTab={setQueueTab} />}
+          {big === "lyrics" && expanded && <Expanded onClose={() => setBig(null)} />}
           {/* Autoplay and the lyrics preview: their own column on wide windows, under Up next on medium ones. */}
-          {!expanded && !queueOpen && (
+          {!expanded && (
             <div className="bento-aside">
               <Tile area="context" label="Autoplay and mixes" className="flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-3">
@@ -290,7 +272,7 @@ export default function BentoLayout() {
               {lyrics && videoId && (
                 <Tile area="lyrics" label="Lyrics" className="flex min-h-0 flex-col gap-3">
                   <LyricsPreview />
-                  <button className="m3-btn m3-tonal h-10 shrink-0 self-start" onClick={() => setBig(true)}><MicVocal size={18} aria-hidden /> Lyrics</button>
+                  <button className="m3-btn m3-tonal h-10 shrink-0 self-start" onClick={() => setBig("lyrics")}><MicVocal size={18} aria-hidden /> Lyrics</button>
                 </Tile>
               )}
             </div>
