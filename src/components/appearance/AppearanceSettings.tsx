@@ -118,8 +118,8 @@ function VisualizerSettingsCard() {
         <Switch on={v.unfocused} onChange={(unfocused) => set({ unfocused })} label="Keep moving in the background" />
       </SettingRow>
       <p className="px-5 pb-4 text-sm text-[var(--c-text-muted)]">
-        While it's on, songs stream through Sonolith's local proxy so the visualizer can read the audio. Once it has
-        started, that stays so until Sonolith restarts.
+        While it's on screen, the visualizer listens to its own silent copy of the song, so playback itself is never
+        touched. That copy streams too, so it uses some extra data.
       </p>
     </SettingCard>
   );

@@ -28,13 +28,12 @@ find a new one.
 - No save dialog: export via copyable text, import via paste or `<input type=file>`.
 - Repaints are expensive in software rendering: avoid timers that repaint, hide content under full overlays.
 
-- **Web Audio on the player's `<audio>` (the visualizer)**: a cross-origin element without CORS feeds Web Audio
-  silence, and googlevideo only sends CORS headers to YouTube's own origins, never to `tauri://localhost` /
-  `http://tauri.localhost`. So the visualizer needs the stream through the local proxy (`Access-Control-Allow-Origin:
-  *`) with `crossOrigin = "anonymous"` set before `src`. `createMediaElementSource` can't be undone: afterwards the
-  element is only heard through the AudioContext, so a non-CORS stream or a suspended context would **mute
-  playback**. `visualizer/tap.ts` therefore taps only a CORS-clean stream with a running context, keeps every later
-  stream on the proxy until restart (`wantsCors`/`tapped`), and resumes the context whenever it stops.
+- **Never route the player's `<audio>` through Web Audio.** Captured with `createMediaElementSource` and connected
+  to `ctx.destination`, the analyser got the audio but the speakers got silence on WebKitGTK, and the capture can't
+  be undone. The visualizer analyses a separate, silent copy instead (`visualizer/tap.ts`).
+- Web Audio reads only CORS-clean media (otherwise it gets silence), and googlevideo sends CORS headers only to
+  YouTube's own origins, never to `tauri://localhost` / `http://tauri.localhost`. The visualizer's copy streams
+  through the local proxy (`Access-Control-Allow-Origin: *`) with `crossOrigin = "anonymous"` set before `src`.
 
 ## Layout / CSS
 

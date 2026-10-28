@@ -3,8 +3,8 @@ import { ticker } from "../motion";
 import { getAudio, usePlayer } from "../stores/player";
 import { useSettings } from "../stores/settings";
 import { useUi } from "../stores/ui";
-import { FFT_SIZE, getAnalyser } from "./tap";
-import { bandLevels, energy, makeBands, pace, parseRgb, smoothLevels, volumeGainDb, withAlpha, type Band } from "./spectrum";
+import { acquire, analyserFor, FFT_SIZE } from "./tap";
+import { bandLevels, energy, makeBands, pace, parseRgb, smoothLevels, withAlpha, type Band } from "./spectrum";
 import type { VisualizerMode, VisualizerStyle } from "./settings";
 
 /**
@@ -14,21 +14,22 @@ import type { VisualizerMode, VisualizerStyle } from "./settings";
 export type VisualizerPlace = "background" | "cover" | "halo" | "halo-inner";
 
 const MODE: Record<VisualizerPlace, VisualizerMode> = { background: "background", cover: "cover", halo: "halo", "halo-inner": "halo" };
-const BANDS: Record<VisualizerPlace, number> = { background: 48, cover: 28, halo: 12, "halo-inner": 12 };
+const BANDS: Record<VisualizerPlace, number> = { background: 56, cover: 32, halo: 12, "halo-inner": 12 };
 /**
- * Canvas pixels per CSS pixel, and the most it gets. The browser stretches the canvas (like the ambient light), so
- * each frame is a small draw and a small upload; on software-rendered WebKitGTK the area and the frame rate are
- * what cost (pitfalls.md: a 20 fps canvas wave once took ~30 % CPU).
+ * Canvas pixels per CSS pixel, and the most it gets. One canvas pixel per CSS pixel (not per device pixel) keeps
+ * the edges clean while each frame stays a small draw and upload; on software-rendered WebKitGTK the area and the
+ * frame rate are what cost (pitfalls.md: a 20 fps canvas wave once took ~30 % CPU). The glow is soft anyway, so
+ * it's drawn at half size.
  */
 const SCALE: Record<VisualizerPlace, [number, number, number]> = {
-  background: [0.25, 400, 80],
-  cover: [0.5, 320, 80],
-  halo: [0, 64, 64],
-  "halo-inner": [0, 64, 64],
+  background: [1, 1920, 240],
+  cover: [1, 720, 220],
+  halo: [0.5, 420, 420],
+  "halo-inner": [0.5, 420, 420],
 };
 const FPS_FOCUSED = 30;
 const FPS_UNFOCUSED = 12;
-/** The glow's canvas is this much bigger than the cover on each side, as a share of its own size (CLASSES.halo). */
+/** The glow's canvas reaches this far past the cover on each side, as a share of its own size (CLASSES.halo). */
 const HALO_MARGIN = 0.15 / 1.3;
 
 // A canvas keeps its intrinsic size unless both width and height are given (pitfalls.md).
@@ -60,7 +61,9 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
     const canvas = ref.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
+    const release = acquire();
     const audio = getAudio();
+    const halo = at === "halo" || at === "halo-inner";
     const levels = new Float32Array(BANDS[at]);
     const target = new Float32Array(BANDS[at]);
     let db = new Float32Array(FFT_SIZE / 2);
@@ -68,32 +71,37 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
     let rate = 0;
     let rgb: [number, number, number] = [255, 255, 255];
     let colorAge = Infinity;
-    let fill: CanvasGradient | string = "";
+    // Cached per size and color: the bars' gradient, the glow's pre-drawn sprite.
+    let fill: CanvasGradient | null = null;
+    let sprite: HTMLCanvasElement | null = null;
     let carry = 0;
     let sinceDraw = 0;
     let blank = true;
 
     const [scale, maxW, maxH] = SCALE[at];
     const resize = () => {
-      const w = scale ? Math.max(8, Math.min(maxW, Math.round(canvas.clientWidth * scale))) : maxW;
-      const h = scale ? Math.max(8, Math.min(maxH, Math.round(canvas.clientHeight * scale))) : maxH;
+      const w = Math.max(8, Math.min(maxW, Math.round(canvas.clientWidth * scale)));
+      const h = Math.max(8, Math.min(maxH, Math.round(canvas.clientHeight * scale)));
       if (canvas.width === w && canvas.height === h) return;
       canvas.width = w;
       canvas.height = h;
-      fill = "";
+      fill = null;
+      sprite = null;
       draw(); // a resize clears the canvas
     };
 
     const draw = () => {
       const { width: w, height: h } = canvas;
       ctx.clearRect(0, 0, w, h);
-      if (at === "halo" || at === "halo-inner") return drawHalo(ctx, w, levels, rgb, at === "halo-inner");
+      if (halo) {
+        sprite ??= glowSprite(w, h, rgb, cornerRadius(canvas) * (w / Math.max(1, canvas.clientWidth)), at === "halo-inner");
+        return drawGlow(ctx, sprite, levels, at === "halo-inner");
+      }
       if (!fill) {
-        const g = ctx.createLinearGradient(0, 0, 0, h);
-        const strong = at === "cover" ? 0.9 : 0.55;
-        g.addColorStop(0, withAlpha(rgb, strong * 0.25));
-        g.addColorStop(1, withAlpha(rgb, strong));
-        fill = g;
+        fill = ctx.createLinearGradient(0, 0, 0, h);
+        const strong = at === "cover" ? 0.9 : 0.6;
+        fill.addColorStop(0, withAlpha(rgb, strong * 0.2));
+        fill.addColorStop(1, withAlpha(rgb, strong));
       }
       ctx.fillStyle = fill;
       if (style === "wave") drawWave(ctx, w, h, levels);
@@ -109,16 +117,15 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
       if (!due) return;
       const step = sinceDraw;
       sinceDraw = 0;
-      const analyser = audio.paused ? null : getAnalyser();
+      const analyser = analyserFor();
       if (analyser) {
-        const ac = analyser.context;
-        if (ac.sampleRate !== rate) {
-          rate = ac.sampleRate;
+        if (analyser.context.sampleRate !== rate) {
+          rate = analyser.context.sampleRate;
           bands = makeBands(levels.length, rate, analyser.fftSize);
           db = new Float32Array(analyser.frequencyBinCount);
         }
         analyser.getFloatFrequencyData(db);
-        bandLevels(db, bands, target, volumeGainDb(audio.volume));
+        bandLevels(db, bands, target);
       } else target.fill(0);
       const max = smoothLevels(levels, target, step);
       if ((colorAge += step) > 1) {
@@ -126,13 +133,14 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
         const next = parseRgb(getComputedStyle(canvas).color);
         if (next && next.join() !== rgb.join()) {
           rgb = next;
-          fill = "";
+          fill = null;
+          sprite = null;
         }
       }
       if (max === 0) {
         if (!blank) ctx.clearRect(0, 0, canvas.width, canvas.height);
         blank = true;
-        // Paused (or never tapped) and settled: nothing to draw until playback resumes.
+        // Paused and settled: nothing to draw until playback resumes.
         if (audio.paused) halt();
         return;
       }
@@ -159,6 +167,7 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
       ro.disconnect();
       unsub();
       window.removeEventListener("focus", run);
+      release();
     };
   }, [at, style, unfocused]);
   const canvas = <canvas ref={ref} aria-hidden className={`pointer-events-none absolute ${CLASSES[at]}`} />;
@@ -172,22 +181,35 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
   );
 }
 
+/** The cover's corner radius in CSS px (the glow follows its shape). */
+function cornerRadius(canvas: HTMLCanvasElement) {
+  const box = canvas.parentElement;
+  return box ? parseFloat(getComputedStyle(box).borderTopLeftRadius) || 0 : 0;
+}
+
 function drawBars(ctx: CanvasRenderingContext2D, w: number, h: number, levels: Float32Array) {
-  const slot = w / levels.length;
-  const bar = Math.max(1, slot * 0.6);
-  for (let i = 0; i < levels.length; i++) {
+  const n = levels.length;
+  const slot = w / n;
+  const bar = Math.max(1, Math.round(slot * 0.62));
+  const r = bar / 2;
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
     const v = levels[i];
     if (v <= 0) continue;
-    const bh = Math.max(1, v * h);
-    ctx.fillRect(i * slot + (slot - bar) / 2, h - bh, bar, bh);
+    const bh = Math.max(2, Math.round(v * h));
+    const x = Math.round(i * slot + (slot - bar) / 2);
+    // Rounded tops; the rounded bottom runs off the canvas.
+    if (ctx.roundRect) ctx.roundRect(x, h - bh, bar, bh + r, Math.min(r, bh / 2));
+    else ctx.rect(x, h - bh, bar, bh);
   }
+  ctx.fill();
 }
 
 /** A filled curve through the band levels (midpoint quadratic smoothing). */
 function drawWave(ctx: CanvasRenderingContext2D, w: number, h: number, levels: Float32Array) {
   const n = levels.length;
   const slot = w / n;
-  const y = (i: number) => h - levels[Math.max(0, Math.min(n - 1, i))] * h * 0.95;
+  const y = (i: number) => h - levels[i] * h * 0.95;
   ctx.beginPath();
   ctx.moveTo(0, h);
   ctx.lineTo(0, y(0));
@@ -202,28 +224,49 @@ function drawWave(ctx: CanvasRenderingContext2D, w: number, h: number, levels: F
 }
 
 /**
- * A glow that breathes with the bass: the cover's square cast as a blurred shadow, around it (`inner` false; the
- * cover hides the middle) or inward from its edges. Drawn small and stretched, so the blur is cheap.
+ * The glow, drawn once per size and color: the cover's rounded square cast as a blurred shadow around it, or from
+ * its edges inward. The shape itself is drawn off the canvas and only its shadow is offset into view, so no hard
+ * edge ever shows. Each frame then just stamps this sprite with an alpha, far cheaper than blurring live.
  */
-function drawHalo(ctx: CanvasRenderingContext2D, size: number, levels: Float32Array, rgb: [number, number, number], inner: boolean) {
-  const bass = energy(levels, 0, 3);
-  const all = energy(levels);
-  const strength = Math.min(1, bass * 0.75 + all * 0.5);
-  if (strength <= 0.01) return;
-  ctx.save();
-  ctx.shadowColor = withAlpha(rgb, Math.min(1, strength * 1.1));
-  ctx.fillStyle = withAlpha(rgb, inner ? 1 : Math.min(1, strength * 0.6));
+function glowSprite(w: number, h: number, rgb: [number, number, number], radius: number, inner: boolean) {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const g = c.getContext("2d");
+  if (!g) return c;
+  const off = w * 3;
+  g.shadowColor = withAlpha(rgb, 1);
+  g.shadowOffsetX = off;
+  g.beginPath();
   if (inner) {
     // A frame around the canvas whose shadow falls inside it.
-    ctx.shadowBlur = size * (0.08 + 0.14 * strength);
-    ctx.beginPath();
-    ctx.rect(-size, -size, size * 3, size * 3);
-    ctx.rect(0, 0, size, size);
-    ctx.fill("evenodd");
+    g.shadowBlur = Math.min(w, h) * 0.12;
+    g.rect(-off - w, -h, w * 3, h * 3);
+    if (g.roundRect) g.roundRect(-off, 0, w, h, radius);
+    else g.rect(-off, 0, w, h);
+    g.fill("evenodd");
   } else {
-    const m = size * HALO_MARGIN;
-    ctx.shadowBlur = size * (0.05 + 0.1 * strength);
-    ctx.fillRect(m, m, size - 2 * m, size - 2 * m);
+    const mx = w * HALO_MARGIN;
+    const my = h * HALO_MARGIN;
+    const r = Math.max(0, Math.min(radius, (w - 2 * mx) / 2));
+    g.shadowBlur = Math.min(w, h) * 0.08;
+    if (g.roundRect) g.roundRect(mx - off, my, w - 2 * mx, h - 2 * my, r);
+    else g.rect(mx - off, my, w - 2 * mx, h - 2 * my);
+    // Twice: one blurred shadow alone is too faint at its edge.
+    g.fill();
+    g.fill();
   }
-  ctx.restore();
+  return c;
+}
+
+/**
+ * Stamps the glow sprite, brighter with the bass. Only its alpha moves: the sprite's solid middle sits exactly
+ * under the cover, and scaling it would show that as a hard band around it.
+ */
+function drawGlow(ctx: CanvasRenderingContext2D, sprite: HTMLCanvasElement, levels: Float32Array, inner: boolean) {
+  const strength = Math.min(1, energy(levels, 0, 3) * 0.8 + energy(levels) * 0.5);
+  if (strength <= 0.01) return;
+  ctx.globalAlpha = inner ? strength * 0.7 : strength;
+  ctx.drawImage(sprite, 0, 0);
+  ctx.globalAlpha = 1;
 }

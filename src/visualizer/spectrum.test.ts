@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bandLevels, energy, makeBands, pace, parseRgb, smoothLevels, volumeGainDb, withAlpha } from "./spectrum";
+import { bandLevels, energy, makeBands, pace, parseRgb, smoothLevels, withAlpha } from "./spectrum";
 import { normalizeVisualizer } from "./settings";
 
 describe("makeBands", () => {
@@ -32,23 +32,6 @@ describe("bandLevels", () => {
     bandLevels(db, bands, out);
     expect(Math.max(...out)).toBeGreaterThan(0);
     expect(out.at(-1)).toBe(0);
-  });
-
-  it("makes up for the volume", () => {
-    const db = new Float32Array(1024).fill(-60);
-    const quiet = new Float32Array(16);
-    const loud = new Float32Array(16);
-    bandLevels(db, bands, quiet);
-    bandLevels(db, bands, loud, volumeGainDb(0.25));
-    expect(loud[8]).toBeGreaterThan(quiet[8]);
-  });
-});
-
-describe("volumeGainDb", () => {
-  it("is zero at full volume and capped near silence", () => {
-    expect(volumeGainDb(1)).toBeCloseTo(0);
-    expect(volumeGainDb(0.5)).toBeCloseTo(6.02, 1);
-    expect(volumeGainDb(0)).toBeCloseTo(volumeGainDb(0.0625));
   });
 });
 

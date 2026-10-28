@@ -1,78 +1,130 @@
-import { useSettings } from "../stores/settings";
+import { invoke } from "@tauri-apps/api/core";
+import { currentStream, getAudio } from "../stores/player";
 
 /**
- * The visualizer's ear on Sonolith's own <audio> element (never the system's audio): Web Audio's
- * MediaElementSource → AnalyserNode → speakers.
+ * The visualizer's ear: a silent copy of the song Sonolith is playing (never other apps' audio), kept in step
+ * with the player and analysed with Web Audio.
  *
- * Two traps decide how this works (docs/dev/pitfalls.md):
- * - A cross-origin element without CORS feeds Web Audio silence, and googlevideo sends no CORS headers for the
- *   app's origin. So while the visualizer is on, the player routes streams through the local proxy (which does)
- *   with `crossOrigin = "anonymous"` (`wantsCors`).
- * - `createMediaElementSource` can't be undone: from then on the element is only heard through the AudioContext.
- *   So the tap is made only once the current stream is CORS-clean and the context really runs (a suspended one
- *   would mute playback), and after that every stream keeps going through the proxy until the app restarts.
+ * The player's own element is never touched (docs/dev/pitfalls.md): routed through an AudioContext on WebKitGTK,
+ * the analyser got the audio but the speakers got silence. The copy instead is captured by
+ * `createMediaElementSource` before it ever plays, so it is only heard through a graph that ends in a zero gain.
+ * Web Audio needs CORS-clean audio and googlevideo sends no CORS headers to the app, so the copy streams through
+ * the local proxy (`proxy_url`, which does) with `crossOrigin` set. It runs only while a visualizer is on screen.
  */
 
 export const FFT_SIZE = 2048;
+/** How far the copy may drift from the player before it jumps back in step, in seconds. */
+const MAX_DRIFT = 0.3;
+const SYNC_EVERY_MS = 1500;
 
-let audio: HTMLMediaElement | null = null;
-let corsReady: () => boolean = () => false;
-let reroute: () => Promise<void> = async () => {};
 let ctx: AudioContext | null = null;
 let analyser: AnalyserNode | null = null;
-let starting = false;
-let nextTry = 0;
+let copy: HTMLAudioElement | null = null;
+let failed = false;
+let users = 0;
+/** The player's stream URL the copy was loaded for, and whether that worked. */
+let loadedFor: string | null = null;
+let ready = false;
+let lastSync = 0;
+let lastPlay = 0;
 
-/** Called once by the player with its element, whether its current stream can be read, and how to make it so. */
-export function bindTap(el: HTMLMediaElement, opts: { corsReady: () => boolean; reroute: () => Promise<void> }) {
-  audio = el;
-  corsReady = opts.corsReady;
-  reroute = opts.reroute;
-}
-
-/** Whether new streams must be CORS-clean: the visualizer is on, or the element is already tapped. */
-export const wantsCors = () => !!analyser || useSettings.getState().visualizer.mode !== "off";
-/** The element is tapped: a stream that isn't CORS-clean would play silent. */
-export const tapped = () => !!analyser;
-
-/** The analyser, or null while it can't hear the audio yet; asking starts the tap (rate-limited) when possible. */
-export function getAnalyser(): AnalyserNode | null {
-  if (analyser || starting || !audio) return analyser;
-  const now = performance.now();
-  if (now < nextTry) return null;
-  nextTry = now + 1000;
-  starting = true;
-  void start().finally(() => (starting = false));
-  return null;
-}
-
-async function start() {
-  const el = audio;
-  if (!el || analyser) return;
-  if (!corsReady()) return reroute();
+function setup(): boolean {
+  if (analyser) return true;
+  if (failed) return false;
   try {
-    ctx ??= new AudioContext({ latencyHint: "playback" });
-    if (ctx.state !== "running") await Promise.race([ctx.resume(), new Promise((r) => setTimeout(r, 500))]);
-    // Without a user gesture the context may stay suspended; tapping now would mute playback, so try later.
-    if (ctx.state !== "running" || !corsReady()) return;
-    const a = ctx.createAnalyser();
+    const c = new AudioContext({ latencyHint: "playback" });
+    const el = new Audio();
+    el.crossOrigin = "anonymous";
+    el.preload = "auto";
+    // Captured before it has a source, so it can never be heard directly.
+    const source = c.createMediaElementSource(el);
+    const a = c.createAnalyser();
     a.fftSize = FFT_SIZE;
     a.smoothingTimeConstant = 0; // smoothing is ours (spectrum.ts), per frame drawn rather than per call
     a.minDecibels = -100;
     a.maxDecibels = -10;
-    const source = ctx.createMediaElementSource(el);
-    // In the chain rather than a side branch: an unconnected analyser may never be pulled.
+    const mute = c.createGain();
+    mute.gain.value = 0;
+    // Ends at the destination so the graph is pulled; the zero gain keeps it silent.
     source.connect(a);
-    a.connect(ctx.destination);
+    a.connect(mute);
+    mute.connect(c.destination);
+    getAudio().addEventListener("seeked", () => users > 0 && ready && sync(true));
+    ctx = c;
+    copy = el;
     analyser = a;
-    const c = ctx;
-    // Playback now depends on this context: whatever suspends it (device changes), get it going again.
-    c.addEventListener("statechange", () => {
-      if (c.state !== "running" && c.state !== "closed") void c.resume().catch(() => {});
-    });
-    for (const ev of ["pointerdown", "keydown", "focus"]) window.addEventListener(ev, () => c.state !== "running" && void c.resume().catch(() => {}), { passive: true });
+    return true;
   } catch (e) {
-    nextTry = Infinity; // no Web Audio here (or the element was already taken): don't keep trying every second
-    console.warn("visualizer: could not tap the audio", e);
+    failed = true; // no Web Audio here: the visualizer just stays still
+    console.warn("visualizer: no Web Audio", e);
+    return false;
   }
+}
+
+function sync(force = false) {
+  const main = getAudio();
+  if (!copy || copy.readyState < 1) return;
+  if (copy.playbackRate !== main.playbackRate) copy.playbackRate = main.playbackRate;
+  if (force || Math.abs(copy.currentTime - main.currentTime) > MAX_DRIFT) copy.currentTime = main.currentTime;
+}
+
+async function load(url: string, proxied: boolean) {
+  const el = copy!;
+  loadedFor = url;
+  ready = false;
+  el.pause();
+  try {
+    const src = proxied ? url : await invoke<string>("proxy_url", { url });
+    if (loadedFor !== url) return;
+    el.addEventListener("loadedmetadata", () => sync(true), { once: true });
+    el.src = src;
+    ready = true;
+  } catch {
+    // Not a stream the proxy serves: no visualizer for this song.
+    if (loadedFor === url) el.removeAttribute("src");
+  }
+}
+
+/** A visualizer came on screen; returns the function to call when it goes. The copy stops with the last one. */
+export function acquire(): () => void {
+  users++;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    if (--users > 0) return;
+    copy?.pause();
+    void ctx?.suspend().catch(() => {});
+  };
+}
+
+/**
+ * The analyser, following the player (call it once per drawn frame): loads the copy on a new song, plays and
+ * pauses it with the player, and pulls it back in step. Null while there's nothing to analyse.
+ */
+export function analyserFor(): AnalyserNode | null {
+  const main = getAudio();
+  const stream = currentStream();
+  if (main.paused || !stream || !setup()) {
+    if (copy && !copy.paused) copy.pause();
+    return null;
+  }
+  if (stream.url !== loadedFor) {
+    void load(stream.url, !!stream.proxied);
+    return null;
+  }
+  if (!ready || !copy) return null;
+  if (ctx && ctx.state !== "running") void ctx.resume().catch(() => {});
+  const now = performance.now();
+  if (now - lastSync > SYNC_EVERY_MS) {
+    lastSync = now;
+    sync();
+  }
+  // Rate-limited: a play() that keeps failing must not seek the copy every frame.
+  if (copy.paused && now - lastPlay > 1000) {
+    lastPlay = now;
+    sync(true);
+    void copy.play().catch(() => {});
+  }
+  return analyser;
 }

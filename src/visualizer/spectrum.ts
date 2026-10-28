@@ -31,9 +31,8 @@ export function makeBands(count: number, sampleRate: number, fftSize: number, mi
 /**
  * Bins → band levels in `out` (0–1). A band narrower than one bin (the bass, at a usable FFT size) interpolates
  * between the two nearest bins, so neighbouring bars don't move as one block; a wider band takes its loudest bin.
- * `gainDb` makes up for the volume slider, which the analyser hears after.
  */
-export function bandLevels(db: ArrayLike<number>, bands: readonly Band[], out: Float32Array, gainDb = 0, minDb = -82, maxDb = -22) {
+export function bandLevels(db: ArrayLike<number>, bands: readonly Band[], out: Float32Array, minDb = -82, maxDb = -22) {
   const range = maxDb - minDb;
   for (let k = 0; k < bands.length; k++) {
     const { lo, hi, tilt } = bands[k];
@@ -48,15 +47,10 @@ export function bandLevels(db: ArrayLike<number>, bands: readonly Band[], out: F
       const end = Math.min(Math.ceil(hi), db.length);
       for (let i = Math.floor(lo); i < end; i++) if (db[i] > v) v = db[i];
     }
-    const n = (v + gainDb + tilt - minDb) / range;
+    const n = (v + tilt - minDb) / range;
     // Silence comes as -Infinity (and NaN from -Infinity * 0 above).
     out[k] = n > 0 ? (n < 1 ? n : 1) : 0;
   }
-}
-
-/** dB that undo the volume slider (the analyser hears the quieter signal), capped so near-silence isn't boosted to noise. */
-export function volumeGainDb(volume: number) {
-  return -20 * Math.log10(Math.min(1, Math.max(volume, 0.0625)));
 }
 
 /**
