@@ -138,22 +138,33 @@ function useSlide(ref: RefObject<HTMLDivElement | null>, open: boolean, onOpened
 
 const LAYOUTS: { id: NowPlayingLayout; label: string }[] = [{ id: "material", label: "Material" }, { id: "bento", label: "Bento" }, { id: "classic", label: "Classic" }];
 
-/** "Try out the new looks" (from What's new): switch layouts in place, then dismiss. Always M3. */
+/** The card's words: from What's new (the 2.0 layouts), or from Settings → Now Playing (back to Settings when done). */
+const TRY_TEXT = {
+  whatsNew: { title: "Try out the new looks", done: "I tried it" },
+  settings: { title: "Try out the different styles", done: "Keep this one" },
+} as const;
+
+/** Switch layouts in place, then dismiss ("Try out…", from What's new or Settings). Always M3. */
 function TryLooksCard() {
-  const on = useUi((s) => s.tryLooks);
+  const from = useUi((s) => s.tryLooks);
   const layout = useSettings((s) => s.appearance.nowPlayingLayout);
-  if (!on) return null;
+  if (!from) return null;
+  const text = TRY_TEXT[from];
   return (
     <UiStyleScope value="m3" className="pointer-events-none absolute inset-x-0 top-4 z-40 flex justify-center px-20">
-      <div role="region" aria-label="Try out the new looks"
+      <div role="region" aria-label={text.title}
         className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-5 gap-y-3 rounded-[var(--m3-corner-xl)] bg-[var(--m3-surface-container-high)] px-5 py-3 text-[var(--m3-on-surface)] shadow-[0_4px_16px_color-mix(in_srgb,var(--m3-scrim)_30%,transparent)]">
-        <p className="type-title-medium-em">Try out the new looks</p>
+        <p className="type-title-medium-em">{text.title}</p>
         <div className="m3-segmented flex" role="group" aria-label="Now Playing layout">
           {LAYOUTS.map((l) => (
             <button key={l.id} className="m3-seg" aria-pressed={layout === l.id} onClick={() => setAppearance({ nowPlayingLayout: l.id })}>{l.label}</button>
           ))}
         </div>
-        <button className="m3-btn m3-filled h-10" onClick={() => useUi.getState().setTryLooks(false)}>I tried it</button>
+        <button className="m3-btn m3-filled h-10" onClick={() => {
+          useUi.getState().setTryLooks(null);
+          // Opened from Settings: the choice is made, back to where the user was.
+          if (from === "settings") useUi.getState().setNowPlaying(false);
+        }}>{text.done}</button>
       </div>
     </UiStyleScope>
   );
@@ -182,7 +193,7 @@ export default function NowPlaying() {
   const layout = useSettings((s) => s.appearance.nowPlayingLayout);
   useSlide(panel, open, () => useUi.getState().setNowPlayingCovering(true), () => {
     setMounted(false);
-    useUi.getState().setTryLooks(false);
+    useUi.getState().setTryLooks(null);
   }, m3);
 
   useEffect(() => {

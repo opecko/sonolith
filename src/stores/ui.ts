@@ -15,9 +15,12 @@ interface UiState {
   /** "View song credits" dialog. */
   credits: CreditsState | null;
   setCredits: (c: CreditsState | null) => void;
-  /** "Try out the new looks" card at the top of Now Playing (from What's new). */
-  tryLooks: boolean;
-  setTryLooks: (on: boolean) => void;
+  /**
+   * The layout switcher card at the top of Now Playing: "whatsNew" ("Try out the new looks", from What's new),
+   * "settings" ("Try out the different styles", from Settings → Now Playing), null: hidden.
+   */
+  tryLooks: "whatsNew" | "settings" | null;
+  setTryLooks: (from: "whatsNew" | "settings" | null) => void;
   /** History rows removed this session (by their removal token), hidden until the page reloads. */
   removedHistory: Set<string>;
   markRemovedHistory: (token: string) => void;
@@ -32,7 +35,7 @@ export const useUi = create<UiState>((set) => ({
   setShowVideo: (showVideo) => set({ showVideo }),
   credits: null,
   setCredits: (credits) => set({ credits }),
-  tryLooks: false,
+  tryLooks: null,
   setTryLooks: (tryLooks) => set({ tryLooks }),
   removedHistory: new Set(),
   markRemovedHistory: (token) => set((s) => ({ removedHistory: new Set(s.removedHistory).add(token) })),

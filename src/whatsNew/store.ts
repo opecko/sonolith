@@ -26,7 +26,7 @@ export function runWhatsNewAction(a: WhatsNewAction) {
       break;
     case "setNowPlayingLayout":
       setAppearance({ nowPlayingLayout: a.layout });
-      if (a.tryCard) useUi.getState().setTryLooks(true);
+      if (a.tryCard) useUi.getState().setTryLooks("whatsNew");
       if (a.open) useUi.getState().setNowPlaying(true);
       break;
   }

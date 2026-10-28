@@ -1,4 +1,4 @@
-import { ChevronDown, Download, LayoutGrid, RotateCcw, Upload } from "lucide-react";
+import { ChevronDown, Download, Eye, LayoutGrid, RotateCcw, Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCoverScheme } from "../../stores/coverColors";
 import { setAppearance, useSettings } from "../../stores/settings";
@@ -19,6 +19,8 @@ import { AnimationsSwitch, LayoutPicker, ResetToClassic, StylePicker, styleDetai
 import ThemeTransfer from "./ThemeTransfer";
 import type { VisualizerMode, VisualizerSettings } from "../../visualizer/settings";
 import { useAuth } from "../../stores/auth";
+import { usePlayer } from "../../stores/player";
+import { useUi } from "../../stores/ui";
 import { useLibrary } from "../../stores/library";
 import type { SaveAction, SaveButtonSettings } from "../../stores/saveButton";
 import { isOwnPlaylist } from "../../stores/ownership";
@@ -67,6 +69,20 @@ export function LookSettings() {
   );
 }
 
+/** Opens Now Playing with the layout switcher on top, to compare the layouts on the playing song. */
+function TryLayouts() {
+  const hasTrack = usePlayer((s) => s.index >= 0);
+  return (
+    <button className={`${outlineBtn} mt-3 disabled:opacity-50`} disabled={!hasTrack} title={hasTrack ? undefined : "Play something first"}
+      onClick={() => {
+        useUi.getState().setTryLooks("settings");
+        useUi.getState().setNowPlaying(true);
+      }}>
+      <Eye size={18} aria-hidden /> Try them out
+    </button>
+  );
+}
+
 /** Settings → Now Playing: its layout, the ambient light behind it, the Save button and the visualizer. */
 export function NowPlayingSettings() {
   const a = useSettings((s) => s.appearance);
@@ -75,6 +91,7 @@ export function NowPlayingSettings() {
       <SettingCard title="Layout">
         <SettingRow id="layout" title="Now Playing layout" detail="Material and Bento have the queue, lyrics and related music built in. All three work with either style." stacked>
           <LayoutPicker />
+          <TryLayouts />
         </SettingRow>
       </SettingCard>
       <SettingCard title="Ambient light">
