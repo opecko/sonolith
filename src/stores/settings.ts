@@ -3,6 +3,7 @@ import { normalizeKaraoke, type KaraokeStyle } from "../lyrics/karaoke";
 import { DEFAULT_LYRICS_PROVIDERS, normalizeLyricsProviders, type ProviderSetting } from "../lyrics/providers";
 import { DEFAULT_SHORTCUTS, normalizeShortcuts, type ShortcutSettings } from "../shortcuts/keys";
 import { DEFAULT_APPEARANCE, normalizeAppearance, type Appearance } from "../theme/appearance";
+import { DEFAULT_VISUALIZER, normalizeVisualizer, type VisualizerSettings } from "../visualizer/settings";
 
 export interface Settings {
   autoplay: boolean;
@@ -34,10 +35,12 @@ export interface Settings {
   afterEpisode: "next" | "stop";
   /** In-window keyboard shortcuts (Settings → Keyboard shortcuts): on/off and the key for each action. */
   shortcuts: ShortcutSettings;
+  /** Audio visualizer in Now Playing (Settings → Now Playing). */
+  visualizer: VisualizerSettings;
 }
 
 const KEY = "settings";
-const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS, karaokeStyle: "sweep", lyricsEnabled: true };
+const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS, karaokeStyle: "sweep", lyricsEnabled: true, visualizer: DEFAULT_VISUALIZER };
 
 /** Stored JSON → Settings. Missing keys (older versions) get the defaults; normalizing drops malformed values. */
 export function parseSettings(stored: unknown): Settings {
@@ -56,6 +59,7 @@ export function parseSettings(stored: unknown): Settings {
     lyricsProviders: normalizeLyricsProviders(s.lyricsProviders),
     karaokeStyle: normalizeKaraoke(s.karaokeStyle),
     lyricsEnabled: s.lyricsEnabled !== false,
+    visualizer: normalizeVisualizer(s.visualizer),
   };
 }
 
@@ -75,8 +79,8 @@ function read(): Settings {
 
 function write() {
   try {
-    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled } = useSettings.getState();
-    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled }));
+    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer } = useSettings.getState();
+    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer }));
   } catch {
     /* storage unavailable */
   }

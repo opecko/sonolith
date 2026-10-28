@@ -17,6 +17,7 @@ import { makeSnapshot, readSnapshot, SNAPSHOT_KEY } from "./queueSnapshot";
 import { nativeMpris } from "./platform";
 import { useSettings } from "./settings";
 import { useToast } from "./toast";
+import { bindTap, tapped, wantsCors } from "../visualizer/tap";
 
 export type Repeat = "off" | "all" | "one";
 type Status = "idle" | "loading" | "playing" | "paused" | "error";
@@ -186,8 +187,12 @@ export const usePlayer = create<PlayerState>((set, get) => {
     try {
       let stream = opts.reuse ?? (await getStreamUrl(track.id, { alternate: opts.alternate }));
       if (opts.proxy && !stream.proxied) stream = await viaProxy(stream);
+      // The visualizer can only read CORS-clean audio (visualizer/tap.ts). Untapped, a stream the proxy refuses
+      // still plays, just without it; tapped, it would play silent, so that's an error.
+      else if (wantsCors() && !stream.proxied) stream = await viaProxy(stream).catch((e) => (tapped() ? Promise.reject(e) : stream));
       if (mine !== gen) return;
       current = stream;
+      audio.crossOrigin = wantsCors() && stream.proxied ? "anonymous" : null;
       audio.src = stream.url;
       applyRate(); // a new src resets playbackRate
       if (resumeAt > 0) {
@@ -721,6 +726,27 @@ function applyRate() {
 }
 usePlayer.subscribe((s, prev) => {
   if (s.queue[s.index]?.podcast !== prev.queue[prev.index]?.podcast) applyRate();
+});
+
+bindTap(audio, {
+  corsReady: () => !!current?.proxied && audio.crossOrigin === "anonymous" && audio.currentSrc === current.url,
+  // The visualizer was turned on mid-song: the same stream through the proxy, at the same spot, playing or paused
+  // as it was. Track changes (gen) in between win.
+  reroute: async () => {
+    const was = current;
+    if (!was || !audio.currentSrc) return;
+    const mine = gen;
+    const stream = was.proxied ? was : await viaProxy(was).catch(() => null);
+    if (!stream || mine !== gen || current !== was) return;
+    const at = audio.currentTime;
+    const paused = audio.paused;
+    current = stream;
+    audio.crossOrigin = "anonymous";
+    audio.addEventListener("loadedmetadata", () => (audio.currentTime = at), { once: true });
+    audio.src = stream.url;
+    applyRate();
+    if (!paused) await audio.play().catch(() => {});
+  },
 });
 useSettings.subscribe((s, prev) => s.podcastSpeed !== prev.podcastSpeed && applyRate());
 

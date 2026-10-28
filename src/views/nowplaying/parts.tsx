@@ -13,13 +13,17 @@ import Slider from "../../components/Slider";
 import { usePlayer } from "../../stores/player";
 import { useProgress } from "../../stores/progress";
 import { useUi } from "../../stores/ui";
+import Visualizer from "../../visualizer/Visualizer";
 
 /** Building blocks of the M3 Now Playing layouts (Material, Bento). */
 
 export const useCurrentTrack = () => usePlayer((s) => s.queue[s.index] as Track | undefined);
 
-/** Hi-res artwork with a fallback to the list thumbnail; podcast episodes can show their video instead. */
-export function CoverArt({ className = "" }: { className?: string }) {
+/**
+ * Hi-res artwork with a fallback to the list thumbnail; podcast episodes can show their video instead. `halo` is
+ * where the visualizer's glow goes: around the cover, or inside its edges where the box clips the outside (Bento).
+ */
+export function CoverArt({ className = "", halo = "outer" }: { className?: string; halo?: "outer" | "inner" }) {
   const track = useCurrentTrack();
   const video = useUi((s) => s.podcastVideo);
   const [failed, setFailed] = useState<string | null>(null);
@@ -28,8 +32,13 @@ export function CoverArt({ className = "" }: { className?: string }) {
   if (track?.podcast && video)
     return <div className={`flex items-center justify-center overflow-hidden bg-[var(--m3-scrim)] ${className}`}><PodcastVideo key={track.id} videoId={track.id} /></div>;
   return (
-    <div className={`overflow-hidden bg-[var(--m3-surface-container-high)] ${className}`}>
-      {src && <img key={src} src={src} alt="" referrerPolicy="no-referrer" onError={() => hi && setFailed(hi)} className="h-full w-full object-cover" draggable={false} />}
+    <div className={`relative ${className}`}>
+      {halo === "outer" && <Visualizer at="halo" />}
+      <div className="absolute inset-0 overflow-hidden rounded-[inherit] bg-[var(--m3-surface-container-high)]">
+        {src && <img key={src} src={src} alt="" referrerPolicy="no-referrer" onError={() => hi && setFailed(hi)} className="h-full w-full object-cover" draggable={false} />}
+        <Visualizer at="cover" />
+        {halo === "inner" && <Visualizer at="halo-inner" />}
+      </div>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { useUi } from "../stores/ui";
 import BentoLayout from "./nowplaying/Bento";
 import ClassicLayout from "./nowplaying/Classic";
 import MaterialLayout from "./nowplaying/Material";
+import Visualizer from "../visualizer/Visualizer";
 
 /** Ambient quality → [colors sampled across the art, canvas size]. */
 const AMBIENT: Record<AmbientQuality, [number, number]> = { low: [12, 12], medium: [16, 128], high: [24, 384] };
@@ -200,6 +201,7 @@ export default function NowPlaying() {
     <div ref={panelRef} role="dialog" aria-label="Now playing" aria-hidden={!open} data-ambient={ambientOn ? "" : undefined}
       className={`${open ? "" : "pointer-events-none"} fixed inset-x-0 ${layout === "classic" ? "bottom-[72px]" : "bottom-0"} top-0 z-30 flex bg-[var(--c-bg)] will-change-transform`}>
       {ambientOn && <Backdrop src={thumb} intensity={ambientIntensity} quality={ambientQuality} />}
+      <Visualizer at="background" />
       {/* One close button per layout: Classic uses the player bar's; Material and Bento, which replace the bar, put
           theirs bottom right in space they keep free for it (CloseNowPlaying). */}
       {layout === "material" ? <MaterialLayout /> : layout === "bento" ? <BentoLayout /> : <ClassicLayout />}

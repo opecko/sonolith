@@ -3,6 +3,7 @@ import { hiResArt } from "../../api/art";
 import PodcastVideo from "../../components/PodcastVideo";
 import { usePlayer } from "../../stores/player";
 import { useUi } from "../../stores/ui";
+import Visualizer from "../../visualizer/Visualizer";
 import { LyricsTab, RelatedTab, UpNextTab, useTrackExtras, type Tab } from "./shared";
 
 function Artwork() {
@@ -33,9 +34,13 @@ function Artwork() {
           <PodcastVideo key={track.id} videoId={track.id} />
         </div>
       ) : (
-        <div className="aspect-square overflow-hidden rounded-[var(--radius)] bg-[var(--c-surface-2)] shadow-[0_24px_64px_color-mix(in_srgb,var(--c-scrim)_60%,transparent)] will-change-transform"
+        <div className="relative aspect-square rounded-[var(--radius)] bg-[var(--c-surface-2)] shadow-[0_24px_64px_color-mix(in_srgb,var(--c-scrim)_60%,transparent)] will-change-transform"
           style={{ width: "min(60vh, 45vw)" }}>
-          {src && <img key={src} src={src} alt="" referrerPolicy="no-referrer" onError={() => hi && setFailed(hi)} className="h-full w-full object-cover" draggable={false} />}
+          <Visualizer at="halo" />
+          <div className="absolute inset-0 overflow-hidden rounded-[inherit]">
+            {src && <img key={src} src={src} alt="" referrerPolicy="no-referrer" onError={() => hi && setFailed(hi)} className="h-full w-full object-cover" draggable={false} />}
+            <Visualizer at="cover" />
+          </div>
         </div>
       )}
     </div>

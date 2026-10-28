@@ -237,7 +237,7 @@ export default function BentoLayout() {
       <div className="scroll-y min-h-0 flex-1 px-6 pt-6">
         <div className="bento-grid" data-expanded={expanded ? "" : undefined} data-lyrics={lyrics && videoId ? "" : undefined}>
           <Tile area="cover" label="Artwork" className="relative overflow-hidden !p-0">
-            <CoverArt className="h-full w-full" />
+            <CoverArt className="h-full w-full" halo="inner" />
             <div className="absolute left-4 top-4"><PodcastMode /></div>
           </Tile>
           {/* Middle column: info and controls take only what they need, Up next | Related the rest of the height. */}

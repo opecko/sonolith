@@ -17,6 +17,7 @@ import FontPicker from "./FontPicker";
 import PaletteGallery, { ModeToggle, PaletteGrid, SearchField } from "./PaletteGallery";
 import { AnimationsSwitch, LayoutPicker, ResetToClassic, StylePicker, styleDetail } from "./StyleOptions";
 import ThemeTransfer from "./ThemeTransfer";
+import type { VisualizerMode, VisualizerSettings } from "../../visualizer/settings";
 
 const FEATURED_PALETTES = FEATURED.map((id) => PALETTES.find((p) => p.id === id)).filter((p) => !!p);
 
@@ -62,7 +63,7 @@ export function LookSettings() {
   );
 }
 
-/** Settings → Now Playing: its layout and the ambient light behind it. */
+/** Settings → Now Playing: its layout, the ambient light behind it and the visualizer. */
 export function NowPlayingSettings() {
   const a = useSettings((s) => s.appearance);
   return (
@@ -83,7 +84,44 @@ export function NowPlayingSettings() {
           <Segmented value={a.ambientQuality} options={AMBIENT_QUALITIES.map((q) => [q, q[0].toUpperCase() + q.slice(1)] as const)} onChange={(ambientQuality) => setAppearance({ ambientQuality })} label="Ambient quality" />
         </SettingRow>
       </SettingCard>
+      <VisualizerSettingsCard />
     </>
+  );
+}
+
+const VISUALIZER_MODES: readonly (readonly [VisualizerMode, string])[] = [["off", "Off"], ["background", "Background"], ["cover", "On the cover"], ["halo", "Glow"]];
+const VISUALIZER_DETAIL: Record<VisualizerMode, string> = {
+  off: "Moves with the music in Now Playing. It only listens to Sonolith, never to other apps.",
+  background: "Bars along the bottom of Now Playing, in the theme's color.",
+  cover: "Bars over the bottom of the cover.",
+  halo: "A glow around the cover that breathes with the bass.",
+};
+
+/** The audio visualizer's card on the Now Playing page. */
+function VisualizerSettingsCard() {
+  const v = useSettings((s) => s.visualizer);
+  const animations = useSettings((s) => s.appearance.animations);
+  const set = (patch: Partial<VisualizerSettings>) => useSettings.getState().set({ visualizer: { ...useSettings.getState().visualizer, ...patch } });
+  const off = v.mode === "off" || !animations;
+  return (
+    <SettingCard title="Visualizer">
+      <SettingRow id="visualizer" title="Visualizer"
+        detail={animations ? VISUALIZER_DETAIL[v.mode] : "Needs animations, which are off (Settings → Look)."}>
+        <Segmented value={v.mode} options={VISUALIZER_MODES} onChange={(mode) => set({ mode })} label="Visualizer" />
+      </SettingRow>
+      <SettingRow id="visualizerStyle" title="Shape" disabled={off || v.mode === "halo"}>
+        <Segmented value={v.style} options={[["bars", "Bars"], ["wave", "Wave"]]} onChange={(style) => set({ style })} label="Visualizer shape" />
+      </SettingRow>
+      <SettingRow id="visualizerUnfocused" title="Keep moving in the background"
+        detail="While another window has focus (say, on a second monitor) it keeps going at a lower frame rate. Minimized or hidden, it always stops."
+        disabled={off}>
+        <Switch on={v.unfocused} onChange={(unfocused) => set({ unfocused })} label="Keep moving in the background" />
+      </SettingRow>
+      <p className="px-5 pb-4 text-sm text-[var(--c-text-muted)]">
+        While it's on, songs stream through Sonolith's local proxy so the visualizer can read the audio. Once it has
+        started, that stays so until Sonolith restarts.
+      </p>
+    </SettingCard>
   );
 }
 
