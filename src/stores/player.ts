@@ -292,6 +292,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
         if (!track.album && full.album) patch.album = full.album;
         if (full.podcast && !track.podcast) patch.podcast = true;
         if (full.explicit && !track.explicit) patch.explicit = true;
+        if (full.video && !track.video) patch.video = true;
       }
       if (Object.keys(patch).length) {
         const q = [...get().queue];
@@ -714,7 +715,7 @@ export function ratingOf(state: { ratings: Record<string, Rating> }, track: Trac
   return state.ratings[track.id] ?? track.rating ?? "INDIFFERENT";
 }
 
-/** The playing <audio> element (podcast video syncs to it). */
+/** The playing <audio> element (the video in Now Playing follows it, components/TrackVideo.tsx). */
 export const getAudio = () => audio;
 /** The stream loaded into it (the visualizer plays its own silent copy of it). */
 export const currentStream = () => current;

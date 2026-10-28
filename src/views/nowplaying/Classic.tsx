@@ -1,27 +1,28 @@
 import { useState } from "react";
 import { hiResArt } from "../../api/art";
-import PodcastVideo from "../../components/PodcastVideo";
+import TrackVideo from "../../components/TrackVideo";
 import { usePlayer } from "../../stores/player";
 import { useUi } from "../../stores/ui";
 import Visualizer from "../../visualizer/Visualizer";
+import { hasVideo, videoModes } from "./parts";
 import { LyricsTab, RelatedPanel, UpNextTab, useTrackExtras, type Tab } from "./shared";
 
 function Artwork() {
   const track = usePlayer((s) => s.queue[s.index]);
-  const video = useUi((s) => s.podcastVideo);
+  const video = useUi((s) => s.showVideo);
   const [failed, setFailed] = useState<string | null>(null);
   const hi = hiResArt(track?.thumbnail, track?.id);
   const src = hi && failed !== hi ? hi : track?.thumbnail;
-  const podcast = !!track?.podcast;
+  const withVideo = !!track && hasVideo(track);
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-6 p-8">
-      {/* Audio / Video only exists for podcast episodes, like YouTube Music. */}
-      {podcast && (
+      {/* Audio (Song) / Video only for podcast episodes and music videos, like YouTube Music. */}
+      {withVideo && (
         <div className="m3-segmented flex rounded-full bg-fg/10 p-1 text-sm" role="group" aria-label="Playback mode">
-          {(["Audio", "Video"] as const).map((m) => {
+          {videoModes(!!track?.podcast).map((m) => {
             const on = (m === "Video") === video;
             return (
-              <button key={m} aria-pressed={on} onClick={() => useUi.getState().setPodcastVideo(m === "Video")}
+              <button key={m} aria-pressed={on} onClick={() => useUi.getState().setShowVideo(m === "Video")}
                 className={`m3-seg rounded-full px-4 py-1 ${on ? "bg-fg/20 font-medium" : "text-[var(--c-text-muted)] hover:text-[var(--c-text)]"}`}>
                 {m}
               </button>
@@ -29,9 +30,9 @@ function Artwork() {
           })}
         </div>
       )}
-      {podcast && video && track ? (
+      {withVideo && video && track ? (
         <div className="will-change-transform" style={{ width: "min(100%, calc(1.6 * min(60vh, 45vw)))" }}>
-          <PodcastVideo key={track.id} videoId={track.id} />
+          <TrackVideo key={track.id} videoId={track.id} />
         </div>
       ) : (
         <div className="relative aspect-square rounded-[var(--radius)] bg-[var(--c-surface-2)] shadow-[0_24px_64px_color-mix(in_srgb,var(--c-scrim)_60%,transparent)] will-change-transform"

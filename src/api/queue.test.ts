@@ -76,3 +76,21 @@ describe("now playing tabs", () => {
     expect(parseBrowse(d).shelves.map((s) => [s.title, s.items.length])).toEqual([["Podobní interpreti", 1]]);
   });
 });
+
+import { isMusicVideoType, mapPanelItems } from "./queue";
+
+describe("music videos in the queue", () => {
+  const item = (videoId: string, musicVideoType?: string) => ({
+    playlistPanelVideoRenderer: {
+      videoId,
+      title: { runs: [{ text: videoId }] },
+      longBylineText: { runs: [{ text: "Artist" }] },
+      navigationEndpoint: { watchEndpoint: { videoId, watchEndpointMusicSupportedConfigs: { watchEndpointMusicConfig: { musicVideoType } } } },
+    },
+  });
+  it("marks official and uploaded videos, not songs", () => {
+    const [omv, ugc, atv, none] = mapPanelItems([item("aaaaaaaaaaa", "MUSIC_VIDEO_TYPE_OMV"), item("bbbbbbbbbbb", "MUSIC_VIDEO_TYPE_UGC"), item("ccccccccccc", "MUSIC_VIDEO_TYPE_ATV"), item("ddddddddddd")]);
+    expect([omv.video, ugc.video, atv.video, none.video]).toEqual([true, true, undefined, undefined]);
+    expect(isMusicVideoType("MUSIC_VIDEO_TYPE_PODCAST_EPISODE")).toBe(false);
+  });
+});

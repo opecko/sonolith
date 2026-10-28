@@ -4,7 +4,7 @@ import { UiStyleScope } from "../../components/UiStyle";
 import PodcastSpeed from "../../components/PodcastSpeed";
 import VolumeControl from "../../components/VolumeControl";
 import { usePlayer } from "../../stores/player";
-import { CloseNowPlaying, CoverArt, PlaybackStatus, PodcastMode, SeekBar, TrackActions, TrackLinks, Transport, useCurrentTrack } from "./parts";
+import { CloseNowPlaying, CoverArt, PlaybackStatus, VideoMode, SeekBar, TrackActions, TrackLinks, Transport, useCurrentTrack } from "./parts";
 import { PushPanel, type PanelView } from "./pushPanel";
 import { LyricsTab, RelatedPanel, UpNextTab, useTrackExtras, type Tab } from "./shared";
 
@@ -80,7 +80,7 @@ export default function MaterialLayout() {
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 items-center justify-center gap-12 px-12 pb-2 pt-20 max-lg:flex-col max-lg:gap-6 max-lg:px-8">
           <div className="flex shrink-0 flex-col items-center gap-4 max-lg:min-h-0 max-lg:w-full max-lg:shrink">
-            <PodcastMode />
+            <VideoMode />
             <div className="np-cover-box flex justify-center">
               <CoverArt className="np-cover aspect-square rounded-[var(--m3-corner-2xl)]" />
             </div>

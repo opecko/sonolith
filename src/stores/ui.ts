@@ -9,9 +9,9 @@ interface UiState {
   nowPlayingCovering: boolean;
   setNowPlaying: (open: boolean) => void;
   setNowPlayingCovering: (covering: boolean) => void;
-  /** Podcast episodes: show the video in Now Playing instead of the artwork. */
-  podcastVideo: boolean;
-  setPodcastVideo: (on: boolean) => void;
+  /** Podcast episodes and music videos: show the video in Now Playing instead of the artwork (a song has none). */
+  showVideo: boolean;
+  setShowVideo: (on: boolean) => void;
   /** "View song credits" dialog. */
   credits: CreditsState | null;
   setCredits: (c: CreditsState | null) => void;
@@ -28,8 +28,8 @@ export const useUi = create<UiState>((set) => ({
   nowPlayingCovering: false,
   setNowPlaying: (nowPlaying) => set(nowPlaying ? { nowPlaying } : { nowPlaying, nowPlayingCovering: false }),
   setNowPlayingCovering: (nowPlayingCovering) => set({ nowPlayingCovering }),
-  podcastVideo: false,
-  setPodcastVideo: (podcastVideo) => set({ podcastVideo }),
+  showVideo: false,
+  setShowVideo: (showVideo) => set({ showVideo }),
   credits: null,
   setCredits: (credits) => set({ credits }),
   tryLooks: false,

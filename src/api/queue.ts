@@ -49,6 +49,7 @@ export function mapPanelVideo(n: R): Track | null {
   if (info.artists.length) t.artistIds = info.artistIds;
   if (explicit) t.explicit = true;
   const mvt = n.navigationEndpoint?.watchEndpoint?.watchEndpointMusicSupportedConfigs?.watchEndpointMusicConfig?.musicVideoType;
+  if (isMusicVideoType(mvt)) t.video = true;
   if ((typeof mvt === "string" && mvt.includes("PODCAST")) || info.show) {
     // An episode: its byline is the show, not artists.
     t.podcast = true;
@@ -60,6 +61,12 @@ export function mapPanelVideo(n: R): Track | null {
   if (menu) t.menu = menu;
   return t;
 }
+
+/**
+ * A music video (official or uploaded) rather than the song itself: its own stream has a real picture, in step with
+ * its sound, so Now Playing can offer Video. Songs (ATV) only have a still of the cover.
+ */
+export const isMusicVideoType = (mvt: unknown) => mvt === "MUSIC_VIDEO_TYPE_OMV" || mvt === "MUSIC_VIDEO_TYPE_UGC";
 
 /** playlistPanel contents: plain videos and wrapper renderers (primaryRenderer); automix previews skipped. */
 export function mapPanelItems(list: R): Track[] {

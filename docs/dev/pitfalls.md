@@ -35,6 +35,15 @@ find a new one.
   YouTube's own origins, never to `tauri://localhost` / `http://tauri.localhost`. The visualizer's copy streams
   through the local proxy (`Access-Control-Allow-Origin: *`) with `crossOrigin = "anonymous"` set before `src`.
 
+- **A slaved `<video>` must not be seeked on every drift.** A streamed video's seek (Range request, keyframe,
+  buffering) takes longer than a third of a second, so seeking whenever it drifted that far kept it seeking forever
+  after a user seek. `playback/videoSync.ts` nudges the rate for small drift and seeks only when far off, aimed a
+  little ahead, once per landing. The proxy also must keep the video's entry: with 8 entries the audio, its retries
+  and the visualizer's copy pushed it out and the video's later Range requests got 404 (now 64, deduplicated).
+- YouTube Music's Song / Video "counterpart" (a song's music video with a time map) never came back in `/next`
+  for our clients (2026-10-28, WEB_REMIX old and current versions, with or without `isAudioOnly`), so Video is
+  offered only for tracks that are videos themselves, whose picture matches their sound.
+
 ## Layout / CSS
 
 - `border-radius` with a 9999px "full" corner next to a small one: the browser scales every corner of that side

@@ -7,7 +7,7 @@ import type { Track } from "../../api/types";
 import { useTrackMenu } from "../../components/ItemMenu";
 import { byline, fmtTime, M3Controls, TrackMoreMenu } from "../../components/PlayerBar";
 import { Byline } from "../../components/TrackByline";
-import PodcastVideo from "../../components/PodcastVideo";
+import TrackVideo from "../../components/TrackVideo";
 import RatingButtons from "../../components/RatingButtons";
 import Slider from "../../components/Slider";
 import { usePlayer } from "../../stores/player";
@@ -20,17 +20,18 @@ import Visualizer from "../../visualizer/Visualizer";
 export const useCurrentTrack = () => usePlayer((s) => s.queue[s.index] as Track | undefined);
 
 /**
- * Hi-res artwork with a fallback to the list thumbnail; podcast episodes can show their video instead. `halo` is
+ * Hi-res artwork with a fallback to the list thumbnail; podcast episodes and music videos can show their video
+ * instead (VideoMode). `halo` is
  * where the visualizer's glow goes: around the cover, or inside its edges where the box clips the outside (Bento).
  */
 export function CoverArt({ className = "", halo = "outer" }: { className?: string; halo?: "outer" | "inner" }) {
   const track = useCurrentTrack();
-  const video = useUi((s) => s.podcastVideo);
+  const video = useUi((s) => s.showVideo);
   const [failed, setFailed] = useState<string | null>(null);
   const hi = hiResArt(track?.thumbnail, track?.id);
   const src = hi && failed !== hi ? hi : track?.thumbnail;
-  if (track?.podcast && video)
-    return <div className={`flex items-center justify-center overflow-hidden bg-[var(--m3-scrim)] ${className}`}><PodcastVideo key={track.id} videoId={track.id} /></div>;
+  if (track && hasVideo(track) && video)
+    return <div className={`flex items-center justify-center overflow-hidden bg-[var(--m3-scrim)] ${className}`}><TrackVideo key={track.id} videoId={track.id} /></div>;
   return (
     <div className={`relative ${className}`}>
       {halo === "outer" && <Visualizer at="halo" />}
@@ -43,15 +44,21 @@ export function CoverArt({ className = "", halo = "outer" }: { className?: strin
   );
 }
 
-/** Audio / Video for podcast episodes, like YouTube Music (connected button group). */
-export function PodcastMode() {
-  const podcast = usePlayer((s) => !!s.queue[s.index]?.podcast);
-  const video = useUi((s) => s.podcastVideo);
-  if (!podcast) return null;
+/** Whether Now Playing can show a real video for the track: podcast episodes and music videos (not songs). */
+export const hasVideo = (t: Pick<Track, "podcast" | "video">) => !!(t.podcast || t.video);
+
+/** The two choices, like YouTube Music: Audio / Video for episodes, Song / Video for music videos. */
+export const videoModes = (podcast: boolean) => [podcast ? "Audio" : "Song", "Video"] as const;
+
+/** Audio (Song) / Video for episodes and music videos (connected button group). */
+export function VideoMode() {
+  const kind = usePlayer((s) => (s.queue[s.index]?.podcast ? "podcast" : s.queue[s.index]?.video ? "video" : null));
+  const video = useUi((s) => s.showVideo);
+  if (!kind) return null;
   return (
     <div className="m3-segmented flex" role="group" aria-label="Playback mode">
-      {(["Audio", "Video"] as const).map((m) => (
-        <button key={m} className="m3-seg" aria-pressed={(m === "Video") === video} onClick={() => useUi.getState().setPodcastVideo(m === "Video")}>{m}</button>
+      {videoModes(kind === "podcast").map((m) => (
+        <button key={m} className="m3-seg" aria-pressed={(m === "Video") === video} onClick={() => useUi.getState().setShowVideo(m === "Video")}>{m}</button>
       ))}
     </div>
   );

@@ -11,7 +11,7 @@ import { useTransportTitles } from "../../shortcuts/hint";
 import { UiStyleScope } from "../../components/UiStyle";
 import { Spring, tween, useSwap } from "../../motion";
 import { usePlayer, type Repeat as RepeatMode } from "../../stores/player";
-import { CloseNowPlaying, CoverArt, PodcastMode, SeekBar, TrackActions, TrackLinks, useCurrentTrack } from "./parts";
+import { CloseNowPlaying, CoverArt, VideoMode, SeekBar, TrackActions, TrackLinks, useCurrentTrack } from "./parts";
 import LyricsView from "../../lyrics/LyricsView";
 import QueueList from "../../components/QueueList";
 import { LyricsTab, RelatedPanel, UpNextTab, useTrackExtras } from "./shared";
@@ -258,7 +258,7 @@ export default function BentoLayout() {
         <div className="bento-grid" data-expanded={expanded ? "" : undefined} data-lyrics={lyricsAside ? "" : undefined}>
           <Tile area="cover" label="Artwork" className="relative overflow-hidden !p-0">
             <CoverArt className="h-full w-full" halo="inner" />
-            <div className="absolute left-4 top-4"><PodcastMode /></div>
+            <div className="absolute left-4 top-4"><VideoMode /></div>
           </Tile>
           {/* Middle column: info and controls take only what they need, Up next | Related the rest of the height. */}
           {!expanded && (

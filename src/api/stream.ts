@@ -132,7 +132,7 @@ export function getStreamUrl(videoId: string, opts: { alternate?: boolean } = {}
   return resolve(videoId, !!opts.alternate);
 }
 
-// ---------- podcast video ----------
+// ---------- video (podcast episodes, music videos) ----------
 
 interface VideoFormat {
   itag: number;
@@ -155,14 +155,31 @@ export function pickVideoFormat<T extends VideoFormat>(formats: T[]): T | undefi
   })[0];
 }
 
-/** Video track (no audio) of a podcast episode; the <audio> element keeps playing the sound. */
-export async function getVideoStreamUrl(videoId: string): Promise<string> {
+/** Resolved video URLs, by video id: switching to video and back (or remounting) doesn't resolve again. */
+const videoUrls = new Map<string, { at: number; url: Promise<string> }>();
+const VIDEO_URL_TTL_MS = 60 * 60 * 1000;
+
+/**
+ * Video track (no audio) of a podcast episode or music video, as a URL the webview can play; the <audio> element
+ * keeps playing the sound. On Linux it always goes through the local proxy: WebKitGTK may take the raw googlevideo
+ * URL at first and then fail on the Range requests a seek makes. `fresh` skips the cache (after an error).
+ */
+export function getVideoStreamUrl(videoId: string, fresh = false): Promise<string> {
+  const hit = videoUrls.get(videoId);
+  if (!fresh && hit && Date.now() - hit.at < VIDEO_URL_TTL_MS) return hit.url;
+  const url = resolveVideo(videoId).then((u) => (LINUX ? invoke<string>("proxy_url", { url: u }) : u));
+  videoUrls.set(videoId, { at: Date.now(), url });
+  url.catch(() => videoUrls.get(videoId)?.url === url && videoUrls.delete(videoId));
+  return url;
+}
+
+async function resolveVideo(videoId: string): Promise<string> {
   const yt = await getClient();
   // VISIONOS: complete streams with or without Premium (see CLIENTS); YTMUSIC as a fallback.
   const info = await yt.getBasicInfo(videoId, { client: "VISIONOS" }).catch(() => yt.getBasicInfo(videoId, { client: "YTMUSIC" }));
   const vids = (info.streaming_data?.adaptive_formats ?? []).filter((f) => f.has_video && !f.has_audio);
   const f = pickVideoFormat(vids);
-  if (!f) throw new Error("No video for this episode");
+  if (!f) throw new Error("There's no video for this one.");
   const url = await f.decipher(yt.session.player);
   if (!url) throw new Error("Could not resolve the video stream");
   return url;
