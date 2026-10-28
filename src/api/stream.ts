@@ -80,7 +80,8 @@ async function viaInnertube(videoId: string, codecs: Codec[]): Promise<Stream> {
         const master = hls ? await fetchText(hls) : null;
         const audio = master && pickHlsAudio(master);
         if (audio) return liveStream(audio);
-        if (master) liveMaster ??= lowestVariant(master) ?? hls!;
+        // The later client's wins: YTMUSIC (first) has segment URLs googlevideo refuses as they are (`n`).
+        if (master) liveMaster = lowestVariant(master) ?? hls!;
         errors.push(`${client}: live, ${master ? "no audio-only rendition" : "no HLS playlist"}`);
         continue;
       }
@@ -224,7 +225,9 @@ async function resolveVideo(videoId: string): Promise<string> {
  */
 export async function getLiveVideoPlaylist(videoId: string): Promise<string> {
   const yt = await getClient();
-  for (const client of CLIENTS) {
+  // VISIONOS first: the YTMUSIC (web) playlist's segment URLs carry an `n` parameter that only the web player's
+  // script can transform, so googlevideo answers 403 to them as they are.
+  for (const client of ["VISIONOS", "YTMUSIC"] as const) {
     const info = await yt.getBasicInfo(videoId, { client }).catch(() => null);
     const hls = info?.streaming_data?.hls_manifest_url;
     const master = hls ? await fetchText(hls) : null;

@@ -123,7 +123,7 @@ pub(crate) async fn serve(mut sock: TcpStream, client: reqwest::Client, url: Str
             let bytes = match bytes {
                 Ok(b) => b,
                 Err(e) => {
-                    eprintln!("live {id}: segment {} failed: {e}", playlist.first_seq + i as u64);
+                    eprintln!("live {id}: segment {} failed: {}", playlist.first_seq + i as u64, e.status().map_or_else(|| e.to_string(), |s| s.to_string()));
                     continue;
                 }
             };

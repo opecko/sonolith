@@ -91,7 +91,9 @@ find a new one.
   HLS playlist's audio-only rendition instead (`api/hls.ts`; itag 234 AAC / 233 HE-AAC). **WebKitGTK's `<audio>`
   refuses HLS** (MediaError 4 right away, even with GStreamer's hlsdemux installed), so the proxy plays the playlist
   as one endless `audio/aac` stream (`src-tauri/src/live.rs`: each ~5 s segment is an ID3 tag + ADTS, the tag is
-  dropped). The VISIONOS client's master playlist has audio-only renditions, YTMUSIC's only muxed variants.
+  dropped). The VISIONOS client's master playlist has audio-only renditions, YTMUSIC's only muxed variants, and
+  YTMUSIC's segment URLs carry an `n` parameter only the web player's script can transform: googlevideo answers
+  403 to them as they are. Live audio and video come from the VISIONOS playlist.
   yt-dlp says "Video unavailable" or "Requested format is not available" for them.
 - **A live stream's video is HLS too**: its adaptive video formats are single ~5 s segments (the picture froze at
   the end of one). The proxy streams the variant playlist (MPEG-TS, video only from VISIONOS) the same way, started
