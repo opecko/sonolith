@@ -116,8 +116,17 @@ pub(crate) async fn serve(mut sock: TcpStream, client: reqwest::Client, url: Str
             if !allowed(seg) {
                 continue;
             }
-            let Ok(bytes) = client.get(seg).timeout(Duration::from_secs(20)).send().await.and_then(|r| r.error_for_status()) else { continue };
-            let Ok(bytes) = bytes.bytes().await else { continue };
+            let bytes = match client.get(seg).timeout(Duration::from_secs(20)).send().await.and_then(|r| r.error_for_status()) {
+                Ok(r) => r.bytes().await,
+                Err(e) => Err(e),
+            };
+            let bytes = match bytes {
+                Ok(b) => b,
+                Err(e) => {
+                    eprintln!("live {id}: segment {} failed: {e}", playlist.first_seq + i as u64);
+                    continue;
+                }
+            };
             let audio = strip_id3(&bytes);
             if !started {
                 started = true;

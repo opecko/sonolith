@@ -96,6 +96,7 @@ async fn serve(mut sock: TcpStream, client: reqwest::Client) -> Result<(), Strin
         return Ok(());
     };
     if live {
+        eprintln!("live {id}: {method} from={from:?}");
         return crate::live::serve(sock, client, url, id.to_owned(), from, method == "HEAD", allowed).await;
     }
     let mut req = client.get(&url);
@@ -177,6 +178,37 @@ async fn register(url: String, kind: &str) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Manual check against a real live playlist: LIVE_PLAYLIST=<googlevideo HLS media playlist> [LIVE_FROM=<seq>]
+    /// cargo test --lib live_stream_end_to_end -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn live_stream_end_to_end() {
+        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+        tauri::async_runtime::set(rt.handle().clone());
+        rt.block_on(async {
+            let url = std::env::var("LIVE_PLAYLIST").expect("LIVE_PLAYLIST");
+            let local = proxy_live_url(url).await.unwrap();
+            let from = std::env::var("LIVE_FROM").map(|f| format!("?from={f}&attempt=0")).unwrap_or_default();
+            let path = format!("{}{from}", &local[local.find("/l/").unwrap()..]);
+            let port = PROXY.get().unwrap().port;
+            let mut sock = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
+            sock.write_all(format!("GET {path} HTTP/1.1\r\nHost: x\r\nRange: bytes=0-\r\n\r\n").as_bytes()).await.unwrap();
+            let mut got = Vec::new();
+            let mut buf = [0u8; 65536];
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(25);
+            while got.len() < 300_000 && tokio::time::Instant::now() < deadline {
+                match tokio::time::timeout(std::time::Duration::from_secs(25), sock.read(&mut buf)).await {
+                    Ok(Ok(n)) if n > 0 => got.extend_from_slice(&buf[..n]),
+                    _ => break,
+                }
+            }
+            let head_end = got.windows(4).position(|w| w == b"\r\n\r\n").map(|p| p + 4).unwrap_or(0);
+            println!("{}", String::from_utf8_lossy(&got[..head_end]));
+            println!("body bytes: {}", got.len() - head_end);
+            assert!(got.len() - head_end > 10_000, "no stream body");
+        });
+    }
 
     #[test]
     fn only_googlevideo() {
