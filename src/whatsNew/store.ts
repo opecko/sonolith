@@ -1,5 +1,4 @@
 import { getVersion } from "@tauri-apps/api/app";
-import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { openSettings } from "../stores/nav";
 import { setAppearance, useSettings } from "../stores/settings";
@@ -35,8 +34,9 @@ export function runWhatsNewAction(a: WhatsNewAction) {
 function runChore(c: WhatsNewChore) {
   switch (c) {
     case "clearLyricsCache":
-      // Lyrics picked by older rules (e.g. asked without the track's length) are found again with the new ones.
-      void invoke("lyrics_clear_cache").catch(() => {});
+      // Lyrics picked by older rules are found again with the new ones, the playing track's included.
+      // Loaded when needed: the lyrics store pulls in the player (and its audio elements).
+      void import("../lyrics/store").then((m) => m.clearLyricsCache()).catch(() => {});
       break;
   }
 }

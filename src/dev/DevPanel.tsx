@@ -6,7 +6,7 @@ import { confirmAction } from "../components/ConfirmDialog";
 import Switch from "../components/Switch";
 import { pickWinner } from "../lyrics/pick";
 import { PROVIDER_NAMES } from "../lyrics/providers";
-import { lyricsRequest, type LyricsResponse } from "../lyrics/store";
+import { clearLyricsCache, lyricsRequest, type LyricsResponse } from "../lyrics/store";
 import { usePlayer } from "../stores/player";
 import { previewOnboarding } from "../onboarding/store";
 import { flush, setAppearance, useSettings } from "../stores/settings";
@@ -82,7 +82,7 @@ function LyricsDebug() {
       <p className="type-body-medium truncate">{track ? `${track.title} — ${track.artists.join(", ") || track.subtitle}` : "Nothing playing"}{track?.podcast ? " (episode: never asked)" : ""}</p>
       <div className="flex flex-wrap gap-2">
         <button className="m3-btn m3-tonal h-10" disabled={!track || run?.busy} onClick={go}>{run?.busy ? "Asking…" : "Ask every provider"}</button>
-        <button className="m3-btn m3-outlined h-10" onClick={() => void invoke("lyrics_clear_cache")}>Clear lyrics cache</button>
+        <button className="m3-btn m3-outlined h-10" onClick={() => void clearLyricsCache()}>Clear lyrics cache</button>
       </div>
       {run?.error && <p className="type-body-small text-[var(--m3-error)]">{run.error}</p>}
       {run?.res && (

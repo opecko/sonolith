@@ -144,8 +144,8 @@ pub async fn lyrics_get(state: State<'_, LyricsState>, args: GetArgs, on_update:
     Ok(LyricsResponse { provider, lyrics, source, cached: false, attempts })
 }
 
-/// Dev toolkit / settings: forget every cached result.
-#[tauri::command]
+/// Dev toolkit, What's new: forget every cached result. Async: it deletes files, never on the GTK main thread.
+#[tauri::command(async)]
 pub fn lyrics_clear_cache(state: State<'_, LyricsState>) {
     state.cache.clear();
 }

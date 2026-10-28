@@ -153,6 +153,16 @@ function ensure(force = false) {
   void load(track);
 }
 
+/**
+ * Empties the lyrics cache (Rust, memory and disk), then looks the playing track's lyrics up again: what's on screen
+ * may have come from the cache just cleared (What's new after an update with better matching, the dev panel).
+ */
+export async function clearLyricsCache() {
+  await invoke("lyrics_clear_cache");
+  useLyrics.setState({ status: "idle" });
+  ensure(true);
+}
+
 let started = false;
 export function initLyrics() {
   if (started) return;
