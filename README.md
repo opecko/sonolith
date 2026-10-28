@@ -19,10 +19,10 @@ an account; sign in with Google for your library, playlists, likes, mixes and hi
 - **No account needed**: search, browse and play signed out; sign in only for your library, likes and playlists
 - **Several accounts and channels**: switch between the Google accounts you're signed in with and your brand
   channels from the account menu
-- **Playback**: queue with drag-and-drop reordering, radio from any song, autoplay, mood/genre filters for mixes;
-  your queue and position survive a restart
-- **Now Playing**: three layouts (Material, Bento and Classic) with the queue, lyrics and related music, and colors
-  from the cover art
+- **Playback**: queue with drag-and-drop reordering, radio from any song, autoplay, mood/genre filters for mixes,
+  gapless playback and live stations; your queue and position survive a restart
+- **Now Playing**: three layouts (Material, Bento and Classic) with the queue, lyrics and related music, colors
+  from the cover art, a visualizer, a Song / Video switch for music videos and a Save to playlist button
 - **Synced lyrics**: line by line, word by word where available, gathered from several sources; pick a karaoke style
   (Sweep, Glow, Bounce or Simple) and the order of the sources
 - **Likes, dislikes and playlists**: the ⋮ menu on every track works like on YouTube Music (play next, add to queue,
@@ -71,7 +71,8 @@ macOS isn't supported yet.
    from Settings → About.
 2. Play something right away, or click **Sign in** and log in to your Google account in the window that opens.
    Sonolith saves the session in your system's secure credential store (Windows Credential Manager / the Linux
-   keyring), never in a plain file.
+   keyring). On Linux it also keeps a copy only your user can read (`~/.config/dev.sonolith.app/sign-in`), so a
+   missing or locked keyring doesn't sign you out.
 3. Click the cover in the bottom bar to open **Now Playing**.
 
 **Tips**
@@ -100,18 +101,20 @@ Building such an app? See [For developers](#for-developers).
 
 ## Troubleshooting
 
-- **A song won't play**: Sonolith retries automatically. If some songs still fail, open **Settings → Advanced** and
+- **A song won't play**: Sonolith retries automatically. If some songs still fail, open **Settings → System** and
   install the **yt-dlp** fallback with one click.
 - **Signed out unexpectedly**: YouTube sometimes expires sessions. Just sign in again.
 - **Media keys don't work on Linux (Wayland)**: some Wayland desktops don't allow global shortcuts. Use your
   desktop's media controls instead; Sonolith shows up there too.
-- **Linux: asked to unlock a keyring**, or sign-in isn't remembered: install and unlock a keyring service
-  (e.g. GNOME Keyring or KWallet).
+- **Linux: asked to unlock a keyring**: Sonolith works without one too (see Getting started), but a keyring service
+  (e.g. GNOME Keyring or KWallet) keeps the session in it.
+- **Sign-in fails**: Sonolith says why, and writes it to its log: `~/.local/share/dev.sonolith.app/logs/playback.log`
+  on Linux, `%LOCALAPPDATA%\dev.sonolith.app\logs\playback.log` on Windows. Include it when you report the problem.
 
 ## Privacy
 
 Sonolith talks only to YouTube / Google (and to Discord on your computer, if Rich Presence is on). There is no
-analytics or telemetry, and no Sonolith server. Connected apps are local only, off by default, and each one needs
+analytics or telemetry, and no Sonolith server. Your sign-in stays on your computer (see Getting started). Connected apps are local only, off by default, and each one needs
 your approval.
 
 Sonolith is an unofficial app and isn't affiliated with or endorsed by Google or YouTube.
