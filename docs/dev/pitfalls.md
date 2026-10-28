@@ -172,6 +172,14 @@ Sliders also `preventDefault()` on pointerdown (and focus themselves), so a drag
 - The bundler names the deb, its `.desktop` file and the NSIS installer after `productName`. Linux overrides it to
   `sonolith` (`tauri.linux.conf.json`) so the desktop file matches the app id; the Windows product stays "Sonolith".
 
+## Sign-in
+
+- **Linux without a Secret Service** (no gnome-keyring / KWallet / KeePassXC running, common on bare window
+  managers): the keyring write fails. Sign-in then failed with a keyring error after Google's login, the window stayed
+  open on YouTube Music, and every later attempt opened already signed in (the webview kept Google's cookies).
+  `auth.rs` now closes the window first and falls back to a user-only file in the config dir; failures go to the
+  playback log (`~/.local/share/dev.sonolith.app/logs/playback.log` in release builds) and a toast.
+
 ## Local API
 
 - **End of input is not a hang-up.** A shell pipe (`socat`) half-closes its side and still waits for

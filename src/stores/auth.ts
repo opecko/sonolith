@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { SNAPSHOT_KEY } from "./queueSnapshot";
 import { invoke } from "@tauri-apps/api/core";
+import { logPlayback } from "../api/stream";
 import { currentAccount, getCookie, resetClient, setAccount, setAuthExpiredHandler } from "../api/client";
 import { DEFAULT_ACCOUNT, sameAccount, type AccountChoice } from "../api/accounts";
 import { clearDataCache } from "../hooks/useData";
@@ -55,6 +56,12 @@ export const useAuth = create<AuthState>((set, get) => {
       changed(DEFAULT_ACCOUNT);
       set({ status: "signedIn" });
     } catch (e) {
+      // Shown wherever Sign in was pressed (the top bar's button has no place of its own for it), and in the
+      // playback log: the one file a user can send when sign-in fails on their machine.
+      if (String(e) !== "login cancelled") {
+        logPlayback(`sign-in failed: ${String(e)}`);
+        useToast.getState().show(`Sign-in failed: ${String(e)}`);
+      }
       set({ error: String(e) });
     }
   },

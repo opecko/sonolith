@@ -33,6 +33,16 @@ fn append_playback_log(path: &Option<std::path::PathBuf>, line: &str) -> Result<
     writeln!(f, "{ts} {}", line.replace('\n', " | ")).map_err(|e| e.to_string())
 }
 
+/// The app's identifier (tauri.conf.json), for paths needed before or without an AppHandle.
+pub(crate) const IDENTIFIER: &str = "dev.sonolith.app";
+
+/// A line in the playback log from Rust code without an AppHandle (sign-in problems): the same file the frontend
+/// writes to, in Tauri's app log dir (`$XDG_DATA_HOME/<identifier>/logs`, `%APPDATA%` on Windows).
+pub(crate) fn log_line(line: &str) {
+    let dir = if cfg!(target_os = "windows") { dirs::config_dir() } else { dirs::data_dir() };
+    let _ = append_playback_log(&playback_log_path(dir.map(|d| d.join(IDENTIFIER).join("logs"))), line);
+}
+
 /// Appends one line to debug/playback.log (repo root in dev builds, app log dir in release).
 #[tauri::command(async)]
 fn log_playback(app: tauri::AppHandle, line: String) -> Result<String, String> {

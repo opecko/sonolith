@@ -74,35 +74,83 @@ fn migrate_old_cookie() -> Option<String> {
     Some(cookie)
 }
 
+/**
+ * Where the sign-in goes when the system keyring can't take it (Linux without a Secret Service: no gnome-keyring,
+ * KWallet or KeePassXC running, common with a bare window manager). A file only the user can read, in the app's
+ * config dir, as browsers keep their cookies on such systems. Without it the sign-in failed with a keyring error,
+ * the sign-in window stayed open on YouTube Music, and every later attempt opened already signed in.
+ */
+fn fallback_path() -> Option<std::path::PathBuf> {
+    let base = if cfg!(target_os = "windows") { dirs::data_dir() } else { dirs::config_dir() };
+    base.map(|d| d.join(crate::IDENTIFIER).join("sign-in"))
+}
+
+fn read_fallback() -> Option<String> {
+    let c = std::fs::read_to_string(fallback_path()?).ok()?;
+    has_auth_cookie(c.trim()).then(|| c.trim().to_owned())
+}
+
+fn write_fallback(cookie: &str) -> Result<(), String> {
+    let path = fallback_path().ok_or("no config directory")?;
+    std::fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
+    let mut opts = std::fs::OpenOptions::new();
+    opts.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    std::os::unix::fs::OpenOptionsExt::mode(&mut opts, 0o600);
+    let mut f = opts.open(&path).map_err(|e| e.to_string())?;
+    std::io::Write::write_all(&mut f, cookie.as_bytes()).map_err(|e| e.to_string())
+}
+
 #[tauri::command(async)]
 pub fn auth_get_cookie() -> Result<Option<String>, String> {
-    match read(&entry()?) {
-        Ok(Some(c)) => return Ok(Some(c)),
-        Ok(None) => {
+    match entry().map(|e| read(&e)) {
+        Ok(Ok(Some(c))) => return Ok(Some(c)),
+        Ok(Ok(None)) => {
             if let Some(c) = migrate_old_cookie() {
                 return Ok(Some(c));
             }
         }
-        Err(e) => eprintln!("keyring read failed: {e}"),
+        Ok(Err(e)) => eprintln!("keyring read failed: {e}"),
+        Err(e) => eprintln!("keyring unavailable: {e}"),
     }
-    Ok(std::env::var("YTM_COOKIE").ok().filter(|c| has_auth_cookie(c)))
+    Ok(read_fallback().or_else(|| std::env::var("YTM_COOKIE").ok().filter(|c| has_auth_cookie(c))))
 }
 
 #[tauri::command(async)]
 pub fn auth_set_cookie(cookie: String) -> Result<(), String> {
     // set_password would store UTF-16 on Windows (2 bytes/char), and the ~1.6 KB cookie header would then exceed
     // the Credential Manager's 2560-byte blob limit. Raw UTF-8 fits on every platform.
-    entry()?.set_secret(cookie.as_bytes()).map_err(|e| e.to_string())
+    let keyring = entry().and_then(|e| e.set_secret(cookie.as_bytes()).map_err(|e| e.to_string()));
+    match keyring {
+        Ok(()) => {
+            // A stale fallback from a time without a keyring must not outlive this sign-in.
+            if let Some(p) = fallback_path() {
+                let _ = std::fs::remove_file(p);
+            }
+            Ok(())
+        }
+        Err(k) => {
+            crate::log_line(&format!("sign-in: the system keyring can't store it ({k}); saving it in the config dir instead"));
+            write_fallback(&cookie).map_err(|f| {
+                crate::log_line(&format!("sign-in: couldn't save it in the config dir either: {f}"));
+                format!("You're signed in, but Sonolith couldn't save it: the system keyring isn't available ({k}), and saving it in its config folder failed ({f}).")
+            })
+        }
+    }
 }
 
 /// Signs out: forgets the stored cookie and the Google/YouTube session cookies of the webview, so the next sign-in
 /// actually asks for an account instead of silently reusing the old session. Other web storage (settings) is kept.
 #[tauri::command]
 pub async fn auth_clear(app: AppHandle) -> Result<(), String> {
-    for e in [entry()?, old_entry()?] {
-        match e.delete_credential() {
-            Ok(()) | Err(keyring::Error::NoEntry) => {}
-            Err(e) => return Err(e.to_string()),
+    let fallback = fallback_path().is_some_and(|p| std::fs::remove_file(p).is_ok());
+    for e in [entry(), old_entry()] {
+        match e.map(|e| e.delete_credential()) {
+            Ok(Ok(())) | Ok(Err(keyring::Error::NoEntry)) => {}
+            // No keyring at all: fine when the sign-in lived in the fallback file (just removed).
+            Ok(Err(e)) if !fallback => return Err(e.to_string()),
+            Err(e) if !fallback => return Err(e),
+            _ => {}
         }
     }
     // Cookie APIs deadlock on Windows when called from a sync command / the main thread.
@@ -153,6 +201,7 @@ pub async fn auth_login(app: AppHandle) -> Result<String, String> {
 fn wait_for_login(app: &AppHandle) -> Result<String, String> {
     let ytm: Url = YTM_URL.parse().map_err(|e: url::ParseError| e.to_string())?;
     let started = Instant::now();
+    let mut noted = false;
     loop {
         std::thread::sleep(Duration::from_millis(800));
         let Some(win) = app.get_webview_window(LOGIN_LABEL) else {
@@ -166,11 +215,25 @@ fn wait_for_login(app: &AppHandle) -> Result<String, String> {
         if !on_ytm {
             continue;
         }
-        let cookies = win.cookies_for_url(ytm.clone()).map_err(|e| e.to_string())?;
+        let cookies = match win.cookies_for_url(ytm.clone()) {
+            Ok(c) => c,
+            Err(e) => {
+                crate::log_line(&format!("sign-in: couldn't read the sign-in window's cookies: {e}"));
+                let _ = win.close();
+                return Err(format!("Sonolith couldn't read the sign-in from its window ({e})."));
+            }
+        };
         let header = build_cookie_header(cookies.iter().map(|c| (c.name(), c.value())));
+        // Diagnostics: on YouTube Music for a while without the cookie that means "signed in".
+        if !noted && started.elapsed() > Duration::from_secs(30) {
+            noted = true;
+            let names: Vec<&str> = cookies.iter().map(|c| c.name()).collect();
+            crate::log_line(&format!("sign-in: on YouTube Music without SAPISID after 30 s; cookies: {}", names.join(",")));
+        }
         if has_auth_cookie(&header) {
-            auth_set_cookie(header.clone())?;
+            // Closed either way: left open on YouTube Music, the window only looked like it was still signing in.
             let _ = win.close();
+            auth_set_cookie(header.clone())?;
             return Ok(header);
         }
     }
