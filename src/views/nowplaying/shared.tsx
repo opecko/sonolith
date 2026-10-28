@@ -16,15 +16,24 @@ import { usePlayer } from "../../stores/player";
 export type Tab = "upnext" | "related" | "lyrics";
 
 /**
- * The current track's related-music target, once /next has it (undefined = none), and whether it has lyrics (from
- * any enabled provider or YouTube Music's own, lyrics/store.ts; still loading counts when the track before had some).
+ * The current track's related-music target, once /next has it (undefined = none or not yet), whether Now Playing
+ * offers Related (`hasRelated`) and whether it has lyrics (from any enabled provider or YouTube Music's own,
+ * lyrics/store.ts). While either is still loading, it counts as there when the track before had it, so skipping
+ * doesn't take the tab away and bring it back a moment later.
  */
 export function useTrackExtras() {
   const videoId = usePlayer((s) => s.queue[s.index]?.id);
   const related = usePlayer((s) => (s.watch?.videoId === videoId ? s.watch?.related : undefined));
+  const relatedHeld = usePlayer((s) => s.relatedHeld);
   const on = useSettings((s) => s.lyricsEnabled);
   const lyrics = useLyrics((s) => lyricsShown(s, videoId)) && on;
-  return { videoId, related, lyrics };
+  return { videoId, related, hasRelated: !!related || relatedHeld, lyrics };
+}
+
+/** Related for the panels: loading while /next is on its way (held), "Nothing related" while a panel closes. */
+export function RelatedPanel({ videoId, related, held }: { videoId: string; related: BrowseRef | undefined; held: boolean }) {
+  if (related) return <RelatedTab key={videoId} videoId={videoId} target={related} />;
+  return held ? <Loading variant="list" label="Loading related" /> : <EmptyState title="Nothing related" />;
 }
 
 export function UpNextTab() {

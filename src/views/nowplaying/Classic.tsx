@@ -4,7 +4,7 @@ import PodcastVideo from "../../components/PodcastVideo";
 import { usePlayer } from "../../stores/player";
 import { useUi } from "../../stores/ui";
 import Visualizer from "../../visualizer/Visualizer";
-import { LyricsTab, RelatedTab, UpNextTab, useTrackExtras, type Tab } from "./shared";
+import { LyricsTab, RelatedPanel, UpNextTab, useTrackExtras, type Tab } from "./shared";
 
 function Artwork() {
   const track = usePlayer((s) => s.queue[s.index]);
@@ -48,12 +48,12 @@ function Artwork() {
 }
 
 function SidePanel() {
-  const { videoId, related, lyrics } = useTrackExtras();
+  const { videoId, related, hasRelated, lyrics } = useTrackExtras();
   const [tab, setTab] = useState<Tab>("upnext");
   const tabs: { id: Tab; label: string; show: boolean }[] = [
     { id: "upnext", label: "Up next", show: true },
     { id: "lyrics", label: "Lyrics", show: !!lyrics },
-    { id: "related", label: "Related", show: !!related },
+    { id: "related", label: "Related", show: hasRelated },
   ];
   // A tab that disappears for the next track (e.g. no lyrics) falls back to Up next.
   const active = tabs.find((t) => t.id === tab && t.show) ? tab : "upnext";
@@ -69,7 +69,7 @@ function SidePanel() {
       </div>
       <div role="tabpanel" className={`min-h-0 flex-1 will-change-transform ${active === "upnext" ? "flex flex-col" : "scroll-y pr-1"}`}>
         {active === "upnext" && <UpNextTab />}
-        {active === "related" && videoId && related && <RelatedTab key={videoId} videoId={videoId} target={related} />}
+        {active === "related" && videoId && <RelatedPanel videoId={videoId} related={related} held={hasRelated} />}
         {active === "lyrics" && videoId && lyrics && <LyricsTab key={videoId} />}
       </div>
     </section>

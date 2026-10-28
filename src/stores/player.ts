@@ -46,6 +46,8 @@ interface PlayerState {
   context: QueueContext;
   /** Raw /next info for the current track (header, related/lyrics tabs, automix seed). */
   watch: (NextResult & { videoId: string }) | null;
+  /** While /next for a new track is on its way: the track before had Related, so Now Playing keeps offering it. */
+  relatedHeld: boolean;
   chips: QueueChip[];
   activeChipId: string | null;
   chipLoading: boolean;
@@ -270,14 +272,16 @@ export const usePlayer = create<PlayerState>((set, get) => {
     const track = queue[index];
     const mine = ++watchGen;
     chipCache = new Map();
-    if (!track) return set({ watch: null, chips: [], activeChipId: null });
-    if (get().watch?.videoId !== track.id) set({ watch: null });
+    if (!track) return set({ watch: null, relatedHeld: false, chips: [], activeChipId: null });
+    const before = get().watch;
+    // Skipping on before /next answered keeps holding what the last answered track had.
+    if (before?.videoId !== track.id) set({ watch: null, relatedHeld: !!before?.related || (!before && get().relatedHeld) });
     try {
       const w = await getWatch({ videoId: track.id, playlistId: context.playlistId, params: context.params });
       if (mine !== watchGen) return;
       const activeLabel = get().chips.find((c) => c.id === get().activeChipId)?.label;
       const kept = w.chips.find((c) => c.label === activeLabel) ?? w.chips.find((c) => c.selected) ?? null;
-      set({ watch: { ...w, videoId: track.id }, chips: w.chips, activeChipId: kept?.id ?? null });
+      set({ watch: { ...w, videoId: track.id }, relatedHeld: false, chips: w.chips, activeChipId: kept?.id ?? null });
       // Some lists (search top-result songs, artist cards) omit the artist or album, and typed page parsers don't
       // know about podcast episodes; /next's own entry for the track has all of it.
       const full = w.tracks.find((t) => t.id === track.id);
@@ -305,7 +309,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       maybeAutoplay();
     } catch (e) {
       if (mine !== watchGen) return;
-      set({ watch: null, chips: [], activeChipId: null });
+      set({ watch: null, relatedHeld: false, chips: [], activeChipId: null });
       console.warn("watch-next unavailable:", e);
     }
   }
@@ -504,6 +508,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     ratings: {},
     context: saved?.context ?? {},
     watch: null,
+    relatedHeld: false,
     chips: saved?.chips ?? [],
     activeChipId: saved?.activeChipId ?? null,
     chipLoading: false,

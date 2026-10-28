@@ -6,7 +6,7 @@ import VolumeControl from "../../components/VolumeControl";
 import { usePlayer } from "../../stores/player";
 import { CloseNowPlaying, CoverArt, PlaybackStatus, PodcastMode, SeekBar, TrackActions, TrackLinks, Transport, useCurrentTrack } from "./parts";
 import { PushPanel, type PanelView } from "./pushPanel";
-import { LyricsTab, RelatedTab, UpNextTab, useTrackExtras, type Tab } from "./shared";
+import { LyricsTab, RelatedPanel, UpNextTab, useTrackExtras, type Tab } from "./shared";
 
 const TITLES: Record<Tab, string> = { upnext: "Up next", lyrics: "Lyrics", related: "Related" };
 
@@ -42,10 +42,17 @@ function usePushPanel(target: Tab | null, width: number) {
 export default function MaterialLayout() {
   const track = useCurrentTrack();
   const podcast = usePlayer((s) => !!s.queue[s.index]?.podcast);
-  const { videoId, related, lyrics } = useTrackExtras();
+  const { videoId, related, hasRelated, lyrics } = useTrackExtras();
   const [panel, setPanel] = useState<Tab | null>(null);
-  // A panel the next track doesn't have (no lyrics) closes.
-  const shown = panel === "lyrics" && !lyrics ? null : panel === "related" && !related ? null : panel;
+  // A panel the new track doesn't have (no lyrics, no related) slides closed, the reverse of opening, and stays
+  // closed: the content stays while it slides (the panel keeps its tab), saying there's nothing.
+  useEffect(() => {
+    if (!lyrics) setPanel((p) => (p === "lyrics" ? null : p));
+  }, [lyrics]);
+  useEffect(() => {
+    if (!hasRelated) setPanel((p) => (p === "related" ? null : p));
+  }, [hasRelated]);
+  const shown = panel;
   const [width, setWidth] = useState(panelWidth);
   useEffect(() => {
     const onResize = () => setWidth(panelWidth());
@@ -58,7 +65,7 @@ export default function MaterialLayout() {
   const tabs: { id: Tab; label: string; icon: typeof ListMusic; show: boolean }[] = [
     { id: "upnext", label: "Queue", icon: ListMusic, show: true },
     { id: "lyrics", label: "Lyrics", icon: MicVocal, show: !!lyrics },
-    { id: "related", label: "Related", icon: Sparkles, show: !!related },
+    { id: "related", label: "Related", icon: Sparkles, show: hasRelated },
   ];
   return (
     <UiStyleScope value="m3" className="np-material relative flex min-h-0 min-w-0 flex-1 overflow-hidden" style={{ "--np-panel": `${width}px` } as CSSProperties}>
@@ -109,8 +116,8 @@ export default function MaterialLayout() {
             </header>
             <div className="flex min-h-0 flex-1 flex-col px-3 pb-3">
               {tab === "upnext" && <div className="flex min-h-0 flex-1 flex-col pt-2"><UpNextTab /></div>}
-              {tab === "lyrics" && videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} /></div>}
-              {tab === "related" && videoId && related && <div className="scroll-y min-h-0 flex-1 pr-1"><RelatedTab key={videoId} videoId={videoId} target={related} /></div>}
+              {tab === "lyrics" && videoId && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} /></div>}
+              {tab === "related" && videoId && <div className="scroll-y min-h-0 flex-1 pr-1"><RelatedPanel videoId={videoId} related={related} held={hasRelated} /></div>}
             </div>
           </div>
         </section>

@@ -1,5 +1,5 @@
 import { Maximize2, Minimize2, MicVocal, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward } from "lucide-react";
-import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useShallow } from "zustand/react/shallow";
 import AutoplayToggle from "../../components/AutoplayToggle";
 import PlaybackError from "../../components/PlaybackError";
@@ -11,19 +11,20 @@ import Thumb from "../../components/Thumb";
 import { Byline } from "../../components/TrackByline";
 import { useTransportTitles } from "../../shortcuts/hint";
 import { UiStyleScope } from "../../components/UiStyle";
-import { Spring, useSwap } from "../../motion";
+import { Spring, tween, useSwap } from "../../motion";
 import { usePlayer, type Repeat as RepeatMode } from "../../stores/player";
 import { CloseNowPlaying, CoverArt, PodcastMode, SeekBar, TrackActions, TrackLinks, useCurrentTrack } from "./parts";
 import LyricsView from "../../lyrics/LyricsView";
-import { LyricsTab, RelatedTab, UpNextTab, useTrackExtras } from "./shared";
+import { LyricsTab, RelatedPanel, UpNextTab, useTrackExtras } from "./shared";
 
 function Tile({ area, className = "", children, label }: { area: string; className?: string; children: ReactNode; label?: string }) {
   return <section aria-label={label} className={`bento-tile np-glass bento-${area} ${className}`}>{children}</section>;
 }
 
 /** Opens with a small spring "pop" (scale + opacity written per frame from the shared loop). */
-function usePop<T extends HTMLElement = HTMLDivElement>() {
-  const ref = useRef<T>(null);
+function usePop<T extends HTMLElement = HTMLDivElement>(given?: RefObject<T | null>) {
+  const own = useRef<T>(null);
+  const ref = given ?? own;
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -40,6 +41,41 @@ function usePop<T extends HTMLElement = HTMLDivElement>() {
   }, []);
   return ref;
 }
+
+/**
+ * Keeps showing `value`'s last non-null value while the element slides out to the right and fades (per frame from
+ * the shared loop; jumps with animations off, or when `animate` says it wouldn't show), then returns null so it
+ * unmounts. A new value mid-slide takes over at once. The styles are cleared before paint once it's gone, for elements that stay mounted.
+ */
+function useSlideOut<T>(value: T | null, ref: RefObject<HTMLElement | null>, animate: () => boolean = () => true): T | null {
+  const [shown, setShown] = useState(value);
+  const sliding = useRef(false);
+  if (value !== null && value !== shown) setShown(value);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (value !== null || shown === null || !el || !animate()) {
+      if (value === null && shown !== null) setShown(null);
+      return;
+    }
+    sliding.current = true;
+    return tween(220, (t) => t * t, (p) => {
+      el.style.transform = `translateX(${Math.round(p * 72)}px)`;
+      el.style.opacity = String(1 - p);
+    }, () => setShown(null));
+    // Only a change of `value` starts or stops a slide.
+  }, [value]);
+  // Only after a slide: a tile mounting with its own entrance (usePop) has set these itself, children first.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!sliding.current || (value === null && shown !== null)) return;
+    sliding.current = false;
+    if (el) el.style.transform = el.style.opacity = "";
+  }, [value, shown]);
+  return value ?? shown;
+}
+
+/** Wide windows give Autoplay and the lyrics a third column (m3-components.css, `.bento-grid[data-lyrics]`). */
+const LYRICS_COLUMN = "(min-width: 1440px)";
 
 /** As many of the next tracks as fit; a click plays one. */
 function QueuePreview() {
@@ -110,9 +146,9 @@ function BentoTransport() {
   );
 }
 
-function Expanded({ onClose }: { onClose: () => void }) {
-  const ref = usePop();
-  const { videoId, lyrics } = useTrackExtras();
+function Expanded({ onClose, tileRef }: { onClose: () => void; tileRef: RefObject<HTMLElement | null> }) {
+  const ref = usePop(tileRef);
+  const { videoId } = useTrackExtras();
   const title = "Lyrics";
   return (
     <section ref={ref} aria-label={title} className="bento-tile np-glass bento-main flex min-h-0 flex-col">
@@ -120,7 +156,8 @@ function Expanded({ onClose }: { onClose: () => void }) {
         <h2 className="type-title-large-em">{title}</h2>
         <button className="m3-btn m3-tonal h-10" onClick={onClose}><Minimize2 size={18} aria-hidden /> Collapse</button>
       </header>
-      {videoId && lyrics && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} /></div>}
+      {/* Not gated on having lyrics: sliding out after they're gone, it says so instead of going blank. */}
+      {videoId && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} /></div>}
     </section>
   );
 }
@@ -129,7 +166,7 @@ function Expanded({ onClose }: { onClose: () => void }) {
 const UpNextPane = memo(function UpNextPane({ open }: { open: boolean }) {
   return open ? <div className="flex min-h-0 flex-1 flex-col"><UpNextTab /></div> : <div className="min-h-0 flex-1 overflow-hidden"><QueuePreview /></div>;
 });
-const RelatedPane = memo(RelatedTab);
+const RelatedPane = memo(RelatedPanel);
 
 type QueueView = "upnext" | "related";
 
@@ -147,9 +184,9 @@ const QueueTile = memo(function QueueTile({ open, onToggle, tab, setTab, tileRef
   setTab: (v: QueueView) => void;
   tileRef?: RefObject<HTMLElement | null>;
 }) {
-  const { videoId, related } = useTrackExtras();
+  const { videoId, related, hasRelated } = useTrackExtras();
   const queueLeft = usePlayer((s) => Math.max(0, s.queue.length - s.index - 1));
-  const view = tab === "related" && !related ? "upnext" : tab;
+  const view = tab === "related" && !hasRelated ? "upnext" : tab;
   const swap = useSwap(view, view === "related" ? 1 : -1);
   const [relatedMounted, setRelatedMounted] = useState(view === "related");
   const setView = (v: QueueView) => {
@@ -165,7 +202,7 @@ const QueueTile = memo(function QueueTile({ open, onToggle, tab, setTab, tileRef
           <button role="tab" className="m3-seg" aria-pressed={view === "upnext"} aria-selected={view === "upnext"} onClick={() => setView("upnext")}>
             Up next{queueLeft ? <span className="opacity-70">{queueLeft}</span> : null}
           </button>
-          {related && <button role="tab" className="m3-seg" aria-pressed={view === "related"} aria-selected={view === "related"} onClick={() => setView("related")}>Related</button>}
+          {hasRelated && <button role="tab" className="m3-seg" aria-pressed={view === "related"} aria-selected={view === "related"} onClick={() => setView("related")}>Related</button>}
         </div>
         <button className="icon-btn m3-icon-tonal h-10 w-10" onClick={onToggle} aria-expanded={open} aria-label={open ? "Collapse" : "Show all"} title={open ? "Collapse" : "Show all"}>
           {open ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
@@ -175,9 +212,9 @@ const QueueTile = memo(function QueueTile({ open, onToggle, tab, setTab, tileRef
         <div className={`flex min-h-0 flex-col ${view === "upnext" ? "" : "invisible"}`} inert={view !== "upnext"}>
           <UpNextPane open={open} />
         </div>
-        {relatedMounted && videoId && related && (
+        {relatedMounted && videoId && hasRelated && (
           <div className={`scroll-y min-h-0 pr-1 ${view === "related" ? "" : "invisible"}`} inert={view !== "related"}>
-            <RelatedPane key={videoId} videoId={videoId} target={related} />
+            <RelatedPane videoId={videoId} related={related} held={hasRelated} />
           </div>
         )}
       </div>
@@ -186,9 +223,9 @@ const QueueTile = memo(function QueueTile({ open, onToggle, tab, setTab, tileRef
 });
 
 /** The queue as the big tile, opening with the same pop as the lyrics. */
-function ExpandedQueue(props: { onToggle: () => void; tab: QueueView; setTab: (v: QueueView) => void }) {
-  const ref = usePop<HTMLElement>();
-  return <QueueTile open tileRef={ref} {...props} />;
+function ExpandedQueue({ tileRef, ...props }: { onToggle: () => void; tab: QueueView; setTab: (v: QueueView) => void; tileRef: RefObject<HTMLElement | null> }) {
+  usePop(tileRef);
+  return <QueueTile open tileRef={tileRef} {...props} />;
 }
 
 /**
@@ -208,7 +245,17 @@ export default function BentoLayout() {
   );
   // The big tile (everything but the cover): the full lyrics, or Up next | Related with the whole queue.
   const [big, setBig] = useState<"lyrics" | "queue" | null>(null);
-  const expanded = big === "queue" || (big === "lyrics" && !!lyrics);
+  // Lyrics the new track doesn't have: the big tile closes (and stays closed for the tracks after).
+  useEffect(() => {
+    if (!lyrics) setBig((b) => (b === "lyrics" ? null : b));
+  }, [lyrics]);
+  // Closing slides the big tile out to the right; the lyrics column (wide windows) leaves the same way.
+  const bigRef = useRef<HTMLElement>(null);
+  const bigShown = useSlideOut(big === "lyrics" && !lyrics ? null : big, bigRef);
+  const expanded = bigShown !== null;
+  const asideRef = useRef<HTMLDivElement>(null);
+  // Only where the lyrics have that column of their own: elsewhere it's the Autoplay tile, which stays.
+  const lyricsAside = useSlideOut(lyrics && videoId ? true : null, asideRef, () => matchMedia(LYRICS_COLUMN).matches) === true;
   const [queueTab, setQueueTab] = useState<QueueView>("upnext");
   // Stable, so the memoized queue tile doesn't re-render with the rest of the layout.
   const toggleQueue = useCallback(() => setBig((b) => (b === "queue" ? null : "queue")), []);
@@ -216,7 +263,7 @@ export default function BentoLayout() {
   return (
     <UiStyleScope value="m3" className="np-bento relative flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="scroll-y min-h-0 flex-1 px-6 pt-6">
-        <div className="bento-grid" data-expanded={expanded ? "" : undefined} data-lyrics={lyrics && videoId ? "" : undefined}>
+        <div className="bento-grid" data-expanded={expanded ? "" : undefined} data-lyrics={lyricsAside ? "" : undefined}>
           <Tile area="cover" label="Artwork" className="relative overflow-hidden !p-0">
             <CoverArt className="h-full w-full" halo="inner" />
             <div className="absolute left-4 top-4"><PodcastMode /></div>
@@ -254,11 +301,11 @@ export default function BentoLayout() {
               <QueueTile open={false} onToggle={toggleQueue} tab={queueTab} setTab={setQueueTab} />
             </div>
           )}
-          {big === "queue" && <ExpandedQueue onToggle={toggleQueue} tab={queueTab} setTab={setQueueTab} />}
-          {big === "lyrics" && expanded && <Expanded onClose={() => setBig(null)} />}
+          {bigShown === "queue" && <ExpandedQueue tileRef={bigRef} onToggle={toggleQueue} tab={queueTab} setTab={setQueueTab} />}
+          {bigShown === "lyrics" && <Expanded tileRef={bigRef} onClose={() => setBig(null)} />}
           {/* Autoplay and the lyrics preview: their own column on wide windows, under Up next on medium ones. */}
           {!expanded && (
-            <div className="bento-aside">
+            <div ref={asideRef} className="bento-aside">
               <Tile area="context" label="Autoplay and mixes" className="flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -269,7 +316,7 @@ export default function BentoLayout() {
                 </div>
                 <div className="-mx-2 -mb-3"><QueueChips /></div>
               </Tile>
-              {lyrics && videoId && (
+              {lyricsAside && (
                 <Tile area="lyrics" label="Lyrics" className="flex min-h-0 flex-col gap-3">
                   <LyricsPreview />
                   <button className="m3-btn m3-tonal h-10 shrink-0 self-start" onClick={() => setBig("lyrics")}><MicVocal size={18} aria-hidden /> Lyrics</button>
