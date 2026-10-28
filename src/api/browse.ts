@@ -1,6 +1,6 @@
 // Raw InnerTube calls shared by the app (ytm.ts) and scripts/dbg.ts.
 import { bestThumb, flattenPage, mapRawItem, parseBrowse, runsText } from "./raw";
-import { isPodcastSearch, podcastsFirst } from "./searchOrder";
+import { isPodcastSearch, podcastsFirst, preferSongOnTop } from "./searchOrder";
 import type {
   BrowsePage, BrowseRef, Continuation, Item, LibrarySection, SearchGroup, SearchResults, Suggestions,
 } from "./types";
@@ -61,12 +61,13 @@ export function toSearchResults(page: BrowsePage, query = ""): SearchResults {
   // In YouTube Music's order (the order the groups first appear), unless it's a search for a podcast.
   const inOrder = [...buckets.keys()].map((id) => ({ id, items: buckets.get(id)! }));
   const podcastFirst = isPodcastSearch(query, top, inOrder);
-  const groups = podcastFirst ? podcastsFirst(inOrder) : inOrder;
+  // The song rather than its video on top (searchOrder.ts).
+  const preferred = preferSongOnTop(top, topActions, podcastFirst ? podcastsFirst(inOrder) : inOrder);
   return {
-    top,
-    topActions,
+    top: preferred.top,
+    topActions: preferred.actions,
     shelves,
-    groups,
+    groups: preferred.groups,
     podcastFirst,
     chips: page.chips,
     messages: page.messages,
