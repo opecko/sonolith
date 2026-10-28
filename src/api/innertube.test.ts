@@ -3,12 +3,12 @@ import { loggedInFlag, makeYtFetch } from "./innertube";
 
 describe("makeYtFetch", () => {
   const capture = () => {
-    const calls: { url: string; headers: Headers }[] = [];
+    const calls: { url: string; headers: Headers; body?: unknown }[] = [];
     const base = (async (u: RequestInfo | URL, init?: RequestInit) => {
-      calls.push({ url: String(u), headers: new Headers(init?.headers) });
+      calls.push({ url: String(u), headers: new Headers(init?.headers), body: init?.body });
       return new Response("{}");
     }) as typeof fetch;
-    return { calls, f: makeYtFetch(base, { cookie: () => "SAPISID=abc; SID=x", authUser: () => 1 }) };
+    return { calls, f: makeYtFetch(base, { cookie: () => "SAPISID=abc; SID=x", authUser: () => 1, pageId: () => "42" }) };
   };
 
   it("routes WEB_REMIX calls to music host with matching origin and auth", async () => {
@@ -49,6 +49,19 @@ describe("makeYtFetch", () => {
     await f("https://www.youtube.com/youtubei/v1/player", { method: "POST", body: '{"context":{"client":{"clientName":"VISIONOS"}}}', headers: { Cookie: "SAPISID=x" } });
     expect(calls[0].headers.get("Cookie")).toBeNull();
     expect(calls[0].headers.get("Origin")).toBe("https://www.youtube.com");
+  });
+
+  it("acts as the brand account except for anonymous mobile clients and the account list", async () => {
+    const { calls, f } = capture();
+    await f("https://www.youtube.com/youtubei/v1/browse", { method: "POST", body: '{"context":{"client":{"clientName":"WEB_REMIX"}}}' });
+    const visionos = '{"context":{"client":{"clientName":"VISIONOS"},"user":{"onBehalfOfUser":"42"}}}';
+    await f("https://www.youtube.com/youtubei/v1/player", { method: "POST", body: visionos, headers: { "X-Goog-PageId": "42" } });
+    await f("https://music.youtube.com/getAccountSwitcherEndpoint", { method: "GET" });
+    expect(calls[0].headers.get("X-Goog-PageId")).toBe("42");
+    expect(calls[1].headers.get("X-Goog-PageId")).toBeNull();
+    expect(JSON.parse(String(calls[1].body)).context.user).toEqual({});
+    expect(calls[2].headers.get("Cookie")).toContain("SAPISID");
+    expect(calls[2].headers.get("X-Goog-PageId")).toBeNull();
   });
 });
 

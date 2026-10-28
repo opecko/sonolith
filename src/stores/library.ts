@@ -16,9 +16,13 @@ interface LibraryState {
   rename: (id: string, title: string) => Promise<void>;
   /** Shows a song added (+1) or removed (-1) in the playlist's track count before YouTube confirms it. */
   adjustCount: (id: string, delta: number) => void;
+  /** Forgets the list (another account): the sidebar loads the new one. */
+  reset: () => void;
 }
 
 let inflight: Promise<void> | null = null;
+/** Bumped by reset so a load still running for the previous account doesn't write its list. */
+let generation = 0;
 
 /**
  * Playlists created here that the library listing doesn't show yet: YouTube adds them to it with a delay, so
@@ -59,6 +63,7 @@ export const useLibrary = create<LibraryState>((set, get) => ({
   error: null,
   load: () =>
     (inflight ??= (async () => {
+      const gen = generation;
       try {
         let page = await getLibrary("playlists");
         const all = [...page.items];
@@ -71,11 +76,11 @@ export const useLibrary = create<LibraryState>((set, get) => ({
         for (const [id, until] of deleted) if (until < now || !all.some((p) => p.id === id)) deleted.delete(id);
         for (const [id, r] of renamed) if (r.until < now || all.some((p) => p.id === id && p.title === r.title)) renamed.delete(id);
         const listed = all.filter((p) => !deleted.has(p.id)).map((p) => (renamed.has(p.id) ? { ...p, title: renamed.get(p.id)!.title } : p));
-        set({ playlists: [...[...fresh.values()].map((f) => f.item), ...listed], error: null });
+        if (gen === generation) set({ playlists: [...[...fresh.values()].map((f) => f.item), ...listed], error: null });
       } catch (e) {
-        set({ error: e instanceof Error ? e.message : String(e) });
+        if (gen === generation) set({ error: e instanceof Error ? e.message : String(e) });
       } finally {
-        inflight = null;
+        if (gen === generation) inflight = null;
       }
     })()),
   create: async (title, opts) => {
@@ -90,6 +95,16 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     return id;
   },
   changed: () => reloadLater(),
+  reset: () => {
+    generation++;
+    inflight = null;
+    lagged.forEach(clearTimeout);
+    lagged = [];
+    fresh.clear();
+    deleted.clear();
+    renamed.clear();
+    set({ playlists: null, error: null });
+  },
   adjustCount: (id, delta) =>
     set((s) => ({ playlists: s.playlists?.map((p) => (p.id === id ? { ...p, subtitle: countedSubtitle(p.subtitle, delta) } : p)) ?? null })),
   remove: async (id) => {

@@ -46,7 +46,12 @@ spawning processes, CORS-free streaming).
 ### API layer (`src/api/`)
 
 - `client.ts` / `innertube.ts`: youtubei.js `Innertube` setup (runtime-agnostic so `scripts/dbg.ts` shares it),
-  `makeYtFetch` (cookie header, SAPISIDHASH per origin, `X-Goog-AuthUser` for brand accounts). Locale is `hl=en`.
+  `makeYtFetch` (cookie header, SAPISIDHASH per origin, `X-Goog-AuthUser` / `X-Goog-PageId`). Locale is `hl=en`.
+  Account switcher (avatar menu): `accounts.ts` parses `music.youtube.com/getAccountSwitcherEndpoint` (the Google
+  accounts in the cookie and their channels); a choice is the session index (`X-Goog-AuthUser`) plus, for a brand
+  account, its page id (`context.user.onBehalfOfUser`, stripped from the anonymous mobile stream requests). It's kept
+  in `localStorage["account"]`; `useAuth().switchAccount` drops cached data and bumps `accountGen`, which remounts
+  the view. A 401 while acting as another account falls back to the main one instead of signing out.
   Signed out, `getClient()` is anonymous (browse, search, playback work); account calls go through
   `getAccountClient()` / `accountExec` in `ytm.ts` and throw `AuthError` signed out. Only Library and History show
   the sign-in prompt (`ACCOUNT_ROUTES` in `MainView.tsx`).

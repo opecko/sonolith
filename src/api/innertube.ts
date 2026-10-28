@@ -9,10 +9,14 @@ export const LOCATION = "CZ";
 const isYouTubeApi = (url: string) => /^https:\/\/(music|www)\.youtube\.com\/youtubei\//.test(url);
 /** Playback stats pings (watch history); they only count when sent with the account cookie. */
 const isStatsPing = (url: string) => /^https:\/\/(music|www|s)\.youtube\.com\/api\/stats\//.test(url);
+/** The account switcher's list (Google accounts in the cookie and their channels). */
+export const ACCOUNT_SWITCHER_URL = "https://music.youtube.com/getAccountSwitcherEndpoint";
 
 export interface YtFetchOptions {
   cookie: () => string | null;
   authUser?: () => number;
+  /** A brand account's page id (X-Goog-PageId), when the app acts as one. */
+  pageId?: () => string | undefined;
   onResponse?: (res: Response) => void;
 }
 
@@ -31,28 +35,43 @@ export function makeYtFetch(base: typeof fetch, opts: YtFetchOptions): typeof fe
       url = url.replace("://www.youtube.com/", "://music.youtube.com/");
     // Mobile clients reject cookie/SAPISID auth with 400 INVALID_ARGUMENT; send them anonymously.
     const mobile = api && typeof init?.body === "string" && /"clientName":"(ANDROID|IOS|VISIONOS)[A-Z_]*"/.test(init.body);
+    let body = init?.body;
     if (mobile) {
-      for (const h of ["Cookie", "Authorization", "X-Goog-AuthUser"]) headers.delete(h);
+      for (const h of ["Cookie", "Authorization", "X-Goog-AuthUser", "X-Goog-PageId"]) headers.delete(h);
+      // Anonymous requests can't act as a brand account.
+      if (typeof body === "string" && body.includes('"onBehalfOfUser"')) body = withoutBehalf(body);
       // Without an explicit Origin the Tauri HTTP plugin sends the app's own (http://tauri.localhost on Windows,
       // tauri://localhost on Linux), and /player answers mobile clients with 403 (dbg origin, 2026-10-05).
       headers.set("Origin", "https://www.youtube.com");
     }
-    if ((api || isStatsPing(url)) && cookie && !mobile) {
+    if ((api || isStatsPing(url) || url === ACCOUNT_SWITCHER_URL) && cookie && !mobile) {
       const origin = new URL(url).origin; // must match Host or Google answers 400
       headers.set("Cookie", cookie);
       headers.set("Origin", origin);
       headers.set("X-Origin", origin);
       headers.set("Referer", `${origin}/`);
       headers.set("X-Goog-AuthUser", String(opts.authUser?.() ?? 0));
+      const pageId = opts.pageId?.();
+      if (pageId && url !== ACCOUNT_SWITCHER_URL) headers.set("X-Goog-PageId", pageId);
       const jar = parseCookie(cookie);
       const sapisid = jar.SAPISID ?? jar["__Secure-3PAPISID"];
       if (sapisid) headers.set("Authorization", await sapisidHash(sapisid, origin));
     }
     const method = init?.method ?? (input instanceof Request ? input.method : undefined);
-    const res = await base(api ? url : (input as RequestInfo), { ...init, method, headers });
+    const res = await base(api ? url : (input as RequestInfo), { ...init, method, headers, body });
     opts.onResponse?.(res);
     return res;
   };
+}
+
+function withoutBehalf(body: string): string {
+  try {
+    const json = JSON.parse(body);
+    if (json?.context?.user) delete json.context.user.onBehalfOfUser;
+    return JSON.stringify(json);
+  } catch {
+    return body;
+  }
 }
 
 /**
@@ -61,14 +80,18 @@ export function makeYtFetch(base: typeof fetch, opts: YtFetchOptions): typeof fe
  */
 Platform.shim.eval = (data) => new Function(data.output)();
 
-/** Without a cookie the client is anonymous (signed out): browsing, search and playback still work. */
-export function createInnertube(fetchFn: typeof fetch, cookie?: string, accountIndex = 0) {
+/**
+ * Without a cookie the client is anonymous (signed out): browsing, search and playback still work. `onBehalfOfUser`
+ * is a brand account's page id (the channel the requests act as within the account `accountIndex`).
+ */
+export function createInnertube(fetchFn: typeof fetch, cookie?: string, accountIndex = 0, onBehalfOfUser?: string) {
   return Innertube.create({
     cookie,
     fetch: fetchFn,
     lang: LANG,
     location: LOCATION,
     account_index: accountIndex,
+    on_behalf_of_user: onBehalfOfUser,
   });
 }
 

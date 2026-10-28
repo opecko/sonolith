@@ -250,6 +250,8 @@
 [data-ui-style="m3"] .m3-menu-header { margin-bottom: 4px; padding: 8px 12px 12px; border-bottom: 1px solid var(--m3-outline-variant); }
 [data-ui-style="m3"] .m3-menu-header p:first-child { color: var(--m3-on-surface); font-weight: 500; }
 [data-ui-style="m3"] .m3-menu-header p + p { color: var(--m3-on-surface-variant); }
+/* The account switcher's list in the account menu. */
+[data-ui-style="m3"] .m3-menu-section { border-color: var(--m3-outline-variant); }
 [data-ui-style="m3"] .m3-menu-item:disabled { opacity: 1; color: color-mix(in srgb, var(--m3-on-surface) 38%, transparent); }
 
 /* ---------- Dialogs, snackbar, floating cards ---------- */

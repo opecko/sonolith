@@ -50,6 +50,7 @@ function Routed() {
 
 export default function MainView() {
   const status = useAuth((s) => s.status);
+  const accountGen = useAuth((s) => s.accountGen);
   const route = useNav((s) => s.route);
   const ref = useRef<HTMLElement>(null);
   const key = "id" in route ? `${route.name}:${route.id}:${"params" in route ? route.params : ""}` : "query" in route ? `search:${route.query}` : route.name;
@@ -59,7 +60,7 @@ export default function MainView() {
 
   return (
     <main ref={ref} className="scroll-y min-h-0 flex-1 px-8 pb-8 pt-6">
-      {status === "loading" ? null : status === "signedOut" && ACCOUNT_ROUTES.has(route.name) ? <SignInPrompt /> : <ErrorBoundary key={key}><Routed /></ErrorBoundary>}
+      {status === "loading" ? null : status === "signedOut" && ACCOUNT_ROUTES.has(route.name) ? <SignInPrompt /> : <ErrorBoundary key={`${key}@${accountGen}`}><Routed /></ErrorBoundary>}
     </main>
   );
 }
