@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { getVideoStreamUrl } from "../api/stream";
-import { nextLead, videoSync } from "../playback/videoSync";
+import { FIRST_GUESS, learn, videoSync } from "../playback/videoSync";
 import { getAudio } from "../stores/player";
 import { Spinner } from "./LoadingIndicator";
 
 /** How often the video is checked against the audio clock while shown (timeupdate alone is too coarse to steer by). */
 const TICK_MS = 250;
+/** After a seek lands, it's judged once the picture has been moving this long (the `seeked` event comes first). */
+const SETTLE_MS = 500;
 
 /**
  * The muted video of a podcast episode or music video, slaved to the playing <audio>, which keeps the sound and
@@ -41,8 +43,9 @@ export default function TrackVideo({ videoId }: { videoId: string }) {
     const a = getAudio();
     if (!v || !src) return;
     let lastSeek = -Infinity;
-    let pendingSeek = 0;
-    let lead = 0.2;
+    let learnt = FIRST_GUESS;
+    /** A seek this loop made, waiting to be judged: when it landed (0: not yet). */
+    let judging: { landed: number } | null = null;
     let force = true;
     const tick = () => {
       if (document.hidden) {
@@ -54,31 +57,37 @@ export default function TrackVideo({ videoId }: { videoId: string }) {
       const now = performance.now();
       // WebKitGTK reports HAVE_CURRENT_DATA (2) for a streamed video even while it plays fine, so 2 isn't "busy".
       const busy = v.seeking || v.readyState < 2;
+      const audioPlaying = !a.paused && !a.ended && a.readyState >= 3;
+      // Where the last seek really landed, once the picture moves again: the next one aims accordingly.
+      if (judging?.landed && !busy && !v.paused && audioPlaying && now - judging.landed > SETTLE_MS) {
+        learnt = learn(learnt, a.currentTime - v.currentTime);
+        judging = null;
+      }
       const act = videoSync({
         audioTime: a.currentTime,
         audioRate: a.playbackRate,
-        audioPlaying: !a.paused && !a.ended && a.readyState >= 3,
+        audioPlaying,
         videoTime: v.currentTime,
         videoBusy: busy,
         sinceSeek: (now - lastSeek) / 1000,
-        lead,
+        learnt,
         force,
         videoDuration: v.duration,
       });
       force = false;
       if (act.seek !== undefined) {
         v.currentTime = act.seek;
-        lastSeek = pendingSeek = now;
+        lastSeek = now;
+        // Judged only for seeks made while playing (a paused one lands exactly).
+        judging = act.play ? { landed: 0 } : null;
       }
       // Only when the audio's speed changes (podcasts): on WebKitGTK every rate change flushes the pipeline.
       if (Math.abs(v.playbackRate - act.rate) > 0.001) v.playbackRate = act.rate;
       if (act.play && v.paused) void v.play().catch(() => {});
       else if (!act.play && !v.paused) v.pause();
     };
-    // How long seeks take to land here: the next one aims that far ahead.
     const onSeeked = () => {
-      if (pendingSeek) lead = nextLead(lead, (performance.now() - pendingSeek) / 1000);
-      pendingSeek = 0;
+      if (judging) judging.landed = performance.now();
     };
     const forced = () => {
       force = true;

@@ -5,8 +5,9 @@
  * Two traps shape it (docs/dev/pitfalls.md):
  * - A seek on a streamed video takes longer than a small drift (a new Range request, a keyframe, buffering), so
  *   seeking on every bit of drift never lands: after a user seek the video was always "behind" again by the time it
- *   got there. Seeks therefore aim ahead by how long the last one took (`lead`), and there's no new one while one
- *   is landing or within `SEEK_COOLDOWN_S`.
+ *   got there. Seeks therefore aim ahead (`lead`), learnt from where the last ones really landed once playing again
+ *   (`learn`; the `seeked` event comes before the picture moves), and there's no new one while one is landing or
+ *   within the cooldown. Seeks that keep missing widen the tolerance and the cooldown instead of blinking forever.
  * - On WebKitGTK a playbackRate change is a GStreamer seek too (the pipeline flushes, the picture blinks), so drift
  *   is never corrected by nudging the rate: the video plays at the audio's rate and only a real drift seeks.
  */
@@ -14,9 +15,21 @@
 /** Drift (s) the eye doesn't catch on a muted picture; up to this the video just plays on. */
 export const TOLERANCE_S = 0.25;
 export const SEEK_COOLDOWN_S = 2;
-/** The seek lead is the last seek's measured time, within these bounds. */
-export const MIN_LEAD_S = 0.05;
-export const MAX_LEAD_S = 1;
+/** The seek lead stays within these bounds. */
+export const MIN_LEAD_S = 0;
+export const MAX_LEAD_S = 1.5;
+
+/** What seeks taught so far: how far ahead to aim, and how many in a row missed. */
+export interface Learnt {
+  lead: number;
+  misses: number;
+}
+export const FIRST_GUESS: Learnt = { lead: 0.2, misses: 0 };
+
+/** Drift let be: wider after misses (up to 2 s), so a video that can't keep up isn't seeked over and over. */
+export const tolerance = (l: Learnt) => Math.min(2, TOLERANCE_S * 2 ** l.misses);
+/** Time between corrective seeks, longer after misses too. */
+export const cooldown = (l: Learnt) => Math.min(30, SEEK_COOLDOWN_S * 2 ** l.misses);
 
 export interface SyncInput {
   /** Audio position and rate; `audioPlaying` false when paused, ended or waiting for data. */
@@ -28,8 +41,7 @@ export interface SyncInput {
   videoBusy: boolean;
   /** Seconds since the last seek this controller issued (Infinity: never). */
   sinceSeek: number;
-  /** How long a seek takes to land here (seconds, measured); seeks aim this far ahead of the audio. */
-  lead: number;
+  learnt: Learnt;
   /** Seek now (the user seeked the audio, the video just loaded, the window came back). */
   force?: boolean;
   /** Video duration, when known: seeks never aim past its end. */
@@ -47,16 +59,20 @@ export interface SyncAction {
 
 export function videoSync(i: SyncInput): SyncAction {
   const clamp = (t: number) => Math.max(0, i.videoDuration && Number.isFinite(i.videoDuration) ? Math.min(t, i.videoDuration - 0.05) : t);
-  const off = Math.abs(i.videoTime - i.audioTime) > TOLERANCE_S;
+  const off = Math.abs(i.videoTime - i.audioTime) > tolerance(i.learnt);
   // Paused audio: the video stands still where the audio is (no playback to race, so no lead).
   if (!i.audioPlaying) return { rate: i.audioRate, play: false, seek: (i.force || off) && !i.videoBusy ? clamp(i.audioTime) : undefined };
-  const ahead = clamp(i.audioTime + Math.min(MAX_LEAD_S, Math.max(MIN_LEAD_S, i.lead)) * i.audioRate);
+  const ahead = clamp(i.audioTime + i.learnt.lead * i.audioRate);
   if (i.force) return { rate: i.audioRate, play: true, seek: ahead };
-  if (!off || i.videoBusy || i.sinceSeek < SEEK_COOLDOWN_S) return { rate: i.audioRate, play: true };
+  if (!off || i.videoBusy || i.sinceSeek < cooldown(i.learnt)) return { rate: i.audioRate, play: true };
   return { rate: i.audioRate, play: true, seek: ahead };
 }
 
-/** The next lead from a seek that just took `took` seconds to land: smoothed, so one slow seek doesn't overshoot. */
-export function nextLead(lead: number, took: number) {
-  return Math.min(MAX_LEAD_S, Math.max(MIN_LEAD_S, lead * 0.5 + took * 0.5));
+/**
+ * After a seek, once the video plays again: `behind` = audio time − video time. Still behind means aim further
+ * ahead next time (ahead: less far); a landing outside the tolerance counts as a miss, one inside clears them.
+ */
+export function learn(l: Learnt, behind: number): Learnt {
+  const lead = Math.min(MAX_LEAD_S, Math.max(MIN_LEAD_S, l.lead + behind * 0.8));
+  return { lead, misses: Math.abs(behind) > TOLERANCE_S ? Math.min(l.misses + 1, 4) : 0 };
 }

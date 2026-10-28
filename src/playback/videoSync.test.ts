@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { MAX_LEAD_S, MIN_LEAD_S, nextLead, SEEK_COOLDOWN_S, videoSync, type SyncInput } from "./videoSync";
+import { cooldown, FIRST_GUESS, learn, MAX_LEAD_S, SEEK_COOLDOWN_S, tolerance, videoSync, type SyncInput } from "./videoSync";
 
-const base: SyncInput = { audioTime: 60, audioRate: 1, audioPlaying: true, videoTime: 60, videoBusy: false, sinceSeek: Infinity, lead: 0.2 };
+const base: SyncInput = { audioTime: 60, audioRate: 1, audioPlaying: true, videoTime: 60, videoBusy: false, sinceSeek: Infinity, learnt: FIRST_GUESS };
 
 describe("videoSync", () => {
   it("plays along at the audio's rate when in sync", () => {
@@ -44,10 +44,32 @@ describe("videoSync", () => {
   });
 });
 
-describe("nextLead", () => {
-  it("follows measured seek times, bounded", () => {
-    expect(nextLead(0.2, 0.6)).toBeCloseTo(0.4);
-    expect(nextLead(0.2, 10)).toBe(MAX_LEAD_S);
-    expect(nextLead(0.05, 0)).toBe(MIN_LEAD_S);
+describe("learning where seeks land", () => {
+  it("aims further ahead after landing behind, less after landing ahead", () => {
+    expect(learn(FIRST_GUESS, 0.5).lead).toBeGreaterThan(FIRST_GUESS.lead);
+    expect(learn(FIRST_GUESS, -0.1).lead).toBeLessThan(FIRST_GUESS.lead);
+    expect(learn(FIRST_GUESS, 10).lead).toBe(MAX_LEAD_S);
+  });
+
+  it("backs off after misses instead of seeking (and blinking) forever, and recovers after a good landing", () => {
+    let l = FIRST_GUESS;
+    for (let k = 0; k < 3; k++) l = learn(l, 0.8);
+    expect(l.misses).toBe(3);
+    expect(tolerance(l)).toBeGreaterThan(tolerance(FIRST_GUESS));
+    expect(cooldown(l)).toBeGreaterThan(SEEK_COOLDOWN_S);
+    expect(videoSync({ ...base, videoTime: 59.2, learnt: l }).seek).toBeUndefined();
+    expect(learn(l, 0.05).misses).toBe(0);
+  });
+
+  it("converges when seeks land a steady amount late", () => {
+    // The video always resumes `late` seconds after where it was sent, relative to the audio.
+    const late = 0.6;
+    let l = FIRST_GUESS;
+    let behind = 0;
+    for (let k = 0; k < 6; k++) {
+      behind = late - l.lead;
+      l = learn(l, behind);
+    }
+    expect(Math.abs(late - l.lead)).toBeLessThan(0.05);
   });
 });

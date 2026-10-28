@@ -37,8 +37,10 @@ find a new one.
 
 - **A slaved `<video>` must not be seeked on every drift.** A streamed video's seek (Range request, keyframe,
   buffering) takes longer than a third of a second, so seeking whenever it drifted that far kept it seeking forever
-  after a user seek. `playback/videoSync.ts` lets drift up to 0.25 s be and otherwise seeks ahead by the last
-  seek's measured time, never while one is landing. **Don't steer a video by `playbackRate` on WebKitGTK**: every
+  after a user seek. `playback/videoSync.ts` lets drift up to 0.25 s be and otherwise seeks ahead, never while
+  one is landing. The lead is learnt from where seeks really land once the picture moves again: `seeked` fires
+  before that, so timing seeks to `seeked` left every landing late and re-seeked every 2 s (a steady blink). Misses
+  widen the tolerance and the cooldown. **Don't steer a video by `playbackRate` on WebKitGTK**: every
   rate change is a GStreamer seek (flush), so the picture blinks; and a streamed video reports `readyState` 2
   (HAVE_CURRENT_DATA) while playing fine, so "< 3" can't mean buffering. The proxy also must keep the video's entry: with 8 entries the audio, its retries
   and the visualizer's copy pushed it out and the video's later Range requests got 404 (now 64, deduplicated).
