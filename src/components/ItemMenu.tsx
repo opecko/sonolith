@@ -12,6 +12,7 @@ import { useAuth } from "../stores/auth";
 import { markEpisode, useEpisodeProgress } from "../stores/episodeProgress";
 import { useLibrary } from "../stores/library";
 import { isOwnPlaylist } from "../stores/ownership";
+import { noteRemoved, noteSaved } from "../stores/playlistMembers";
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
 import { useToast } from "../stores/toast";
@@ -44,25 +45,28 @@ export function ownPlaylist(id: string): Item | undefined {
   return p && isOwnPlaylist(p, owners) ? p : undefined;
 }
 
-function removeEntry(track: Track, playlistId: string): MenuEntry {
+/** Removes the track from a playlist (count updated at once, a toast either way); resolves to whether it worked. */
+export function removeFromPlaylistAction(track: Track, playlistId: string): Promise<boolean> {
   const title = useLibrary.getState().playlists?.find((p) => p.id === playlistId)?.title ?? "this playlist";
-  return {
-    label: "Remove from playlist",
-    icon: <ListMinus size={S} />,
-    onSelect: () => {
-      useLibrary.getState().adjustCount(playlistId, -1);
-      removeFromPlaylist(playlistId, track.id).then(
-        () => {
-          useToast.getState().show(`Removed from "${title}"`, "info");
-          playlistChanged(playlistId);
-        },
-        (e) => {
-          void useLibrary.getState().load(); // undo the count
-          useToast.getState().show(`Could not remove from "${title}": ${errMsg(e)}`);
-        },
-      );
+  useLibrary.getState().adjustCount(playlistId, -1);
+  noteRemoved(playlistId, track.id);
+  return removeFromPlaylist(playlistId, track.id).then(
+    () => {
+      useToast.getState().show(`Removed from "${title}"`, "info");
+      playlistChanged(playlistId);
+      return true;
     },
-  };
+    (e) => {
+      void useLibrary.getState().load(); // undo the count
+      noteSaved(playlistId, track.id);
+      useToast.getState().show(`Could not remove from "${title}": ${errMsg(e)}`);
+      return false;
+    },
+  );
+}
+
+function removeEntry(track: Track, playlistId: string): MenuEntry {
+  return { label: "Remove from playlist", icon: <ListMinus size={S} />, onSelect: () => void removeFromPlaylistAction(track, playlistId) };
 }
 
 /** Asks, then deletes the user's playlist; leaves its page if that's where the user is. */
@@ -93,28 +97,33 @@ async function deletePlaylistAsked(item: Item) {
   }
 }
 
-/** Saves the track into a playlist (count updated at once, a toast either way). */
-export function saveToPlaylist(track: Track, p: { id: string; title: string }) {
+/** Saves the track into a playlist (count updated at once, a toast either way); resolves to whether it worked. */
+export function saveToPlaylist(track: Track, p: { id: string; title: string }): Promise<boolean> {
   useLibrary.getState().adjustCount(p.id, 1);
-  addToPlaylist(p.id, track.id).then(
+  noteSaved(p.id, track.id);
+  return addToPlaylist(p.id, track.id).then(
     () => {
       useToast.getState().show(`Saved to "${p.title}"`, "info");
       playlistChanged(p.id);
+      return true;
     },
     (e) => {
       void useLibrary.getState().load(); // undo the count
+      noteRemoved(p.id, track.id);
       useToast.getState().show(`Could not save to "${p.title}": ${errMsg(e)}`);
+      return false;
     },
   );
 }
 
-export function playlistEntries(track: Track): MenuEntry[] {
+/** The user's own playlists as menu entries that save the track; `onSaved` hears a save that worked. */
+export function playlistEntries(track: Track, onSaved?: () => void): MenuEntry[] {
   const lib = useLibrary.getState();
   if (!lib.playlists) void lib.load();
   // Only the user's own: saving into a playlist saved from someone else fails.
   return (lib.playlists ?? [])
     .filter((p) => isOwnPlaylist(p, lib.owners))
-    .map((p) => ({ label: p.title, onSelect: () => saveToPlaylist(track, p) }));
+    .map((p) => ({ label: p.title, onSelect: () => void saveToPlaylist(track, p).then((ok) => ok && onSaved?.()) }));
 }
 
 // Toggles flipped this session (feedback token → done), so a reopened menu shows the opposite action.
