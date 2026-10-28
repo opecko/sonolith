@@ -13,7 +13,8 @@ function Artwork() {
   const [failed, setFailed] = useState<string | null>(null);
   const hi = hiResArt(track?.thumbnail, track?.id);
   const src = hi && failed !== hi ? hi : track?.thumbnail;
-  const withVideo = !!track && hasVideo(track);
+  const live = usePlayer((s) => s.live);
+  const withVideo = !!track && hasVideo(track, live);
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-6 p-8">
       {/* Audio (Song) / Video only for podcast episodes and music videos, like YouTube Music. */}

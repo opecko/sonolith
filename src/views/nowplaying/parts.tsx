@@ -28,10 +28,11 @@ export const useCurrentTrack = () => usePlayer((s) => s.queue[s.index] as Track 
 export function CoverArt({ className = "", halo = "outer" }: { className?: string; halo?: "outer" | "inner" }) {
   const track = useCurrentTrack();
   const video = useUi((s) => s.showVideo);
+  const live = usePlayer((s) => s.live);
   const [failed, setFailed] = useState<string | null>(null);
   const hi = hiResArt(track?.thumbnail, track?.id);
   const src = hi && failed !== hi ? hi : track?.thumbnail;
-  if (track && hasVideo(track) && video)
+  if (track && hasVideo(track, live) && video)
     return <div className={`flex items-center justify-center overflow-hidden bg-[var(--m3-scrim)] ${className}`}><TrackVideo key={track.id} videoId={track.id} /></div>;
   return (
     <div className={`relative ${className}`}>
@@ -45,15 +46,24 @@ export function CoverArt({ className = "", halo = "outer" }: { className?: strin
   );
 }
 
+/**
+ * A live stream's video is an endless MPEG-TS stream from the proxy (src-tauri/src/live.rs): WebKitGTK plays it,
+ * WebView2 (Windows) can't, so there it's offered as audio only.
+ */
+const LIVE_VIDEO = /Linux/.test(navigator.userAgent);
+
 /** Whether Now Playing can show a real video for the track: podcast episodes and music videos (not songs). */
-export const hasVideo = (t: Pick<Track, "podcast" | "video">) => !!(t.podcast || t.video);
+export const hasVideo = (t: Pick<Track, "podcast" | "video">, live = false) => !!(t.podcast || t.video) && (!live || LIVE_VIDEO);
 
 /** The two choices, like YouTube Music: Audio / Video for episodes, Song / Video for music videos. */
 export const videoModes = (podcast: boolean) => [podcast ? "Audio" : "Song", "Video"] as const;
 
 /** Audio (Song) / Video for episodes and music videos (connected button group). */
 export function VideoMode() {
-  const kind = usePlayer((s) => (s.queue[s.index]?.podcast ? "podcast" : s.queue[s.index]?.video ? "video" : null));
+  const kind = usePlayer((s) => {
+    const t = s.queue[s.index];
+    return !t || !hasVideo(t, s.live) ? null : t.podcast ? "podcast" : "video";
+  });
   const video = useUi((s) => s.showVideo);
   if (!kind) return null;
   return (
