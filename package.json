@@ -1,7 +1,7 @@
 {
   "name": "sonolith",
   "private": true,
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Lightweight YouTube Music desktop client",
   "license": "MIT",
   "repository": "github:opecko/sonolith",
