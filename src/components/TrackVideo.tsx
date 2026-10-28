@@ -140,7 +140,7 @@ function VideoFrame({ videoRef, src, loaded, error, onError, onLoaded }: {
 }) {
   return (
     <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-[var(--radius)] bg-scrim">
-      {src && <video ref={videoRef} src={src} muted playsInline preload="auto" onError={onError} onLoadedData={onLoaded} className="h-full w-full object-contain" />}
+      {src && <video ref={videoRef} src={src} muted playsInline preload="auto" onError={onError} onLoadedData={onLoaded} className={`h-full w-full object-contain ${loaded ? "" : "invisible"}`} />}
       {!loaded && !error && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <Spinner size={32} className="text-[var(--c-text-muted)]" label="Loading video" />
@@ -153,6 +153,8 @@ function VideoFrame({ videoRef, src, loaded, error, onError, onLoaded }: {
 
 /** A reconnect at most this often (a stream that keeps stalling isn't hammered). */
 const LIVE_RECONNECT_MS = 5000;
+/** About how long a live video takes from asking to its first frame (a segment fetched through the proxy). */
+const LIVE_FIRST_FRAME_S = 1.5;
 
 /**
  * A live stream's video. Its adaptive formats are single ~5 s segments (the old way froze at the end of one), so
@@ -167,6 +169,9 @@ function LiveVideo({ videoId }: { videoId: string }) {
   const [src, setSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  // In step with the audio at least once: until then the video waits at its first frame, out of sight (a spinner
+  // instead of a picture that moves a few frames and freezes).
+  const [inStep, setInStep] = useState(false);
   const [attempt, setAttempt] = useState(0);
   /** Audio time at which the video stream's first segment starts. */
   const offset = useRef(0);
@@ -188,10 +193,12 @@ function LiveVideo({ videoId }: { videoId: string }) {
       if (!alive) return;
       if (!info) throw new Error("The live stream hasn't started.");
       const [start, secs] = info;
-      // One segment more than where the audio is: fetching it takes a moment, and the video waits at its start.
-      const from = start + Math.ceil(a.currentTime / secs) + 1;
+      // The first segment boundary the audio won't have passed by the time the video's first frame is in: the video
+      // can only start at a boundary, and waits there for the audio (0–5 s; a further segment meant up to 10 s).
+      const from = start + Math.ceil((a.currentTime + LIVE_FIRST_FRAME_S) / secs);
       offset.current = (from - start) * secs;
       base.current = null;
+      if (alive) setInStep(false);
       const local = await invoke<string>("proxy_live_url", { url: playlist });
       logPlayback(`${videoId} live video: audio began at segment ${start} (${secs} s), audio at ${a.currentTime.toFixed(1)} s, video from ${from} (attempt ${attempt})`);
       if (alive) setSrc(`${local}?from=${from}&attempt=${attempt}`);
@@ -236,6 +243,7 @@ function LiveVideo({ videoId }: { videoId: string }) {
         videoTime: v.currentTime - base.current,
         audioPlaying: audioPlaying(),
       });
+      if (act === "play") setInStep(true);
       if (act === "play" && v.paused) void v.play().catch(() => {});
       else if (act === "wait" && !v.paused) v.pause();
       else if (act === "reconnect") reconnect();
@@ -266,5 +274,5 @@ function LiveVideo({ videoId }: { videoId: string }) {
     logPlayback(`${videoId} live video MediaError code=${err?.code ?? "?"} msg=${err?.message ?? ""}`);
     setError("This video can't be played.");
   };
-  return <VideoFrame videoRef={ref} src={src} loaded={loaded} error={error} onError={onError} onLoaded={() => setLoaded(true)} />;
+  return <VideoFrame videoRef={ref} src={src} loaded={loaded && inStep} error={error} onError={onError} onLoaded={() => setLoaded(true)} />;
 }
