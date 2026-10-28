@@ -123,7 +123,7 @@ let queueGen = 0;
 let radioReq = 0;
 let loadingMore: Promise<boolean> | null = null;
 const LOAD_MORE_AT = 3;
-/** A live stream this far behind its live edge when playback resumes jumps back to live. */
+/** A live stream paused at least this long jumps back to live when it resumes. */
 const LIVE_BEHIND_S = 10;
 const AUTOPLAY_RETRY_MS = 5000;
 let history: string[] = [];
@@ -398,12 +398,15 @@ export const usePlayer = create<PlayerState>((set, get) => {
   }
 
   audio.addEventListener("playing", () => set({ status: "playing" }));
-  // A live stream resumed after a pause plays on from where it stopped; like YouTube Music, go back to live (the
-  // end of what the playlist offers, a few seconds in from it so there's something buffered).
+  // A live stream resumed after a longer pause would play on from where it stopped; like YouTube Music, go back to
+  // live. It's one endless stream from the proxy (no seeking), so that's a new connection, which starts at the edge.
+  let livePausedAt = 0;
+  audio.addEventListener("pause", () => (livePausedAt = current?.live ? Date.now() : 0));
   audio.addEventListener("play", () => {
-    if (!current?.live || !audio.seekable.length) return;
-    const edge = audio.seekable.end(audio.seekable.length - 1);
-    if (Number.isFinite(edge) && edge - audio.currentTime > LIVE_BEHIND_S) audio.currentTime = Math.max(0, edge - 3);
+    if (!current?.live || !livePausedAt || Date.now() - livePausedAt < LIVE_BEHIND_S * 1000) return;
+    livePausedAt = 0;
+    audio.src = current.url;
+    void audio.play().catch(() => {});
   });
   // An episode's position is saved every few seconds while it plays, and when it pauses or ends.
   let episodeSavedAt = 0;

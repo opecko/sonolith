@@ -84,12 +84,17 @@ async fn serve(mut sock: TcpStream, client: reqwest::Client) -> Result<(), Strin
             .await;
         return Ok(());
     }
-    let id = path.strip_prefix("/s/").unwrap_or("");
+    // /l/<id>: a live stream's HLS playlist, served as one endless audio stream (live.rs).
+    let live = path.starts_with("/l/");
+    let id = path.strip_prefix("/s/").or_else(|| path.strip_prefix("/l/")).unwrap_or("");
     let url = PROXY.get().and_then(|p| p.urls.lock().unwrap().iter().find(|(i, _)| i == id).map(|(_, u)| u.clone()));
     let Some(url) = url else {
         let _ = sock.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").await;
         return Ok(());
     };
+    if live {
+        return crate::live::serve(sock, client, url, method == "HEAD", allowed).await;
+    }
     let mut req = client.get(&url);
     if let Some(r) = headers.get("range") {
         req = req.header("Range", r);
@@ -124,6 +129,16 @@ async fn serve(mut sock: TcpStream, client: reqwest::Client) -> Result<(), Strin
 /// Registers a googlevideo URL and returns a local URL that streams it with Range support.
 #[tauri::command]
 pub async fn proxy_url(url: String) -> Result<String, String> {
+    register(url, "s").await
+}
+
+/// Registers a live stream's (audio) HLS playlist and returns a local URL that plays it as one endless stream.
+#[tauri::command]
+pub async fn proxy_live_url(url: String) -> Result<String, String> {
+    register(url, "l").await
+}
+
+async fn register(url: String, kind: &str) -> Result<String, String> {
     if !allowed(&url) {
         return Err("only https googlevideo.com URLs can be proxied".into());
     }
@@ -136,7 +151,7 @@ pub async fn proxy_url(url: String) -> Result<String, String> {
     // The same stream again (a remount, a retry): its existing local URL, kept as the newest.
     if let Some(pos) = urls.iter().position(|(_, u)| *u == url) {
         let entry = urls.remove(pos);
-        let local = format!("http://127.0.0.1:{}/s/{}", p.port, entry.0);
+        let local = format!("http://127.0.0.1:{}/{kind}/{}", p.port, entry.0);
         urls.push(entry);
         return Ok(local);
     }
@@ -145,7 +160,7 @@ pub async fn proxy_url(url: String) -> Result<String, String> {
     urls.push((id.clone(), url));
     let excess = urls.len().saturating_sub(MAX_ENTRIES);
     urls.drain(..excess);
-    Ok(format!("http://127.0.0.1:{}/s/{id}", p.port))
+    Ok(format!("http://127.0.0.1:{}/{kind}/{id}", p.port))
 }
 
 #[cfg(test)]

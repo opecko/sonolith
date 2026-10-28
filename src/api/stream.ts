@@ -79,7 +79,7 @@ async function viaInnertube(videoId: string, codecs: Codec[]): Promise<Stream> {
         const hls = info.streaming_data?.hls_manifest_url;
         const master = hls ? await fetchText(hls) : null;
         const audio = master && pickHlsAudio(master);
-        if (audio) return { url: audio, source: "innertube", codec: "aac", origin: audio, live: true };
+        if (audio) return liveStream(audio);
         if (master) liveMaster ??= lowestVariant(master) ?? hls!;
         errors.push(`${client}: live, ${master ? "no audio-only rendition" : "no HLS playlist"}`);
         continue;
@@ -102,8 +102,17 @@ async function viaInnertube(videoId: string, codecs: Codec[]): Promise<Stream> {
       errors.push(`${client}: ${e}`);
     }
   }
-  if (liveMaster) return { url: liveMaster, source: "innertube", codec: "aac", origin: liveMaster, live: true };
+  if (liveMaster) return liveStream(liveMaster);
   throw new Error(`innertube: no playable format (${errors.slice(-3).join("; ")})`);
+}
+
+/**
+ * A live playlist as one endless stream from the local proxy (src-tauri/src/live.rs): WebKitGTK's <audio> refuses
+ * HLS itself (MediaError 4, GStreamer's HLS demuxer or not).
+ */
+async function liveStream(playlist: string): Promise<Stream> {
+  const url = await invoke<string>("proxy_live_url", { url: playlist });
+  return { url, source: "innertube", codec: "aac", origin: playlist, live: true, proxied: true };
 }
 
 /** A playlist's text (null on failure: the next client is tried). */

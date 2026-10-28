@@ -88,8 +88,11 @@ find a new one.
   IDs `LM` (Liked Music), `RD…` (mixes), `SE` (Episodes for later) aren't editable.
 - **Live streams have no progressive audio.** Their adaptive formats are segment URLs: the `<audio>` element plays a
   few seconds of one and reports a nonsense length, and some clients answer "Streaming data not available". Play the
-  HLS playlist's audio-only rendition instead (`api/hls.ts`; itag 234 AAC / 233 HE-AAC), which WebKitGTK plays
-  through GStreamer's HLS demuxer. yt-dlp says "Video unavailable" for them.
+  HLS playlist's audio-only rendition instead (`api/hls.ts`; itag 234 AAC / 233 HE-AAC). **WebKitGTK's `<audio>`
+  refuses HLS** (MediaError 4 right away, even with GStreamer's hlsdemux installed), so the proxy plays the playlist
+  as one endless `audio/aac` stream (`src-tauri/src/live.rs`: each ~5 s segment is an ID3 tag + ADTS, the tag is
+  dropped). The VISIONOS client's master playlist has audio-only renditions, YTMUSIC's only muxed variants.
+  yt-dlp says "Video unavailable" or "Requested format is not available" for them.
 - Chips exist only on radio queues; `/next` on bare videos/albums carries an automix seed instead.
 
 ## youtubei.js

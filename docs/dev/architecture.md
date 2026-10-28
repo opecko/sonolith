@@ -62,7 +62,8 @@ spawning processes, CORS-free streaming).
 - `mappers.ts`: maps youtubei.js parsed nodes (playlist/album/artist pages) to app types, accessed structurally.
 - `stream.ts`: picks an audio stream. Order: InnerTube **YTMUSIC** (fast, Premium 256 kbps) → **VISIONOS** (complete
   streams without Premium, sent without cookies) → **yt-dlp** (Rust spawns it, ~8 s). Live streams (live stations)
-  play the audio-only rendition of their HLS playlist (`hls.ts`); the player's `live` flag swaps the seek bars for
+  play the audio-only rendition of their HLS playlist (`hls.ts`), streamed as plain AAC by the proxy (`live.rs`);
+  the player's `live` flag swaps the seek bars for
   a "Live" indicator, and resuming after a pause jumps back to the live edge. `<audio>` errors walk a
   recovery ladder (same URL via the local proxy → the other resolver). Failures are logged to `debug/playback.log`.
 - `ytm.ts`: the facade (getHome, getPlaylist, search, rate, addToPlaylist, removeFromPlaylist, createPlaylist,
@@ -118,6 +119,7 @@ spawning processes, CORS-free streaming).
 | --- | --- |
 | `lib.rs` | Builder: single-instance (second launch shows the window), plugins (http, opener, global-shortcut), setup (MPRIS, tray, render flags), close-to-tray, command registration, `log_playback`. |
 | `auth.rs` | Google sign-in window, cookie in the OS keyring (service `sonolith`; an empty one is filled from the old `ytdesk` entry on read, which stays until sign-out clears both) (`auth_get_cookie`, `auth_set_cookie`, `auth_clear`, `auth_login`). |
+| `live.rs` | Live stations: polls an HLS audio playlist and serves its segments (ID3 stripped) as one endless `audio/aac` stream at the proxy's `/l/<id>` (`proxy_live_url`); WebKitGTK's `<audio>` refuses HLS. Parsers unit-tested. |
 | `proxy.rs` | Local HTTP Range proxy for streams the webview refuses directly, and for the visualizer's copy of the stream (it sends CORS headers, googlevideo doesn't for the app) (`proxy_url`, `stream_probe`). |
 | `ytdlp.rs` | Managed yt-dlp binary (install, weekly `-U`, custom path, JS runtime detection, temp cookies) — `ytdlp_status/install/update/set_path/stream_url`. |
 | `mpris.rs` | Linux: native MPRIS over zbus (`org.mpris.MediaPlayer2.sonolith`); `mpris_update` snapshots in, `mpris` events out. |

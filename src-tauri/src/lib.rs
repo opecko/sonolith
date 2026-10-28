@@ -6,6 +6,7 @@ mod lyrics;
 mod migrate;
 #[cfg(target_os = "linux")]
 mod mpris;
+mod live;
 mod proxy;
 mod render;
 mod tray;
@@ -104,6 +105,7 @@ pub fn run() {
             lyrics::lyrics_get,
             lyrics::lyrics_clear_cache,
             proxy::proxy_url,
+            proxy::proxy_live_url,
             proxy::stream_probe,
             ytdlp::ytdlp_status,
             ytdlp::ytdlp_install,
