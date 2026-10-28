@@ -37,8 +37,10 @@ find a new one.
 
 - **A slaved `<video>` must not be seeked on every drift.** A streamed video's seek (Range request, keyframe,
   buffering) takes longer than a third of a second, so seeking whenever it drifted that far kept it seeking forever
-  after a user seek. `playback/videoSync.ts` nudges the rate for small drift and seeks only when far off, aimed a
-  little ahead, once per landing. The proxy also must keep the video's entry: with 8 entries the audio, its retries
+  after a user seek. `playback/videoSync.ts` lets drift up to 0.25 s be and otherwise seeks ahead by the last
+  seek's measured time, never while one is landing. **Don't steer a video by `playbackRate` on WebKitGTK**: every
+  rate change is a GStreamer seek (flush), so the picture blinks; and a streamed video reports `readyState` 2
+  (HAVE_CURRENT_DATA) while playing fine, so "< 3" can't mean buffering. The proxy also must keep the video's entry: with 8 entries the audio, its retries
   and the visualizer's copy pushed it out and the video's later Range requests got 404 (now 64, deduplicated).
 - YouTube Music's Song / Video "counterpart" (a song's music video with a time map) never came back in `/next`
   for our clients (2026-10-28, WEB_REMIX old and current versions, with or without `isAudioOnly`), so Video is

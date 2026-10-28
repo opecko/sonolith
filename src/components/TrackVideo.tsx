@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { getVideoStreamUrl } from "../api/stream";
-import { videoSync } from "../playback/videoSync";
+import { nextLead, videoSync } from "../playback/videoSync";
 import { getAudio } from "../stores/player";
 import { Spinner } from "./LoadingIndicator";
 
 /** How often the video is checked against the audio clock while shown (timeupdate alone is too coarse to steer by). */
 const TICK_MS = 250;
-/** Buffering this long shows the spinner over the video (a quick seek doesn't flash it). */
-const SPINNER_AFTER_MS = 400;
 
 /**
  * The muted video of a podcast episode or music video, slaved to the playing <audio>, which keeps the sound and
@@ -19,13 +17,15 @@ export default function TrackVideo({ videoId }: { videoId: string }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [src, setSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [buffering, setBuffering] = useState(false);
+  // The first frame is in: from then on the picture stays up (a seek or a stall doesn't bring the spinner back).
+  const [loaded, setLoaded] = useState(false);
   const retried = useRef(false);
 
   useEffect(() => {
     let live = true;
     setSrc(null);
     setError(null);
+    setLoaded(false);
     retried.current = false;
     getVideoStreamUrl(videoId).then(
       (url) => live && setSrc(url),
@@ -41,7 +41,8 @@ export default function TrackVideo({ videoId }: { videoId: string }) {
     const a = getAudio();
     if (!v || !src) return;
     let lastSeek = -Infinity;
-    let busySince = 0;
+    let pendingSeek = 0;
+    let lead = 0.2;
     let force = true;
     const tick = () => {
       if (document.hidden) {
@@ -51,7 +52,8 @@ export default function TrackVideo({ videoId }: { videoId: string }) {
       }
       if (v.readyState < 1) return; // no metadata yet: loadedmetadata ticks again
       const now = performance.now();
-      const busy = v.seeking || v.readyState < 3;
+      // WebKitGTK reports HAVE_CURRENT_DATA (2) for a streamed video even while it plays fine, so 2 isn't "busy".
+      const busy = v.seeking || v.readyState < 2;
       const act = videoSync({
         audioTime: a.currentTime,
         audioRate: a.playbackRate,
@@ -59,19 +61,24 @@ export default function TrackVideo({ videoId }: { videoId: string }) {
         videoTime: v.currentTime,
         videoBusy: busy,
         sinceSeek: (now - lastSeek) / 1000,
+        lead,
         force,
         videoDuration: v.duration,
       });
       force = false;
       if (act.seek !== undefined) {
         v.currentTime = act.seek;
-        lastSeek = now;
+        lastSeek = pendingSeek = now;
       }
+      // Only when the audio's speed changes (podcasts): on WebKitGTK every rate change flushes the pipeline.
       if (Math.abs(v.playbackRate - act.rate) > 0.001) v.playbackRate = act.rate;
       if (act.play && v.paused) void v.play().catch(() => {});
       else if (!act.play && !v.paused) v.pause();
-      busySince = busy && act.play ? busySince || now : 0;
-      setBuffering(!!busySince && now - busySince > SPINNER_AFTER_MS);
+    };
+    // How long seeks take to land here: the next one aims that far ahead.
+    const onSeeked = () => {
+      if (pendingSeek) lead = nextLead(lead, (performance.now() - pendingSeek) / 1000);
+      pendingSeek = 0;
     };
     const forced = () => {
       force = true;
@@ -82,6 +89,7 @@ export default function TrackVideo({ videoId }: { videoId: string }) {
     a.addEventListener("seeked", forced);
     v.addEventListener("loadedmetadata", forced);
     v.addEventListener("canplay", tick);
+    v.addEventListener("seeked", onSeeked);
     document.addEventListener("visibilitychange", forced);
     tick();
     return () => {
@@ -90,6 +98,7 @@ export default function TrackVideo({ videoId }: { videoId: string }) {
       a.removeEventListener("seeked", forced);
       v.removeEventListener("loadedmetadata", forced);
       v.removeEventListener("canplay", tick);
+      v.removeEventListener("seeked", onSeeked);
       document.removeEventListener("visibilitychange", forced);
     };
   }, [src]);
@@ -99,13 +108,14 @@ export default function TrackVideo({ videoId }: { videoId: string }) {
   const onError = () => {
     if (retried.current) return setError("This video can't be played.");
     retried.current = true;
+    setLoaded(false);
     getVideoStreamUrl(videoId, true).then(setSrc, (e) => setError(e instanceof Error ? e.message : String(e)));
   };
 
   return (
     <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-[var(--radius)] bg-scrim">
-      {src && <video ref={ref} src={src} muted playsInline preload="auto" onError={onError} className="h-full w-full object-contain" />}
-      {((!src && !error) || buffering) && (
+      {src && <video ref={ref} src={src} muted playsInline preload="auto" onError={onError} onLoadedData={() => setLoaded(true)} className="h-full w-full object-contain" />}
+      {!loaded && !error && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <Spinner size={32} className="text-[var(--c-text-muted)]" label="Loading video" />
         </div>
