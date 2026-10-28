@@ -9,7 +9,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 const UA: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
-const MAX_ENTRIES: usize = 8;
+/// Registered URLs kept (newest last). Generous: the audio, its recovery, the visualizer's copy and a video all
+/// register theirs, and a video whose entry was dropped could no longer seek (its Range requests got 404).
+const MAX_ENTRIES: usize = 64;
 
 struct Proxy {
     port: u16,
@@ -130,9 +132,16 @@ pub async fn proxy_url(url: String) -> Result<String, String> {
         let _ = PROXY.set(Proxy { port, urls: Mutex::new(Vec::new()) });
     }
     let p = PROXY.get().unwrap();
+    let mut urls = p.urls.lock().unwrap();
+    // The same stream again (a remount, a retry): its existing local URL, kept as the newest.
+    if let Some(pos) = urls.iter().position(|(_, u)| *u == url) {
+        let entry = urls.remove(pos);
+        let local = format!("http://127.0.0.1:{}/s/{}", p.port, entry.0);
+        urls.push(entry);
+        return Ok(local);
+    }
     let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
     let id = format!("{:x}{:x}", COUNTER.fetch_add(1, Ordering::Relaxed), nanos as u64);
-    let mut urls = p.urls.lock().unwrap();
     urls.push((id.clone(), url));
     let excess = urls.len().saturating_sub(MAX_ENTRIES);
     urls.drain(..excess);
