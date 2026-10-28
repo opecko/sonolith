@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { getClient } from "./client";
+import { lowestVariant, pickHlsAudio } from "./hls";
 
 export type Codec = "opus" | "aac";
 export type StreamSource = "innertube" | "yt-dlp";
@@ -12,6 +14,8 @@ export interface Stream {
   /** Original googlevideo URL and format, for diagnostics after a MediaError. */
   origin?: string;
   itag?: number;
+  /** A live stream (an HLS playlist, no length, no seeking, see hls.ts). */
+  live?: boolean;
 }
 
 /** Appends a line to debug/playback.log via Rust; never throws. */
@@ -64,9 +68,22 @@ export function supportedCodecs(canPlay: (mime: string) => string = (m) => new A
 async function viaInnertube(videoId: string, codecs: Codec[]): Promise<Stream> {
   const yt = await getClient();
   const errors: string[] = [];
+  /** A live stream's master playlist without an audio rendition: played (its cheapest variant) if no client has one. */
+  let liveMaster: string | null = null;
   for (const client of CLIENTS) {
     try {
       const info = await yt.getBasicInfo(videoId, { client });
+      // Live stations: their adaptive formats are segment URLs (the element would play a few seconds and report a
+      // nonsense length), so they play the HLS audio rendition instead.
+      if (info.basic_info?.is_live) {
+        const hls = info.streaming_data?.hls_manifest_url;
+        const master = hls ? await fetchText(hls) : null;
+        const audio = master && pickHlsAudio(master);
+        if (audio) return { url: audio, source: "innertube", codec: "aac", origin: audio, live: true };
+        if (master) liveMaster ??= lowestVariant(master) ?? hls!;
+        errors.push(`${client}: live, ${master ? "no audio-only rendition" : "no HLS playlist"}`);
+        continue;
+      }
       if (client === "YTMUSIC" && !(info.streaming_data?.adaptive_formats ?? []).some((f) => PREMIUM_ITAGS.has(f.itag))) {
         errors.push("YTMUSIC: no Premium formats, its streams would stop after ~1 MB");
         continue;
@@ -85,7 +102,14 @@ async function viaInnertube(videoId: string, codecs: Codec[]): Promise<Stream> {
       errors.push(`${client}: ${e}`);
     }
   }
+  if (liveMaster) return { url: liveMaster, source: "innertube", codec: "aac", origin: liveMaster, live: true };
   throw new Error(`innertube: no playable format (${errors.slice(-3).join("; ")})`);
+}
+
+/** A playlist's text (null on failure: the next client is tried). */
+async function fetchText(url: string): Promise<string | null> {
+  const res = await tauriFetch(url).catch(() => null);
+  return res?.ok ? res.text() : null;
 }
 
 async function viaYtdlp(videoId: string, codecs: Codec[]): Promise<Stream> {

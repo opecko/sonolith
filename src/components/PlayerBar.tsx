@@ -211,8 +211,30 @@ export function M3Controls({ status, shuffle, repeat, hasTrack, podcast, size = 
   );
 }
 
+/**
+ * In place of the seek bar for a live stream (no length, nothing to seek to): a "Live" label with a dot, and the
+ * track drawn full, so the bar keeps its place and size.
+ */
+export function LiveIndicator({ className = "" }: { className?: string }) {
+  return (
+    <div className={`flex w-full items-center gap-3 ${className}`} role="status" aria-label="Live stream">
+      <span className="flex shrink-0 items-center gap-1.5 font-medium uppercase tracking-wide text-[var(--c-text)]">
+        <span className="h-2 w-2 rounded-full bg-[var(--c-accent)]" aria-hidden />
+        Live
+      </span>
+      <span className="h-1 flex-1 rounded-full bg-[var(--c-accent)] opacity-60" aria-hidden />
+    </div>
+  );
+}
+
 /** The only component subscribed to the playback clock. */
 function Progress() {
+  const live = usePlayer((s) => s.live);
+  if (live) return <div className="flex w-full max-w-[600px] items-center text-xs"><LiveIndicator /></div>;
+  return <SeekProgress />;
+}
+
+function SeekProgress() {
   const position = useProgress((s) => s.position);
   const duration = useProgress((s) => s.duration);
   const seek = usePlayer((s) => s.seek);

@@ -61,7 +61,9 @@ spawning processes, CORS-free streaming).
   `/next` (queue, chips, related, lyrics), menus, podcasts.
 - `mappers.ts`: maps youtubei.js parsed nodes (playlist/album/artist pages) to app types, accessed structurally.
 - `stream.ts`: picks an audio stream. Order: InnerTube **YTMUSIC** (fast, Premium 256 kbps) → **VISIONOS** (complete
-  streams without Premium, sent without cookies) → **yt-dlp** (Rust spawns it, ~8 s). `<audio>` errors walk a
+  streams without Premium, sent without cookies) → **yt-dlp** (Rust spawns it, ~8 s). Live streams (live stations)
+  play the audio-only rendition of their HLS playlist (`hls.ts`); the player's `live` flag swaps the seek bars for
+  a "Live" indicator, and resuming after a pause jumps back to the live edge. `<audio>` errors walk a
   recovery ladder (same URL via the local proxy → the other resolver). Failures are logged to `debug/playback.log`.
 - `ytm.ts`: the facade (getHome, getPlaylist, search, rate, addToPlaylist, removeFromPlaylist, createPlaylist,
   deletePlaylist, getWatch, startRadio, recordHistory, …). `exec(endpoint, body)` = raw call.

@@ -5,7 +5,7 @@ import { hiResArt } from "../../api/art";
 import PlaybackError from "../../components/PlaybackError";
 import type { Track } from "../../api/types";
 import { useTrackMenu } from "../../components/ItemMenu";
-import { byline, fmtTime, M3Controls, TrackMoreMenu } from "../../components/PlayerBar";
+import { byline, fmtTime, LiveIndicator, M3Controls, TrackMoreMenu } from "../../components/PlayerBar";
 import { Byline } from "../../components/TrackByline";
 import TrackVideo from "../../components/TrackVideo";
 import RatingButtons from "../../components/RatingButtons";
@@ -80,6 +80,12 @@ export function TrackLinks({ track, className = "" }: { track: Track; className?
 
 /** Seek bar with "0:11 / 3:43"; the only part of a layout that re-renders on the clock (once a second). */
 export function SeekBar({ className = "", times = "inline" }: { className?: string; times?: "inline" | "split" }) {
+  const live = usePlayer((s) => s.live);
+  if (live) return <LiveIndicator className={`type-label-large min-h-12 ${className}`} />;
+  return <TrackSeekBar className={className} times={times} />;
+}
+
+function TrackSeekBar({ className, times }: { className: string; times: "inline" | "split" }) {
   const position = useProgress((s) => s.position);
   const duration = useProgress((s) => s.duration);
   const seek = usePlayer((s) => s.seek);

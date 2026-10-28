@@ -105,7 +105,8 @@ export function acquire(): () => void {
 export function analyserFor(): AnalyserNode | null {
   const main = getAudio();
   const stream = currentStream();
-  if (main.paused || !stream || !setup()) {
+  // A live stream is an HLS playlist of segments the proxy can't make CORS-clean: no visualizer for it.
+  if (main.paused || !stream || stream.live || !setup()) {
     if (copy && !copy.paused) copy.pause();
     return null;
   }

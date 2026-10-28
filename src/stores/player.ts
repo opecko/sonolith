@@ -48,6 +48,8 @@ interface PlayerState {
   watch: (NextResult & { videoId: string }) | null;
   /** While /next for a new track is on its way: the track before had Related, so Now Playing keeps offering it. */
   relatedHeld: boolean;
+  /** The current track is a live stream (a live station): no length, no seeking; the UI shows "Live". */
+  live: boolean;
   chips: QueueChip[];
   activeChipId: string | null;
   chipLoading: boolean;
@@ -121,6 +123,8 @@ let queueGen = 0;
 let radioReq = 0;
 let loadingMore: Promise<boolean> | null = null;
 const LOAD_MORE_AT = 3;
+/** A live stream this far behind its live edge when playback resumes jumps back to live. */
+const LIVE_BEHIND_S = 10;
 const AUTOPLAY_RETRY_MS = 5000;
 let history: string[] = [];
 let autoplayInflight: Promise<void> | null = null;
@@ -182,7 +186,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     const track = get().queue[index];
     if (!track) return;
     const mine = ++gen;
-    set({ index, status: "loading", error: null });
+    set({ index, status: "loading", error: null, live: !!opts.reuse?.live });
     useProgress.setState({ position: resumeAt, duration: track.durationSec ?? 0 });
     updateMediaSession(track);
     try {
@@ -190,6 +194,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       if (opts.proxy && !stream.proxied) stream = await viaProxy(stream);
       if (mine !== gen) return;
       current = stream;
+      if (!!stream.live !== get().live) set({ live: !!stream.live });
       audio.src = stream.url;
       applyRate(); // a new src resets playbackRate
       if (resumeAt > 0) {
@@ -393,6 +398,13 @@ export const usePlayer = create<PlayerState>((set, get) => {
   }
 
   audio.addEventListener("playing", () => set({ status: "playing" }));
+  // A live stream resumed after a pause plays on from where it stopped; like YouTube Music, go back to live (the
+  // end of what the playlist offers, a few seconds in from it so there's something buffered).
+  audio.addEventListener("play", () => {
+    if (!current?.live || !audio.seekable.length) return;
+    const edge = audio.seekable.end(audio.seekable.length - 1);
+    if (Number.isFinite(edge) && edge - audio.currentTime > LIVE_BEHIND_S) audio.currentTime = Math.max(0, edge - 3);
+  });
   // An episode's position is saved every few seconds while it plays, and when it pauses or ends.
   let episodeSavedAt = 0;
   function saveEpisode(force: boolean) {
@@ -510,6 +522,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     context: saved?.context ?? {},
     watch: null,
     relatedHeld: false,
+    live: false,
     chips: saved?.chips ?? [],
     activeChipId: saved?.activeChipId ?? null,
     chipLoading: false,
