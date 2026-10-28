@@ -1,5 +1,5 @@
 import { Maximize2, Minimize2, MicVocal, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward } from "lucide-react";
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useShallow } from "zustand/react/shallow";
 import AutoplayToggle from "../../components/AutoplayToggle";
 import PlaybackError from "../../components/PlaybackError";
@@ -7,14 +7,13 @@ import { PlayIcon, SkipSeconds } from "../../components/PlayerBar";
 import PodcastSpeed from "../../components/PodcastSpeed";
 import VolumeControl from "../../components/VolumeControl";
 import { QueueChips } from "../../components/QueueChips";
-import Thumb from "../../components/Thumb";
-import { Byline } from "../../components/TrackByline";
 import { useTransportTitles } from "../../shortcuts/hint";
 import { UiStyleScope } from "../../components/UiStyle";
 import { Spring, tween, useSwap } from "../../motion";
 import { usePlayer, type Repeat as RepeatMode } from "../../stores/player";
 import { CloseNowPlaying, CoverArt, PodcastMode, SeekBar, TrackActions, TrackLinks, useCurrentTrack } from "./parts";
 import LyricsView from "../../lyrics/LyricsView";
+import QueueList from "../../components/QueueList";
 import { LyricsTab, RelatedPanel, UpNextTab, useTrackExtras } from "./shared";
 
 function Tile({ area, className = "", children, label }: { area: string; className?: string; children: ReactNode; label?: string }) {
@@ -94,32 +93,6 @@ function useSlideOut<T>(value: T | null, ref: RefObject<HTMLElement | null>, ani
 /** Wide windows give Autoplay and the lyrics a third column (m3-components.css, `.bento-grid[data-lyrics]`). */
 const LYRICS_COLUMN = "(min-width: 1440px)";
 
-/** As many of the next tracks as fit; a click plays one. */
-function QueuePreview() {
-  // The queue array itself (stable until it changes), sliced here: a selector returning a new slice every time
-  // would never compare equal.
-  const { queue, index } = usePlayer(useShallow((s) => ({ queue: s.queue, index: s.index })));
-  const next = useMemo(() => queue.slice(index + 1, index + 31), [queue, index]);
-  if (!next.length) return <p className="type-body-medium px-1 text-[var(--m3-on-surface-variant)]">Nothing queued after this one.</p>;
-  return (
-    <ol className="flex flex-col gap-0.5">
-      {next.map((t, i) => (
-        <li key={`${t.id}:${i}`} className="m3-row group relative flex items-center gap-3 p-1.5">
-          <span className="relative shrink-0">
-            <Thumb src={t.thumbnail} px={40} className="h-10 w-10" />
-            <span className="m3-art absolute inset-0 hidden items-center justify-center bg-scrim/60 text-on-scrim group-hover:flex"><Play size={16} fill="currentColor" aria-hidden /></span>
-          </span>
-          <span className="min-w-0 flex-1">
-            {/* Covers the row (row-hit); the artist and album names are links above it. */}
-            <button className="row-hit type-body-large block max-w-full truncate text-left" onClick={() => usePlayer.getState().playIndex(index + 1 + i)}>{t.title}</button>
-            <span className="row-above type-body-medium block truncate text-[var(--m3-on-surface-variant)]"><Byline track={t} text={t.artists.join(", ") || t.subtitle} /></span>
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 /** The lyrics in a tile: synced ones follow the song (the current line near the top), plain ones fade out. */
 function LyricsPreview() {
   return (
@@ -181,7 +154,8 @@ function Expanded({ onClose, tileRef }: { onClose: () => void; tileRef: RefObjec
 
 /** The queue's two panes, memoized: switching Up next ↔ Related re-renders neither. */
 const UpNextPane = memo(function UpNextPane({ open }: { open: boolean }) {
-  return open ? <div className="flex min-h-0 flex-1 flex-col"><UpNextTab /></div> : <div className="min-h-0 flex-1 overflow-hidden"><QueuePreview /></div>;
+  // Collapsed it's the same list (scrolls, plays on click, drag to reorder) without the header, chips and Autoplay.
+  return open ? <div className="flex min-h-0 flex-1 flex-col"><UpNextTab /></div> : <div className="scroll-y min-h-0 flex-1 pr-1"><QueueList autoScroll /></div>;
 });
 const RelatedPane = memo(RelatedPanel);
 
