@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chooseLyrics, lineAt, pickWinner, tierOf, type LyricsData } from "./pick";
+import { chooseLyrics, lineAt, lyricsShown, pickWinner, tierOf, type LyricsData } from "./pick";
 
 const synced = (provider: LyricsData["provider"]): LyricsData => ({ provider, synced: true, lines: [{ start: 0, text: "a" }] });
 const plain = (provider: LyricsData["provider"]): LyricsData => ({ provider, synced: false, lines: [], plain: "a" });
@@ -44,5 +44,21 @@ describe("quality tiers", () => {
     expect(pickWinner([a("youtube", "unsynced"), a("kugou", "error"), a("lrclib", "line-synced")])?.index).toBe(2);
     expect(pickWinner([a("youtube", "none"), a("lrclib", "timeout")])).toBeNull();
     expect(pickWinner([a("youtube", "line-synced"), a("lrclib", "word-synced")])?.reason).toContain("beats line-synced from youtube");
+  });
+});
+
+describe("lyricsShown", () => {
+  const data = synced("lrclib");
+  it("shows lyrics the track has", () => {
+    expect(lyricsShown({ id: "a", status: "done", data, held: false }, "a")).toBe(true);
+    expect(lyricsShown({ id: "a", status: "done", data: null, held: true }, "a")).toBe(false);
+  });
+  it("holds the UI while loading only when the track before had lyrics", () => {
+    expect(lyricsShown({ id: "a", status: "loading", data: null, held: true }, "a")).toBe(true);
+    expect(lyricsShown({ id: "a", status: "loading", data: null, held: false }, "a")).toBe(false);
+  });
+  it("never for another track", () => {
+    expect(lyricsShown({ id: "a", status: "done", data, held: false }, "b")).toBe(false);
+    expect(lyricsShown({ id: "a", status: "done", data, held: false }, undefined)).toBe(false);
   });
 });

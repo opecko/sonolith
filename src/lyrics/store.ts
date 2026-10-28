@@ -25,9 +25,11 @@ interface LyricsState {
   id: string | null;
   status: "idle" | "loading" | "done";
   data: LyricsData | null;
+  /** While loading: the track before had lyrics, so the lyrics UI stays up until this one's answer (pick.ts lyricsShown). */
+  held: boolean;
 }
 
-export const useLyrics = create<LyricsState>(() => ({ id: null, status: "idle", data: null }));
+export const useLyrics = create<LyricsState>(() => ({ id: null, status: "idle", data: null, held: false }));
 
 /** `lyrics_get`'s arguments; `onUpdate` gets the best answer so far each time a better one arrives. */
 export function lyricsRequest(t: Track, providers: LyricsProviderId[], debug = false, onUpdate?: (r: LyricsResponse) => void) {
@@ -75,7 +77,10 @@ export async function findLyrics(track: Track, alive: () => boolean = () => true
 let gen = 0;
 async function load(track: Track) {
   const mine = ++gen;
-  useLyrics.setState({ id: track.id, status: "loading", data: null });
+  const before = useLyrics.getState();
+  // Skipping quickly through several tracks keeps holding what the last answered one had.
+  const held = !!before.data || (before.status === "loading" && before.held);
+  useLyrics.setState({ id: track.id, status: "loading", data: null, held });
   // The best answer so far is shown at once and upgraded in place (line-synced → word-synced).
   const show = (d: LyricsData) => {
     const now = useLyrics.getState().data;
@@ -139,7 +144,7 @@ function ensure(force = false) {
   const track = usePlayer.getState().queue[usePlayer.getState().index];
   if (!track) return;
   if (track.podcast) {
-    if (useLyrics.getState().id !== track.id) useLyrics.setState({ id: track.id, status: "done", data: null });
+    if (useLyrics.getState().id !== track.id) useLyrics.setState({ id: track.id, status: "done", data: null, held: false });
     return;
   }
   if (!((useUi.getState().nowPlaying && !document.hidden) || apiWants) || !useSettings.getState().lyricsEnabled) return;

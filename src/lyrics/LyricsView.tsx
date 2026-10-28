@@ -1,6 +1,6 @@
-import { Fragment, useLayoutEffect, useMemo, useRef } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, Loading } from "../components/Status";
-import { Spring } from "../motion";
+import { Spring, tween } from "../motion";
 import { onPlayhead } from "../playback/playhead";
 import { usePlayer } from "../stores/player";
 import { useSettings } from "../stores/settings";
@@ -98,13 +98,46 @@ export function LyricsCredit({ data }: { data: LyricsData }) {
   return <p className="mt-6 text-xs text-[var(--c-text-subtle)]">Lyrics from {PROVIDER_NAMES[data.provider]}{source}</p>;
 }
 
+/** Cached lyrics arrive within this; only a slower answer shows the loading skeleton (no flash of it on every skip). */
+const LOADING_DELAY_MS = 350;
+
+function DelayedLoading() {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShown(true), LOADING_DELAY_MS);
+    return () => clearTimeout(t);
+  }, []);
+  return shown ? <Loading variant="list" label="Loading lyrics" /> : <div aria-busy="true" aria-label="Loading lyrics" />;
+}
+
+/**
+ * Fades its element in once, when it mounts (a new track's lyrics). Driven per frame by the motion engine, not CSS:
+ * WebKitGTK flashes the pre-animation opacity when a CSS animation ends (pitfalls.md). Jumps in with animations off.
+ */
+function useFadeIn<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.opacity = "0";
+    return tween(260, (t) => 1 - (1 - t) ** 3, (p) => (el.style.opacity = String(p)), () => (el.style.opacity = ""));
+  }, []);
+  return ref;
+}
+
 /** The lyrics of the playing track, synced when a provider has them (Now Playing's lyrics tab / tile). */
 export default function LyricsView({ size = "full" }: { size?: "full" | "preview" }) {
-  const { status, data } = useLyrics();
-  if (status !== "done") return <Loading variant="list" label="Loading lyrics" />;
+  const { status, data, id } = useLyrics();
+  if (status !== "done" && !data) return <DelayedLoading />;
   if (!data) return <EmptyState title="Lyrics aren't available" />;
+  // Keyed by track: an upgrade in place (line-synced → word-synced) doesn't fade again.
+  return <LyricsBody key={id} data={data} size={size} />;
+}
+
+function LyricsBody({ data, size }: { data: LyricsData; size: "full" | "preview" }) {
+  const ref = useFadeIn<HTMLDivElement>();
   return (
-    <div className={size === "preview" ? "" : "px-2"}>
+    <div ref={ref} className={size === "preview" ? "" : "px-2"}>
       {data.synced ? <SyncedLines lines={data.lines} size={size} /> : (
         <p className={`select-text whitespace-pre-wrap ${size === "preview" ? "type-body-large" : "text-lg leading-8"}`}>{data.plain}</p>
       )}

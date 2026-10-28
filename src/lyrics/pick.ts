@@ -70,3 +70,12 @@ export function lineAt(lines: LyricLine[], ms: number): number {
   return found;
 }
 
+
+/**
+ * Whether Now Playing shows its lyrics tab / tile / button for `videoId`: the track has lyrics, or they're still
+ * loading and the previous track had some (`held`). Without the hold every skip would take the lyrics UI away and
+ * bring it back a moment later, reflowing the layout twice.
+ */
+export function lyricsShown(s: { id: string | null; status: string; data: unknown; held: boolean }, videoId: string | undefined) {
+  return !!videoId && s.id === videoId && (!!s.data || (s.status === "loading" && s.held));
+}

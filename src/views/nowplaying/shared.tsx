@@ -7,6 +7,7 @@ import { Shelves } from "../../components/Shelves";
 import { EmptyState, ErrorBox, Loading } from "../../components/Status";
 import { useAsync } from "../../hooks/useData";
 import LyricsView from "../../lyrics/LyricsView";
+import { lyricsShown } from "../../lyrics/pick";
 import { useLyrics } from "../../lyrics/store";
 import { useSettings } from "../../stores/settings";
 import { usePlayer } from "../../stores/player";
@@ -16,13 +17,13 @@ export type Tab = "upnext" | "related" | "lyrics";
 
 /**
  * The current track's related-music target, once /next has it (undefined = none), and whether it has lyrics (from
- * any enabled provider or YouTube Music's own, lyrics/store.ts).
+ * any enabled provider or YouTube Music's own, lyrics/store.ts; still loading counts when the track before had some).
  */
 export function useTrackExtras() {
   const videoId = usePlayer((s) => s.queue[s.index]?.id);
   const related = usePlayer((s) => (s.watch?.videoId === videoId ? s.watch?.related : undefined));
   const on = useSettings((s) => s.lyricsEnabled);
-  const lyrics = useLyrics((s) => s.id === videoId && !!s.data) && on;
+  const lyrics = useLyrics((s) => lyricsShown(s, videoId)) && on;
   return { videoId, related, lyrics };
 }
 
