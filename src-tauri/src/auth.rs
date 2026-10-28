@@ -75,10 +75,11 @@ fn migrate_old_cookie() -> Option<String> {
 }
 
 /**
- * Where the sign-in goes when the system keyring can't take it (Linux without a Secret Service: no gnome-keyring,
- * KWallet or KeePassXC running, common with a bare window manager). A file only the user can read, in the app's
- * config dir, as browsers keep their cookies on such systems. Without it the sign-in failed with a keyring error,
- * the sign-in window stayed open on YouTube Music, and every later attempt opened already signed in.
+ * A copy of the sign-in next to the keyring's, for when the keyring can't be used: Linux without a Secret Service
+ * (no gnome-keyring, KWallet or KeePassXC running), a KWallet that refuses the write, or one that's locked when
+ * Sonolith starts (the read fails and the user would be signed out on every start). A file only the user can read
+ * (0600), in the app's config dir, as browsers keep their cookies on such systems. Without it the sign-in failed with
+ * a keyring error, the sign-in window stayed open on YouTube Music, and every later attempt opened already signed in.
  */
 fn fallback_path() -> Option<std::path::PathBuf> {
     let base = if cfg!(target_os = "windows") { dirs::data_dir() } else { dirs::config_dir() };
@@ -98,20 +99,38 @@ fn write_fallback(cookie: &str) -> Result<(), String> {
     #[cfg(unix)]
     std::os::unix::fs::OpenOptionsExt::mode(&mut opts, 0o600);
     let mut f = opts.open(&path).map_err(|e| e.to_string())?;
+    // `mode` only applies to a new file: an existing one is set to user-only too.
+    #[cfg(unix)]
+    std::fs::set_permissions(&path, std::os::unix::fs::PermissionsExt::from_mode(0o600)).map_err(|e| e.to_string())?;
     std::io::Write::write_all(&mut f, cookie.as_bytes()).map_err(|e| e.to_string())
+}
+
+/// The cookie is asked for from several places, each start and each yt-dlp call: a keyring problem is logged once.
+fn log_once(line: String) {
+    static LOGGED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if !LOGGED.swap(true, std::sync::atomic::Ordering::Relaxed) {
+        crate::log_line(&line);
+    }
 }
 
 #[tauri::command(async)]
 pub fn auth_get_cookie() -> Result<Option<String>, String> {
     match entry().map(|e| read(&e)) {
-        Ok(Ok(Some(c))) => return Ok(Some(c)),
+        Ok(Ok(Some(c))) => {
+            // Signed in before the copy existed: made now, so a keyring locked at a later start doesn't sign out.
+            if fallback_path().is_some_and(|p| !p.exists()) {
+                let _ = write_fallback(&c);
+            }
+            return Ok(Some(c));
+        }
         Ok(Ok(None)) => {
             if let Some(c) = migrate_old_cookie() {
                 return Ok(Some(c));
             }
         }
-        Ok(Err(e)) => eprintln!("keyring read failed: {e}"),
-        Err(e) => eprintln!("keyring unavailable: {e}"),
+        // A locked or missing keyring: the copy in the config dir (written with every sign-in) keeps the user signed in.
+        Ok(Err(e)) => log_once(format!("sign-in: the system keyring can't be read ({e}); using the copy in the config dir")),
+        Err(e) => log_once(format!("sign-in: no system keyring ({e}); using the copy in the config dir")),
     }
     Ok(read_fallback().or_else(|| std::env::var("YTM_COOKIE").ok().filter(|c| has_auth_cookie(c))))
 }
@@ -120,21 +139,22 @@ pub fn auth_get_cookie() -> Result<Option<String>, String> {
 pub fn auth_set_cookie(cookie: String) -> Result<(), String> {
     // set_password would store UTF-16 on Windows (2 bytes/char), and the ~1.6 KB cookie header would then exceed
     // the Credential Manager's 2560-byte blob limit. Raw UTF-8 fits on every platform.
+    // Both: the keyring, and the copy for when the keyring can't be used (see fallback_path).
     let keyring = entry().and_then(|e| e.set_secret(cookie.as_bytes()).map_err(|e| e.to_string()));
-    match keyring {
-        Ok(()) => {
-            // A stale fallback from a time without a keyring must not outlive this sign-in.
-            if let Some(p) = fallback_path() {
-                let _ = std::fs::remove_file(p);
-            }
+    let file = write_fallback(&cookie);
+    match (keyring, file) {
+        (Ok(()), Ok(())) => Ok(()),
+        (Err(k), Ok(())) => {
+            crate::log_line(&format!("sign-in: the system keyring can't store it ({k}); kept in the config dir"));
             Ok(())
         }
-        Err(k) => {
-            crate::log_line(&format!("sign-in: the system keyring can't store it ({k}); saving it in the config dir instead"));
-            write_fallback(&cookie).map_err(|f| {
-                crate::log_line(&format!("sign-in: couldn't save it in the config dir either: {f}"));
-                format!("You're signed in, but Sonolith couldn't save it: the system keyring isn't available ({k}), and saving it in its config folder failed ({f}).")
-            })
+        (Ok(()), Err(f)) => {
+            crate::log_line(&format!("sign-in: couldn't keep a copy in the config dir ({f}); it's in the keyring"));
+            Ok(())
+        }
+        (Err(k), Err(f)) => {
+            crate::log_line(&format!("sign-in: couldn't save it: keyring ({k}), config dir ({f})"));
+            Err(format!("You're signed in, but Sonolith couldn't save it: the system keyring isn't available ({k}), and saving it in its config folder failed ({f})."))
         }
     }
 }

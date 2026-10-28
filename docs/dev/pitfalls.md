@@ -177,8 +177,10 @@ Sliders also `preventDefault()` on pointerdown (and focus themselves), so a drag
 - **Linux without a Secret Service** (no gnome-keyring / KWallet / KeePassXC running, common on bare window
   managers): the keyring write fails. Sign-in then failed with a keyring error after Google's login, the window stayed
   open on YouTube Music, and every later attempt opened already signed in (the webview kept Google's cookies).
-  `auth.rs` now closes the window first and falls back to a user-only file in the config dir; failures go to the
-  playback log (`~/.local/share/dev.sonolith.app/logs/playback.log` in release builds) and a toast.
+  KWallet (KDE) can fail the same way: Secret Service interface off, no wallet created, or locked at startup (the
+  read fails, signed out on every start). `auth.rs` now closes the window first and keeps a user-only (0600) copy
+  in the config dir next to the keyring entry, read whenever the keyring can't be; failures go to the playback log
+  (`~/.local/share/dev.sonolith.app/logs/playback.log` in release builds) and a toast.
 
 ## Local API
 
