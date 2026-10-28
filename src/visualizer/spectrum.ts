@@ -99,3 +99,22 @@ export function parseRgb(css: string): [number, number, number] | null {
 
 /** A theme color (as computed) with an alpha, for canvas fills. */
 export const withAlpha = ([r, g, b]: readonly [number, number, number], a: number) => `rgb(${r} ${g} ${b} / ${a})`;
+
+/**
+ * Made-up band levels at time `t` (seconds) for the Settings previews, so they move like music with nothing playing:
+ * a kick on every beat (120 bpm) in the bass, slowly wandering mids, a hi-hat between the beats up high. Pure and
+ * deterministic; writes into `out` (0–1).
+ */
+export function sampleLevels(t: number, out: Float32Array) {
+  const n = out.length;
+  const kick = Math.exp(-((t * 2) % 1) * 6);
+  const hat = Math.exp(-((t * 2 + 0.5) % 1) * 12);
+  for (let k = 0; k < n; k++) {
+    const x = n > 1 ? k / (n - 1) : 0;
+    const bass = kick * (1 - x) ** 2 * 0.75;
+    const mids = (0.3 + 0.2 * Math.sin(t * 1.7 + x * 9) * Math.sin(t * 0.9 + x * 3)) * (1 - x * 0.5);
+    const highs = hat * x ** 2 * 0.45;
+    const v = 0.08 + bass + mids + highs;
+    out[k] = v > 1 ? 1 : v < 0 ? 0 : v;
+  }
+}

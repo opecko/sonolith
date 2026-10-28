@@ -4,7 +4,7 @@ import { getAudio, usePlayer } from "../stores/player";
 import { useSettings } from "../stores/settings";
 import { useUi } from "../stores/ui";
 import { acquire, analyserFor, FFT_SIZE } from "./tap";
-import { bandLevels, energy, makeBands, pace, parseRgb, smoothLevels, withAlpha, type Band } from "./spectrum";
+import { bandLevels, energy, makeBands, pace, parseRgb, sampleLevels, smoothLevels, withAlpha, type Band } from "./spectrum";
 import type { VisualizerMode, VisualizerStyle } from "./settings";
 
 /**
@@ -55,13 +55,18 @@ export default function Visualizer({ at }: { at: VisualizerPlace }) {
   return <Canvas at={at} style={style} unfocused={unfocused} />;
 }
 
-function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: VisualizerStyle; unfocused: boolean }) {
+/**
+ * `sample`: a Settings preview, moving to made-up levels (spectrum.ts sampleLevels) instead of the audio; it needs
+ * nothing playing, and with animations off holds one frame.
+ */
+function Canvas({ at, style, unfocused, sample = false }: { at: VisualizerPlace; style: VisualizerStyle; unfocused: boolean; sample?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = ref.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    const release = acquire();
+    const release = sample ? () => {} : acquire();
+    let clock = 1.2;
     const halo = at === "halo" || at === "halo-inner";
     const levels = new Float32Array(BANDS[at]);
     const target = new Float32Array(BANDS[at]);
@@ -116,8 +121,9 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
       if (!due) return;
       const step = sinceDraw;
       sinceDraw = 0;
-      const analyser = analyserFor();
-      if (analyser) {
+      const analyser = sample ? null : analyserFor();
+      if (sample) sampleLevels((clock += step), target);
+      else if (analyser) {
         if (analyser.context.sampleRate !== rate) {
           rate = analyser.context.sampleRate;
           bands = makeBands(levels.length, rate, analyser.fftSize);
@@ -140,7 +146,7 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
         if (!blank) ctx.clearRect(0, 0, canvas.width, canvas.height);
         blank = true;
         // Paused and settled: nothing to draw until playback resumes.
-        if (getAudio().paused) halt();
+        if (!sample && getAudio().paused) halt();
         return;
       }
       blank = false;
@@ -158,6 +164,13 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
     resize();
+    if (sample) {
+      // A frame right away (and the only one with animations off, when the ticker doesn't run).
+      sampleLevels(clock, levels);
+      rgb = parseRgb(getComputedStyle(canvas).color) ?? rgb;
+      colorAge = 0;
+      draw();
+    }
     run();
     const unsub = usePlayer.subscribe((s, prev) => s.status !== prev.status && s.status === "playing" && run());
     window.addEventListener("focus", run);
@@ -168,7 +181,7 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
       window.removeEventListener("focus", run);
       release();
     };
-  }, [at, style, unfocused]);
+  }, [at, style, unfocused, sample]);
   const canvas = <canvas ref={ref} aria-hidden className={`pointer-events-none absolute ${CLASSES[at]}`} />;
   if (at !== "cover") return canvas;
   // Bars in the on-scrim color stay readable over a light cover.
@@ -177,6 +190,25 @@ function Canvas({ at, style, unfocused }: { at: VisualizerPlace; style: Visualiz
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[40%] bg-gradient-to-t from-scrim/50 to-transparent" />
       {canvas}
     </>
+  );
+}
+
+/**
+ * A small mock-up of Now Playing (a cover in the middle) showing `mode` on made-up music, for Settings: the same
+ * drawing as the real thing, nothing has to play.
+ */
+export function VisualizerPreview({ mode, style }: { mode: VisualizerMode; style: VisualizerStyle }) {
+  const art = "rounded-[var(--m3-corner-sm)] bg-[linear-gradient(135deg,var(--m3-tertiary-container),var(--m3-primary-container))]";
+  return (
+    <div className="relative h-24 w-full overflow-hidden rounded-[var(--m3-corner-sm)] bg-[var(--m3-surface-container-highest)]" aria-hidden>
+      {mode === "background" && <Canvas at="background" style={style} unfocused={false} sample />}
+      <div className={`absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 ${mode === "halo" ? art : ""}`}>
+        {mode === "halo" && <Canvas at="halo" style={style} unfocused={false} sample />}
+        <div className={`absolute inset-0 overflow-hidden ${art}`}>
+          {mode === "cover" && <Canvas at="cover" style={style} unfocused={false} sample />}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -18,6 +18,7 @@ import PaletteGallery, { ModeToggle, PaletteGrid, SearchField } from "./PaletteG
 import { AnimationsSwitch, LayoutPicker, ResetToClassic, StylePicker, styleDetail } from "./StyleOptions";
 import ThemeTransfer from "./ThemeTransfer";
 import type { VisualizerMode, VisualizerSettings } from "../../visualizer/settings";
+import { VisualizerPreview } from "../../visualizer/Visualizer";
 import { useAuth } from "../../stores/auth";
 import { usePlayer } from "../../stores/player";
 import { useUi } from "../../stores/ui";
@@ -128,8 +129,17 @@ function VisualizerSettingsCard() {
   return (
     <SettingCard title="Visualizer">
       <SettingRow id="visualizer" title="Visualizer"
-        detail={animations ? VISUALIZER_DETAIL[v.mode] : "Needs animations, which are off (Settings → Look)."}>
-        <Segmented value={v.mode} options={VISUALIZER_MODES} onChange={(mode) => set({ mode })} label="Visualizer" />
+        detail={animations ? VISUALIZER_DETAIL[v.mode] : "Needs animations, which are off (Settings → Look)."} stacked>
+        {/* Each mode as a card with a live preview on made-up music, like the karaoke styles. */}
+        <div role="radiogroup" aria-label="Visualizer" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {VISUALIZER_MODES.map(([mode, label]) => (
+            <button key={mode} type="button" role="radio" aria-checked={v.mode === mode} onClick={() => set({ mode })}
+              className={`m3-choice rounded-[var(--radius)] border p-2 text-left ${v.mode === mode ? "border-[var(--c-accent)]" : "border-[var(--c-outline)] hover:bg-[var(--c-hover)]"}`}>
+              <p className={`mb-1.5 px-1 text-sm ${v.mode === mode ? "font-semibold" : ""}`}>{label}</p>
+              <VisualizerPreview mode={mode} style={v.style} />
+            </button>
+          ))}
+        </div>
       </SettingRow>
       <SettingRow id="visualizerStyle" title="Shape" disabled={off || v.mode === "halo"}>
         <Segmented value={v.style} options={[["bars", "Bars"], ["wave", "Wave"]]} onChange={(style) => set({ style })} label="Visualizer shape" />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bandLevels, energy, makeBands, pace, parseRgb, smoothLevels, withAlpha } from "./spectrum";
+import { bandLevels, energy, makeBands, pace, parseRgb, sampleLevels, smoothLevels, withAlpha } from "./spectrum";
 import { normalizeVisualizer } from "./settings";
 
 describe("makeBands", () => {
@@ -91,5 +91,19 @@ describe("normalizeVisualizer", () => {
   it("falls back to defaults", () => {
     expect(normalizeVisualizer(undefined)).toEqual({ mode: "off", style: "bars", unfocused: true });
     expect(normalizeVisualizer({ mode: "cover", style: "nope", unfocused: false })).toEqual({ mode: "cover", style: "bars", unfocused: false });
+  });
+});
+
+describe("sampleLevels", () => {
+  it("moves like music: in range, a kick in the bass on the beat, deterministic", () => {
+    const onBeat = new Float32Array(24);
+    const between = new Float32Array(24);
+    sampleLevels(10, onBeat);
+    sampleLevels(10.4, between);
+    expect([...onBeat, ...between].every((v) => v >= 0 && v <= 1)).toBe(true);
+    expect(onBeat[0]).toBeGreaterThan(between[0]);
+    const again = new Float32Array(24);
+    sampleLevels(10, again);
+    expect([...again]).toEqual([...onBeat]);
   });
 });
