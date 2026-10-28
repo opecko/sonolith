@@ -3,9 +3,9 @@
 The API's own version history, separate from Sonolith's app changelog. The API follows semantic versioning; see
 "Versioning" in [SPEC.md](SPEC.md) for the compatibility promise and the deprecation policy.
 
-## 1.0.0 (draft)
+## 1.0.0
 
-The first version of the local API. Not yet in a released Sonolith.
+The first stable version of the local API, in Sonolith 2.4.0.
 
 - Transport: Unix domain socket (Linux) and named pipe (Windows), discovery file, newline-delimited JSON-RPC 2.0.
 - Registration with user consent (`app.register`, `registration.resolved`), client tokens bound to the app

@@ -1,7 +1,7 @@
 # Sonolith local API
 
-**API version 1.0.0** · Status: **draft**. No released Sonolith implements it yet; details may change before the
-first release that does. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+**API version 1.0.0** · Status: **stable**. Available from Sonolith 2.4.0. Within version 1 only compatible changes
+are made (see [Versioning](#5-versioning)); changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 Sonolith is a desktop YouTube Music client for Linux and Windows. Its local API lets other programs on the same
 computer (status bars, widgets, shells, scripts, bots) see and control playback, read and change the queue, browse
