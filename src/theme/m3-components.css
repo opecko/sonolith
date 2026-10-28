@@ -400,6 +400,9 @@
 
 /* The lyrics preview fills its tile when the tile is given height (wide windows); elsewhere it shows a few lines. */
 .bento-lyrics-text { max-height: 7.5em; }
+/* A scroller clips sideways too: room on the left for the break dots, which swell past the text's edge (scaled
+   about their middle, up to 1.2×), with the text itself left where it was. */
+.bento-lyrics-text { padding-left: 0.5em; margin-left: -0.5em; }
 
 /* One column (narrow windows): every tile in turn. The column wrappers don't take part in the grid here. */
 .bento-col, .bento-aside { display: contents; }
