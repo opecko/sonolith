@@ -248,7 +248,7 @@ const GROUPS: { tone: string; items: Category[] }[] = [
   { tone: "blue", items: [
     { id: "look", title: "Look", detail: "Style, animations, size, font", icon: Paintbrush, page: () => <LookSettings /> },
     { id: "colors", title: "Colors", detail: "Palette, album art colors", icon: Palette, page: () => <ColorSettings /> },
-    { id: "nowplaying", title: "Now Playing", detail: "Layout, ambient light, visualizer", icon: Disc3, page: () => <NowPlayingSettings /> },
+    { id: "nowplaying", title: "Now Playing", detail: "Layout, ambient light, Save button, visualizer", icon: Disc3, page: () => <NowPlayingSettings /> },
   ] },
   { tone: "green", items: [
     { id: "playback", title: "Playback", detail: "Autoplay, history, podcasts", icon: Play, page: () => <PlaybackSettings /> },

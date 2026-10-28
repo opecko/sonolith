@@ -14,6 +14,7 @@ import Menu from "./Menu";
 import PlaybackError from "./PlaybackError";
 import PodcastSpeed from "./PodcastSpeed";
 import RatingButtons from "./RatingButtons";
+import SaveButton from "./SaveButton";
 import Slider from "./Slider";
 import Thumb from "./Thumb";
 import { Byline } from "./TrackByline";
@@ -42,6 +43,7 @@ export function TrackMoreMenu({ track, className = "h-10 w-10" }: { track: Track
 
 function NowPlaying() {
   const { track, status, error } = usePlayer(useShallow((s) => ({ track: s.queue[s.index], status: s.status, error: s.error })));
+  const npOpen = useUi((s) => s.nowPlaying);
   return (
     <div className="flex w-[30%] min-w-0 items-center gap-4 max-md:w-[34%] max-md:gap-3">
       <button onClick={openNowPlaying} disabled={!track} aria-label="Open now playing" className="shrink-0 hover:opacity-80">
@@ -63,6 +65,8 @@ function NowPlaying() {
         <>
           {/* A narrow window keeps the title readable; both are in Now Playing too. */}
           {!track.podcast && <div className="flex max-md:hidden"><RatingButtons track={track} /></div>}
+          {/* Classic Now Playing keeps the player bar, so its Save button sits here while Now Playing is open. */}
+          {npOpen && <div className="flex max-md:hidden"><SaveButton key={track.id} track={track} /></div>}
           <div className="flex max-md:hidden"><MoreMenu /></div>
         </>
       )}

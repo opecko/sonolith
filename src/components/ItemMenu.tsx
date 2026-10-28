@@ -37,7 +37,7 @@ function playlistChanged(id: string) {
 }
 
 /** Playlists whose songs the user can't remove here: Liked Music (that's unliking), mixes, episodes for later. */
-const editable = (id: string) => id !== "LM" && !id.startsWith("RD") && !id.startsWith("SE");
+export const editable = (id: string) => id !== "LM" && !id.startsWith("RD") && !id.startsWith("SE");
 
 /**
  * The user's own playlist: listed in their library with a subtitle that's only a track count ("7 tracks").
@@ -98,27 +98,27 @@ async function deletePlaylistAsked(item: Item) {
   }
 }
 
+/** Saves the track into a playlist (count updated at once, a toast either way). */
+export function saveToPlaylist(track: Track, p: { id: string; title: string }) {
+  useLibrary.getState().adjustCount(p.id, 1);
+  addToPlaylist(p.id, track.id).then(
+    () => {
+      useToast.getState().show(`Saved to "${p.title}"`, "info");
+      playlistChanged(p.id);
+    },
+    (e) => {
+      void useLibrary.getState().load(); // undo the count
+      useToast.getState().show(`Could not save to "${p.title}": ${errMsg(e)}`);
+    },
+  );
+}
+
 export function playlistEntries(track: Track): MenuEntry[] {
   const lib = useLibrary.getState();
   if (!lib.playlists) void lib.load();
   return (lib.playlists ?? [])
     .filter((p) => editable(p.id))
-    .map((p) => ({
-      label: p.title,
-      onSelect: () => {
-        useLibrary.getState().adjustCount(p.id, 1);
-        addToPlaylist(p.id, track.id).then(
-          () => {
-            useToast.getState().show(`Saved to "${p.title}"`, "info");
-            playlistChanged(p.id);
-          },
-          (e) => {
-            void useLibrary.getState().load(); // undo the count
-            useToast.getState().show(`Could not save to "${p.title}": ${errMsg(e)}`);
-          },
-        );
-      },
-    }));
+    .map((p) => ({ label: p.title, onSelect: () => saveToPlaylist(track, p) }));
 }
 
 // Toggles flipped this session (feedback token → done), so a reopened menu shows the opposite action.

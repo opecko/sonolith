@@ -1,5 +1,5 @@
 import { ChevronDown, Download, LayoutGrid, RotateCcw, Upload } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCoverScheme } from "../../stores/coverColors";
 import { setAppearance, useSettings } from "../../stores/settings";
 import { AMBIENT_QUALITIES, COVER_COLOR_OPTIONS, DEFAULT_APPEARANCE, type FontKind } from "../../theme/appearance";
@@ -18,6 +18,10 @@ import PaletteGallery, { ModeToggle, PaletteGrid, SearchField } from "./PaletteG
 import { AnimationsSwitch, LayoutPicker, ResetToClassic, StylePicker, styleDetail } from "./StyleOptions";
 import ThemeTransfer from "./ThemeTransfer";
 import type { VisualizerMode, VisualizerSettings } from "../../visualizer/settings";
+import { useAuth } from "../../stores/auth";
+import { useLibrary } from "../../stores/library";
+import type { SaveAction, SaveButtonSettings } from "../../stores/saveButton";
+import { ownPlaylist } from "../ItemMenu";
 
 const FEATURED_PALETTES = FEATURED.map((id) => PALETTES.find((p) => p.id === id)).filter((p) => !!p);
 
@@ -63,7 +67,7 @@ export function LookSettings() {
   );
 }
 
-/** Settings → Now Playing: its layout, the ambient light behind it and the visualizer. */
+/** Settings → Now Playing: its layout, the ambient light behind it, the Save button and the visualizer. */
 export function NowPlayingSettings() {
   const a = useSettings((s) => s.appearance);
   return (
@@ -84,6 +88,7 @@ export function NowPlayingSettings() {
           <Segmented value={a.ambientQuality} options={AMBIENT_QUALITIES.map((q) => [q, q[0].toUpperCase() + q.slice(1)] as const)} onChange={(ambientQuality) => setAppearance({ ambientQuality })} label="Ambient quality" />
         </SettingRow>
       </SettingCard>
+      <SaveButtonCard />
       <VisualizerSettingsCard />
     </>
   );
@@ -121,6 +126,45 @@ function VisualizerSettingsCard() {
         While it's on screen, the visualizer listens to its own silent copy of the song, so playback itself is never
         touched. That copy streams too, so it uses some extra data.
       </p>
+    </SettingCard>
+  );
+}
+
+const SAVE_ACTIONS: readonly (readonly [SaveAction, string])[] = [["picker", "Choose each time"], ["direct", "One playlist"], ["off", "Off"]];
+const SAVE_DETAIL: Record<SaveAction, string> = {
+  picker: "A button next to like and dislike that lists your playlists to save the song to.",
+  direct: "A button next to like and dislike that saves the song straight into the playlist below.",
+  off: "No Save button; saving to a playlist stays in the ⋮ menu.",
+};
+
+/** Now Playing's Save button: what a click does, and the playlist for "One playlist". */
+function SaveButtonCard() {
+  const s = useSettings((st) => st.saveButton);
+  const signedIn = useAuth((a) => a.status === "signedIn");
+  const playlists = useLibrary((l) => l.playlists);
+  useEffect(() => {
+    if (signedIn && !useLibrary.getState().playlists) void useLibrary.getState().load();
+  }, [signedIn]);
+  const set = (patch: Partial<SaveButtonSettings>) => useSettings.getState().set({ saveButton: { ...useSettings.getState().saveButton, ...patch } });
+  // Only the user's own playlists: saving into someone else's fails.
+  const own = (playlists ?? []).filter((p) => ownPlaylist(p.id));
+  const options = [...(s.playlist ? [] : [{ value: "", label: "Choose a playlist" }]), ...own.map((p) => ({ value: p.id, label: p.title }))];
+  // A chosen playlist that's gone from the library still shows, by its stored title, until another is picked.
+  if (s.playlist && !own.some((p) => p.id === s.playlist!.id)) options.unshift({ value: s.playlist.id, label: s.playlist.title });
+  return (
+    <SettingCard title="Save button">
+      <SettingRow id="saveButton" title="Save to playlist" detail={signedIn ? SAVE_DETAIL[s.action] : "Sign in to save songs to your playlists."}>
+        <Segmented value={s.action} options={SAVE_ACTIONS} onChange={(action) => set({ action })} label="Save button" />
+      </SettingRow>
+      {s.action === "direct" && (
+        <SettingRow id="saveButtonPlaylist" title="Playlist" detail={playlists ? (own.length ? undefined : "You have no playlists of your own yet.") : "Loading your playlists…"} disabled={!signedIn}>
+          <Select value={s.playlist?.id ?? ""} options={options} label="Playlist for the Save button"
+            onChange={(id) => {
+              const p = own.find((x) => x.id === id);
+              if (p) set({ playlist: { id: p.id, title: p.title } });
+            }} />
+        </SettingRow>
+      )}
     </SettingCard>
   );
 }

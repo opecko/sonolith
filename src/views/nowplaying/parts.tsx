@@ -9,6 +9,7 @@ import { byline, fmtTime, LiveIndicator, M3Controls, TrackMoreMenu } from "../..
 import { Byline } from "../../components/TrackByline";
 import TrackVideo from "../../components/TrackVideo";
 import RatingButtons from "../../components/RatingButtons";
+import SaveButton from "../../components/SaveButton";
 import Slider from "../../components/Slider";
 import { usePlayer } from "../../stores/player";
 import { useProgress } from "../../stores/progress";
@@ -133,6 +134,7 @@ export function TrackActions({ track }: { track: Track }) {
     <div className="flex shrink-0 items-center">
       {/* Like / dislike are for songs; an episode only has its menu. */}
       {!track.podcast && <RatingButtons track={track} />}
+      <SaveButton track={track} />
       <TrackMoreMenu key={track.id} track={track} />
     </div>
   );
