@@ -135,7 +135,7 @@ export function initPublishing() {
   });
   useAuth.subscribe((s, p) => s.status !== p.status && send("account", { signedIn: s.status === "signedIn" }));
   useLyrics.subscribe(publishLyrics);
-  // On whichever element plays (the player swaps two for crossfades).
+  // On whichever element plays (the player swaps two for gapless playback).
   onAudioEvent("waiting", () => ((buffering = true), publishPlayer()));
   onAudioEvent("playing", () => ((buffering = false), publishPlayer()));
   for (const e of ["seeked", "ratechange", "durationchange", "pause"]) onAudioEvent(e, publishPlayer);

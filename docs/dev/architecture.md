@@ -73,7 +73,7 @@ spawning processes, CORS-free streaming).
 ### Stores (`src/stores/`)
 
 - `player.ts`: the player — two module-level `Audio` elements (the playing one, `getAudio()`, and a spare that loads
-  the next song for a crossfade; they swap roles when a fade starts, `playback/crossfade.ts`), queue/index/status/shuffle/repeat/context, `playQueue`,
+  the next song ahead for gapless playback; they swap roles when it starts, `playback/gapless.ts`), queue/index/status/shuffle/repeat/context, `playQueue`,
   `playRadio`, `playNext`/`addToQueue` (one track or many), chips, autoplay, stream loading and error recovery,
   prefetch of the next stream, queue snapshot persistence. Exposes `playbackTime()` / `onPlaybackTick()` for
   bookkeeping that must run while the window is hidden.

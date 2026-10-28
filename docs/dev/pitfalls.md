@@ -48,11 +48,10 @@ find a new one.
   for our clients (2026-10-28, WEB_REMIX old and current versions, with or without `isAudioOnly`), so Video is
   offered only for tracks that are videos themselves, whose picture matches their sound.
 
-- **The playing `<audio>` element changes with every crossfade** (the player swaps two). Long-lived listeners go
+- **The playing `<audio>` element changes with every gapless hand-over** (the player swaps two). Long-lived listeners go
   through `onAudioEvent(type, fn)` from `stores/player.ts` (on both elements, filtered to the playing one), and code
   asks `getAudio()` each time instead of keeping the element; a listener added straight to `getAudio()` goes deaf
-  after the first crossfade. Volume is the user's volume times each element's fade gain (`applyVolume`), never
-  `audio.volume` directly.
+  after the first hand-over. Volume and mute are set on both elements (`applyVolume`), never `audio.volume` alone.
 
 ## Layout / CSS
 
