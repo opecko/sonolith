@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HANDOVER_LEAD_MS, handoverIn, shouldPrepare } from "./gapless";
+import { HANDOVER_LEAD_MS, handoverIn, learnLead, MAX_LEAD_MS, MIN_LEAD_MS, shouldPrepare } from "./gapless";
 
 const song = { duration: 200, eligible: true };
 
@@ -30,5 +30,14 @@ describe("handoverIn", () => {
   it("follows the playback rate and eligibility", () => {
     expect(handoverIn({ ...song, position: 199.5 }, 2)).toBeCloseTo(250 - HANDOVER_LEAD_MS);
     expect(handoverIn({ ...song, eligible: false, position: 199.9 })).toBeNull();
+  });
+});
+
+describe("learnLead", () => {
+  it("moves toward the measured start time, within bounds", () => {
+    expect(handoverIn({ ...song, position: 199.5 }, 1, 300)).toBeCloseTo(200);
+    expect(learnLead(150, 250)).toBe(200);
+    expect(learnLead(150, 5000)).toBe(MAX_LEAD_MS);
+    expect(learnLead(30, 0)).toBe(MIN_LEAD_MS);
   });
 });

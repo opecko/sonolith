@@ -10,8 +10,13 @@ export const PREPARE_AT = 0.8;
 export const PREPARE_LEAD_S = 20;
 /** Within this much of the end the hand-over is timed precisely (timeupdate comes only every ~250 ms). */
 export const HANDOVER_WINDOW_S = 1;
-/** The next song starts this much before the current one's last sample: starting playback takes a moment. */
-export const HANDOVER_LEAD_MS = 40;
+/**
+ * The next song starts this much before the current one's last sample, since starting playback takes a moment (the
+ * element's pipeline going from paused to playing). A first guess; the player learns the real time (`learnLead`).
+ */
+export const HANDOVER_LEAD_MS = 150;
+export const MIN_LEAD_MS = 20;
+export const MAX_LEAD_MS = 600;
 
 export interface ClockInput {
   position: number;
@@ -32,9 +37,14 @@ export function shouldPrepare(i: ClockInput): boolean {
  * Milliseconds until the next song should start (null: not near the end yet). `rate` is the playback rate, so the
  * remaining media time becomes wall time.
  */
-export function handoverIn(i: ClockInput, rate = 1): number | null {
+export function handoverIn(i: ClockInput, rate = 1, leadMs = HANDOVER_LEAD_MS): number | null {
   if (!i.eligible || !known(i.duration)) return null;
   const left = i.duration - i.position;
   if (left > HANDOVER_WINDOW_S) return null;
-  return Math.max(0, (left * 1000) / (rate || 1) - HANDOVER_LEAD_MS);
+  return Math.max(0, (left * 1000) / (rate || 1) - leadMs);
+}
+
+/** The next lead from a measured start (play() until it really plays), smoothed and bounded. */
+export function learnLead(lead: number, measuredMs: number): number {
+  return Math.min(MAX_LEAD_MS, Math.max(MIN_LEAD_MS, Math.round(lead * 0.5 + measuredMs * 0.5)));
 }

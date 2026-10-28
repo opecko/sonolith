@@ -11,7 +11,7 @@ import { savedResume, savePosition } from "./episodeProgress";
 import { nextEpisode } from "./podcastQueue";
 import { pipelineStuck, reconcileStatus, toggleAction } from "./playState";
 import { bindPlayhead } from "../playback/playhead";
-import { handoverIn, shouldPrepare } from "../playback/gapless";
+import { HANDOVER_LEAD_MS, handoverIn, learnLead, shouldPrepare } from "../playback/gapless";
 import { useProgress } from "./progress";
 import { append, dedupe, insertNext, reorder } from "./queueOps";
 import { makeSnapshot, readSnapshot, SNAPSHOT_KEY } from "./queueSnapshot";
@@ -201,6 +201,10 @@ export const usePlayer = create<PlayerState>((set, get) => {
   let preparing: string | null = null;
   /** The precisely timed start of the prepared song near the end of the current one. */
   let handover: ReturnType<typeof setTimeout> | null = null;
+  /** How long a prepared song takes from play() to really playing (learnt): it starts that much before the end. */
+  let startLead = HANDOVER_LEAD_MS;
+  /** When the spare began loading the next song (diagnostics: does the playing song stall then?). */
+  let preparedAt = 0;
 
   /** Songs only: episodes resume and have their own speed, live streams don't end, "repeat one" restarts. */
   const gaplessEligible = () => {
@@ -239,6 +243,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       const stream = await getStreamUrl(t.id);
       if (preparing !== t.id || stream.live) return;
       prepared = { index, id: t.id, stream };
+      preparedAt = performance.now();
       spare.src = stream.url;
       spare.load(); // paused: it only buffers the start
     } catch {
@@ -248,8 +253,12 @@ export const usePlayer = create<PlayerState>((set, get) => {
     }
   }
 
-  /** Starts the prepared song on the spare element, which becomes the player; the old one stops. */
-  function handOver() {
+  /**
+   * Starts the prepared song on the spare element, which becomes the player. At the end of a song (`natural`) the
+   * old one plays out its last moment while the new one starts up (the timer fired that much early), so neither a
+   * gap nor an overlap; asked for (Next, a click) it stops at once.
+   */
+  function handOver(natural = false) {
     cancelHandover();
     const p = prepared!;
     prepared = null;
@@ -257,8 +266,19 @@ export const usePlayer = create<PlayerState>((set, get) => {
     audio = spare;
     spare = out;
     audio.currentTime = 0;
-    void audio.play().catch(() => {});
-    silence(out);
+    const t0 = performance.now();
+    const incoming = audio;
+    incoming.addEventListener("playing", () => {
+      const ms = performance.now() - t0;
+      startLead = learnLead(startLead, ms);
+      logPlayback(`${p.id} gapless: started in ${Math.round(ms)} ms (lead now ${startLead} ms)`);
+    }, { once: true });
+    void incoming.play().catch(() => {});
+    if (natural && !out.ended && Number.isFinite(out.duration)) {
+      const left = ((out.duration - out.currentTime) / (out.playbackRate || 1)) * 1000;
+      // Unless something took the spare back for another song meanwhile (it only prepares much later).
+      setTimeout(() => spare === out && !prepared && !preparing && silence(out), left + 250);
+    } else silence(out);
     start(p.index, 0, p.stream);
   }
 
@@ -269,14 +289,19 @@ export const usePlayer = create<PlayerState>((set, get) => {
     const next = peekNext();
     if (next === null) return;
     if (shouldPrepare(clock)) void prepare(next);
-    const ms = handoverIn(clock, audio.playbackRate);
+    const ms = handoverIn(clock, audio.playbackRate, startLead);
     if (ms === null || !preparedFor(next)) return;
     // A timer, not the coarse clock: timeupdate comes only every ~250 ms. Re-checked when it fires (seek, pause).
     handover = setTimeout(() => {
       handover = null;
-      if (!audio.paused && !audio.seeking && peekNext() === next && preparedFor(next)) handOver();
+      if (!audio.paused && !audio.seeking && peekNext() === next && preparedFor(next)) handOver(true);
     }, ms);
   }
+  // Diagnostics for the playing song stalling while the next one loads (playback log).
+  onAudioEvent("waiting", () => {
+    if (preparedAt && performance.now() - preparedAt < 10_000)
+      logPlayback(`${get().queue[get().index]?.id ?? "?"} gapless: playing song stalled ${Math.round(performance.now() - preparedAt)} ms after the next began loading`);
+  });
   // A seek or pause near the end: the timed start is re-planned (or not) on the next clock tick.
   onAudioEvent("seeking", cancelHandover);
   onAudioEvent("pause", cancelHandover);
