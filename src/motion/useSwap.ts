@@ -2,10 +2,11 @@ import { useLayoutEffect, useRef } from "react";
 import { Spring } from "./engine";
 
 /**
- * Content swap (Bento's Up next ↔ Related, the onboarding steps): the new content slides in from the side it lives on
- * and fades up, on a spring written per frame (instant with animations off). The first render doesn't animate.
+ * Content swap (Bento's Up next ↔ Related, Material's panel tabs, the onboarding steps): the new content slides in
+ * from the side it lives on and fades up, on a spring written per frame (instant with animations off). The first
+ * render doesn't animate, nor does a change while `enabled` is false (e.g. a panel that is opening anyway).
  */
-export function useSwap(key: string, dir: number) {
+export function useSwap(key: string, dir: number, enabled = true) {
   const ref = useRef<HTMLDivElement>(null);
   const first = useRef(true);
   useLayoutEffect(() => {
@@ -14,7 +15,7 @@ export function useSwap(key: string, dir: number) {
       return;
     }
     const el = ref.current;
-    if (!el) return;
+    if (!el || !enabled) return;
     const s = new Spring(0, "defaultSpatial", (p) => {
       el.style.opacity = String(Math.min(1, Math.max(0, p)));
       el.style.transform = `translateX(${Math.round((1 - p) * 24 * dir * 10) / 10}px)`;

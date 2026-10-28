@@ -1,6 +1,7 @@
 import { ListMusic, MicVocal, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { UiStyleScope } from "../../components/UiStyle";
+import { useSwap } from "../../motion";
 import PodcastSpeed from "../../components/PodcastSpeed";
 import VolumeControl from "../../components/VolumeControl";
 import { usePlayer } from "../../stores/player";
@@ -9,6 +10,8 @@ import { PushPanel, type PanelView } from "./pushPanel";
 import { LyricsTab, RelatedPanel, UpNextTab, useTrackExtras, type Tab } from "./shared";
 
 const TITLES: Record<Tab, string> = { upnext: "Up next", lyrics: "Lyrics", related: "Related" };
+/** The toggles' order, left to right: a tab further right slides in from the right. */
+const TAB_ORDER: Tab[] = ["upnext", "lyrics", "related"];
 
 /** The side panel's width: even, so the centered content moves by whole pixels when it is fully open. */
 const panelWidth = () => 2 * Math.round(Math.min(420, window.innerWidth * 0.34) / 2);
@@ -61,6 +64,13 @@ export default function MaterialLayout() {
   }, []);
   const push = usePushPanel(shown, width);
   const tab = push.tab;
+  // Switching tabs in the open panel: the new one slides in from its side, as in Bento (opening slides the panel).
+  const last = useRef({ tab, open: !!shown });
+  const dir = TAB_ORDER.indexOf(tab) >= TAB_ORDER.indexOf(last.current.tab) ? 1 : -1;
+  const swap = useSwap(tab, dir, last.current.open && !!shown);
+  useEffect(() => {
+    last.current = { tab, open: !!shown };
+  });
   const toggle = (t: Tab) => setPanel((p) => (p === t ? null : t));
   const tabs: { id: Tab; label: string; icon: typeof ListMusic; show: boolean }[] = [
     { id: "upnext", label: "Queue", icon: ListMusic, show: true },
@@ -114,7 +124,7 @@ export default function MaterialLayout() {
             <header className="flex h-20 shrink-0 items-center gap-2 pl-5" style={{ paddingRight: tabs.filter((t) => t.show).length * 56 + 24 }}>
               <h2 className="type-title-large-em truncate">{TITLES[tab]}</h2>
             </header>
-            <div className="flex min-h-0 flex-1 flex-col px-3 pb-3">
+            <div ref={swap} className="flex min-h-0 flex-1 flex-col px-3 pb-3">
               {tab === "upnext" && <div className="flex min-h-0 flex-1 flex-col pt-2"><UpNextTab /></div>}
               {tab === "lyrics" && videoId && <div className="scroll-y min-h-0 flex-1 pr-1"><LyricsTab key={videoId} /></div>}
               {tab === "related" && videoId && <div className="scroll-y min-h-0 flex-1 pr-1"><RelatedPanel videoId={videoId} related={related} held={hasRelated} /></div>}
