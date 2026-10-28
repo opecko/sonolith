@@ -75,6 +75,13 @@ async fn serve(mut sock: TcpStream, client: reqwest::Client) -> Result<(), Strin
     }
     let raw = String::from_utf8_lossy(&buf).into_owned();
     let Some((method, path, headers)) = parse_request(&raw) else { return Ok(()) };
+    // The visualizer reads the audio with `crossOrigin` set; should the webview ever ask before a Range request, say yes.
+    if method == "OPTIONS" {
+        let _ = sock
+            .write_all(b"HTTP/1.1 204 No Content\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, HEAD\r\nAccess-Control-Allow-Headers: Range\r\nAccess-Control-Max-Age: 86400\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            .await;
+        return Ok(());
+    }
     let id = path.strip_prefix("/s/").unwrap_or("");
     let url = PROXY.get().and_then(|p| p.urls.lock().unwrap().iter().find(|(i, _)| i == id).map(|(_, u)| u.clone()));
     let Some(url) = url else {
