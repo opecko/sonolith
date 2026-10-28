@@ -45,23 +45,40 @@ function usePop<T extends HTMLElement = HTMLDivElement>(given?: RefObject<T | nu
 /**
  * Keeps showing `value`'s last non-null value while the element slides out to the right and fades (per frame from
  * the shared loop; jumps with animations off, or when `animate` says it wouldn't show), then returns null so it
- * unmounts. A new value mid-slide takes over at once. The styles are cleared before paint once it's gone, for elements that stay mounted.
+ * unmounts. A new value mid-slide takes over at once. The styles are cleared before paint once it's gone, for
+ * elements that stay mounted. With `enter`, coming back (null → a value, not on mount) slides in from the right.
  */
-function useSlideOut<T>(value: T | null, ref: RefObject<HTMLElement | null>, animate: () => boolean = () => true): T | null {
+function useSlideOut<T>(value: T | null, ref: RefObject<HTMLElement | null>, animate: () => boolean = () => true, enter = false): T | null {
   const [shown, setShown] = useState(value);
   const sliding = useRef(false);
+  const gone = useRef(value === null);
   if (value !== null && value !== shown) setShown(value);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (value !== null || shown === null || !el || !animate()) {
-      if (value === null && shown !== null) setShown(null);
+    const wasGone = gone.current;
+    gone.current = value === null && (shown === null || !el || !animate());
+    if (value !== null) {
+      if (!enter || !wasGone || !el || !animate()) return;
+      // Before the first paint: it never shows in place first.
+      const pose = (p: number) => {
+        el.style.transform = `translateX(${Math.round((1 - p) * 72)}px)`;
+        el.style.opacity = String(p);
+      };
+      pose(0);
+      return tween(260, (t) => 1 - (1 - t) ** 3, pose, () => (el.style.transform = el.style.opacity = ""));
+    }
+    if (shown === null || !el || !animate()) {
+      if (shown !== null) setShown(null);
       return;
     }
     sliding.current = true;
     return tween(220, (t) => t * t, (p) => {
       el.style.transform = `translateX(${Math.round(p * 72)}px)`;
       el.style.opacity = String(1 - p);
-    }, () => setShown(null));
+    }, () => {
+      gone.current = true;
+      setShown(null);
+    });
     // Only a change of `value` starts or stops a slide.
   }, [value]);
   // Only after a slide: a tile mounting with its own entrance (usePop) has set these itself, children first.
@@ -249,13 +266,14 @@ export default function BentoLayout() {
   useEffect(() => {
     if (!lyrics) setBig((b) => (b === "lyrics" ? null : b));
   }, [lyrics]);
-  // Closing slides the big tile out to the right; the lyrics column (wide windows) leaves the same way.
+  // Closing slides the big tile out to the right; the lyrics column (wide windows) leaves the same way and comes
+  // back in from the right when a later track has lyrics again.
   const bigRef = useRef<HTMLElement>(null);
   const bigShown = useSlideOut(big === "lyrics" && !lyrics ? null : big, bigRef);
   const expanded = bigShown !== null;
   const asideRef = useRef<HTMLDivElement>(null);
   // Only where the lyrics have that column of their own: elsewhere it's the Autoplay tile, which stays.
-  const lyricsAside = useSlideOut(lyrics && videoId ? true : null, asideRef, () => matchMedia(LYRICS_COLUMN).matches) === true;
+  const lyricsAside = useSlideOut(lyrics && videoId ? true : null, asideRef, () => matchMedia(LYRICS_COLUMN).matches, true) === true;
   const [queueTab, setQueueTab] = useState<QueueView>("upnext");
   // Stable, so the memoized queue tile doesn't re-render with the rest of the layout.
   const toggleQueue = useCallback(() => setBig((b) => (b === "queue" ? null : "queue")), []);
