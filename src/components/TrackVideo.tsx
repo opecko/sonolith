@@ -200,7 +200,6 @@ function LiveVideo({ videoId }: { videoId: string }) {
       base.current = null;
       if (alive) setInStep(false);
       const local = await invoke<string>("proxy_live_url", { url: playlist });
-      logPlayback(`${videoId} live video: audio began at segment ${start} (${secs} s), audio at ${a.currentTime.toFixed(1)} s, video from ${from} (attempt ${attempt})`);
       if (alive) setSrc(`${local}?from=${from}&attempt=${attempt}`);
     })().catch((e) => {
       logPlayback(`${videoId} live video failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -215,10 +214,6 @@ function LiveVideo({ videoId }: { videoId: string }) {
     const v = ref.current;
     const a = getAudio();
     if (!v || !src) return;
-    // Diagnostics: what the element does with the stream (playback log).
-    const events = ["loadstart", "loadedmetadata", "loadeddata", "stalled", "suspend", "abort", "emptied"];
-    const note = (e: Event) => logPlayback(`${videoId} live video ${e.type} readyState=${v.readyState} networkState=${v.networkState}`);
-    for (const ev of events) v.addEventListener(ev, note);
     let lastReconnect = performance.now();
     const reconnect = () => {
       if (performance.now() - lastReconnect < LIVE_RECONNECT_MS) return;
@@ -262,7 +257,6 @@ function LiveVideo({ videoId }: { videoId: string }) {
     a.addEventListener("emptied", onEmptied);
     a.addEventListener("playing", onPlaying);
     return () => {
-      for (const ev of events) v.removeEventListener(ev, note);
       clearInterval(timer);
       a.removeEventListener("emptied", onEmptied);
       a.removeEventListener("playing", onPlaying);

@@ -96,7 +96,6 @@ async fn serve(mut sock: TcpStream, client: reqwest::Client) -> Result<(), Strin
         return Ok(());
     };
     if live {
-        eprintln!("live {id}: {method} from={from:?}");
         return crate::live::serve(sock, client, url, id.to_owned(), from, method == "HEAD", allowed).await;
     }
     let mut req = client.get(&url);
