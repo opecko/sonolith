@@ -2,14 +2,18 @@ import { describe, expect, it } from "vitest";
 import { normalizeChoice, parseAccountSwitcher, sameAccount } from "./accounts";
 
 const runs = (text: string) => ({ runs: [{ text }] });
-const item = (name: string, signinUrl: string, extra: object = {}) => ({
+const item = (name: string, signinUrl: string, extra: object = {}, datasync?: string) => ({
   accountItem: {
     accountName: runs(name),
     accountPhoto: { thumbnails: [{ url: `https://yt3.ggpht.com/${name}=s48-c-k-c0x00ffffff-no-rj`, width: 48, height: 48 }] },
     isSelected: false,
     isDisabled: false,
     hasChannel: true,
-    serviceEndpoint: { selectActiveIdentityEndpoint: { supportedTokens: [{ offlineCacheKeyToken: {} }, { accountSigninToken: { signinUrl } }] } },
+    serviceEndpoint: {
+      selectActiveIdentityEndpoint: {
+        supportedTokens: [{ offlineCacheKeyToken: {} }, { accountSigninToken: { signinUrl } }, ...(datasync ? [{ datasyncIdToken: { datasyncIdToken: datasync } }] : [])],
+      },
+    },
     accountByline: runs("2 subscribers"),
     ...extra,
   },
@@ -33,9 +37,11 @@ const response =
                         {
                           accountItemSectionRenderer: {
                             contents: [
-                              item("Main", "/signin?action_handle_signin=true&authuser=0&next=x", { isSelected: true, channelHandle: runs("@main") }),
+                              item("Main", "/signin?action_handle_signin=true&authuser=0&next=x", { isSelected: true, channelHandle: runs("@main") }, "100||"),
                               item("Brand", "/signin?authuser=0&pageid=123456&next=x", { channelHandle: runs("@brand") }),
                               item("Gone", "/signin?authuser=0&pageid=9", { isDisabled: true }),
+                              item("Shared with me", "/signin?authuser=0&next=x", {}, "777||100"),
+                              item("Duplicate", "/signin?authuser=0&next=x", {}, "100||"),
                               { unknownRenderer: {} },
                             ],
                           },
@@ -66,7 +72,7 @@ const response =
   });
 
 describe("parseAccountSwitcher", () => {
-  it("lists channels per Google account with their session index and page id", () => {
+  it("lists the user's own channels per Google account, without channels shared with them", () => {
     const groups = parseAccountSwitcher(response);
     expect(groups.map((g) => [g.title, g.subtitle])).toEqual([
       ["Person", "person@example.com"],

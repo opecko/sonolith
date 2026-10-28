@@ -43,7 +43,12 @@ function choiceOf(endpoint: R): AccountChoice | null {
   const authUser = Number(q.get("authuser") ?? "0");
   if (!Number.isInteger(authUser) || authUser < 0) return null;
   const pageId = q.get("pageid") ?? tokens.find((t) => t?.pageIdToken)?.pageIdToken?.pageId;
-  return typeof pageId === "string" && /^\d+$/.test(pageId) ? { authUser, pageId } : { authUser };
+  if (typeof pageId === "string" && /^\d+$/.test(pageId)) return { authUser, pageId };
+  // Without a page id it must be the Google account itself (datasync id "<gaia>||"). A channel shared with the user
+  // through channel permissions ("<channel>||<gaia>", no page id) isn't theirs and can't be switched to this way.
+  const datasync: unknown = tokens.find((t) => t?.datasyncIdToken)?.datasyncIdToken?.datasyncIdToken;
+  if (typeof datasync === "string" && !/^[^|]*\|\|$/.test(datasync)) return null;
+  return { authUser };
 }
 
 function parseItem(n: R): SwitcherAccount | null {
@@ -69,7 +74,9 @@ function parseGroup(n: R): AccountGroup | null {
   const accounts = arr(section.contents)
     .flatMap((c) => arr(c?.accountItemSectionRenderer?.contents))
     .map(parseItem)
-    .filter((a): a is SwitcherAccount => !!a);
+    .filter((a): a is SwitcherAccount => !!a)
+    // Two entries with the same choice would act as the same account; the first is the account itself.
+    .filter((a, i, all) => all.findIndex((b) => sameAccount(a, b)) === i);
   if (!accounts.length) return null;
   // The active account's group has a Google account header (name + e-mail); the others a header with the e-mail.
   const google = section.header?.googleAccountHeaderRenderer;
