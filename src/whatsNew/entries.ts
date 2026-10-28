@@ -1,4 +1,4 @@
-import { Clapperboard, Keyboard, LayoutDashboard, LogIn, MicVocal, Palette, Podcast, Settings2, Sparkles, Terminal } from "lucide-react";
+import { AudioWaveform, Clapperboard, Keyboard, LayoutDashboard, LogIn, MicVocal, Palette, Plug, Podcast, Settings2, Sparkles, Terminal } from "lucide-react";
 import type { WhatsNewEntry } from "./types";
 
 /**
@@ -6,6 +6,33 @@ import type { WhatsNewEntry } from "./types";
  * entry shows nothing after the update.
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
+  {
+    version: "2.4.0",
+    title: "Sonolith 2.4: see the music",
+    highlights: [
+      {
+        icon: AudioWaveform,
+        title: "Visualizer",
+        text: "Now Playing can move with the music: bars along the bottom, bars over the cover, or a glow around it. It listens only to Sonolith and stays light on your CPU, even on a second monitor.",
+      },
+      {
+        icon: Clapperboard,
+        title: "Song / Video",
+        text: "Music videos get a Song / Video switch in Now Playing, like YouTube Music. The video stays in step with the music, also after you seek, and live stations play with their video too.",
+      },
+      {
+        icon: Plug,
+        title: "Connected apps",
+        text: "Status bars, widgets and scripts can show what's playing and control Sonolith through its local API, now stable. It's off until you turn it on, and every app asks you first.",
+      },
+    ],
+    actions: [
+      { label: "Turn on the visualizer", action: { type: "openSettings", section: "nowplaying", focus: "visualizer" } },
+      { label: "Connected apps", action: { type: "openSettings", section: "apps" } },
+    ],
+    // Lyrics are matched better since 2.3: look up the cached ones again.
+    onShow: ["clearLyricsCache"],
+  },
   {
     version: "2.3.0",
     title: "ytdesk is now Sonolith",
