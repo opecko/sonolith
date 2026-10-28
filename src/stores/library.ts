@@ -1,10 +1,12 @@
 import { create } from "zustand";
 import type { Item } from "../api/types";
-import { createPlaylist, deletePlaylist, getLibrary, renamePlaylist } from "../api/ytm";
+import { createPlaylist, deletePlaylist, getAccount, getLibrary, renamePlaylist } from "../api/ytm";
 import { invalidate } from "../hooks/useData";
 
 interface LibraryState {
   playlists: Item[] | null;
+  /** The account's name and handle: a playlist with one of them as author is the user's own (ownership.ts). */
+  owners: string[];
   error: string | null;
   load: () => Promise<void>;
   create: (title: string, opts?: Parameters<typeof createPlaylist>[1]) => Promise<string | undefined>;
@@ -48,23 +50,33 @@ function reloadLater() {
   );
 }
 
-/** "7 tracks" → "8 tracks"; a just-created playlist ("Playlist") starts at 0. Other subtitles stay as they are. */
+/**
+ * "7 tracks" → "8 tracks" (also after an author: "opecko • 7 tracks"); a just-created playlist ("Playlist") starts
+ * at 0. Other subtitles stay as they are.
+ */
 export function countedSubtitle(subtitle: string, delta: number): string {
-  const m = /^(\d[\d,]*) tracks?$/.exec(subtitle);
-  const before = m ? Number(m[1].replace(/,/g, "")) : subtitle === "Playlist" ? 0 : null;
+  const m = /^(.*• )?(\d[\d,]*) tracks?$/.exec(subtitle);
+  const before = m ? Number(m[2].replace(/,/g, "")) : subtitle === "Playlist" ? 0 : null;
   if (before === null) return subtitle;
   const n = Math.max(0, before + delta);
-  return `${n.toLocaleString("en-US")} ${n === 1 ? "track" : "tracks"}`;
+  return `${m?.[1] ?? ""}${n.toLocaleString("en-US")} ${n === 1 ? "track" : "tracks"}`;
 }
 
 /** Sidebar playlist list (all pages of the Library "Playlists" tab). */
 export const useLibrary = create<LibraryState>((set, get) => ({
   playlists: null,
+  owners: [],
   error: null,
   load: () =>
     (inflight ??= (async () => {
       const gen = generation;
       try {
+        // Alongside the list: who the account is, to tell its own playlists from saved ones.
+        if (!get().owners.length)
+          void getAccount().then(
+            (a) => gen === generation && a && set({ owners: [a.name, a.handle ?? ""].filter(Boolean) }),
+            () => {},
+          );
         let page = await getLibrary("playlists");
         const all = [...page.items];
         for (let i = 0; page.loadMore && i < 20; i++) {
@@ -103,7 +115,7 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     fresh.clear();
     deleted.clear();
     renamed.clear();
-    set({ playlists: null, error: null });
+    set({ playlists: null, owners: [], error: null });
   },
   adjustCount: (id, delta) =>
     set((s) => ({ playlists: s.playlists?.map((p) => (p.id === id ? { ...p, subtitle: countedSubtitle(p.subtitle, delta) } : p)) ?? null })),

@@ -11,6 +11,7 @@ import { playItem, queueCollection } from "../stores/actions";
 import { useAuth } from "../stores/auth";
 import { markEpisode, useEpisodeProgress } from "../stores/episodeProgress";
 import { useLibrary } from "../stores/library";
+import { isOwnPlaylist } from "../stores/ownership";
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
 import { useToast } from "../stores/toast";
@@ -36,17 +37,11 @@ function playlistChanged(id: string) {
   useLibrary.getState().changed();
 }
 
-/** Playlists whose songs the user can't remove here: Liked Music (that's unliking), mixes, episodes for later. */
-export const editable = (id: string) => id !== "LM" && !id.startsWith("RD") && !id.startsWith("SE");
-
-/**
- * The user's own playlist: listed in their library with a subtitle that's only a track count ("7 tracks").
- * Playlists saved from others show their author ("Someone • 12 tracks"), auto playlists a label instead.
- */
+/** The user's own playlist in their library (stores/ownership.ts says how that's told), or undefined. */
 export function ownPlaylist(id: string): Item | undefined {
-  if (!editable(id)) return undefined;
-  const p = useLibrary.getState().playlists?.find((x) => x.id === id);
-  return p && !p.subtitle?.includes("•") && !/^(auto playlist|youtube music)/i.test(p.subtitle ?? "") ? p : undefined;
+  const { playlists, owners } = useLibrary.getState();
+  const p = playlists?.find((x) => x.id === id);
+  return p && isOwnPlaylist(p, owners) ? p : undefined;
 }
 
 function removeEntry(track: Track, playlistId: string): MenuEntry {
@@ -116,8 +111,9 @@ export function saveToPlaylist(track: Track, p: { id: string; title: string }) {
 export function playlistEntries(track: Track): MenuEntry[] {
   const lib = useLibrary.getState();
   if (!lib.playlists) void lib.load();
+  // Only the user's own: saving into a playlist saved from someone else fails.
   return (lib.playlists ?? [])
-    .filter((p) => editable(p.id))
+    .filter((p) => isOwnPlaylist(p, lib.owners))
     .map((p) => ({ label: p.title, onSelect: () => saveToPlaylist(track, p) }));
 }
 

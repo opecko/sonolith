@@ -21,7 +21,7 @@ import type { VisualizerMode, VisualizerSettings } from "../../visualizer/settin
 import { useAuth } from "../../stores/auth";
 import { useLibrary } from "../../stores/library";
 import type { SaveAction, SaveButtonSettings } from "../../stores/saveButton";
-import { ownPlaylist } from "../ItemMenu";
+import { isOwnPlaylist } from "../../stores/ownership";
 
 const FEATURED_PALETTES = FEATURED.map((id) => PALETTES.find((p) => p.id === id)).filter((p) => !!p);
 
@@ -142,12 +142,13 @@ function SaveButtonCard() {
   const s = useSettings((st) => st.saveButton);
   const signedIn = useAuth((a) => a.status === "signedIn");
   const playlists = useLibrary((l) => l.playlists);
+  const owners = useLibrary((l) => l.owners);
   useEffect(() => {
     if (signedIn && !useLibrary.getState().playlists) void useLibrary.getState().load();
   }, [signedIn]);
   const set = (patch: Partial<SaveButtonSettings>) => useSettings.getState().set({ saveButton: { ...useSettings.getState().saveButton, ...patch } });
   // Only the user's own playlists: saving into someone else's fails.
-  const own = (playlists ?? []).filter((p) => ownPlaylist(p.id));
+  const own = (playlists ?? []).filter((p) => isOwnPlaylist(p, owners));
   const options = [...(s.playlist ? [] : [{ value: "", label: "Choose a playlist" }]), ...own.map((p) => ({ value: p.id, label: p.title }))];
   // A chosen playlist that's gone from the library still shows, by its stored title, until another is picked.
   if (s.playlist && !own.some((p) => p.id === s.playlist!.id)) options.unshift({ value: s.playlist.id, label: s.playlist.title });

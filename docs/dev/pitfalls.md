@@ -84,7 +84,9 @@ find a new one.
 - **The library listing lags behind edits**: new playlists appear late, deleted ones linger, track counts update
   late. A just-created playlist's page comes back without a title for a while. Use optimistic UI + reloads.
 - Own vs saved playlists: YouTube doesn't flag ownership in the library. Own playlists' subtitle is just a count
-  ("7 tracks"); saved ones show "Author • N tracks"; auto playlists a label ("Auto playlist", "YouTube Music").
+  ("7 tracks"), or for some accounts (brand channels) the account itself as author ("opecko • 0 tracks"); saved
+  ones show another author; auto playlists a label ("Auto playlist", "YouTube Music"). `stores/ownership.ts`
+  compares the author with the account's name and handle (loaded with the library).
   IDs `LM` (Liked Music), `RD…` (mixes), `SE` (Episodes for later) aren't editable.
 - **Live streams have no progressive audio.** Their adaptive formats are segment URLs: the `<audio>` element plays a
   few seconds of one and reports a nonsense length, and some clients answer "Streaming data not available". Play the
