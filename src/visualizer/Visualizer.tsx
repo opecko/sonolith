@@ -28,7 +28,7 @@ const SCALE: Record<VisualizerPlace, [number, number, number]> = {
   "halo-inner": [0.5, 420, 420],
 };
 const FPS_FOCUSED = 30;
-const FPS_UNFOCUSED = 12;
+const FPS_UNFOCUSED = 24;
 /** The glow's canvas reaches this far past the cover on each side, as a share of its own size (CLASSES.halo). */
 const HALO_MARGIN = 0.15 / 1.3;
 
@@ -42,7 +42,7 @@ const CLASSES: Record<VisualizerPlace, string> = {
 
 /**
  * The audio visualizer (Settings → Now Playing). Shows only in its mode, while Now Playing is open and animations
- * are on. It draws on the shared motion ticker, at most 30 times a second (12 while another window has focus, or
+ * are on. It draws on the shared motion ticker, at most 30 times a second (24 while another window has focus, or
  * not at all if the user turned that off), never while the window is hidden, and stops once paused audio has died
  * down. Colors come from the theme: the canvas's CSS `color`, read about once a second (it follows cover colors).
  */
