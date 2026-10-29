@@ -1,4 +1,4 @@
-"""Reconnecting politely (SPEC section 3.4 "Sonolith not available" and checklist item 12).
+"""Reconnecting politely (SPEC section 3.4 "Sonolith not available" and checklist item 13).
 
 Start at 1 second, double each time, at most 60 seconds, with random jitter of +-20 %. Reset after a successful
 `session.hello`. A wait Sonolith asks for (`retryAfterMs`) is never shortened.

@@ -612,6 +612,18 @@ The user can remove or block an app in Settings → Connected apps. Sonolith sen
 A client that was not connected at the time learns about it from `Unauthorized`, `NotRegistered` or `Blocked` at its
 next `session.hello`, and handles it the same way.
 
+### 9.3 Credit Sonolith
+
+So that users know where the music comes from and where to get help:
+
+- An app with its own window, settings page or "About" screen (a desktop app, a launcher, a full player UI)
+  **SHOULD** show "Uses Sonolith" with a link to <https://github.com/opecko/sonolith>. A good place is next to the
+  "Disconnect from Sonolith" action (section 9.1), or in the app's "About" screen.
+- A small client without such a place (a status bar module, a widget, a script, a bot) MAY leave it out, or mention
+  Sonolith in its README instead.
+- The credit MUST NOT suggest that the app is made, endorsed or checked by Sonolith. Use your own name and icon,
+  not Sonolith's.
+
 ---
 
 ## 10. Events
@@ -4714,16 +4726,18 @@ Tick every item before you ship.
 10. **Never re-register automatically:** only after the user asks.
 11. **Offer "Disconnect from Sonolith":** a visible action that calls `app.unregister` and deletes the token, even
     when Sonolith is not available.
-12. **Reconnect with backoff:** 1 s doubling to 60 s with jitter; never start Sonolith more than once per user action;
+12. **Credit Sonolith:** an app with its own window, settings or "About" screen shows "Uses Sonolith" with a link
+    (section 9.3); bars, widgets and scripts may skip it.
+13. **Reconnect with backoff:** 1 s doubling to 60 s with jitter; never start Sonolith more than once per user action;
     subscribe again after reconnecting.
-13. **Use events, not polling:** subscribe to topics; use `player.position` with extrapolation instead of frequent
+14. **Use events, not polling:** subscribe to topics; use `player.position` with extrapolation instead of frequent
     `player.getState`.
-14. **Respect rate limits:** on `RateLimited`, wait `data.retryAfterMs`; never retry in a tight loop.
-15. **Handle the common errors:** `Unavailable`, `Timeout`, `NotSignedIn`, `NotFound`, `InvalidParams`
+15. **Respect rate limits:** on `RateLimited`, wait `data.retryAfterMs`; never retry in a tight loop.
+16. **Handle the common errors:** `Unavailable`, `Timeout`, `NotSignedIn`, `NotFound`, `InvalidParams`
     (`cursorExpired`: restart paging).
-16. **Test without Sonolith:** with Sonolith not running, with the API turned off, and with Sonolith quitting while
+17. **Test without Sonolith:** with Sonolith not running, with the API turned off, and with Sonolith quitting while
     connected; the app must stay usable and retry quietly.
-17. **Test the user paths:** deny, deny and block, let a request expire, untick an optional scope, remove the app in
+18. **Test the user paths:** deny, deny and block, let a request expire, untick an optional scope, remove the app in
     Sonolith while connected, and disconnect from the app.
 
 ---

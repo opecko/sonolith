@@ -55,6 +55,9 @@
    `registration.resolved` kind "scopes" and `session.scopesChanged`.
 6. "Disconnect from Sonolith" button (REQUIRED): `app.unregister`, then delete the token (even if Sonolith is down).
 7. On `session.revoked`: stop, delete the token, show "Disconnected from Sonolith". Never re-register automatically.
+8. Credit (SHOULD, for apps with their own window/settings/About): "Uses Sonolith" linking to
+   https://github.com/opecko/sonolith, e.g. next to the Disconnect button. Bars, widgets, scripts: optional.
+   Never imply the app is made or endorsed by Sonolith.
 
 Minimal session (one line each):
 
@@ -288,9 +291,10 @@ Reference client using every feature (Python, plain-text terminal UI): https://g
 8. On session.revoked / Unauthorized / NotRegistered: stop, delete token, show "Disconnected from Sonolith".
 9. Never re-register automatically.
 10. Visible "Disconnect from Sonolith" -> app.unregister + delete token.
-11. Reconnect with backoff (1 s -> 60 s, jitter); never spawn Sonolith repeatedly; resubscribe after reconnect.
-12. Use events, not polling.
-13. Respect rate limits (retryAfterMs).
-14. Handle Unavailable, Timeout, NotSignedIn, NotFound, cursorExpired.
-15. Test with Sonolith not running, API off, and Sonolith quitting mid-session.
-16. Test deny, block, expiry, unticked optional scope, removal in Sonolith while connected, disconnect.
+11. Apps with a window/settings/About: show "Uses Sonolith" with a link (bars, widgets, scripts may skip it).
+12. Reconnect with backoff (1 s -> 60 s, jitter); never spawn Sonolith repeatedly; resubscribe after reconnect.
+13. Use events, not polling.
+14. Respect rate limits (retryAfterMs).
+15. Handle Unavailable, Timeout, NotSignedIn, NotFound, cursorExpired.
+16. Test with Sonolith not running, API off, and Sonolith quitting mid-session.
+17. Test deny, block, expiry, unticked optional scope, removal in Sonolith while connected, disconnect.
