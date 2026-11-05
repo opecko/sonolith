@@ -74,7 +74,10 @@ without touching playback or the log.
 ## The story player
 
 - The card is designed at **360 × 640 units** and scaled as a whole: sizes are `U(n)` = `calc(var(--u) * n)`.
-- One card is mounted at a time; the next card's images are preloaded.
+- One card is mounted at a time, except during a **transition** (`player/transitions.ts`: push, wipe, circle,
+  rise, diagonal, zoom; the circle for big reveals), when the card being left stays mounted under the same key (it
+  doesn't restart) and keeps its own palette. The first frame is part of the render, the engine drives the rest; with
+  animations off the next card just appears. The next card's images are preloaded.
 - Behind the card is the **aura** (`recap/aura.ts`, `player/Aura.tsx`): the cover of the song last played in the app,
   drawn into a 14×14 canvas the browser stretches (soft without a blur filter) under a scrim. It changes only at the
   big moments (top artist, top song, repeat champion…) and stays until the next one, crossfading on the engine.

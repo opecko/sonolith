@@ -5,7 +5,7 @@
 import { ChevronsRight, Pause, Play, Volume2, VolumeX, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { hiResArt } from "../../api/art";
-import { motionOn, ticker } from "../../motion";
+import { motionOn, ticker, tween } from "../../motion";
 import { readSource } from "../../stores/coverColors";
 import { usePlayer } from "../../stores/player";
 import { useSettings } from "../../stores/settings";
@@ -21,6 +21,7 @@ import { EndActions, FinalePoster } from "./Finale";
 import GameCard from "./GameCard";
 import { autoAdvancing, clickAction, keyAction, step, type NavAction } from "./nav";
 import { EntranceHold } from "./anim";
+import { pickTransition, transitionFrame, TRANSITION_MS, type Frame, type TransitionKind } from "./transitions";
 import { useRecapMusic } from "./useRecapMusic";
 import { musicTracks, songFor } from "../music";
 import { STYLE_COMPONENTS } from "./styles";
@@ -47,6 +48,9 @@ function playTarget(t: PlayTarget) {
   if (t.kind === "track") p.playQueue([{ type: "track", id: t.videoId, title: t.title, subtitle: t.artist, artists: [t.artist], thumbnail: t.thumbnail }], 0);
   else void p.startRadio({ type: "artist", id: t.id }, t.name);
 }
+
+const noEntering = () => {};
+const noHold = () => {};
 
 function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: PlayerOpen) {
   const autoAdvance = useSettings((s) => s.recap.autoAdvance);
@@ -97,6 +101,34 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
     ro.observe(el);
     return () => ro.disconnect();
   }, [last]);
+
+  // Card transitions: the card being left stays mounted (same key, so it doesn't restart) while the next comes in.
+  // The first frame is part of the render (no flash of the finished card); the engine moves the rest.
+  const [move, setMove] = useState<{ from: number; to: number; kind: TransitionKind; dir: 1 | -1 } | null>(null);
+  const layerEls = useRef(new Map<number, HTMLElement>());
+  // Derived from the index change during render (React's pattern for it, StrictMode-safe with state, not a ref).
+  const [shown, setShown] = useState(index);
+  const stopTransition = useRef<() => void>(() => {});
+  if (shown !== index) {
+    setShown(index);
+    setMove(motionOn() ? { from: shown, to: index, kind: pickTransition(deck.seed, index, deck.slides[index].kind), dir: index > shown ? 1 : -1 } : null);
+  }
+  const layers = move ? [move.from, move.to] : [index];
+  useLayoutEffect(() => {
+    if (!move) return;
+    const apply = (el: HTMLElement | undefined, f: Frame) => {
+      if (!el) return;
+      el.style.transform = f.transform ?? "";
+      el.style.clipPath = f.clipPath ?? "";
+      el.style.opacity = f.opacity ?? "";
+    };
+    stopTransition.current = tween(TRANSITION_MS, (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2), (p) => {
+      const f = transitionFrame(move.kind, p, move.dir);
+      apply(layerEls.current.get(move.to), f.in);
+      apply(layerEls.current.get(move.from), f.out);
+    }, () => setMove((cur) => (cur === move ? null : cur)));
+    return () => stopTransition.current();
+  }, [move]);
 
   const go = useCallback((to: number) => setIndex(Math.max(0, Math.min(n - 1, to))), [n]);
   const act = (a: NavAction | null) => {
@@ -187,8 +219,6 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
     act(clickAction((e.clientX - r.left) / r.width, !!slide.game));
   };
 
-  const Style = slide.style ? STYLE_COMPONENTS[slide.style] : null;
-  const data = slide.useAlt && slide.alt ? slide.alt : slide.data;
   const vars = recapVars(pal) as CSSProperties;
   const big = slide.kind === "topArtist" || slide.kind === "finale" || (slide.kind === "topTrack" && snapshot.period.kind === "year");
   const title = `Sonolith Recap: ${periodTitle(snapshot.period)}`;
@@ -232,24 +262,37 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
       <div ref={area} className="relative z-[3] flex min-h-0 flex-1 items-center justify-center p-3">
         <div onClick={onCardClick} role="group" aria-roledescription="card" aria-label={`Card ${index + 1} of ${n}`}
           className="relative overflow-hidden"
-          style={{ width: CARD_W * u, height: CARD_H * u, ["--u" as string]: `${u}px`, borderRadius: 24 * u, background: "var(--rc-bg)", cursor: slide.game ? "default" : "pointer" } as CSSProperties}>
+          style={{ width: CARD_W * u, height: CARD_H * u, ["--u" as string]: `${u}px`, borderRadius: 24 * u, background: "var(--rc-stage)", cursor: slide.game ? "default" : "pointer" } as CSSProperties}>
           <p className="sr-only" aria-live="polite">{slide.aria}</p>
-          <EntranceHold.Provider value={onEntering}>
-            {slide.game ? (
-              <GameCard key={index} game={slide.game} seed={deck.seed + index} onDone={next} />
-            ) : slide.kind === "finale" ? (
-              <FinalePoster snap={snapshot} />
-            ) : Style ? (
-              <Style key={index} slide={slide} data={data} hold={setHeld} />
-            ) : null}
-          </EntranceHold.Provider>
-          {big && <Confetti key={`c${index}`} colors={recapConfetti(pal)} />}
-          {slide.play && (
-            <button type="button" onClick={() => playTarget(slide.play!)} className="absolute inline-flex items-center gap-1 rounded-full text-sm font-medium"
-              style={{ right: 14 * u, bottom: 14 * u, padding: `${6 * u}px ${12 * u}px`, fontSize: 13 * u, background: "var(--rc-fg)", color: "var(--rc-bg)" }}>
-              <Play size={14 * u} aria-hidden /> Play
-            </button>
-          )}
+          {layers.map((i) => {
+            const s = deck.slides[i];
+            const active = i === index;
+            const C = s.style ? STYLE_COMPONENTS[s.style] : null;
+            const d = s.useAlt && s.alt ? s.alt : s.data;
+            // Each card keeps its own palette while it leaves.
+            return (
+              <div key={i} ref={(el) => void (el ? layerEls.current.set(i, el) : layerEls.current.delete(i))} aria-hidden={!active}
+                className="absolute inset-0 overflow-hidden"
+                style={{ ...(recapVars(palettes[s.mood]) as CSSProperties), ...(move?.to === i ? transitionFrame(move.kind, 0, move.dir).in : {}), zIndex: active ? 2 : 1, pointerEvents: active ? undefined : "none" }}>
+                <EntranceHold.Provider value={active ? onEntering : noEntering}>
+                  {s.game ? (
+                    <GameCard game={s.game} seed={deck.seed + i} onDone={next} />
+                  ) : s.kind === "finale" ? (
+                    <FinalePoster snap={snapshot} />
+                  ) : C ? (
+                    <C slide={s} data={d} hold={active ? setHeld : noHold} />
+                  ) : null}
+                </EntranceHold.Provider>
+                {active && big && <Confetti colors={recapConfetti(pal)} />}
+                {active && s.play && (
+                  <button type="button" onClick={() => playTarget(s.play!)} className="absolute inline-flex items-center gap-1 rounded-full text-sm font-medium"
+                    style={{ right: 14 * u, bottom: 14 * u, padding: `${6 * u}px ${12 * u}px`, fontSize: 13 * u, background: "var(--rc-fg)", color: "var(--rc-bg)" }}>
+                    <Play size={14 * u} aria-hidden /> Play
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
       {last && (
