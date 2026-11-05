@@ -3,6 +3,7 @@ import { useAuth } from "./stores/auth";
 import { initDiscord } from "./stores/discord";
 import { initMpris } from "./stores/mpris";
 import { initHistory } from "./stores/history";
+import { initPlayLog } from "./recap/recorder";
 import { initMediaKeys, initTray } from "./stores/mediaKeys";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
@@ -38,6 +39,7 @@ export default function App() {
     initDiscord();
     void initMpris();
     initHistory();
+    initPlayLog();
     initUpdates();
     void initOnboarding();
     initShortcuts();

@@ -8,6 +8,7 @@ mod migrate;
 mod mpris;
 mod live;
 mod proxy;
+mod recap;
 mod render;
 mod tray;
 mod update;
@@ -147,6 +148,15 @@ pub fn run() {
             api::api_block,
             api::api_unblock,
             api::api_allow_asking_again,
+            recap::recap_log_append,
+            recap::recap_log_read,
+            recap::recap_log_delete,
+            recap::recap_log_export,
+            recap::recap_file_read,
+            recap::recap_file_write,
+            recap::recap_file_delete,
+            recap::recap_file_list,
+            recap::recap_delete_all,
         ])
         .build(context)
         .expect("error while running tauri application")

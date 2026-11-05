@@ -1,12 +1,11 @@
 import { recordHistory } from "../api/ytm";
 import { useAuth } from "./auth";
+import { countsAsPlay } from "../recap/playLog";
 import { useDevSlot } from "./devSlot";
 import { onPlaybackTick, playbackTime, usePlayer } from "./player";
 import { useProgress } from "./progress";
 import { useSettings } from "./settings";
 
-/** Seconds of actual listening before a play counts (quick skips don't land in the history). */
-const RECORD_AFTER_S = 10;
 
 /** Records each play in the YouTube Music history once it has really been listened to. */
 export function initHistory() {
@@ -24,8 +23,8 @@ export function initHistory() {
     // The real playback time: the displayed position stands still while the window is hidden (tray).
     const position = playbackTime();
     const { duration } = useProgress.getState();
-    // Short tracks count once half of them has played.
-    if (position < Math.min(RECORD_AFTER_S, duration > 0 ? duration / 2 : RECORD_AFTER_S)) return;
+    // 10 s, or half of a shorter track; the local play log (recap/playLog.ts) uses the same threshold.
+    if (!countsAsPlay(position, duration)) return;
     recorded = true;
     // Dev toolkit's "Don't save played tracks to history"; the whole condition is false (and dropped) in release.
     if (import.meta.env.DEV && useDevSlot.getState().skipHistory?.()) return;

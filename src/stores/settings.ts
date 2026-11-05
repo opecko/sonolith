@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { normalizeKaraoke, type KaraokeStyle } from "../lyrics/karaoke";
+import { DEFAULT_RECAP, normalizeRecap, type RecapSettings } from "../recap/settings";
 import { DEFAULT_LYRICS_PROVIDERS, normalizeLyricsProviders, type ProviderSetting } from "../lyrics/providers";
 import { DEFAULT_SHORTCUTS, normalizeShortcuts, type ShortcutSettings } from "../shortcuts/keys";
 import { DEFAULT_APPEARANCE, normalizeAppearance, type Appearance } from "../theme/appearance";
@@ -42,10 +43,12 @@ export interface Settings {
   saveButton: SaveButtonSettings;
   /** Gapless playback: the next song loads ahead and starts the moment the current one ends (playback/gapless.ts). */
   gapless: boolean;
+  /** Settings → Recaps: local listening log, games, auto-advance, podcasts. */
+  recap: RecapSettings;
 }
 
 const KEY = "settings";
-const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS, karaokeStyle: "sweep", lyricsEnabled: true, visualizer: DEFAULT_VISUALIZER, saveButton: DEFAULT_SAVE_BUTTON, gapless: true };
+const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS, karaokeStyle: "sweep", lyricsEnabled: true, visualizer: DEFAULT_VISUALIZER, saveButton: DEFAULT_SAVE_BUTTON, gapless: true, recap: DEFAULT_RECAP };
 
 /** Stored JSON → Settings. Missing keys (older versions) get the defaults; normalizing drops malformed values. */
 export function parseSettings(stored: unknown): Settings {
@@ -67,6 +70,7 @@ export function parseSettings(stored: unknown): Settings {
     visualizer: normalizeVisualizer(s.visualizer),
     saveButton: normalizeSaveButton(s.saveButton),
     gapless: s.gapless !== false,
+    recap: normalizeRecap(s.recap),
   };
 }
 
@@ -86,8 +90,8 @@ function read(): Settings {
 
 function write() {
   try {
-    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton, gapless } = useSettings.getState();
-    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton, gapless }));
+    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton, gapless, recap } = useSettings.getState();
+    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton, gapless, recap }));
   } catch {
     /* storage unavailable */
   }
