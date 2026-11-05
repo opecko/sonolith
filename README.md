@@ -27,6 +27,10 @@ an account; sign in with Google for your library, playlists, likes, mixes and hi
   (Sweep, Glow, Bounce or Simple) and the order of the sources
 - **Likes, dislikes and playlists**: the ⋮ menu on every track works like on YouTube Music (play next, add to queue,
   save to playlist, go to artist/album…); create, rename and delete playlists
+- **Sonolith Recap**: your month in music on the 1st of every month and your year on December 1 (or from October 15
+  if you can't wait): top artists and songs, your listening clock, a persona, little games, your top songs playing
+  underneath, and playlists to keep. Made on your computer from what you play in Sonolith, plus YouTube Music's
+  history (or your whole history from Google Takeout, if you add it)
 - **Podcasts**: show pages, episodes remember where you left off, the next episode plays when one ends, playback
   speed, skip −10 s / +30 s, optional video
 - **Appearance**: a Material 3 Expressive design (or the Classic look), over 100 color palettes (dark and light),
@@ -115,7 +119,8 @@ Building such an app? See [For developers](#for-developers).
 
 Sonolith talks only to YouTube / Google (and to Discord on your computer, if Rich Presence is on). There is no
 analytics or telemetry, and no Sonolith server. Your sign-in stays on your computer (see Getting started). Connected apps are local only, off by default, and each one needs
-your approval.
+your approval. Recaps are computed on your computer; Sonolith's listening log behind them stays there too (export
+or delete it in Settings → Recaps).
 
 Sonolith is an unofficial app and isn't affiliated with or endorsed by Google or YouTube.
 
