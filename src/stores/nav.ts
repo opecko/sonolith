@@ -6,6 +6,7 @@ export type Route =
   | { name: "library" }
   | { name: "settings" }
   | { name: "history" }
+  | { name: "recaps" }
   | { name: "podcast" | "channel"; id: string }
   | { name: "search"; query: string }
   | { name: "playlist" | "album" | "artist"; id: string }

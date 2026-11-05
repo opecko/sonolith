@@ -4,10 +4,11 @@
 import { create } from "zustand";
 import { useAuth } from "../stores/auth";
 import { useSettings } from "../stores/settings";
+import { useToast } from "../stores/toast";
 import { clockNow } from "./clock";
 import { importHistory, loadHistoryCache } from "./importer";
 import { firstDay, mergePlays, type Dataset } from "./merge";
-import { availability, cutoffOf, monthsToList, periodId, type Availability, type Period } from "./periods";
+import { availability, cutoffOf, monthsToList, parsePeriodId, periodId, periodTitle, type Availability, type Period } from "./periods";
 import { buildSnapshot, freezesNow, keepFrozen, parseSnapshot, type Snapshot } from "./snapshot";
 import { listJson, readJson, readPlays, writeJson } from "./storage";
 
@@ -46,6 +47,8 @@ interface RecapState {
   loaded: boolean;
   loading: boolean;
   data: Dataset | null;
+  /** The local log alone (previews while the history can't be refreshed). */
+  local: Dataset | null;
   meta: Meta;
   /** Frozen snapshots on disk, by id. */
   frozen: Record<string, Snapshot>;
@@ -53,7 +56,7 @@ interface RecapState {
   fresh: string | null;
 }
 
-export const useRecaps = create<RecapState>(() => ({ loaded: false, loading: false, data: null, meta: EMPTY_META, frozen: {}, fresh: null }));
+export const useRecaps = create<RecapState>(() => ({ loaded: false, loading: false, data: null, local: null, meta: EMPTY_META, frozen: {}, fresh: null }));
 
 let loading: Promise<void> | null = null;
 
@@ -71,7 +74,7 @@ export function loadRecaps(opening = false): Promise<void> {
         if (s?.frozen) frozen[s.id] = s;
       }
       const data = mergePlays(plays, useAuth.getState().status === "signedIn" ? cache.plays : []);
-      useRecaps.setState({ data, meta: parseMeta(meta), frozen, loaded: true });
+      useRecaps.setState({ data, local: mergePlays(plays, []), meta: parseMeta(meta), frozen, loaded: true });
       useRecaps.setState({ fresh: freshRecap() });
     } finally {
       useRecaps.setState({ loading: false });
@@ -128,7 +131,10 @@ export async function openRecap(period: Period): Promise<Snapshot | null> {
     const signedIn = useAuth.getState().status === "signedIn";
     const cache = await loadHistoryCache();
     const fresh = cache.importedAt >= now - 3_600_000 && cache.importedAt >= cutoff;
-    const made = buildSnapshot(period, state.data, cutoff, now, { frozen: freezesNow(signedIn, fresh), podcasts: useSettings.getState().recap.podcasts, youtube: signedIn });
+    const frozen = freezesNow(signedIn, fresh);
+    // Signed in without a fresh history: a preview from this computer's log only, made again next time.
+    const data = frozen ? state.data : state.local ?? state.data;
+    const made = buildSnapshot(period, data, cutoff, now, { frozen, podcasts: useSettings.getState().recap.podcasts, youtube: signedIn && frozen });
     const shown = keepFrozen(stored, made);
     if (shown.frozen) {
       await writeJson(`snapshots/${id}.json`, shown);
@@ -165,10 +171,36 @@ export async function rememberPlaylist(recapId: string, kind: string, playlistId
 
 /** After "Delete all recap data": forget everything loaded. */
 export function forgetRecaps() {
-  useRecaps.setState({ loaded: false, data: null, meta: EMPTY_META, frozen: {}, fresh: null });
+  useRecaps.setState({ loaded: false, data: null, local: null, meta: EMPTY_META, frozen: {}, fresh: null });
 }
 
 /** Dev toolkit: drops frozen snapshots from memory (the files are deleted by the caller). */
 export function forgetSnapshots() {
   useRecaps.setState({ frozen: {} });
+}
+
+const ANNOUNCED_KEY = "recap-announced";
+let started = false;
+
+/** A toast once per newly ready recap (the menu's dot stays until it's opened). */
+function announce() {
+  const id = useRecaps.getState().fresh;
+  if (!id) return;
+  try {
+    if (localStorage.getItem(ANNOUNCED_KEY) === id) return;
+    localStorage.setItem(ANNOUNCED_KEY, id);
+  } catch {
+    return;
+  }
+  const p = parsePeriodId(id);
+  if (p) useToast.getState().show(`Your ${periodTitle(p)} recap is ready: open it from your profile menu`, "info");
+}
+
+/** Looks for newly ready recaps shortly after startup and then hourly (months change at midnight). */
+export function initRecaps() {
+  if (started) return;
+  started = true;
+  const check = () => void loadRecaps(false).then(announce, () => {});
+  setTimeout(check, 20_000);
+  setInterval(check, 3_600_000);
 }

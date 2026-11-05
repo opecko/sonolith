@@ -5,6 +5,7 @@ import { initMpris } from "./stores/mpris";
 import { initHistory } from "./stores/history";
 import { initHistoryImport } from "./recap/importer";
 import { initPlayLog } from "./recap/recorder";
+import { initRecaps } from "./recap/store";
 import { useRecapUi } from "./recap/ui";
 import { initMediaKeys, initTray } from "./stores/mediaKeys";
 import Sidebar from "./components/Sidebar";
@@ -46,6 +47,7 @@ export default function App() {
     initHistory();
     initPlayLog();
     initHistoryImport();
+    initRecaps();
     initUpdates();
     void initOnboarding();
     initShortcuts();

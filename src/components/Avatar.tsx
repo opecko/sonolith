@@ -1,4 +1,4 @@
-import { Check, History, LogOut, Settings, User } from "lucide-react";
+import { Check, History, LogOut, Settings, Sparkles, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { sameAccount } from "../api/accounts";
 import { currentAccount, getAccountSwitcher } from "../api/client";
@@ -6,6 +6,10 @@ import { getAccount } from "../api/ytm";
 import { useAsync } from "../hooks/useData";
 import { useAuth } from "../stores/auth";
 import { openSettings, useNav } from "../stores/nav";
+import { useRecaps } from "../recap/store";
+
+/** A small dot: a recap is ready and not opened yet. */
+const NewDot = ({ className = "" }: { className?: string }) => <span aria-hidden className={`h-2.5 w-2.5 rounded-full bg-[var(--c-accent)] ring-2 ring-[var(--c-bg)] ${className}`} />;
 
 export default function Avatar() {
   const signedIn = useAuth((s) => s.status === "signedIn");
@@ -14,6 +18,7 @@ export default function Avatar() {
   const accountGen = useAuth((s) => s.accountGen);
   const { data } = useAsync(signedIn ? `account@${accountGen}` : "account:none", () => (signedIn ? getAccount() : Promise.resolve(null)));
   const [open, setOpen] = useState(false);
+  const freshRecap = useRecaps((s) => !!s.fresh);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -22,10 +27,21 @@ export default function Avatar() {
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
-  if (!signedIn) return <button onClick={login} className="chip">Sign in</button>;
+  // Signed out there's no account menu: Recaps (local log only) get their own button beside Sign in.
+  if (!signedIn)
+    return (
+      <div className="flex items-center gap-2">
+        <button onClick={() => useNav.getState().go({ name: "recaps" })} className="icon-btn relative h-10 w-10" aria-label={freshRecap ? "Recaps (a new one is ready)" : "Recaps"} title="Recaps">
+          <Sparkles size={20} />
+          {freshRecap && <NewDot className="absolute right-1.5 top-1.5" />}
+        </button>
+        <button onClick={login} className="chip">Sign in</button>
+      </div>
+    );
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen((o) => !o)} aria-label="Account" aria-expanded={open}
+      {freshRecap && <NewDot className="pointer-events-none absolute -right-0.5 -top-0.5 z-10" />}
+      <button onClick={() => setOpen((o) => !o)} aria-label={freshRecap ? "Account (a new recap is ready)" : "Account"} aria-expanded={open}
         className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[var(--c-surface-3)] ring-offset-2 ring-offset-[var(--c-bg)] hover:ring-2 hover:ring-[var(--c-outline)]">
         {data?.photo ? <img src={data.photo} alt="" className="h-full w-full object-cover" /> : <User size={18} />}
       </button>
@@ -41,6 +57,9 @@ export default function Avatar() {
           <AccountSwitcher onDone={() => setOpen(false)} />
           <button onClick={() => { setOpen(false); useNav.getState().go({ name: "history" }); }} role="menuitem" className="m3-menu-item mt-1 flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-[var(--c-hover)]">
             <span aria-hidden><History size={18} /></span> History
+          </button>
+          <button onClick={() => { setOpen(false); useNav.getState().go({ name: "recaps" }); }} role="menuitem" className="m3-menu-item flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-[var(--c-hover)]">
+            <span aria-hidden><Sparkles size={18} /></span> <span className="flex-1">Recaps</span>{freshRecap && <NewDot />}
           </button>
           <button onClick={() => { setOpen(false); openSettings(); }} role="menuitem" className="m3-menu-item flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-[var(--c-hover)]">
             <span aria-hidden><Settings size={18} /></span> Settings

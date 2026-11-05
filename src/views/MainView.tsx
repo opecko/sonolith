@@ -8,6 +8,7 @@ import ArtistView from "./ArtistView";
 import ExploreView from "./ExploreView";
 import ChannelView from "./ChannelView";
 import HistoryView from "./HistoryView";
+import RecapsView from "../recap/RecapsView";
 import PodcastView from "./PodcastView";
 import HomeView from "./HomeView";
 import LibraryView from "./LibraryView";
@@ -38,6 +39,7 @@ function Routed() {
     case "library": return <LibraryView />;
     case "settings": return <SettingsView />;
     case "history": return <HistoryView />;
+    case "recaps": return <RecapsView />;
     case "podcast": return <PodcastView key={route.id} id={route.id} />;
     case "channel": return <ChannelView key={route.id} id={route.id} />;
     case "search": return <SearchView key={route.query} query={route.query} />;
