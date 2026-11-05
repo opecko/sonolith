@@ -15,6 +15,7 @@ import { NOW_PLAYING_LAYOUTS, UI_STYLES } from "../theme/appearance";
 import { WHATS_NEW } from "../whatsNew/entries";
 import { useWhatsNew } from "../whatsNew/store";
 import { useDevFlags } from "./flags";
+import RecapDev from "./RecapDev";
 
 type Flavor = "github" | "installer" | "aur";
 
@@ -192,10 +193,13 @@ export default function DevPanel({ onClose }: { onClose: () => void }) {
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="type-body-medium">Don't save played tracks to history</p>
-              <p className="type-body-small text-[var(--m3-on-surface-variant)]">No YouTube Music history pings while on. Not saved: off again after a restart.</p>
+              <p className="type-body-small text-[var(--m3-on-surface-variant)]">No YouTube Music history pings and no local listening log while on. Not saved: off again after a restart.</p>
             </div>
             <Switch on={noHistory} onChange={setNoHistory} label="Don't save played tracks to history" />
           </div>
+        </Section>
+        <Section title="Recaps">
+          <RecapDev onClose={onClose} />
         </Section>
         <Section title="Settings JSON">
           <pre className="max-h-72 select-text overflow-auto whitespace-pre-wrap break-all rounded-[var(--m3-corner-sm)] bg-[var(--m3-surface-container-lowest)] p-3 font-[ui-monospace,monospace] text-xs">

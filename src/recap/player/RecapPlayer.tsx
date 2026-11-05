@@ -43,10 +43,10 @@ function playTarget(t: PlayTarget) {
   else void p.startRadio({ type: "artist", id: t.id }, t.name);
 }
 
-function Player({ snapshot, seed, start, forceGames, forceStyle }: PlayerOpen) {
+function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: PlayerOpen) {
   const games = useSettings((s) => s.recap.games);
   const autoAdvance = useSettings((s) => s.recap.autoAdvance);
-  const deck = useMemo(() => buildDeck(snapshot, { seed, games, forceGames, forceStyle }), [snapshot, seed]);
+  const deck = useMemo(() => given ?? buildDeck(snapshot, { seed, games, forceGames, forceStyle }), [snapshot, seed]);
   const n = deck.slides.length;
   const [index, setIndex] = useState(Math.min(start, n - 1));
   const [paused, setPaused] = useState(false);

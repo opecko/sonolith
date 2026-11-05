@@ -1,5 +1,6 @@
 // Which recap the story player shows (it's a full-window overlay above everything, App.tsx mounts it).
 import { create } from "zustand";
+import type { Deck } from "./deck";
 import type { Snapshot } from "./snapshot";
 import type { StyleId } from "./styles";
 
@@ -11,6 +12,8 @@ export interface PlayerOpen {
   /** Dev toolkit: always games / one style where it fits. */
   forceGames?: boolean;
   forceStyle?: StyleId | null;
+  /** A ready-made deck (the dev toolkit's style gallery) instead of one built from the snapshot. */
+  deck?: Deck;
 }
 
 export const useRecapUi = create<{ open: PlayerOpen | null }>(() => ({ open: null }));
