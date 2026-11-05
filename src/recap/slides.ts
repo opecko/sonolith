@@ -83,8 +83,12 @@ export function buildContents(s: RecapStats, ctx: CopyContext, opts: { coveredFr
   const year = ctx.period.kind === "year";
   const min = minutesOf(s.listenedMs);
   const since = opts.coveredFrom > opts.periodStart ? `Based on your listening since ${formatDay(opts.coveredFrom)}.` : undefined;
-  const from = [opts.youtube || opts.takeout ? "your YouTube Music history" : "", opts.log ? "Sonolith's own log" : ""].filter(Boolean);
-  const sources = from.length ? `From ${from.join(" and ")}.` : "From Sonolith's listening log on this computer.";
+  // Honest about completeness: Sonolith's log is exact, YouTube's history page only partial, Takeout complete.
+  const sources = opts.takeout
+    ? (opts.log ? "From Sonolith's log and your full YouTube Music history." : "From your full YouTube Music history.")
+    : opts.log && opts.youtube ? "Exact for Sonolith, topped up with what YouTube Music shares."
+    : opts.youtube ? "From YouTube Music's history, which only shares part of it."
+    : "From everything you played in Sonolith.";
 
   add({
     kind: "intro",

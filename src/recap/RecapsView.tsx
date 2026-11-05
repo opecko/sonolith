@@ -1,6 +1,6 @@
 // The Recaps page: the newest ready recap up top, the year (with the early unlock from Oct 15), every month, and a
 // plain word on where the data comes from. Works signed out (local log only).
-import { CalendarDays, Lock, LockOpen, Play, RefreshCw, Settings, Sparkles } from "lucide-react";
+import { CalendarDays, Info, Lock, LockOpen, Play, RefreshCw, Settings, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { confirmAction } from "../components/ConfirmDialog";
 import { ErrorBox, Loading } from "../components/Status";
@@ -78,11 +78,23 @@ export default function RecapsView() {
           <Settings size={16} aria-hidden /> Recap settings
         </button>
       </div>
-      <p className="mb-6 select-text text-sm text-[var(--c-text-muted)]">
-        Your monthly and yearly listening, computed on your computer{signedIn || takeout ? " from your YouTube Music history and Sonolith's own listening log" : ""}. Nothing is uploaded anywhere.
-        {!signedIn && (takeout ? " You're signed out, so recaps use Sonolith's listening log and the history you imported." : " You're signed out, so recaps use only Sonolith's listening log on this computer.")}
+      <p className="mb-3 select-text text-sm text-[var(--c-text-muted)]">
+        Your monthly and yearly listening, computed on your computer. Nothing is uploaded anywhere.
         {signedIn && importError && ` ${importError} Recaps opened now are previews from this computer's log.`}
       </p>
+      <div className="m3-section mb-6 flex select-text items-start gap-3 rounded-[var(--radius)] bg-[var(--c-surface)] p-4 text-sm">
+        <Info size={18} aria-hidden className="mt-0.5 shrink-0 text-[var(--c-text-muted)]" />
+        <p>
+          <span className="font-medium">Recaps are complete for what you play in Sonolith.</span>{" "}
+          Sonolith notes every play here, with exact times.{" "}
+          {signedIn
+            ? "Plays from elsewhere (your phone, the website) come from YouTube Music's own history, which only shows your last 200 songs, so they're only partly in."
+            : "You're signed out, so plays from elsewhere (your phone, the website) aren't in."}
+          {takeout > 0
+            ? " Your imported Google Takeout history fills in the rest."
+            : <> For your complete past listening, you can <button type="button" className="underline" onClick={() => openSettings("recaps", "recapTakeout")}>import it from Google Takeout</button>.</>}
+        </p>
+      </div>
 
       {hero ? (
         <button type="button" onClick={() => void open(hero)}

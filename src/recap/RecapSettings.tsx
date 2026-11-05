@@ -99,7 +99,7 @@ export default function RecapSettings() {
       <SettingCard title="Listening log">
         <SettingRow id="recapLog" title="Keep a local listening log"
           detail={saveHistory
-            ? "Sonolith notes what you play, when, and for how long, so recaps are exact. It stays on this computer and works without signing in."
+            ? "Sonolith notes what you play, when, and for how long. This is what makes recaps complete: YouTube Music itself only shares your last 200 songs. It stays on this computer and works without signing in."
             : "Off while Save listening history (Settings → Playback) is off: nothing is recorded then."}>
           <Switch on={recap.localLog} onChange={(v) => set({ localLog: v })} label="Keep a local listening log" />
         </SettingRow>
