@@ -75,6 +75,11 @@ without touching playback or the log.
 
 - The card is designed at **360 × 640 units** and scaled as a whole: sizes are `U(n)` = `calc(var(--u) * n)`.
 - One card is mounted at a time; the next card's images are preloaded.
+- Behind the card is the **aura** (`recap/aura.ts`, `player/Aura.tsx`): the cover of the song last played in the app,
+  drawn into a 14×14 canvas the browser stretches (soft without a blur filter) under a scrim. It changes only at the
+  big moments (top artist, top song, repeat champion…) and stays until the next one, crossfading on the engine.
+- Completeness is said plainly (Recaps page, intro card, Settings): exact for plays in Sonolith, partial for plays
+  elsewhere unless a Takeout history is imported.
 - Motion goes through `player/anim.ts` on the shared engine: `useEntrance(ms, frame)` runs one tween that writes
   styles to `data-e` elements per frame and lands on the final state (immediately with animations off or while
   hidden); `useLoop` is for the few loops (marquee, twinkle, shimmer), which the engine stops while hidden or with
