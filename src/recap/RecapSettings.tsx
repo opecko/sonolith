@@ -5,7 +5,7 @@ import { confirmAction } from "../components/ConfirmDialog";
 import Switch from "../components/Switch";
 import { useSettings } from "../stores/settings";
 import { useToast } from "../stores/toast";
-import { Segmented, SettingCard, SettingRow } from "../views/settings/kit";
+import { SettingCard, SettingRow } from "../views/settings/kit";
 import { clockNow } from "./clock";
 import { useHistoryImport } from "./importer";
 import type { RecapSettings as Shape } from "./settings";
@@ -129,9 +129,6 @@ export default function RecapSettings() {
         </SettingRow>
       </SettingCard>
       <SettingCard title="Recaps">
-        <SettingRow id="recapGames" title="Recap games" detail="Little guessing games between the cards, like guessing your top artist.">
-          <Segmented value={recap.games} options={[["sometimes", "Sometimes"], ["always", "Always"], ["never", "Never"]]} onChange={(v) => set({ games: v })} label="Recap games" />
-        </SettingRow>
         <SettingRow id="recapAutoAdvance" title="Auto-advance" detail="Cards move on by themselves after a few seconds. Space pauses.">
           <Switch on={recap.autoAdvance} onChange={(v) => set({ autoAdvance: v })} label="Auto-advance" />
         </SettingRow>

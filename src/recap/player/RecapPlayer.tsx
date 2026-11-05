@@ -46,9 +46,8 @@ function playTarget(t: PlayTarget) {
 }
 
 function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: PlayerOpen) {
-  const games = useSettings((s) => s.recap.games);
   const autoAdvance = useSettings((s) => s.recap.autoAdvance);
-  const deck = useMemo(() => given ?? buildDeck(snapshot, { seed, games, forceGames, forceStyle }), [snapshot, seed]);
+  const deck = useMemo(() => given ?? buildDeck(snapshot, { seed, games: "sometimes", forceGames, forceStyle }), [snapshot, seed]);
   const n = deck.slides.length;
   const [index, setIndex] = useState(Math.min(start, n - 1));
   const [paused, setPaused] = useState(false);
