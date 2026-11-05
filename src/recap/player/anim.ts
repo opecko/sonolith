@@ -1,7 +1,7 @@
 // Motion for recap cards, on the shared motion engine (src/motion): one tween per card entrance that writes styles
 // straight to elements (no React state per frame), finished at once with animations off or while hidden. Never CSS
 // transform/opacity animations: WebKitGTK flashes the first frame when those end.
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef } from "react";
 import { motionOn, ticker, tween } from "../../motion";
 
 export const easeOut = (t: number) => 1 - (1 - t) ** 3;
@@ -27,12 +27,26 @@ export const U = (n: number) => `calc(var(--u) * ${n})`;
 export function useEntrance(ms: number, frame: (p: number) => void, deps: unknown[] = []) {
   const f = useRef(frame);
   f.current = frame;
+  const entering = useContext(EntranceHold);
   useLayoutEffect(() => {
     f.current(motionOn() ? 0 : 1);
-    const stop = tween(ms, (t) => t, (p) => f.current(p));
-    return stop;
+    // Auto-advance waits while the entrance plays (typing, printing, counting), so a card is never cut short.
+    let held = motionOn();
+    if (held) entering(1);
+    const release = () => {
+      if (held) entering(-1);
+      held = false;
+    };
+    const stop = tween(ms, (t) => t, (p) => f.current(p), release);
+    return () => {
+      stop();
+      release();
+    };
   }, deps);
 }
+
+/** The player's count of entrances still playing (+1 when one starts, −1 when it ends or unmounts). */
+export const EntranceHold = createContext<(delta: number) => void>(() => {});
 
 /** A loop for an active card (marquee, shimmer); stops on unmount, while hidden and with animations off. */
 export function useLoop(fn: (dt: number) => void, on = true) {

@@ -20,6 +20,7 @@ import Confetti from "./Confetti";
 import { EndActions, FinalePoster } from "./Finale";
 import GameCard from "./GameCard";
 import { autoAdvancing, clickAction, keyAction, step, type NavAction } from "./nav";
+import { EntranceHold } from "./anim";
 import { STYLE_COMPONENTS } from "./styles";
 
 export default function RecapPlayer() {
@@ -51,7 +52,11 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
   const n = deck.slides.length;
   const [index, setIndex] = useState(Math.min(start, n - 1));
   const [paused, setPaused] = useState(false);
-  const [held, setHeld] = useState(false);
+  const [heldByCard, setHeld] = useState(false);
+  // Entrances still playing on this card: the reading time starts once they're done.
+  const [entering, setEntering] = useState(0);
+  const onEntering = useCallback((d: number) => setEntering((n) => Math.max(0, n + d)), []);
+  const held = heldByCard || entering > 0;
   const slide = deck.slides[index];
   const last = index === n - 1;
 
@@ -95,7 +100,9 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
   const next = () => act("next");
 
   useEffect(() => saveResume(snapshot.id, seed, last ? 0 : index), [index]);
-  useEffect(() => setHeld(false), [index]);
+  useEffect(() => {
+    setHeld(false);
+  }, [index]);
   // Performance marks per card (DevTools → Performance): from the card change to its first painted frame.
   useLayoutEffect(() => {
     performance.mark(`recap:card:${index}`);
@@ -215,13 +222,15 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
           className="relative overflow-hidden"
           style={{ width: CARD_W * u, height: CARD_H * u, ["--u" as string]: `${u}px`, borderRadius: 24 * u, background: "var(--rc-bg)", cursor: slide.game ? "default" : "pointer" } as CSSProperties}>
           <p className="sr-only" aria-live="polite">{slide.aria}</p>
-          {slide.game ? (
-            <GameCard key={index} game={slide.game} seed={deck.seed + index} onDone={next} />
-          ) : slide.kind === "finale" ? (
-            <FinalePoster snap={snapshot} />
-          ) : Style ? (
-            <Style key={index} slide={slide} data={data} hold={setHeld} />
-          ) : null}
+          <EntranceHold.Provider value={onEntering}>
+            {slide.game ? (
+              <GameCard key={index} game={slide.game} seed={deck.seed + index} onDone={next} />
+            ) : slide.kind === "finale" ? (
+              <FinalePoster snap={snapshot} />
+            ) : Style ? (
+              <Style key={index} slide={slide} data={data} hold={setHeld} />
+            ) : null}
+          </EntranceHold.Provider>
           {big && <Confetti key={`c${index}`} colors={recapConfetti(pal)} />}
           {slide.play && (
             <button type="button" onClick={() => playTarget(slide.play!)} className="absolute inline-flex items-center gap-1 rounded-full text-sm font-medium"
