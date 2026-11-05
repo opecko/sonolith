@@ -30,7 +30,7 @@ import { initOnboarding, useOnboarding } from "./onboarding/store";
 
 // The welcome is only ever needed on a fresh install: its code loads when it opens.
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
-// The recap story player (its 27 card styles) loads the first time a recap opens.
+// The recap story player (and its card styles) loads the first time a recap opens.
 const RecapPlayer = lazy(() => import("./recap/player/RecapPlayer"));
 
 export default function App() {

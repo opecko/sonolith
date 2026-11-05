@@ -43,6 +43,14 @@ export const STYLES = [
   { id: "countdown", name: "Countdown reveal", family: "countdown", shapes: ["rank", "hero", "text"] },
   { id: "scratch", name: "Scratch card", family: "scratch", shapes: ["hero", "number"] },
   { id: "constellation", name: "Constellation", family: "constellation", shapes: ["rank", "covers"] },
+  { id: "splitFlap", name: "Split-flap board", family: "flap", shapes: ["number", "rank", "text"] },
+  { id: "polaroids", name: "Polaroids", family: "photo", shapes: ["rank", "covers", "hero"] },
+  { id: "cassette", name: "Cassette tape", family: "tape", shapes: ["hero", "text"] },
+  { id: "donut", name: "Donut chart", family: "donut", shapes: ["series", "rank"] },
+  { id: "slotMachine", name: "Slot machine", family: "slot", shapes: ["number", "hero"] },
+  { id: "magazine", name: "Magazine cover", family: "magazine", shapes: ["hero"] },
+  { id: "medal", name: "Medal", family: "award", shapes: ["hero", "number"] },
+  { id: "forecast", name: "Weekly forecast", family: "forecast", shapes: ["series"], seriesLength: 7 },
 ] as const satisfies readonly { id: string; name: string; family: string; shapes: readonly Shape[]; seriesLength?: number }[];
 
 export type StyleId = (typeof STYLES)[number]["id"];

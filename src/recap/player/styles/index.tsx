@@ -5,6 +5,7 @@ import type { StyleProps } from "../parts";
 import { Equalizer, Heatmap, RadialClock, RisingBars, Timeline, Waveform } from "./charts";
 import { AlbumWall, Bubbles, Constellation, Countdown, CrateFlip, Podium, Spotlight, Stickers, TradingCard } from "./lists";
 import { GiantNumber, Marquee, Newspaper, NumeralStack, Odometer, Poster, Receipt, Scratch, Terminal } from "./print";
+import { Cassette, Donut, Forecast, Magazine, Medal, Polaroids, SlotMachine, SplitFlap } from "./extra";
 import { Chat, Ticket, Versus } from "./talk";
 
 export const STYLE_COMPONENTS: Record<StyleId, ComponentType<StyleProps>> = {
@@ -35,4 +36,12 @@ export const STYLE_COMPONENTS: Record<StyleId, ComponentType<StyleProps>> = {
   countdown: Countdown,
   scratch: Scratch,
   constellation: Constellation,
+  splitFlap: SplitFlap,
+  polaroids: Polaroids,
+  cassette: Cassette,
+  donut: Donut,
+  slotMachine: SlotMachine,
+  magazine: Magazine,
+  medal: Medal,
+  forecast: Forecast,
 };
