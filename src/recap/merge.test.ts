@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dayFromYmd as D, dayOf, startOfDay } from "./days";
 import { FALLBACK_DURATION_MS, firstDay, mergePlays, trackKey } from "./merge";
 import type { PlayEntry, TrackInfo } from "./playLog";
+import type { TakeoutPlay } from "./takeout";
 import type { HistoryPlay } from "./ytHistory";
 
 const artist = [{ id: "UCsyn", name: "Synthetic Band" }];
@@ -56,4 +57,22 @@ describe("mergePlays", () => {
     expect(firstDay(m)).toBe(d);
     expect(firstDay({ plays: [], skips: [] })).toBeNull();
   });
+
+  const tk = (videoId: string, day: number, hour: number, title = "Glass River"): TakeoutPlay => ({ videoId, title, artist: "Synthetic Band", artistId: "UCtopic", at: startOfDay(day) + hour * 3_600_000 });
+
+  it("Takeout adds other devices' plays, never twins of logged ones", () => {
+    // Logged at 12:00; Takeout has that play (12:00) plus one at 20:00 from a phone.
+    const m = mergePlays([logPlay("a", d, 12)], [], [tk("s1", d, 12), tk("s1", d, 20)]);
+    expect(m.plays.map((p) => [p.origin, new Date(p.at!).getHours()])).toEqual([["log", 12], ["takeout", 20]]);
+    // The Takeout play borrows the logged song's length and stays marked as estimated.
+    expect(m.plays[1]).toMatchObject({ durationMs: 180_000, listenedMs: 180_000, estimated: true });
+  });
+
+  it("history plays count only beyond Takeout's on the same day, and its ranges are covered by Takeout", () => {
+    const m = mergePlays([], [hist("s1", d), hist("s1", d - 9, d - 3)], [tk("s1", d, 9), tk("s1", d - 5, 9)]);
+    expect(m.plays.map((p) => p.origin)).toEqual(["takeout", "takeout"]);
+    const more = mergePlays([], [hist("x", d, d, info("x", "Other"))], [tk("s1", d, 9)]);
+    expect(more.plays.map((p) => p.origin).sort()).toEqual(["takeout", "youtube"]);
+  });
 });
+
