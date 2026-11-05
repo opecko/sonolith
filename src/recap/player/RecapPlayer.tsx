@@ -90,6 +90,18 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
 
   useEffect(() => saveResume(snapshot.id, seed, last ? 0 : index), [index]);
   useEffect(() => setHeld(false), [index]);
+  // Performance marks per card (DevTools → Performance): from the card change to its first painted frame.
+  useLayoutEffect(() => {
+    performance.mark(`recap:card:${index}`);
+    const raf = requestAnimationFrame(() => {
+      try {
+        performance.measure(`recap:card:${index}:${slide.style ?? (slide.game ? "game" : slide.kind)}`, `recap:card:${index}`);
+      } catch {
+        /* mark cleared */
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [index]);
 
   // Preload the next card's images.
   useEffect(() => {
