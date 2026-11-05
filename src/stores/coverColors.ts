@@ -12,7 +12,8 @@ const sources = new Map<string, number | null>();
 /** Generated token sets per cover and light/dark. */
 const schemes = new Map<string, TokenMap>();
 
-function readSource(src: string): Promise<number | null> {
+/** A cover's source color (ARGB), as "Colors from album art" picks it; also Recaps' palette. */
+export function readSource(src: string): Promise<number | null> {
   const known = sources.get(src);
   if (known !== undefined) return Promise.resolve(known);
   return new Promise((resolve) => {
