@@ -18,6 +18,8 @@ export interface TrackStat {
   listenedMs: number;
   /** Last play (epoch ms, or the start of its day), for tie-breaks. */
   lastAt: number;
+  /** Most plays in a single day ("On repeat"). */
+  bestDay: number;
 }
 
 export interface ArtistStat {
@@ -127,7 +129,7 @@ function trackStats(plays: Play[]): Map<string, TrackStat> {
   for (const p of plays) {
     let t = m.get(p.key);
     if (!t) {
-      t = { key: p.key, videoId: p.videoId, title: p.title, artist: p.artists.map((a) => a.name).join(", ") || "Unknown artist", artistId: p.artists[0]?.id ?? null, album: p.album?.title ?? null, video: p.type === "video", plays: 0, listenedMs: 0, lastAt: 0 };
+      t = { key: p.key, videoId: p.videoId, title: p.title, artist: p.artists.map((a) => a.name).join(", ") || "Unknown artist", artistId: p.artists[0]?.id ?? null, album: p.album?.title ?? null, video: p.type === "video", plays: 0, listenedMs: 0, lastAt: 0, bestDay: 0 };
       m.set(p.key, t);
     }
     t.plays++;
@@ -213,7 +215,7 @@ export function computeStats(input: StatsInput): RecapStats {
   const knownArtists = new Set(input.before.filter((p) => p.type !== "episode").map(artistKey));
   const fresh = ranked.filter((t) => !known.has(t.key));
   const discoveries = input.before.length > 0 && plays.length > 0
-    ? { tracks: fresh.length, share: plays.filter((p) => !known.has(p.key)).length / plays.length, artists: [...artists.keys()].filter((k) => !knownArtists.has(k)).length, top: fresh.slice(0, 5) }
+    ? { tracks: fresh.length, share: plays.filter((p) => !known.has(p.key)).length / plays.length, artists: [...artists.keys()].filter((k) => !knownArtists.has(k)).length, top: fresh.slice(0, 50) }
     : null;
 
   // Most plays of one track in one day, and in one week (weeks start on Monday).
@@ -229,6 +231,10 @@ export function computeStats(input: StatsInput): RecapStats {
     const ws = d - ((ymdOf(d).weekday + 6) % 7);
     const kw = `${ws}|${p.key}`;
     perWeek.set(kw, (perWeek.get(kw) ?? 0) + 1);
+  }
+  for (const [k, n] of perDay) {
+    const t = tracks.get(k.slice(k.indexOf("|") + 1))!;
+    t.bestDay = Math.max(t.bestDay, n);
   }
   const best = (m: Map<string, number>) => [...m].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0];
   const bd = best(perDay);
