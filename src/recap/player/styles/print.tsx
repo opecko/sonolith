@@ -189,35 +189,52 @@ export function Newspaper({ slide, data }: StyleProps) {
   );
 }
 
-/** Scratch to reveal (pointer); a click reveals it all. Holds auto-advance until revealed. */
+/** Share of the card that must be scratched off before it opens. */
+export const SCRATCH_REVEAL = 0.85;
+
+/** Fraction of transparent pixels in RGBA data (every 4th pixel sampled). */
+export function scratchedShare(px: Uint8ClampedArray): number {
+  let clear = 0, n = 0;
+  for (let i = 3; i < px.length; i += 16, n++) if (px[i] < 128) clear++;
+  return n ? clear / n : 0;
+}
+
+/** Scratch to reveal with the pointer; it opens once most of it is scratched off. Holds auto-advance until then. */
 export function Scratch({ slide, data, hold }: StyleProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [done, setDone] = useState(false);
-  const scratched = useRef(0);
+  const last = useRef<{ x: number; y: number } | null>(null);
+  const strokes = useRef(0);
   useEffect(() => {
     hold(!done);
     return () => hold(false);
   }, [done]);
   useEffect(() => {
     const c = canvas.current;
-    const ctx = c?.getContext("2d");
+    const ctx = c?.getContext("2d", { willReadFrequently: true });
     if (!c || !ctx) return;
     c.width = c.clientWidth;
     c.height = c.clientHeight;
     ctx.fillStyle = getComputedStyle(c).color;
     ctx.fillRect(0, 0, c.width, c.height);
     ctx.globalCompositeOperation = "destination-out";
+    ctx.lineCap = ctx.lineJoin = "round";
+    ctx.lineWidth = c.width * 0.13;
   }, []);
-  const scratch = (x: number, y: number) => {
+  const scratch = (x: number, y: number, start: boolean) => {
     const c = canvas.current;
-    const ctx = c?.getContext("2d");
+    const ctx = c?.getContext("2d", { willReadFrequently: true });
     if (!c || !ctx || done) return;
     const r = c.getBoundingClientRect();
+    const p = { x: ((x - r.left) / r.width) * c.width, y: ((y - r.top) / r.height) * c.height };
+    // A stroke from the last point, so fast moves leave a line, not dots.
     ctx.beginPath();
-    ctx.arc(((x - r.left) / r.width) * c.width, ((y - r.top) / r.height) * c.height, c.width * 0.08, 0, Math.PI * 2);
-    ctx.fill();
-    // About 40 strokes uncover enough.
-    if (++scratched.current > 40) setDone(true);
+    ctx.moveTo((start || !last.current ? p : last.current).x, (start || !last.current ? p : last.current).y);
+    ctx.lineTo(p.x + 0.01, p.y);
+    ctx.stroke();
+    last.current = p;
+    // Measuring every few strokes keeps it cheap.
+    if (++strokes.current % 8 === 0 && scratchedShare(ctx.getImageData(0, 0, c.width, c.height).data) >= SCRATCH_REVEAL) setDone(true);
   };
   const item = data.shape === "hero" ? data.item : null;
   return (
@@ -230,14 +247,12 @@ export function Scratch({ slide, data, hold }: StyleProps) {
           <p style={{ fontSize: U(15) }}>{smallText(data)}</p>
           {!done && (
             <canvas ref={canvas} aria-hidden className="absolute inset-0 h-full w-full" style={{ borderRadius: U(24), color: "var(--rc-bg2)", cursor: "grab", touchAction: "none" }}
-              onPointerMove={(e) => e.buttons && scratch(e.clientX, e.clientY)} onPointerDown={(e) => scratch(e.clientX, e.clientY)} />
+              onPointerDown={(e) => scratch(e.clientX, e.clientY, true)}
+              onPointerMove={(e) => e.buttons && scratch(e.clientX, e.clientY, false)}
+              onPointerUp={() => (last.current = null)} />
           )}
         </div>
-        {!done && (
-          <button type="button" className="mx-auto" onClick={() => setDone(true)} style={{ fontSize: U(14), padding: `${U(8)} ${U(16)}`, borderRadius: U(99), background: "var(--rc-bg2)", color: "var(--rc-fg)" }}>
-            Scratch the card, or click to reveal
-          </button>
-        )}
+        {!done && <p className="text-center" style={{ fontSize: U(14), color: "var(--rc-muted)" }}>Scratch the card to reveal it</p>}
       </div>
     </Fill>
   );
