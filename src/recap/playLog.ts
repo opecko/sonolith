@@ -15,6 +15,8 @@ export interface PlayEntry {
   artists: { id: string | null; name: string }[];
   album: { id: string | null; title: string } | null;
   durationMs: number;
+  /** Cover art URL (recaps' palette and slides). */
+  thumbnail?: string;
   /** When it started playing, epoch ms. */
   startedAt: number;
   /** Time actually played: pauses and skipped-over seek ranges don't count. */
@@ -40,6 +42,7 @@ export interface TrackInfo {
   artists: PlayEntry["artists"];
   album: PlayEntry["album"];
   durationMs: number;
+  thumbnail?: string;
   source?: PlaySource;
 }
 
@@ -51,6 +54,7 @@ export function trackInfo(t: Track, source?: PlaySource): TrackInfo {
     artists: t.artists.map((name, i) => ({ id: t.artistIds?.[i] ?? null, name })),
     album: t.album?.title ? { id: t.album.id ?? null, title: t.album.title } : null,
     durationMs: Math.round((t.durationSec ?? 0) * 1000),
+    ...(t.thumbnail ? { thumbnail: t.thumbnail } : {}),
     source,
   };
 }
@@ -212,6 +216,7 @@ export class PlayTracker {
       artists: info.artists,
       album: info.album,
       durationMs: info.durationMs,
+      ...(info.thumbnail ? { thumbnail: info.thumbnail } : {}),
       startedAt: now,
       listenedMs: 0,
       completed: false,
@@ -277,6 +282,7 @@ export function parseLog(text: string): PlayEntry[] {
       album: e.album && typeof e.album.title === "string" ? { id: e.album.id ?? null, title: e.album.title } : null,
       artists: e.artists.filter((a) => a && typeof a.name === "string").map((a) => ({ id: typeof a.id === "string" ? a.id : null, name: a.name })),
       durationMs: Number.isFinite(e.durationMs) ? e.durationMs : 0,
+      thumbnail: typeof e.thumbnail === "string" && /^https:\/\//.test(e.thumbnail) ? e.thumbnail : undefined,
       completed: e.completed === true,
     });
   }

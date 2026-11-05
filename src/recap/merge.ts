@@ -15,6 +15,7 @@ export interface Play {
   artists: { id: string | null; name: string }[];
   album: { id: string | null; title: string } | null;
   durationMs: number;
+  thumbnail?: string;
   /** Local day range of the play; equal when the day is known exactly. */
   from: number;
   to: number;
@@ -60,6 +61,7 @@ function fromInfo(info: TrackInfo | PlayEntry) {
     artists: info.artists,
     album: info.album,
     durationMs: info.durationMs,
+    thumbnail: info.thumbnail,
   };
 }
 
