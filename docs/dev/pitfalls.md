@@ -107,6 +107,9 @@ find a new one.
   at a given segment (`/l/<id>?from=<seq>`): segments share sequence numbers across renditions, and
   `proxy_live_info` says which segment the audio's stream began with, so the video starts just ahead of the audio
   and waits for it (`components/TrackVideo.tsx` LiveVideo, `videoSync.ts` liveVideoSync).
+- **The history page is capped at 200 videos, one entry each** (its latest play, under a coarse bucket such as
+  "This week" or "October 2026"), with no continuation. Recaps import it daily and accumulate (docs/dev/recap.md); a
+  one-off fetch can't tell how often anything was played.
 - Chips exist only on radio queues; `/next` on bare videos/albums carries an automix seed instead.
 
 ## youtubei.js
