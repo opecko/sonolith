@@ -3,7 +3,7 @@
 // remakes one. The presentation (cards, styles, games) is chosen anew per viewing from these frozen numbers.
 import { dayOf } from "./days";
 import { firstDay as firstDayOf, type Dataset } from "./merge";
-import { periodId, periodStart, playsIn, previousPeriod, type Period } from "./periods";
+import { MIN_PLAYS, periodId, periodStart, playsIn, previousPeriod, type Period } from "./periods";
 import { computeStats, type RecapStats } from "./stats";
 
 export const SNAPSHOT_SCHEMA = 1;
@@ -65,6 +65,15 @@ export function buildSnapshot(period: Period, data: Dataset, cutoff: number, now
  * it's a preview from local data, made again later); signed out, from the local log alone, frozen right away.
  */
 export const freezesNow = (signedIn: boolean, historyFresh: boolean) => !signedIn || historyFresh;
+
+/**
+ * Whether the imported history can freeze a recap: imported within the last hour and after the recap's cutoff (so
+ * it holds everything up to it). An early-unlocked year's cutoff is the unlock moment, usually after the last import.
+ */
+export const historyFresh = (importedAt: number, now: number, cutoff: number) => importedAt >= now - 3_600_000 && importedAt >= cutoff;
+
+/** A preview (local data only) is shown only when it has enough plays to be a recap at all. */
+export const previewUsable = (snap: Snapshot) => snap.frozen || snap.stats.plays >= MIN_PLAYS[snap.period.kind];
 
 /** The recap to show: a frozen one on disk always wins; nothing replaces it. */
 export const keepFrozen = (stored: Snapshot | null, made: Snapshot): Snapshot => (stored?.frozen ? stored : made);

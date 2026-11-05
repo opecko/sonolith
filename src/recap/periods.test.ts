@@ -5,7 +5,7 @@ import {
   availability, canUnlockEarly, cutoffOf, daysUntil, earlyUnlockFrom, monthsToList, parsePeriodId, periodEnd, periodId, periodStart, playsIn,
   previousPeriod, type Period,
 } from "./periods";
-import { buildSnapshot, deepFreeze, freezesNow, keepFrozen, parseSnapshot } from "./snapshot";
+import { buildSnapshot, deepFreeze, freezesNow, historyFresh, keepFrozen, parseSnapshot, previewUsable } from "./snapshot";
 import { syntheticLog } from "./synthetic";
 
 const at = (y: number, m: number, d: number, h = 0, min = 0) => new Date(y, m, d, h, min).getTime();
@@ -121,5 +121,24 @@ describe("snapshots", () => {
     expect(deepFreeze(3)).toBe(3);
     expect(Object.isFrozen(deepFreeze({ a: { b: 1 } }).a)).toBe(true);
     expect(startOfDay(D(2026, 0, 1))).toBe(at(2026, 0, 1));
+  });
+
+  it("an early-unlocked year needs a history import from after the unlock to freeze", () => {
+    const unlock = at(2026, 10, 5, 20, 59);
+    const imported = at(2026, 10, 5, 20, 23);
+    // The import 36 minutes before the unlock is recent, but doesn't cover the unlock moment.
+    expect(historyFresh(imported, unlock + 60_000, unlock)).toBe(false);
+    expect(historyFresh(unlock + 30_000, unlock + 60_000, unlock)).toBe(true);
+    // A month: any import after its end within the last hour.
+    expect(historyFresh(at(2026, 10, 2, 9), at(2026, 10, 2, 9, 30), periodEnd(oct))).toBe(true);
+    expect(historyFresh(at(2026, 10, 2, 7), at(2026, 10, 2, 9, 30), periodEnd(oct))).toBe(false);
+  });
+
+  it("a thin preview isn't shown as a recap", () => {
+    const tiny = mergePlays(log.filter((e) => e.startedAt >= at(2026, 10, 5, 12) && e.startedAt < at(2026, 10, 5, 21)), []);
+    const preview = buildSnapshot(y2026, tiny, at(2026, 10, 5, 21), at(2026, 10, 5, 21), { frozen: false, podcasts: false, youtube: false });
+    expect(previewUsable(preview)).toBe(false);
+    expect(previewUsable({ ...preview, frozen: true })).toBe(true);
+    expect(previewUsable(buildSnapshot(y2026, data, at(2026, 10, 5, 21), at(2026, 10, 5, 21), { frozen: false, podcasts: false, youtube: false }))).toBe(true);
   });
 });

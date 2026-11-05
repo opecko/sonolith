@@ -9,7 +9,7 @@ import { clockNow } from "./clock";
 import { importHistory, loadHistoryCache } from "./importer";
 import { firstDay, mergePlays, type Dataset } from "./merge";
 import { availability, cutoffOf, monthsToList, parsePeriodId, periodId, periodTitle, type Availability, type Period } from "./periods";
-import { buildSnapshot, freezesNow, keepFrozen, parseSnapshot, type Snapshot } from "./snapshot";
+import { buildSnapshot, freezesNow, historyFresh, keepFrozen, parseSnapshot, previewUsable, type Snapshot } from "./snapshot";
 import { deleteJson, listJson, readJson, readPlays, writeJson } from "./storage";
 import { mergeTakeout, parseTakeout, parseTakeoutCache } from "./takeout";
 
@@ -135,12 +135,19 @@ export async function openRecap(period: Period): Promise<Snapshot | null> {
     const cutoff = cutoffOf(period, now, early);
     if (cutoff === null || !state.data) return null;
     const signedIn = useAuth.getState().status === "signedIn";
-    const cache = await loadHistoryCache();
-    const fresh = cache.importedAt >= now - 3_600_000 && cache.importedAt >= cutoff;
+    let fresh = historyFresh((await loadHistoryCache()).importedAt, now, cutoff);
+    // Freezing needs the history as it is now (an early-unlocked year's cutoff is newer than any import so far).
+    if (signedIn && !fresh) {
+      await importHistory({ force: true }).catch(() => null);
+      await loadRecaps(false);
+      fresh = historyFresh((await loadHistoryCache()).importedAt, clockNow(), cutoff);
+    }
+    const current = useRecaps.getState();
     const frozen = freezesNow(signedIn, fresh);
-    // Signed in without a fresh history: a preview from this computer's log only, made again next time.
-    const data = frozen ? state.data : state.local ?? state.data;
+    // Signed in without a fresh history (offline): a preview from this computer's data, made again next time.
+    const data = frozen ? current.data! : current.local ?? current.data!;
     const made = buildSnapshot(period, data, cutoff, now, { frozen, podcasts: useSettings.getState().recap.podcasts, youtube: signedIn && frozen });
+    if (!previewUsable(made)) throw new Error("couldn't refresh your YouTube Music history. Try again when you're online");
     const shown = keepFrozen(stored, made);
     if (shown.frozen) {
       await writeJson(`snapshots/${id}.json`, shown);
