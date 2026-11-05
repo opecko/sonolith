@@ -93,6 +93,9 @@ async function searchSongs(query: string): Promise<Track[]> {
   return [...r.top, ...r.groups.flatMap((g) => g.items), ...r.shelves.flatMap((s) => s.items)].filter((i): i is Track & Item => i.type === "track");
 }
 
+/** Each music video replaced by its song where one is found (recap playlists prefer songs). */
+export const preferSongs = (tracks: Track[]) => songVersions(tracks, searchSongs);
+
 export async function getPlaylist(id: string): Promise<Playlist> {
   // YouTube Music's own playlists come as music videos without Premium: shown and played as the songs instead.
   const tracksOf = (p: N) => {

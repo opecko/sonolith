@@ -1,5 +1,6 @@
 import { stepVolume } from "../components/VolumeControl";
 import { useOnboarding } from "../onboarding/store";
+import { useRecapUi } from "../recap/ui";
 import { usePlayer } from "../stores/player";
 import { useSettings } from "../stores/settings";
 import { isTyping, matchAction, spaceOwnedByControl, type ShortcutAction } from "./keys";
@@ -18,7 +19,8 @@ function onKeyDown(e: KeyboardEvent) {
   // A dialog or menu that handled the key (Esc, arrows, Enter) keeps it.
   if (e.defaultPrevented) return;
   const { enabled, bindings } = useSettings.getState().shortcuts;
-  if (!enabled || useShortcutUi.getState().recording || useOnboarding.getState().open) return;
+  // The recap player has its own keys (←/→, Space, Esc) and turns the app's off while it's open.
+  if (!enabled || useShortcutUi.getState().recording || useOnboarding.getState().open || useRecapUi.getState().open) return;
   const target = e.target as HTMLElement | null;
   if (isTyping(target)) return;
   const action = matchAction(

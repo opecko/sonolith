@@ -5,6 +5,7 @@ import { initMpris } from "./stores/mpris";
 import { initHistory } from "./stores/history";
 import { initHistoryImport } from "./recap/importer";
 import { initPlayLog } from "./recap/recorder";
+import { useRecapUi } from "./recap/ui";
 import { initMediaKeys, initTray } from "./stores/mediaKeys";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
@@ -28,11 +29,14 @@ import { initOnboarding, useOnboarding } from "./onboarding/store";
 
 // The welcome is only ever needed on a fresh install: its code loads when it opens.
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
+// The recap story player (its 27 card styles) loads the first time a recap opens.
+const RecapPlayer = lazy(() => import("./recap/player/RecapPlayer"));
 
 export default function App() {
   // WebKit keeps painting content under an opaque overlay; hiding it makes Now Playing hover/scroll cheap.
   const covered = useUi((s) => s.nowPlayingCovering);
   const onboarding = useOnboarding((s) => s.open);
+  const recapOpen = useRecapUi((s) => !!s.open);
   useEffect(() => {
     useAuth.getState().init();
     initMediaKeys();
@@ -68,6 +72,7 @@ export default function App() {
       <Toast />
       <ShortcutFeedback />
       {onboarding && <Suspense fallback={null}><Onboarding /></Suspense>}
+      {recapOpen && <Suspense fallback={null}><RecapPlayer /></Suspense>}
     </div>
   );
 }
