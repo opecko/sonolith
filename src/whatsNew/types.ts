@@ -8,7 +8,8 @@ export type WhatsNewAction =
   | { type: "openSettings"; section: SettingsSection; focus?: string }
   | { type: "setStyle"; style: UiStyle }
   /** Sets the layout; `open` also opens Now Playing, `tryCard` shows the layout picker card at its top. */
-  | { type: "setNowPlayingLayout"; layout: NowPlayingLayout; open?: boolean; tryCard?: boolean };
+  | { type: "setNowPlayingLayout"; layout: NowPlayingLayout; open?: boolean; tryCard?: boolean }
+  | { type: "openRecaps" };
 
 /** Housekeeping a release needs once, run when its entry opens (also a closed set). */
 export type WhatsNewChore = "clearLyricsCache";

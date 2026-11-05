@@ -1,4 +1,4 @@
-import { AudioWaveform, Clapperboard, Keyboard, LayoutDashboard, LogIn, MicVocal, Palette, Plug, Podcast, Settings2, Sparkles, Terminal } from "lucide-react";
+import { AudioWaveform, Clapperboard, Keyboard, LayoutDashboard, ListMusic, Lock, LogIn, MicVocal, Palette, Plug, Podcast, Settings2, Sparkles, Terminal } from "lucide-react";
 import type { WhatsNewEntry } from "./types";
 
 /**
@@ -6,6 +6,31 @@ import type { WhatsNewEntry } from "./types";
  * entry shows nothing after the update.
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
+  {
+    version: "2.5.0",
+    title: "Sonolith Recap",
+    highlights: [
+      {
+        icon: Sparkles,
+        title: "Your month and year in music",
+        text: "Every month gets a recap on the 1st of the next one, and your year on December 1 (or earlier, from October 15, if you can't wait): top artists and songs, your listening clock, a persona and a few little games.",
+      },
+      {
+        icon: ListMusic,
+        title: "Playlists from your recaps",
+        text: "Play your top songs, discoveries and repeats right away, or save them to your library as private playlists.",
+      },
+      {
+        icon: Lock,
+        title: "Made on your computer",
+        text: "Recaps come from your YouTube Music history and Sonolith's own listening log, which stays on this computer. You can export or delete it in Settings → Recaps.",
+      },
+    ],
+    actions: [
+      { label: "Open Recaps", action: { type: "openRecaps" } },
+      { label: "Recap settings", action: { type: "openSettings", section: "recaps" } },
+    ],
+  },
   {
     version: "2.4.0",
     title: "Sonolith 2.4: see the music",

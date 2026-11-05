@@ -1,6 +1,6 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { create } from "zustand";
-import { openSettings } from "../stores/nav";
+import { openSettings, useNav } from "../stores/nav";
 import { setAppearance, useSettings } from "../stores/settings";
 import { useUi } from "../stores/ui";
 import { WHATS_NEW } from "./entries";
@@ -27,6 +27,10 @@ export function runWhatsNewAction(a: WhatsNewAction) {
       setAppearance({ nowPlayingLayout: a.layout });
       if (a.tryCard) useUi.getState().setTryLooks("whatsNew");
       if (a.open) useUi.getState().setNowPlaying(true);
+      break;
+    case "openRecaps":
+      useUi.getState().setNowPlaying(false);
+      useNav.getState().go({ name: "recaps" });
       break;
   }
 }
