@@ -10,7 +10,7 @@ import { mergePlays } from "../recap/merge";
 import { cutoffOf, periodEnd, type Period } from "../recap/periods";
 import { buildSnapshot } from "../recap/snapshot";
 import { deleteJson, listJson } from "../recap/storage";
-import { forgetSnapshots, loadRecaps, useRecaps } from "../recap/store";
+import { forgetSnapshots, loadRecaps, resetUnlocks, useRecaps } from "../recap/store";
 import { STYLES, type StyleId } from "../recap/styles";
 import { syntheticLog } from "../recap/synthetic";
 import { openRecapPlayer, useRecapUi } from "../recap/ui";
@@ -66,12 +66,13 @@ export default function RecapDev({ onClose }: { onClose: () => void }) {
   };
 
   const reset = async () => {
-    const ok = await confirmAction({ title: "Reset recap snapshots?", message: "Deletes every frozen recap on disk; they're made again from the data the next time they open. The log and the imported history stay.", confirmLabel: "Reset", danger: true });
+    const ok = await confirmAction({ title: "Reset recaps?", message: "Deletes every frozen recap on disk and forgets early unlocks (the year locks again) and which recaps were seen. They're made again from the data the next time they open. The log, the imported history and saved playlists stay.", confirmLabel: "Reset", danger: true });
     if (!ok) return;
     for (const n of await listJson("snapshots")) await deleteJson(n);
     forgetSnapshots();
+    await resetUnlocks();
     await loadRecaps(false);
-    useToast.getState().show("Recap snapshots reset", "info");
+    useToast.getState().show("Recaps reset: snapshots and early unlocks", "info");
   };
 
   return (
@@ -108,7 +109,7 @@ export default function RecapDev({ onClose }: { onClose: () => void }) {
       <div className="flex flex-wrap gap-2">
         <button className="m3-btn m3-tonal h-10" onClick={() => void openPeriod()}><Play size={16} aria-hidden /> Open recap</button>
         <button className="m3-btn m3-tonal h-10" onClick={gallery}><GalleryHorizontal size={16} aria-hidden /> Style gallery</button>
-        <button className="m3-btn m3-outlined h-10" onClick={() => void reset()}><RotateCcw size={16} aria-hidden /> Reset snapshots</button>
+        <button className="m3-btn m3-outlined h-10" onClick={() => void reset()}><RotateCcw size={16} aria-hidden /> Reset snapshots and unlocks</button>
       </div>
     </>
   );

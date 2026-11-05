@@ -38,7 +38,7 @@ a fresh install (clears the onboarding and version flags and sets the one-shot `
 first-run check sees no prior data on reload; settings stay), toggle style / layout / animations, edit the settings
 JSON, and Recaps tools: time travel (Recaps' clock only), open any month or year from real or a synthetic year
 without saving it, force games or a style, the style gallery (every card style with sample data), reset frozen
-snapshots. A real fresh install: delete the app's webview data dir and the keyring entry.
+snapshots and early unlocks. A real fresh install: delete the app's webview data dir and the keyring entry.
 
 The toolkit must never ship: `src/dev/` is loaded only through a dynamic import behind `import.meta.env.DEV` in
 `main.tsx`, and nothing else may import it. `src/dev/isolation.test.ts` (part of vitest) and

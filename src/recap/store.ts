@@ -185,6 +185,11 @@ export function forgetSnapshots() {
   useRecaps.setState({ frozen: {} });
 }
 
+/** Dev toolkit: forgets early unlocks and which recaps were seen (saved playlists stay). */
+export async function resetUnlocks() {
+  await saveMeta({ earlyUnlock: {}, seen: [] });
+}
+
 const ANNOUNCED_KEY = "recap-announced";
 let started = false;
 
