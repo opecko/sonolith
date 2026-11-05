@@ -41,6 +41,7 @@ export default function RecapsView() {
   const importing = useHistoryImport((s) => s.running);
   const importError = useHistoryImport((s) => s.error);
   const signedIn = useAuth((s) => s.status === "signedIn");
+  const takeout = useRecaps((s) => s.takeout);
   const [error, setError] = useState<Error | null>(null);
   useEffect(() => {
     loadRecaps(true).catch((e) => setError(e instanceof Error ? e : new Error(String(e))));
@@ -78,8 +79,8 @@ export default function RecapsView() {
         </button>
       </div>
       <p className="mb-6 select-text text-sm text-[var(--c-text-muted)]">
-        Your monthly and yearly listening, computed on your computer{signedIn ? " from your YouTube Music history and Sonolith's own listening log" : ""}. Nothing is uploaded anywhere.
-        {!signedIn && " You're signed out, so recaps use only Sonolith's listening log on this computer."}
+        Your monthly and yearly listening, computed on your computer{signedIn || takeout ? " from your YouTube Music history and Sonolith's own listening log" : ""}. Nothing is uploaded anywhere.
+        {!signedIn && (takeout ? " You're signed out, so recaps use Sonolith's listening log and the history you imported." : " You're signed out, so recaps use only Sonolith's listening log on this computer.")}
         {signedIn && importError && ` ${importError} Recaps opened now are previews from this computer's log.`}
       </p>
 

@@ -33,6 +33,17 @@ Consequences for Recaps:
 - Sonolith's own plays are in the local log with exact times and real listened time, so the history import mainly
   adds plays from other devices.
 
+## Google Takeout import
+
+The history page's 200-video cap makes older months thin, so Settings → Recaps can import Google Takeout's
+`watch-history.json` (YouTube and YouTube Music, history format **JSON**; Takeout's default is HTML, which is
+refused with a hint). Each entry is one play with an exact time; only `header: "YouTube Music"` entries count. The
+title carries a localized "Watched …" prefix (stripped for the common languages), the byline is the channel
+(" - Topic" stripped). There is no length, album or cover: `merge.ts` borrows them from the same video or song in
+the log or the history, else the length is estimated. Stored as `takeout.json`; re-imports add only new
+(video, time) pairs (`recap/takeout.ts`, tested on synthetic entries). Sonolith's own plays are in Takeout too, so
+each logged play takes its nearest Takeout twin on the same day.
+
 ## Local play log
 
 See `src/recap/playLog.ts` (state machine) and `src-tauri/src/recap.rs` (storage). One JSON line per play in
@@ -46,7 +57,7 @@ Settings → Recaps → "Keep a local listening log" off, or with "Save history"
 | --- | --- | --- |
 | Record | `recap/playLog.ts` (pure), `recap/recorder.ts`, `src-tauri/src/recap.rs` | `PlayTracker` follows the playing element's events (`playing`, `pause`, `waiting`, `seeking`/`seeked`, `timeupdate`, `ended`, hide, quit). Listened time counts only media time that moved at a plausible rate, so pauses and seeks don't count. A play counts at the history ping's threshold (`countsAsPlay`: 10 s or half a short track); a track left before that is a `skipped` entry. Checkpoints every 30 s and on pause / track change / hide / quit. |
 | Import | `recap/ytHistory.ts` (pure), `recap/importer.ts` | `bucketRange` turns section headers into day ranges (never guesses unknown ones), `mergeObservations` accumulates imports per account (`history/a<authUser>[-<pageId>].json`). |
-| Merge | `recap/merge.ts` | `trackKey` = bare title (no "(Official Video)", no "Artist - " prefix) + primary artist without " - Topic"/"VEVO". Per (day, track) the larger count of log and history wins; history plays in wide buckets count only when no local play of that track is inside them. History plays' listened time is the track length (`estimated`). |
+| Merge | `recap/merge.ts` | Three sources: log, Takeout (exact times) and the history page (day ranges); per (day, track) the largest count wins. `trackKey` = bare title (no "(Official Video)", no "Artist - " prefix) + primary artist without " - Topic"/"VEVO". Per (day, track) the larger count of log and history wins; history plays in wide buckets count only when no local play of that track is inside them. History plays' listened time is the track length (`estimated`). |
 | Periods | `recap/periods.ts` | Months open on the 1st of the next month at local midnight; the year covers Jan 1 → Dec 1, or → the moment of an early unlock (offered Oct 15 – Nov 30). Minimum 20 plays (month) / 50 (year). Plays without a time go by the middle day of their range. |
 | Stats | `recap/stats.ts` | `computeStats` (pure): totals, top 5s, streaks, hours/weekdays (≥ 30 exactly known plays), discoveries vs everything earlier, repeat champion, most skipped (log only, ≥ 3 skips), yearly journey and loyalty, milestones, comparison, persona (`personaOf`, fixed rules). `ELIGIBLE` says which stats a recap can show. |
 | Freeze | `recap/snapshot.ts`, `recap/store.ts` | `buildSnapshot` → a versioned `Snapshot` (`SNAPSHOT_SCHEMA`) in `snapshots/<period id>.json`. A frozen one is never replaced (`keepFrozen`); only the dev toolkit resets them. Signed in, a recap freezes only after a history import from the last hour that ran after the period ended; otherwise it's a preview from the local log (not saved). Signed out it freezes from the log. |

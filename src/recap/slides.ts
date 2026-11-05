@@ -77,13 +77,14 @@ const trackItem = (t: TrackStat, value?: number): Item => ({
 const DUR = { number: 6000, rank: 8500, hero: 7000, series: 7500, calendar: 7500, pair: 7000, text: 6500, covers: 6500 } satisfies Record<Shape, number>;
 
 /** Every card the stats allow, in a neutral order (the deck builder arranges them). */
-export function buildContents(s: RecapStats, ctx: CopyContext, opts: { coveredFrom: number; /** First day of the period. */ periodStart: number; youtube: boolean; log: boolean }): SlideContent[] {
+export function buildContents(s: RecapStats, ctx: CopyContext, opts: { coveredFrom: number; /** First day of the period. */ periodStart: number; youtube: boolean; log: boolean; takeout?: boolean }): SlideContent[] {
   const out: SlideContent[] = [];
   const add = (c: Omit<SlideContent, "duration"> & { duration?: number }) => out.push({ duration: DUR[c.data.shape], ...c });
   const year = ctx.period.kind === "year";
   const min = minutesOf(s.listenedMs);
   const since = opts.coveredFrom > opts.periodStart ? `Based on your listening since ${formatDay(opts.coveredFrom)}.` : undefined;
-  const sources = opts.youtube && opts.log ? "From your YouTube Music history and Sonolith's own log." : opts.youtube ? "From your YouTube Music history." : "From Sonolith's listening log on this computer.";
+  const from = [opts.youtube || opts.takeout ? "your YouTube Music history" : "", opts.log ? "Sonolith's own log" : ""].filter(Boolean);
+  const sources = from.length ? `From ${from.join(" and ")}.` : "From Sonolith's listening log on this computer.";
 
   add({
     kind: "intro",

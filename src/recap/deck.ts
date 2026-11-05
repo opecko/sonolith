@@ -50,6 +50,7 @@ export function buildDeck(snap: Snapshot, opts: DeckOptions): Deck {
     periodStart: firstDayOfPeriod(snap),
     youtube: snap.sources.youtube,
     log: snap.sources.log,
+    takeout: snap.sources.takeout,
   });
   const byKind = new Map(all.map((c) => [c.kind, c]));
   const take = (k: SlideKind) => {

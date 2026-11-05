@@ -19,7 +19,8 @@ export interface Snapshot {
   coveredFrom: number;
   /** Last day inside the period. */
   lastDay: number;
-  sources: { log: boolean; youtube: boolean };
+  /** Where its plays came from (`takeout`: an imported Google Takeout history; missing in older snapshots). */
+  sources: { log: boolean; youtube: boolean; takeout?: boolean };
   /** False: a preview from local data only (offline), made again next time. */
   frozen: boolean;
   /** Podcasts counted (the setting when it was made). */
@@ -49,7 +50,7 @@ export function buildSnapshot(period: Period, data: Dataset, cutoff: number, now
     cutoff,
     coveredFrom,
     lastDay,
-    sources: { log: plays.some((p) => p.origin === "log"), youtube: opts.youtube && plays.some((p) => p.origin === "youtube") },
+    sources: { log: plays.some((p) => p.origin === "log"), youtube: opts.youtube && plays.some((p) => p.origin === "youtube"), takeout: plays.some((p) => p.origin === "takeout") },
     frozen: opts.frozen,
     podcasts: opts.podcasts,
     stats: computeStats({

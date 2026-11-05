@@ -10,7 +10,8 @@ import { importHistory, loadHistoryCache } from "./importer";
 import { firstDay, mergePlays, type Dataset } from "./merge";
 import { availability, cutoffOf, monthsToList, parsePeriodId, periodId, periodTitle, type Availability, type Period } from "./periods";
 import { buildSnapshot, freezesNow, keepFrozen, parseSnapshot, type Snapshot } from "./snapshot";
-import { listJson, readJson, readPlays, writeJson } from "./storage";
+import { deleteJson, listJson, readJson, readPlays, writeJson } from "./storage";
+import { mergeTakeout, parseTakeout, parseTakeoutCache } from "./takeout";
 
 interface Meta {
   /** Year → moment it was unlocked early. */
@@ -22,6 +23,7 @@ interface Meta {
 }
 
 const META = "meta.json";
+const TAKEOUT = "takeout.json";
 const EMPTY_META: Meta = { earlyUnlock: {}, seen: [], playlists: {} };
 
 function parseMeta(v: unknown): Meta {
@@ -47,8 +49,10 @@ interface RecapState {
   loaded: boolean;
   loading: boolean;
   data: Dataset | null;
-  /** The local log alone (previews while the history can't be refreshed). */
+  /** The local log (and an imported Takeout history) alone: previews while the history can't be refreshed. */
   local: Dataset | null;
+  /** Plays imported from Google Takeout. */
+  takeout: number;
   meta: Meta;
   /** Frozen snapshots on disk, by id. */
   frozen: Record<string, Snapshot>;
@@ -56,7 +60,7 @@ interface RecapState {
   fresh: string | null;
 }
 
-export const useRecaps = create<RecapState>(() => ({ loaded: false, loading: false, data: null, local: null, meta: EMPTY_META, frozen: {}, fresh: null }));
+export const useRecaps = create<RecapState>(() => ({ loaded: false, loading: false, data: null, local: null, takeout: 0, meta: EMPTY_META, frozen: {}, fresh: null }));
 
 let loading: Promise<void> | null = null;
 
@@ -67,14 +71,16 @@ export function loadRecaps(opening = false): Promise<void> {
   loading = (async () => {
     try {
       if (opening) await importHistory({ opening: true }).catch(() => null);
-      const [plays, cache, meta, names] = await Promise.all([readPlays().catch(() => []), loadHistoryCache(), readJson(META), listJson("snapshots")]);
+      const [plays, cache, takeoutRaw, meta, names] = await Promise.all([readPlays().catch(() => []), loadHistoryCache(), readJson(TAKEOUT), readJson(META), listJson("snapshots")]);
+      const takeout = parseTakeoutCache(takeoutRaw);
       const frozen: Record<string, Snapshot> = {};
       for (const n of names) {
         const s = parseSnapshot(await readJson(n));
         if (s?.frozen) frozen[s.id] = s;
       }
-      const data = mergePlays(plays, useAuth.getState().status === "signedIn" ? cache.plays : []);
-      useRecaps.setState({ data, local: mergePlays(plays, []), meta: parseMeta(meta), frozen, loaded: true });
+      // An imported Takeout file is on this computer: it counts signed out and in previews too.
+      const data = mergePlays(plays, useAuth.getState().status === "signedIn" ? cache.plays : [], takeout.plays);
+      useRecaps.setState({ data, local: mergePlays(plays, [], takeout.plays), takeout: takeout.plays.length, meta: parseMeta(meta), frozen, loaded: true });
       useRecaps.setState({ fresh: freshRecap() });
     } finally {
       useRecaps.setState({ loading: false });
@@ -171,7 +177,7 @@ export async function rememberPlaylist(recapId: string, kind: string, playlistId
 
 /** After "Delete all recap data": forget everything loaded. */
 export function forgetRecaps() {
-  useRecaps.setState({ loaded: false, data: null, local: null, meta: EMPTY_META, frozen: {}, fresh: null });
+  useRecaps.setState({ loaded: false, data: null, local: null, takeout: 0, meta: EMPTY_META, frozen: {}, fresh: null });
 }
 
 /** Dev toolkit: drops frozen snapshots from memory (the files are deleted by the caller). */
@@ -203,4 +209,28 @@ export function initRecaps() {
   const check = () => void loadRecaps(false).then(announce, () => {});
   setTimeout(check, 20_000);
   setInterval(check, 3_600_000);
+}
+
+export type TakeoutImport =
+  | { ok: true; plays: number; added: number; from: number; to: number; youtubeOnly: number }
+  | { ok: false; reason: "html" | "notHistory" | "empty" };
+
+/**
+ * Imports Google Takeout's watch-history.json (its text). Re-importing a newer export adds only what's new. Recaps
+ * already frozen stay as they were.
+ */
+export async function importTakeout(text: string): Promise<TakeoutImport> {
+  const r = parseTakeout(text);
+  if (!r.ok) return r;
+  if (!r.plays.length) return { ok: false, reason: "empty" };
+  const before = parseTakeoutCache(await readJson(TAKEOUT));
+  const next = mergeTakeout(before, r.plays, clockNow());
+  await writeJson(TAKEOUT, next);
+  await loadRecaps(false);
+  return { ok: true, plays: next.plays.length, added: next.plays.length - before.plays.length, from: r.plays[0].at, to: r.plays.at(-1)!.at, youtubeOnly: r.youtubeOnly };
+}
+
+export async function removeTakeout() {
+  await deleteJson(TAKEOUT);
+  await loadRecaps(false);
 }
