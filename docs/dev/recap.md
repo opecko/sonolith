@@ -78,6 +78,13 @@ without touching playback or the log.
 - Behind the card is the **aura** (`recap/aura.ts`, `player/Aura.tsx`): the cover of the song last played in the app,
   drawn into a 14×14 canvas the browser stretches (soft without a blur filter) under a scrim. It changes only at the
   big moments (top artist, top song, repeat champion…) and stays until the next one, crossfading on the engine.
+- **Music** (`recap/music.ts`, `player/useRecapMusic.ts`, Settings → Recaps → Music, and the speaker in the top bar):
+  the recap's top 3 songs, one per third of the cards, each from a third of the way in. They play on the recap's own
+  `<audio>` elements (never the app's player: no queue change, no log, no history ping), all loaded when the recap
+  opens so the switches are instant, crossfaded over 1.5 s. The app's playback pauses for the recap and resumes
+  after; Play on a card hands over to the app's player for good.
+- Auto-advance waits for a card's entrance (typing, printing, count-ups): `useEntrance` holds it through the
+  `EntranceHold` context until the tween ends, so the reading time starts when the card is complete.
 - Completeness is said plainly (Recaps page, intro card, Settings): exact for plays in Sonolith, partial for plays
   elsewhere unless a Takeout history is imported.
 - Motion goes through `player/anim.ts` on the shared engine: `useEntrance(ms, frame)` runs one tween that writes

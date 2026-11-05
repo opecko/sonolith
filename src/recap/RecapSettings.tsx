@@ -129,6 +129,9 @@ export default function RecapSettings() {
         </SettingRow>
       </SettingCard>
       <SettingCard title="Recaps">
+        <SettingRow id="recapMusic" title="Music" detail="Your top songs play under the recap, one after another. Whatever was playing pauses and comes back after it.">
+          <Switch on={recap.music} onChange={(v) => set({ music: v })} label="Music during recaps" />
+        </SettingRow>
         <SettingRow id="recapAutoAdvance" title="Auto-advance" detail="Cards move on by themselves after a few seconds. Space pauses.">
           <Switch on={recap.autoAdvance} onChange={(v) => set({ autoAdvance: v })} label="Auto-advance" />
         </SettingRow>

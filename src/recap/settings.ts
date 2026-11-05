@@ -6,9 +6,11 @@ export interface RecapSettings {
   autoAdvance: boolean;
   /** Podcast episodes count in recaps. */
   podcasts: boolean;
+  /** Your top songs play under the recap. */
+  music: boolean;
 }
 
-export const DEFAULT_RECAP: RecapSettings = { localLog: true, autoAdvance: true, podcasts: false };
+export const DEFAULT_RECAP: RecapSettings = { localLog: true, autoAdvance: true, podcasts: false, music: true };
 
 export function normalizeRecap(v: unknown): RecapSettings {
   const s = (v && typeof v === "object" ? v : {}) as Partial<Record<keyof RecapSettings, unknown>>;
@@ -16,5 +18,6 @@ export function normalizeRecap(v: unknown): RecapSettings {
     localLog: s.localLog !== false,
     autoAdvance: s.autoAdvance !== false,
     podcasts: s.podcasts === true,
+    music: s.music !== false,
   };
 }

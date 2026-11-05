@@ -2,7 +2,7 @@
 // whole), segmented progress, click halves or ←/→ to move, Space to pause auto-advance, Esc to close. The recap's
 // palette (from its top covers) sits behind the card. One card is mounted at a time; the next one's images load
 // ahead.
-import { ChevronsRight, Pause, Play, X } from "lucide-react";
+import { ChevronsRight, Pause, Play, Volume2, VolumeX, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { hiResArt } from "../../api/art";
 import { motionOn, ticker } from "../../motion";
@@ -21,6 +21,8 @@ import { EndActions, FinalePoster } from "./Finale";
 import GameCard from "./GameCard";
 import { autoAdvancing, clickAction, keyAction, step, type NavAction } from "./nav";
 import { EntranceHold } from "./anim";
+import { useRecapMusic } from "./useRecapMusic";
+import { musicTracks, songFor } from "../music";
 import { STYLE_COMPONENTS } from "./styles";
 
 export default function RecapPlayer() {
@@ -48,6 +50,7 @@ function playTarget(t: PlayTarget) {
 
 function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: PlayerOpen) {
   const autoAdvance = useSettings((s) => s.recap.autoAdvance);
+  const music = useSettings((s) => s.recap.music);
   const deck = useMemo(() => given ?? buildDeck(snapshot, { seed, games: "sometimes", forceGames, forceStyle }), [snapshot, seed]);
   const n = deck.slides.length;
   const [index, setIndex] = useState(Math.min(start, n - 1));
@@ -58,6 +61,10 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
   const onEntering = useCallback((d: number) => setEntering((n) => Math.max(0, n + d)), []);
   const held = heldByCard || entering > 0;
   const slide = deck.slides[index];
+  // Your top songs under the story, one per third; the toggle in the top bar is the "music" setting.
+  const songIds = useMemo(() => musicTracks(snapshot.stats.topTracks).map((t) => t.videoId), [snapshot]);
+  useRecapMusic(songIds, songFor(index, n, songIds.length), music && songIds.length > 0);
+  const toggleMusic = () => useSettings.getState().set({ recap: { ...useSettings.getState().recap, music: !music } });
   const last = index === n - 1;
 
   // Palette from the top covers' colors; a neutral one until they're read.
@@ -202,6 +209,11 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
         </div>
         <div className="flex items-center gap-1">
           <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}{!snapshot.frozen && " · preview"}</p>
+          {songIds.length > 0 && (
+            <button type="button" className="icon-btn" aria-label="Music" aria-pressed={music} title={music ? "Turn the music off" : "Play your top songs"} onClick={toggleMusic} style={{ color: "var(--rc-fg)" }}>
+              {music ? <Volume2 size={20} /> : <VolumeX size={20} />}
+            </button>
+          )}
           {autoAdvance && !last && (
             <button type="button" className="icon-btn" aria-label={paused ? "Resume" : "Pause"} aria-pressed={paused} onClick={() => setPaused(!paused)} style={{ color: "var(--rc-fg)" }}>
               {paused ? <Play size={20} /> : <Pause size={20} />}
