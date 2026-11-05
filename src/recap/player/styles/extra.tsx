@@ -7,14 +7,45 @@ import { bigText, Cover, Fill, fitSize, Head, jitter, listOf, MONO, smallText, t
 
 const FLAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#";
 
+/**
+ * Text for a board `width` characters wide: words wrap onto the next row (a word longer than a row is split), and a
+ * text that no longer fits in `maxRows` is left out whole rather than cut. In a ranked list each entry is one row.
+ */
+export function flapLines(texts: string[], width: number, maxRows: number, oneRowEach = false): string[] {
+  const rows: string[] = [];
+  for (const raw of texts) {
+    const t = raw.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+    if (!t) continue;
+    const mine: string[] = [];
+    if (oneRowEach) mine.push(t.length > width ? `${t.slice(0, width - 1)}…` : t);
+    else {
+      let row = "";
+      for (let word of t.split(" ")) {
+        while (word.length > width) {
+          if (row) mine.push(row), (row = "");
+          mine.push(word.slice(0, width));
+          word = word.slice(width);
+        }
+        if (!word) continue;
+        if (!row) row = word;
+        else if (row.length + 1 + word.length <= width) row += ` ${word}`;
+        else mine.push(row), (row = word);
+      }
+      if (row) mine.push(row);
+    }
+    if (rows.length + mine.length > maxRows) break;
+    rows.push(...mine);
+  }
+  return rows.map((r) => r.padEnd(width, " "));
+}
+
 /** An airport departures board: every character flips through the alphabet before it lands. */
 export function SplitFlap({ slide, data }: StyleProps) {
   const root = useRef<HTMLDivElement>(null);
   const W = 13;
-  const lines = (data.shape === "number" ? [data.display, data.unit, data.caption ?? ""]
+  const lines = flapLines(data.shape === "number" ? [data.display, data.unit, data.caption ?? ""]
     : data.shape === "text" ? [data.big, ...data.lines]
-    : listOf(data).slice(0, 5).map((it, i) => `${i + 1} ${it.label}`))
-    .slice(0, 6).map((l) => l.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").slice(0, W).padEnd(W, " "));
+    : listOf(data).slice(0, 5).map((it, i) => `${i + 1} ${it.label}`), W, 7, data.shape === "rank");
   useEntrance(2200, (p) => {
     parts(root.current, "ch").forEach((el, i) => {
       const final = el.dataset.c ?? " ";
