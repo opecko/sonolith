@@ -1,8 +1,10 @@
 // Settings → Recaps: the local listening log, how recaps play, and the user's data (export, delete).
-import { Download, FileUp, Trash2 } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { Check, Download, ExternalLink, FileUp, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { confirmAction } from "../components/ConfirmDialog";
 import Switch from "../components/Switch";
+import { useNav } from "../stores/nav";
 import { useSettings } from "../stores/settings";
 import { useToast } from "../stores/toast";
 import { SettingCard, SettingRow } from "../views/settings/kit";
@@ -30,7 +32,7 @@ export default function RecapSettings() {
   const doExport = async () => {
     setBusy(true);
     try {
-      toast(`Saved your listening log to ${await exportPlayLog(new Date(clockNow()))}`, "info");
+      toast(`Saved a copy to ${await exportPlayLog(new Date(clockNow()))}`, "info");
     } catch (e) {
       toast(`Could not export the listening log: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
@@ -44,12 +46,12 @@ export default function RecapSettings() {
       const r = await importTakeout(await f.text());
       if (r.ok)
         toast(r.added
-          ? `Imported ${fmtInt(r.added)} YouTube Music plays (${formatDay(dayOf(r.from))} – ${formatDay(dayOf(r.to))})`
-          : "Nothing new: those plays were imported already", "info");
+          ? `Added ${fmtInt(r.added)} plays from ${formatDay(dayOf(r.from))} to ${formatDay(dayOf(r.to))}`
+          : "Nothing new: that file was added already", "info");
       else
         toast(r.reason === "html"
-          ? "That's the HTML version: export the history again with the JSON format (Multiple formats → History → JSON)"
-          : r.reason === "empty" ? "That history has no YouTube Music plays" : "That isn't a watch-history.json from Google Takeout");
+          ? "That's the web page version. Export again with history set to JSON (step 3)"
+          : r.reason === "empty" ? "That file has no YouTube Music plays in it" : "That's not the right file: pick watch-history.json");
     } catch (e) {
       toast(`Could not import the history: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
@@ -59,8 +61,8 @@ export default function RecapSettings() {
   };
   const doRemoveTakeout = async () => {
     const ok = await confirmAction({
-      title: "Remove imported history?",
-      message: "The plays imported from Google Takeout are removed from this computer. Recaps you already opened stay as they are.",
+      title: "Remove the history from Google?",
+      message: "The plays added from your Google file are removed from this computer. Recaps you already saw stay as they are.",
       confirmLabel: "Remove",
       danger: true,
     });
@@ -68,9 +70,9 @@ export default function RecapSettings() {
   };
   const doDeleteLog = async () => {
     const ok = await confirmAction({
-      title: "Delete listening log?",
-      message: "Sonolith's own record of what you played on this computer is deleted. Recaps you already opened stay as they are; YouTube Music's history isn't touched.",
-      confirmLabel: "Delete log",
+      title: "Forget what you played?",
+      message: "Sonolith's own list of what you played on this computer is deleted. Recaps you already saw stay, and YouTube Music's history isn't touched.",
+      confirmLabel: "Forget",
       danger: true,
     });
     if (!ok) return;
@@ -78,7 +80,7 @@ export default function RecapSettings() {
   };
   const doDeleteAll = async () => {
     const ok = await confirmAction({
-      title: "Delete all recap data?",
+      title: "Delete everything?",
       message: "The listening log, the imported YouTube and Takeout history and every recap you've opened are deleted from this computer. Recaps are made again from YouTube Music's history the next time you open them.",
       confirmLabel: "Delete everything",
       danger: true,
@@ -94,60 +96,86 @@ export default function RecapSettings() {
     }
   };
 
+  const step = "flex gap-3";
+  const num = "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--c-surface-2)] text-xs font-semibold";
   return (
     <>
-      <SettingCard title="Listening log">
-        <SettingRow id="recapLog" title="Keep a local listening log"
+      <SettingCard>
+        <SettingRow id="recapOpen" title="Your month and year in music"
+          detail="A short story about what you listened to: your top artists and songs, when you listen, a few little games. A new one every month, and a big one for the year.">
+          <button className="chip m3-btn m3-filled inline-flex items-center gap-2" onClick={() => useNav.getState().go({ name: "recaps" })}>
+            <Sparkles size={16} aria-hidden /> Open Recaps
+          </button>
+        </SettingRow>
+      </SettingCard>
+
+      <SettingCard title="While a recap plays">
+        <SettingRow id="recapMusic" title="Play my top songs" detail="Your favorite songs play in the background. Whatever was playing pauses and comes back after.">
+          <Switch on={recap.music} onChange={(v) => set({ music: v })} label="Play my top songs" />
+        </SettingRow>
+        <SettingRow id="recapAutoAdvance" title="Move on by itself" detail="Cards turn on their own after a few seconds. Off: click or press → to go on. Space pauses either way.">
+          <Switch on={recap.autoAdvance} onChange={(v) => set({ autoAdvance: v })} label="Move on by itself" />
+        </SettingRow>
+        <SettingRow id="recapPodcasts" title="Count podcasts" detail="Include podcast episodes in your next recaps (ones you already opened stay as they are).">
+          <Switch on={recap.podcasts} onChange={(v) => set({ podcasts: v })} label="Count podcasts" />
+        </SettingRow>
+      </SettingCard>
+
+      <SettingCard title="What recaps are made from">
+        <SettingRow id="recapLog" title="Remember what I play"
           detail={saveHistory
-            ? "Sonolith notes what you play, when, and for how long. This is what makes recaps complete: YouTube Music itself only shares your last 200 songs. It stays on this computer and works without signing in."
-            : "Off while Save listening history (Settings → Playback) is off: nothing is recorded then."}>
-          <Switch on={recap.localLog} onChange={(v) => set({ localLog: v })} label="Keep a local listening log" />
+            ? "Needed for complete recaps: Sonolith notes each song you play and for how long. It stays on this computer, and works without signing in."
+            : <span className="text-[var(--c-error)]">Off, because "Save listening history" is off. Recaps then only show what YouTube Music remembers.</span>}>
+          {saveHistory ? (
+            <Switch on={recap.localLog} onChange={(v) => set({ localLog: v })} label="Remember what I play" />
+          ) : (
+            <button className="chip m3-btn m3-tonal" onClick={() => useSettings.getState().set({ saveHistory: true })}>Turn on</button>
+          )}
         </SettingRow>
-        <SettingRow id="recapExport" title="Export log" detail="Save the whole log as a JSON file in your Downloads folder.">
-          <button className="chip m3-btn m3-tonal inline-flex items-center gap-2" disabled={busy} onClick={() => void doExport()}>
-            <Download size={16} aria-hidden /> Export
-          </button>
-        </SettingRow>
-        <SettingRow id="recapTakeout" title="Import your full history" stacked
-          detail={<>
-            YouTube Music's history page only shows your latest 200 songs. For everything, with exact times: at takeout.google.com
-            pick only "YouTube and YouTube Music", set its history format to JSON (Multiple formats), keep "history" selected,
-            export, and choose <code>watch-history.json</code> from the download here. It stays on this computer; recaps you already opened stay as they were.
-            {takeout > 0 && <> Imported so far: {fmtInt(takeout)} plays.</>}
-          </>}>
-          <div className="flex flex-wrap gap-2">
-            <input ref={file} type="file" accept=".json,application/json" className="hidden" onChange={(e) => void doImport(e.target.files?.[0])} />
-            <button className="chip m3-btn m3-tonal inline-flex items-center gap-2" disabled={busy} onClick={() => file.current?.click()}>
-              <FileUp size={16} aria-hidden /> {busy ? "Importing…" : "Choose watch-history.json"}
-            </button>
-            {takeout > 0 && (
-              <button className="chip m3-btn m3-outlined inline-flex items-center gap-2" disabled={busy} onClick={() => void doRemoveTakeout()}>
-                <Trash2 size={16} aria-hidden /> Remove imported history
+        <SettingRow id="recapTakeout" title="Add older listening (optional)" stacked
+          detail="Recaps only know what you play in Sonolith from now on, plus your last 200 songs from YouTube Music. To add everything from before (and from your phone), get a copy of your history from Google once:">
+          <ol className="flex flex-col gap-2 text-sm">
+            <li className={step}><span className={num}>1</span><span className="min-w-0 flex-1">
+              <button className="chip m3-btn m3-tonal inline-flex items-center gap-2" onClick={() => void invoke("open_credit", { name: "google-takeout" }).catch(() => {})}>
+                <ExternalLink size={16} aria-hidden /> Open Google Takeout
               </button>
-            )}
-          </div>
+            </span></li>
+            <li className={step}><span className={num}>2</span><span className="min-w-0 flex-1">Click <b>Deselect all</b>, then tick only <b>YouTube and YouTube Music</b>.</span></li>
+            <li className={step}><span className={num}>3</span><span className="min-w-0 flex-1">In <b>All YouTube data included</b>, keep only <b>history</b>. In <b>Multiple formats</b>, set history to <b>JSON</b>.</span></li>
+            <li className={step}><span className={num}>4</span><span className="min-w-0 flex-1">Create the export. Google emails you when it's ready (minutes, sometimes hours). Download and unzip it.</span></li>
+            <li className={step}><span className={num}>5</span><span className="min-w-0 flex-1">
+              Pick the file <b>watch-history.json</b> from it:
+              <span className="mt-2 flex flex-wrap gap-2">
+                <input ref={file} type="file" accept=".json,application/json" className="hidden" onChange={(e) => void doImport(e.target.files?.[0])} />
+                <button className="chip m3-btn m3-tonal inline-flex items-center gap-2" disabled={busy} onClick={() => file.current?.click()}>
+                  <FileUp size={16} aria-hidden /> {busy ? "Adding…" : "Choose the file"}
+                </button>
+                {takeout > 0 && (
+                  <button className="chip m3-btn m3-text inline-flex items-center gap-2" disabled={busy} onClick={() => void doRemoveTakeout()}>
+                    <Trash2 size={16} aria-hidden /> Remove it again
+                  </button>
+                )}
+              </span>
+            </span></li>
+          </ol>
+          {takeout > 0 && <p className="mt-3 inline-flex items-center gap-2 text-sm"><Check size={16} aria-hidden className="text-[var(--c-accent)]" /> Added {fmtInt(takeout)} plays from Google. Recaps you open from now on include them.</p>}
         </SettingRow>
       </SettingCard>
-      <SettingCard title="Recaps">
-        <SettingRow id="recapMusic" title="Music" detail="Your top songs play under the recap, one after another. Whatever was playing pauses and comes back after it.">
-          <Switch on={recap.music} onChange={(v) => set({ music: v })} label="Music during recaps" />
-        </SettingRow>
-        <SettingRow id="recapAutoAdvance" title="Auto-advance" detail="Cards move on by themselves after a few seconds. Space pauses.">
-          <Switch on={recap.autoAdvance} onChange={(v) => set({ autoAdvance: v })} label="Auto-advance" />
-        </SettingRow>
-        <SettingRow id="recapPodcasts" title="Include podcasts" detail="Count podcast episodes in recaps that haven't been made yet.">
-          <Switch on={recap.podcasts} onChange={(v) => set({ podcasts: v })} label="Include podcasts" />
-        </SettingRow>
-      </SettingCard>
+
       <SettingCard title="Your data">
-        <SettingRow id="recapDeleteLog" title="Delete listening log" detail="Removes Sonolith's own record of your plays.">
-          <button className="chip m3-btn m3-outlined inline-flex items-center gap-2" onClick={() => void doDeleteLog()}>
-            <Trash2 size={16} aria-hidden /> Delete log
+        <SettingRow id="recapExport" title="Save a copy" detail="Download everything Sonolith remembered as a file in your Downloads folder.">
+          <button className="chip m3-btn m3-tonal inline-flex items-center gap-2" disabled={busy} onClick={() => void doExport()}>
+            <Download size={16} aria-hidden /> Save a copy
           </button>
         </SettingRow>
-        <SettingRow id="recapDeleteAll" title="Delete all recap data" detail="The log, the imported history and every recap you've opened.">
+        <SettingRow id="recapDeleteLog" title="Forget what I played" detail="Deletes Sonolith's own list of your plays. Recaps you already saw stay.">
+          <button className="chip m3-btn m3-outlined inline-flex items-center gap-2" onClick={() => void doDeleteLog()}>
+            <Trash2 size={16} aria-hidden /> Forget
+          </button>
+        </SettingRow>
+        <SettingRow id="recapDeleteAll" title="Delete everything" detail="All of the above, the history added from Google and every recap you've seen. Can't be undone.">
           <button className="chip m3-btn m3-danger inline-flex items-center gap-2" onClick={() => void doDeleteAll()}>
-            <Trash2 size={16} aria-hidden /> Delete all
+            <Trash2 size={16} aria-hidden /> Delete everything
           </button>
         </SettingRow>
       </SettingCard>

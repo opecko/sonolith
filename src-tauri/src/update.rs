@@ -185,7 +185,8 @@ pub fn update_open_page(app: AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
-/// Opens a project page from Settings → About. Only these known links, never an arbitrary URL from the webview.
+/// Opens a known page from Settings (About's project links, Recaps' Google Takeout). Only these links, never an
+/// arbitrary URL from the webview.
 #[tauri::command]
 pub fn open_credit(app: AppHandle, name: String) -> Result<(), String> {
     let url = match name.as_str() {
@@ -193,6 +194,7 @@ pub fn open_credit(app: AppHandle, name: String) -> Result<(), String> {
         "api-spec" => format!("https://github.com/{REPO}/blob/master/api/SPEC.md"),
         "google-sans-flex" => "https://github.com/googlefonts/googlesans-flex".to_owned(),
         "ofl" => "https://openfontlicense.org".to_owned(),
+        "google-takeout" => "https://takeout.google.com/".to_owned(),
         _ => return Err(format!("unknown link {name}")),
     };
     app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())

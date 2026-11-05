@@ -257,7 +257,7 @@ const GROUPS: { tone: string; items: Category[] }[] = [
   { tone: "green", items: [
     { id: "playback", title: "Playback", detail: "Autoplay, gapless, history, podcasts", icon: Play, page: () => <PlaybackSettings /> },
     { id: "lyrics", title: "Lyrics", detail: "Karaoke style, providers", icon: MicVocal, page: () => <LyricsProviderSettings /> },
-    { id: "recaps", title: "Recaps", detail: "Listening log, auto-advance, your data", icon: Sparkles, page: () => <RecapSettings /> },
+    { id: "recaps", title: "Recaps", detail: "Music, what they remember, your data", icon: Sparkles, page: () => <RecapSettings /> },
   ] },
   { tone: "orange", items: [
     { id: "shortcuts", title: "Keyboard shortcuts", detail: "Keys inside Sonolith", icon: Keyboard, page: () => <ShortcutSettings /> },
