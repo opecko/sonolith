@@ -14,6 +14,8 @@ import { buildDeck, type Slide } from "../deck";
 import { periodTitle } from "../periods";
 import type { PlayTarget } from "../slides";
 import { closeRecapPlayer, newSeed, saveResume, useRecapUi, type PlayerOpen } from "../ui";
+import { auraTrail } from "../aura";
+import Aura from "./Aura";
 import Confetti from "./Confetti";
 import { EndActions, FinalePoster } from "./Finale";
 import GameCard from "./GameCard";
@@ -66,6 +68,11 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
   }, [snapshot.id]);
   const palettes = useMemo(() => Object.fromEntries(RECAP_MOODS.map((m) => [m, recapPalette(sources, m)])) as Record<RecapMood, RecapPalette>, [sources]);
   const pal = palettes[slide.mood];
+  // The aura starts as the song last played in the app (else the recap's top song) and changes at big moments.
+  const trail = useMemo(() => {
+    const p = usePlayer.getState();
+    return auraTrail(deck.slides, p.queue[p.index]?.thumbnail ?? snapshot.stats.topTracks[0]?.thumbnail);
+  }, [deck]);
 
   // Card scale: the whole 360 × 640 design fits the space left by the top bar (and the end actions).
   const area = useRef<HTMLDivElement>(null);
@@ -177,7 +184,8 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
     <div ref={root} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title} data-recap
       className="fixed inset-0 z-[90] flex flex-col select-none outline-none"
       style={{ ...vars, background: "var(--rc-stage)", color: "var(--rc-fg)", transition: "background-color 400ms" }}>
-      <div className="flex shrink-0 flex-col gap-2 px-3 pt-3">
+      <Aura src={trail[index]} />
+      <div className="relative z-[3] flex shrink-0 flex-col gap-2 px-3 pt-3">
         <div className="flex gap-1" aria-hidden>
           {deck.slides.map((s, i) => (
             <div key={i} className="h-1 flex-1 overflow-hidden rounded-full" style={{ background: "color-mix(in srgb, var(--rc-fg) 25%, transparent)" }}>
@@ -203,7 +211,7 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
           </button>
         </div>
       </div>
-      <div ref={area} className="relative flex min-h-0 flex-1 items-center justify-center p-3">
+      <div ref={area} className="relative z-[3] flex min-h-0 flex-1 items-center justify-center p-3">
         <div onClick={onCardClick} role="group" aria-roledescription="card" aria-label={`Card ${index + 1} of ${n}`}
           className="relative overflow-hidden"
           style={{ width: CARD_W * u, height: CARD_H * u, ["--u" as string]: `${u}px`, borderRadius: 24 * u, background: "var(--rc-bg)", cursor: slide.game ? "default" : "pointer" } as CSSProperties}>
@@ -225,7 +233,7 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
         </div>
       </div>
       {last && (
-        <div className="shrink-0 px-3 pb-4">
+        <div className="relative z-[3] shrink-0 px-3 pb-4">
           <EndActions snap={snapshot} onReplay={() => useRecapUi.setState({ open: { snapshot, seed: newSeed(), start: 0, forceGames, forceStyle } })} onClose={closeRecapPlayer} />
         </div>
       )}
