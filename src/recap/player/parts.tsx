@@ -111,3 +111,6 @@ export const jitter = (i: number, salt = 1) => {
   const x = Math.sin((i + 1) * 12.9898 * salt) * 43758.5453;
   return x - Math.floor(x);
 };
+
+/** The rank to print for item `i` of a list (a "6 to 10" list starts at 6). */
+export const rankNo = (d: SlideData, i: number) => (d.shape === "rank" ? d.offset ?? 0 : 0) + i + 1;

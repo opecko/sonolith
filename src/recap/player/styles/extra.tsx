@@ -3,7 +3,7 @@
 import { Cloud, CloudDrizzle, CloudSun, Sun } from "lucide-react";
 import { useRef } from "react";
 import { clamp01, easeBack, easeInOut, easeOut, parts, stagger, U, useEntrance, useLoop } from "../anim";
-import { bigText, Cover, Fill, fitSize, Head, jitter, listOf, MONO, smallText, type StyleProps } from "../parts";
+import { bigText, Cover, Fill, fitSize, Head, jitter, listOf, MONO, rankNo, smallText, type StyleProps } from "../parts";
 
 const FLAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#";
 
@@ -45,7 +45,7 @@ export function SplitFlap({ slide, data }: StyleProps) {
   const W = 13;
   const lines = flapLines(data.shape === "number" ? [data.display, data.unit, data.caption ?? ""]
     : data.shape === "text" ? [data.big, ...data.lines]
-    : listOf(data).slice(0, 5).map((it, i) => `${i + 1} ${it.label}`), W, 7, data.shape === "rank");
+    : listOf(data).slice(0, 5).map((it, i) => `${rankNo(data, i)} ${it.label}`), W, 7, data.shape === "rank");
   useEntrance(2200, (p) => {
     parts(root.current, "ch").forEach((el, i) => {
       const final = el.dataset.c ?? " ";
@@ -94,7 +94,7 @@ export function Polaroids({ slide, data }: StyleProps) {
         {items.map((it, i) => (
           <div data-e="photo" key={i} className="absolute" style={{ left: U(spots[i].x), top: U(spots[i].y), transform: `rotate(${spots[i].r}deg)`, background: "var(--rc-fg)", color: "var(--rc-bg)", padding: `${U(8)} ${U(8)} ${U(one ? 46 : 30)}`, zIndex: items.length - i, boxShadow: `0 ${U(6)} ${U(14)} color-mix(in srgb, var(--rc-stage) 50%, transparent)` }}>
             <Cover src={it.image} size={size} style={{ borderRadius: 0 }} />
-            <p className="absolute truncate" style={{ left: U(10), right: U(10), bottom: U(one ? 12 : 6), fontSize: U(one ? 20 : 13), fontWeight: 600, fontStyle: "italic" }}>{one ? it.label : `${i + 1}. ${it.label}`}</p>
+            <p className="absolute truncate" style={{ left: U(10), right: U(10), bottom: U(one ? 12 : 6), fontSize: U(one ? 20 : 13), fontWeight: 600, fontStyle: "italic" }}>{one ? it.label : `${rankNo(data, i)}. ${it.label}`}</p>
           </div>
         ))}
         {one && <p className="absolute text-center" style={{ left: U(20), right: U(20), bottom: U(36), fontSize: U(16), color: "var(--rc-muted)" }}>{smallText(data)}</p>}

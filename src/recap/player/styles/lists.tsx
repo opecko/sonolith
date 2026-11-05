@@ -2,7 +2,7 @@
 // sheet, countdown reveal, spotlight, trading card.
 import { useRef, useState } from "react";
 import { clamp01, easeBack, easeInOut, easeOut, parts, stagger, U, useEntrance, useLoop } from "../anim";
-import { bigText, Cover, Fill, fitSize, Head, jitter, listOf, smallText, type StyleProps } from "../parts";
+import { bigText, Cover, Fill, fitSize, Head, jitter, listOf, rankNo, smallText, type StyleProps } from "../parts";
 import type { Item } from "../../slides";
 
 export function Podium({ slide, data }: StyleProps) {
@@ -29,7 +29,7 @@ export function Podium({ slide, data }: StyleProps) {
                 <Cover src={it.image} size={i === 1 ? 84 : 68} round />
                 <p className="w-full text-center" style={{ fontSize: U(13), fontWeight: 700, lineHeight: 1.15, overflowWrap: "anywhere", maxHeight: U(46), overflow: "hidden" }}>{it.label}</p>
                 <div data-e="block" className="flex w-full items-start justify-center" style={{ height: U(heights[i]), background: i === 1 ? "var(--rc-accent)" : "var(--rc-bg2)", color: i === 1 ? "var(--rc-on-accent)" : "var(--rc-fg)", borderRadius: `${U(10)} ${U(10)} 0 0`, overflow: "hidden" }}>
-                  <span style={{ fontSize: U(40), fontWeight: 900, marginTop: U(6) }}>{[2, 1, 3][i]}</span>
+                  <span style={{ fontSize: U(40), fontWeight: 900, marginTop: U(6) }}>{rankNo(data, [1, 0, 2][i])}</span>
                 </div>
               </div>
             ) : <div key={i} style={{ width: U(100) }} />,
@@ -37,7 +37,7 @@ export function Podium({ slide, data }: StyleProps) {
         </div>
         <div style={{ borderTop: `${U(2)} solid var(--rc-fg)`, paddingTop: U(10) }}>
           {items.slice(3).map((it, i) => (
-            <p data-e="rest" key={i} className="truncate" style={{ fontSize: U(15), lineHeight: 1.6 }}><b>{i + 4}.</b> {it.label} <span style={{ color: "var(--rc-muted)" }}>{it.valueText}</span></p>
+            <p data-e="rest" key={i} className="truncate" style={{ fontSize: U(15), lineHeight: 1.6 }}><b>{rankNo(data, i + 3)}.</b> {it.label} <span style={{ color: "var(--rc-muted)" }}>{it.valueText}</span></p>
           ))}
         </div>
       </div>
@@ -93,7 +93,7 @@ export function CrateFlip({ slide, data }: StyleProps) {
         <div className="relative flex-1" style={{ marginTop: U(20) }}>
           {back.map((it, i) => (
             <div data-e="sleeve" key={i} className="absolute flex items-center" style={{ left: U(10 + i * 4), right: U(10 + i * 4), top: U(i * 22), height: U(300), background: i === back.length - 1 ? "var(--rc-accent)" : "var(--rc-bg2)", color: i === back.length - 1 ? "var(--rc-on-accent)" : "var(--rc-fg)", borderRadius: U(8), padding: U(14), gap: U(12), transformOrigin: "bottom center", alignItems: "flex-start", boxShadow: `0 ${U(-2)} 0 var(--rc-bg)` }}>
-              <span style={{ fontSize: U(16), fontWeight: 800 }}>{back.length - i}</span>
+              <span style={{ fontSize: U(16), fontWeight: 800 }}>{rankNo(data, back.length - 1 - i)}</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate" style={{ fontSize: U(17), fontWeight: 700 }}>{it.label}</p>
                 <p className="truncate" style={{ fontSize: U(13), opacity: 0.85 }}>{it.sub ?? it.valueText}</p>
@@ -263,7 +263,7 @@ export function Countdown({ slide, data }: StyleProps) {
     const [num] = parts(root.current, "num");
     if (num) {
       const local = (p * (steps + 0.9)) % 1;
-      num.textContent = step >= steps ? "" : String(items.length ? steps - step : 3 - step);
+      num.textContent = step >= steps ? "" : String(items.length ? rankNo(data, steps - step - 1) : 3 - step);
       num.style.fontSize = `calc(var(--u) * ${120 + 160 * easeOut(local)})`;
       num.style.opacity = String(1 - local * 0.7);
     }
@@ -282,7 +282,7 @@ export function Countdown({ slide, data }: StyleProps) {
               <ol className="flex flex-1 flex-col justify-center" style={{ gap: U(12) }}>
                 {items.map((it, i) => (
                   <li key={i} className="flex items-center" style={{ gap: U(12) }}>
-                    <span style={{ fontSize: U(28), fontWeight: 900, width: U(30), color: i === 0 ? "var(--rc-accent)" : "var(--rc-muted)" }}>{i + 1}</span>
+                    <span style={{ fontSize: U(28), fontWeight: 900, width: U(30), color: i === 0 ? "var(--rc-accent)" : "var(--rc-muted)" }}>{rankNo(data, i)}</span>
                     <Cover src={it.image} size={i === 0 ? 70 : 50} />
                     <div className="min-w-0"><p className="truncate" style={{ fontSize: U(i === 0 ? 20 : 16), fontWeight: 700 }}>{it.label}</p><p className="truncate" style={{ fontSize: U(12), color: "var(--rc-muted)" }}>{it.valueText ?? it.sub}</p></div>
                   </li>

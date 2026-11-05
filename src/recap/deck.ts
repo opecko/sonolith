@@ -38,8 +38,8 @@ export const DECK_SIZE = { month: [10, 14], year: [20, 28] } as const;
 
 /** Cards every recap has. */
 export const REQUIRED: SlideKind[] = ["intro", "totalTime", "topArtist", "topTracks", "persona", "outro", "finale"];
-const ARTIST_BLOCK: SlideKind[] = ["buildUp", "topArtist", "topArtists"];
-const SONG_BLOCK: SlideKind[] = ["topTrack", "topTracks"];
+const ARTIST_BLOCK: SlideKind[] = ["moreArtists", "buildUp", "topArtist", "topArtists", "topArtistSongs"];
+const SONG_BLOCK: SlideKind[] = ["moreTracks", "topTrack", "topTracks"];
 
 export function buildDeck(snap: Snapshot, opts: DeckOptions): Deck {
   const rng = seeded(opts.seed);
@@ -71,12 +71,22 @@ export function buildDeck(snap: Snapshot, opts: DeckOptions): Deck {
   const songBlock = SONG_BLOCK.map(take).filter((c): c is SlideContent => !!c);
   // Optional cards: the rest, shuffled, as many as the target allows (yearly keeps its journey).
   let rest = shuffle(rng, [...byKind.values()]);
-  if (year) rest = [...rest.filter((c) => c.kind === "journey"), ...rest.filter((c) => c.kind !== "journey")];
-  const fixed = 4 + artistBlock.length + songBlock.length;
+  // A year keeps its journey and seasons, in calendar order (the rest stays shuffled around them).
+  const SEASONS: SlideKind[] = ["winter", "spring", "summer", "autumn"];
+  const seasonCards = year ? rest.filter((c) => SEASONS.includes(c.kind)).sort((x, y) => SEASONS.indexOf(x.kind) - SEASONS.indexOf(y.kind)) : [];
+  if (year) rest = [...rest.filter((c) => c.kind === "journey"), ...rest.filter((c) => c.kind !== "journey" && !SEASONS.includes(c.kind))];
+  const fixed = 4 + artistBlock.length + songBlock.length + seasonCards.length;
   rest = shuffle(rng, rest.slice(0, Math.max(0, target - fixed)));
   // Spread the optional cards before, between and after the two big blocks.
   const a = Math.ceil(rest.length * 0.55), b = Math.min(rest.length, a + 1 + Math.floor(rng() * 2));
-  const order: SlideContent[] = [intro, total, ...rest.slice(0, a), ...artistBlock, ...rest.slice(a, b), ...songBlock, ...rest.slice(b), persona, end];
+  // The seasons tell the year in order through the first part, each followed by another card.
+  const early: SlideContent[] = [];
+  const firstPart = rest.slice(0, a);
+  for (let i = 0; i < Math.max(seasonCards.length, firstPart.length); i++) {
+    if (seasonCards[i]) early.push(seasonCards[i]);
+    if (firstPart[i]) early.push(firstPart[i]);
+  }
+  const order: SlideContent[] = [intro, total, ...early, ...artistBlock, ...rest.slice(a, b), ...songBlock, ...rest.slice(b), persona, end];
 
   const slides: Slide[] = order.map((c) => ({ ...c, style: null, mood: "dark", useAlt: false }));
   insertGames(slides, snap, opts, rng);

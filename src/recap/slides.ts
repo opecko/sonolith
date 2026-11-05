@@ -23,7 +23,8 @@ export interface Item {
 
 export type SlideData =
   | { shape: "number"; value: number; display: string; unit: string; caption?: string }
-  | { shape: "rank"; items: Item[] }
+  /** `offset`: the first item ranks offset + 1 (a "6 to 10" list). */
+  | { shape: "rank"; items: Item[]; offset?: number }
   | { shape: "hero"; item: Item; kicker?: string; stat?: string }
   | { shape: "series"; values: number[]; labels: string[]; highlight: number; unit: string }
   | { shape: "calendar"; days: { day: number; value: number }[]; from: number; to: number; highlight: number | null }
@@ -35,7 +36,8 @@ export type SlideKind =
   | "intro" | "totalTime" | "totalPlays" | "topArtist" | "topArtists" | "topTrack" | "topTracks" | "topAlbums" | "variety"
   | "daysListened" | "streak" | "busiestDay" | "hours" | "weekdays" | "calendar" | "discoveries" | "repeatChampion"
   | "obsessionWeek" | "firstLast" | "mostSkipped" | "artistLoyalty" | "podcasts" | "journey" | "milestone" | "comparison"
-  | "fun" | "persona" | "coverWall" | "buildUp" | "outro" | "finale" | "game";
+  | "fun" | "persona" | "coverWall" | "buildUp" | "outro" | "finale" | "game"
+  | "moreArtists" | "moreTracks" | "topArtistSongs" | "winter" | "spring" | "summer" | "autumn";
 
 export interface SlideContent {
   kind: SlideKind;
@@ -338,6 +340,45 @@ export function buildContents(s: RecapStats, ctx: CopyContext, opts: { coveredFr
       aria: `That's ${fun.display} ${fun.unit}.`,
     });
   }
+  // Yearly extras: the runners-up, the #1 artist's own top songs and the four seasons.
+  if (s.moreArtists?.length)
+    add({
+      kind: "moreArtists",
+      data: { shape: "rank", offset: 5, items: s.moreArtists.map((x) => ({ label: x.name, sub: x.topTrack, image: x.thumbnail, value: x.plays, valueText: plural(x.plays, "play"), play: x.id ? { kind: "artist", id: x.id, name: x.name } : undefined })) },
+      headline: choose(ctx, "moreArtists", ["Just outside your top 5", "Your 6 to 10", "Honorable mentions"]),
+      aria: `Artists 6 to 10: ${s.moreArtists.map((x, i) => `${i + 6}, ${x.name}`).join("; ")}.`,
+    });
+  if (s.moreTracks?.length)
+    add({
+      kind: "moreTracks",
+      data: { shape: "rank", offset: 5, items: s.moreTracks.map((x) => trackItem(x, x.plays)) },
+      headline: choose(ctx, "moreTracks", ["Almost in your top 5", "Songs 6 to 10", "So close to the top"]),
+      aria: `Songs 6 to 10: ${s.moreTracks.map((x, i) => `${i + 6}, ${x.title}`).join("; ")}.`,
+    });
+  if (s.topArtistSongs?.length && a)
+    add({
+      kind: "topArtistSongs",
+      data: { shape: "rank", items: s.topArtistSongs.map((x) => trackItem(x, x.plays)) },
+      headline: choose(ctx, "topArtistSongs", [`Your ${a.name} favorites`, `The best of ${a.name}, by you`, `${a.name}, on repeat`]),
+      aria: `Your most played songs by ${a.name}: ${s.topArtistSongs.map((x) => x.title).join(", ")}.`,
+    });
+  const SEASON: Record<string, [string, string[]]> = {
+    winter: ["Winter", ["Your winter sound", "What kept you warm", "Winter, played back"]],
+    spring: ["Spring", ["Your spring sound", "What bloomed in spring", "Spring, played back"]],
+    summer: ["Summer", ["Your summer sound", "The song of your summer", "Summer, played back"]],
+    autumn: ["Autumn", ["Your autumn sound", "Falling leaves, rising plays", "Autumn, played back"]],
+  };
+  for (const se of s.seasons ?? []) {
+    const [name, heads] = SEASON[se.id];
+    add({
+      kind: se.id,
+      data: { shape: "hero", item: { ...trackItem(se.topTrack), sub: `${se.topTrack.artist} · most played artist: ${se.topArtist}` }, kicker: `${name}'s song`, stat: `${duration(se.listenedMs)} in ${name.toLowerCase()}` },
+      headline: choose(ctx, se.id, heads),
+      aria: `In ${name.toLowerCase()} your top song was ${se.topTrack.title} and your top artist ${se.topArtist}.`,
+      play: trackItem(se.topTrack).play,
+    });
+  }
+
   add({
     kind: "persona",
     data: { shape: "text", big: s.persona.name, lines: [s.persona.line] },

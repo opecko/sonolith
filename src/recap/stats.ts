@@ -93,6 +93,22 @@ export interface RecapStats {
   comparison: { prevPlays: number; prevListenedMs: number; deltaMs: number; deltaPct: number } | null;
   fun: { daysNonstop: number; flights: number; albumsBackToBack: number };
   persona: Persona;
+  // Yearly extras (optional: snapshots made before they existed don't have them).
+  /** Artists and songs ranked 6–10. */
+  moreArtists?: ArtistStat[];
+  moreTracks?: TrackStat[];
+  /** The #1 artist's most played songs. */
+  topArtistSongs?: TrackStat[];
+  /** Winter, spring, summer, autumn: each season's top song and artist (only seasons with listening). */
+  seasons?: SeasonStat[];
+}
+
+export interface SeasonStat {
+  id: "winter" | "spring" | "summer" | "autumn";
+  plays: number;
+  listenedMs: number;
+  topTrack: TrackStat;
+  topArtist: string;
 }
 
 export interface StatsInput {
@@ -177,7 +193,7 @@ export function computeStats(input: StatsInput): RecapStats {
     a.topTrack = t?.title ?? "";
     a.thumbnail = t?.thumbnail;
   }
-  const topArtists = rankBy([...artists.values()]).map(({ best: _best, ...a }) => a);
+  const topArtists = rankBy([...artists.values()]).map(({ best: _best, ...a }) => a).slice(0, 10);
   const topAlbums = rankBy([...albums.values()]);
 
   // Days.
@@ -348,7 +364,29 @@ export function computeStats(input: StatsInput): RecapStats {
       albumsBackToBack: listenedMs / (45 * 60_000),
     },
   };
-  return { ...base, persona: personaOf(base, plays) };
+  const extras: Pick<RecapStats, "moreArtists" | "moreTracks" | "topArtistSongs" | "seasons"> = {};
+  if (input.kind === "year") {
+    if (topArtists.length >= 8) extras.moreArtists = topArtists.slice(5, 10);
+    if (ranked.length >= 8) extras.moreTracks = ranked.slice(5, 10);
+    const top = topArtists[0];
+    const own = top ? ranked.filter((t) => (top.id ? t.artistId === top.id : t.artist.split(", ")[0] === top.name)).slice(0, 5) : [];
+    if (own.length >= 3) extras.topArtistSongs = own;
+    // Seasons by month: Dec–Feb winter (December of this year), Mar–May spring, Jun–Aug summer, Sep–Nov autumn.
+    const seasonOf = (m: number) => (m === 11 || m <= 1 ? "winter" : m <= 4 ? "spring" : m <= 7 ? "summer" : "autumn");
+    const seasons: SeasonStat[] = [];
+    for (const id of ["winter", "spring", "summer", "autumn"] as const) {
+      const sp = plays.filter((p) => seasonOf(ymdOf(Math.floor((p.from + p.to) / 2)).m) === id && p.type !== "episode");
+      if (sp.length < 10) continue;
+      const tt = rankBy([...trackStats(sp).values()], (t) => t.lastAt)[0];
+      const counts = new Map<string, number>();
+      for (const p of sp) counts.set(p.artists[0]?.name ?? "", (counts.get(p.artists[0]?.name ?? "") ?? 0) + 1);
+      const ta = [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0][0];
+      // The track as the whole year knows it (its cover and totals), with this season's own count shown.
+      seasons.push({ id, plays: sp.length, listenedMs: sp.reduce((a, p) => a + p.listenedMs, 0), topTrack: { ...(tracks.get(tt.key) ?? tt), plays: tt.plays }, topArtist: ta });
+    }
+    if (seasons.length >= 2) extras.seasons = seasons;
+  }
+  return { ...base, ...extras, persona: personaOf(base, plays) };
 }
 
 /**

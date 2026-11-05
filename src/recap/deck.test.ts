@@ -178,3 +178,36 @@ describe("games", () => {
     }
   });
 });
+
+describe("the yearly recap is the big one", () => {
+  it("has the yearly extras on a rich year", () => {
+    expect(year.stats.moreArtists).toHaveLength(5);
+    expect(year.stats.moreTracks).toHaveLength(5);
+    expect(year.stats.topArtistSongs!.length).toBeGreaterThanOrEqual(3);
+    expect(year.stats.seasons!.map((x) => x.id)).toEqual(["winter", "spring", "summer", "autumn"]);
+    const d = buildDeck(year, { seed: 2, games: "never" });
+    const more = d.slides.find((s) => s.kind === "moreTracks")!;
+    expect(more.data.shape === "rank" && more.data.offset).toBe(5);
+    // Runners-up come before the #1s they lead to.
+    expect(d.slides.findIndex((s) => s.kind === "moreTracks")).toBeLessThan(d.slides.findIndex((s) => s.kind === "topTracks"));
+    const seasons = d.slides.filter((s) => ["winter", "spring", "summer", "autumn"].includes(s.kind)).map((s) => s.kind);
+    expect(seasons).toEqual(["winter", "spring", "summer", "autumn"]);
+  });
+
+  it("is always longer than a month, also from sparse history without times", () => {
+    // Like an account with only YouTube's history page: plays known to a month, no exact times.
+    const sparse = mergePlays([], syntheticLog(2026, D(2026, 11, 31)).filter((_, i) => i % 40 === 0).map((e, i) => {
+      const d = new Date(e.startedAt);
+      return { videoId: `${e.videoId}${i}`, from: D(2026, d.getMonth(), 1), to: D(2026, d.getMonth() + 1, 0), track: e, seenAt: 0 };
+    }));
+    for (const data of [mergePlays(syntheticLog(2026, D(2026, 11, 31)), []), sparse]) {
+      const m = buildSnapshot(oct, data, periodEnd(oct), startOfDay(D(2026, 10, 2)), { frozen: true, podcasts: false, youtube: false });
+      const y = buildSnapshot(y2026, data, periodEnd(y2026), startOfDay(D(2026, 11, 2)), { frozen: true, podcasts: false, youtube: false });
+      for (let seed = 1; seed <= 20; seed++) {
+        const mc = cards(buildDeck(m, { seed, games: "never" })).length;
+        const yc = cards(buildDeck(y, { seed, games: "never" })).length;
+        expect(yc, `seed ${seed}`).toBeGreaterThan(mc);
+      }
+    }
+  });
+});

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { fmtInt } from "../../format";
 import { clamp01, countTo, easeBack, easeOut, parts, stagger, U, useEntrance, useLoop } from "../anim";
-import { bigText, Cover, Fill, fitSize, Head, listOf, MONO, SERIF, smallText, type StyleProps } from "../parts";
+import { bigText, Cover, Fill, fitSize, Head, listOf, MONO, rankNo, SERIF, smallText, type StyleProps } from "../parts";
 
 /** Digits of a display string with its number, for count-ups ("1,234" → 1234). */
 const numeric = (s: string) => Number(s.replace(/[^\d.]/g, "")) || 0;
@@ -90,7 +90,7 @@ export function Receipt({ slide, data }: StyleProps) {
   const rows: [string, string][] =
     data.shape === "number" ? [[data.unit.toUpperCase(), data.display], ...(data.caption ? [[data.caption, ""] as [string, string]] : [])]
     : data.shape === "pair" ? [[data.left.label, data.left.valueText ?? ""], [data.right.label, data.right.valueText ?? ""], ...(data.verdict ? [["CHANGE", data.verdict] as [string, string]] : [])]
-    : listOf(data).slice(0, 6).map((it, i) => [`${i + 1}  ${it.label}`, it.valueText ?? ""]);
+    : listOf(data).slice(0, 6).map((it, i) => [`${rankNo(data, i)}  ${it.label}`, it.valueText ?? ""]);
   useEntrance(400 + rows.length * 380, (p) => {
     const [paper] = parts(root.current, "paper");
     const lines = parts(root.current, "line");
@@ -128,7 +128,7 @@ export function Terminal({ slide, data }: StyleProps) {
   const out: string[] =
     data.shape === "number" ? [`> ${data.display} ${data.unit}`, ...(data.caption ? [`  ${data.caption}`] : [])]
     : data.shape === "text" ? [`> ${data.big}`, ...data.lines.map((l) => `  ${l}`)]
-    : listOf(data).slice(0, 5).map((it, i) => `${String(i + 1).padStart(2)}  ${it.label}${it.valueText ? `  (${it.valueText})` : ""}`);
+    : listOf(data).slice(0, 5).map((it, i) => `${String(rankNo(data, i)).padStart(2)}  ${it.label}${it.valueText ? `  (${it.valueText})` : ""}`);
   const all = cmd.length + out.join("").length;
   useEntrance(600 + all * 22, (p) => {
     const [c] = parts(root.current, "cmd");
@@ -290,7 +290,7 @@ export function NumeralStack({ slide, data }: StyleProps) {
   const root = useRef<HTMLDivElement>(null);
   const rows = data.shape === "number"
     ? [...data.display].filter((c) => /\d/.test(c)).slice(0, 6).map((c, i, all) => ({ n: c, label: i === all.length - 1 ? data.unit : "", sub: "" }))
-    : listOf(data).slice(0, 5).map((it, i) => ({ n: String(i + 1), label: it.label, sub: it.valueText ?? it.sub ?? "" }));
+    : listOf(data).slice(0, 5).map((it, i) => ({ n: String(rankNo(data, i)), label: it.label, sub: it.valueText ?? it.sub ?? "" }));
   useEntrance(1400, (p) => {
     parts(root.current, "row").forEach((el, i, all) => {
       const q = easeBack(stagger(p, i, all.length, 0.55));
