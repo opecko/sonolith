@@ -98,14 +98,14 @@ export default function RecapsView() {
 
       {hero ? (
         <button type="button" onClick={() => void open(hero)}
-          className="m3-section relative mb-8 flex w-full items-center gap-5 overflow-hidden rounded-[var(--radius)] bg-[var(--c-accent)] p-6 text-left text-[var(--c-on-accent)]">
+          className="recap-hero relative mb-8 flex w-full items-center gap-5 overflow-hidden rounded-[var(--radius)] bg-[var(--c-accent)] p-6 text-left text-[var(--c-on-accent)]">
           <Sparkles size={48} aria-hidden className="shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium opacity-90">{hero.period.kind === "year" ? "Your year in music" : "Your month in music"}{fresh === hero.id ? " · New" : ""}</p>
             <p className="truncate text-3xl font-bold">{periodTitle(hero.period)}</p>
             {hero.frozen && <p className="text-sm opacity-90">{duration(hero.frozen.stats.listenedMs)} · {hero.frozen.stats.topArtists[0]?.name ?? ""}</p>}
           </div>
-          <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[var(--c-on-accent)] px-4 py-2 text-sm font-medium text-[var(--c-accent)]"><Play size={16} aria-hidden /> Play</span>
+          <span className="recap-hero-play inline-flex shrink-0 items-center gap-2 rounded-full bg-[var(--c-on-accent)] px-4 py-2 text-sm font-medium text-[var(--c-accent)]"><Play size={16} aria-hidden /> Play</span>
         </button>
       ) : (
         <div className="m3-section mb-8 rounded-[var(--radius)] bg-[var(--c-surface)] p-6">

@@ -308,6 +308,9 @@
 /* ---------- Settings: sections as cards, segmented choices as connected button groups ---------- */
 
 [data-ui-style="m3"] .m3-section { border-radius: var(--m3-corner-xl); background: var(--m3-surface-container-low); }
+/* The Recaps page's hero card: a primary container (its text stays readable on it), the Play pill inverted. */
+[data-ui-style="m3"] .recap-hero { border-radius: var(--m3-corner-xl); background: var(--m3-primary-container); color: var(--m3-on-primary-container); }
+[data-ui-style="m3"] .recap-hero-play { background: var(--m3-primary); color: var(--m3-on-primary); }
 [data-ui-style="m3"] .m3-section > h2,
 [data-ui-style="m3"] .m3-section-toggle > span > span:first-child { font-size: 22px; line-height: 28px; font-weight: 500; }
 [data-ui-style="m3"] .m3-section-toggle { border-radius: var(--m3-corner-xl); }
