@@ -22,6 +22,47 @@ fn command(bin: impl AsRef<std::ffi::OsStr>) -> Command {
     cmd
 }
 
+/// How long a stream lookup may take before yt-dlp is stopped (it can hang on a stalled connection; a song must
+/// not wait forever). Normal runs take ~5 s on Linux and ~20 s on Windows.
+const STREAM_TIMEOUT: Duration = Duration::from_secs(75);
+
+/// Runs a command like `output()`, but kills it when it takes longer than `limit`.
+fn output_with_timeout(cmd: &mut Command, limit: Duration) -> Result<std::process::Output, String> {
+    use std::io::Read;
+    use std::process::Stdio;
+    let mut child = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(|e| e.to_string())?;
+    // Both pipes are drained on their own threads, so a chatty child can't block on a full pipe meanwhile.
+    let mut out = child.stdout.take();
+    let mut err = child.stderr.take();
+    let read_out = std::thread::spawn(move || {
+        let mut b = Vec::new();
+        if let Some(o) = out.as_mut() {
+            let _ = o.read_to_end(&mut b);
+        }
+        b
+    });
+    let read_err = std::thread::spawn(move || {
+        let mut b = Vec::new();
+        if let Some(e) = err.as_mut() {
+            let _ = e.read_to_end(&mut b);
+        }
+        b
+    });
+    let started = std::time::Instant::now();
+    let status = loop {
+        if let Some(st) = child.try_wait().map_err(|e| e.to_string())? {
+            break st;
+        }
+        if started.elapsed() >= limit {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(format!("yt-dlp took longer than {} s and was stopped", limit.as_secs()));
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    };
+    Ok(std::process::Output { status, stdout: read_out.join().unwrap_or_default(), stderr: read_err.join().unwrap_or_default() })
+}
+
 fn valid_video_id(id: &str) -> bool {
     (6..=20).contains(&id.len()) && id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
 }
@@ -213,9 +254,8 @@ pub async fn ytdlp_stream_url(app: AppHandle, video_id: String, codecs: Vec<Stri
             cmd.arg("--cookies").arg(&c.0);
         }
         cmd.arg("--").arg(format!("https://music.youtube.com/watch?v={video_id}"));
-        let out = cmd
-            .output()
-            .map_err(|e| format!("cannot run '{bin}': {e}. Install yt-dlp from Settings or set its path."))?;
+        let out = output_with_timeout(&mut cmd, STREAM_TIMEOUT)
+            .map_err(|e| if e.contains("was stopped") { e } else { format!("cannot run '{bin}': {e}. Install yt-dlp from Settings or set its path.") })?;
         drop(cookies);
         if !out.status.success() {
             let mut msg = format!("yt-dlp failed: {}", error_summary(&String::from_utf8_lossy(&out.stderr)));
@@ -346,6 +386,17 @@ mod tests {
     fn video_ids() {
         assert!(valid_video_id("dQw4w9WgXcQ"));
         assert!(!valid_video_id("--exec=rm"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn output_with_timeout_kills_a_hung_process() {
+        let started = std::time::Instant::now();
+        let r = output_with_timeout(Command::new("sleep").arg("5"), Duration::from_millis(300));
+        assert!(r.unwrap_err().contains("was stopped"));
+        assert!(started.elapsed() < Duration::from_secs(3));
+        let ok = output_with_timeout(Command::new("echo").arg("hi"), Duration::from_secs(5)).unwrap();
+        assert_eq!(String::from_utf8_lossy(&ok.stdout).trim(), "hi");
         assert!(!valid_video_id("abc"));
     }
 
