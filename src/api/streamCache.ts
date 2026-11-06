@@ -58,6 +58,10 @@ export class StreamCache<T extends { origin?: string; live?: boolean }> {
   delete(id: string) {
     this.entries.delete(id);
   }
+
+  clear() {
+    this.entries.clear();
+  }
 }
 
 /**

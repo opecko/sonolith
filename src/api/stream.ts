@@ -182,6 +182,13 @@ export function getStreamUrl(videoId: string, opts: { alternate?: boolean } = {}
 /** Forgets a song's stream (it failed to play): the next play resolves it again. */
 export const forgetStream = (videoId: string) => streams.delete(videoId);
 
+/** Signing in or out or switching accounts: streams and what was learnt about InnerTube belonged to the old one. */
+export function resetStreams() {
+  streams.clear();
+  innertubeBreaker.succeeded();
+  lastSource = null;
+}
+
 // ---------- video (podcast episodes, music videos) ----------
 
 interface VideoFormat {

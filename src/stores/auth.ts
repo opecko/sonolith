@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { SNAPSHOT_KEY } from "./queueSnapshot";
 import { invoke } from "@tauri-apps/api/core";
-import { logPlayback } from "../api/stream";
+import { logPlayback, resetStreams } from "../api/stream";
 import { currentAccount, getCookie, resetClient, setAccount, setAuthExpiredHandler } from "../api/client";
 import { DEFAULT_ACCOUNT, sameAccount, type AccountChoice } from "../api/accounts";
 import { clearDataCache } from "../hooks/useData";
@@ -26,6 +26,7 @@ export const useAuth = create<AuthState>((set, get) => {
   const changed = (choice: AccountChoice) => {
     setAccount(choice);
     resetClient();
+    resetStreams();
     clearDataCache();
     useLibrary.getState().reset();
     set({ accountGen: get().accountGen + 1 });
@@ -38,6 +39,7 @@ export const useAuth = create<AuthState>((set, get) => {
       return;
     }
     clearDataCache();
+    resetStreams();
     invoke("auth_clear").catch(() => {});
     set({ status: "signedOut", error: "Session expired, please sign in again" });
   });
@@ -66,7 +68,14 @@ export const useAuth = create<AuthState>((set, get) => {
     }
   },
   logout: async () => {
-    await invoke("auth_clear");
+    try {
+      await invoke("auth_clear");
+    } catch (e) {
+      // Still stored (a locked keyring): staying signed in is honest, the next start would sign in again anyway.
+      logPlayback(`sign-out failed: ${String(e)}`);
+      useToast.getState().show(`Could not sign out: ${String(e)}`);
+      return;
+    }
     try {
       localStorage.removeItem(SNAPSHOT_KEY); // the saved queue belongs to the signed-out account
     } catch {
