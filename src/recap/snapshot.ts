@@ -3,7 +3,7 @@
 // remakes one. The presentation (cards, styles, games) is chosen anew per viewing from these frozen numbers.
 import { dayOf } from "./days";
 import { firstDay as firstDayOf, type Dataset } from "./merge";
-import { MIN_PLAYS, periodId, periodStart, playsIn, previousPeriod, type Period } from "./periods";
+import { MIN_PLAYS, periodEnd, periodId, periodStart, playsIn, previousPeriod, type Period } from "./periods";
 import { computeStats, type RecapStats } from "./stats";
 
 export const SNAPSHOT_SCHEMA = 1;
@@ -100,4 +100,5 @@ export function parseSnapshot(v: unknown): Snapshot | null {
  * in, without the YouTube history. Such a snapshot is made again (2.5.1's What's new runs the check once).
  */
 export const thinEarlyYear = (s: Snapshot, signedIn: boolean) =>
-  s.period.kind === "year" && s.frozen && (s.stats.plays < MIN_PLAYS.year || (signedIn && !s.sources.youtube && !s.sources.takeout));
+  s.period.kind === "year" && s.frozen && s.cutoff < periodEnd(s.period) &&
+  (s.stats.plays < MIN_PLAYS.year || (signedIn && !s.sources.youtube && !s.sources.takeout));

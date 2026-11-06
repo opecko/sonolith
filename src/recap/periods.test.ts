@@ -151,5 +151,7 @@ describe("snapshots", () => {
     expect(thinEarlyYear(full, true)).toBe(true);
     expect(thinEarlyYear({ ...full, sources: { ...full.sources, youtube: true } }, true)).toBe(false);
     expect(thinEarlyYear(buildSnapshot(oct, data, periodEnd(oct), at(2026, 10, 2), { frozen: true, podcasts: false, youtube: false }), true)).toBe(false);
+    // A year unlocked on Dec 1 (not early) is left alone, thin or not.
+    expect(thinEarlyYear({ ...tiny, cutoff: periodEnd(y2026) }, false)).toBe(false);
   });
 });
