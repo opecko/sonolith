@@ -86,6 +86,13 @@ find a new one.
 - **Origin must match the host** (music.youtube.com vs www.youtube.com) or requests fail (400) or come back
   anonymous. `makeYtFetch` handles it; mobile clients (VISIONOS) need an explicit youtube.com Origin.
 - Non-Premium accounts get YTMUSIC streams that stop after ~1 MB → VISIONOS fallback (complete streams, no cookies).
+- **VISIONOS went UNPLAYABLE ("This video is not available") on 2026-11-06**, and IOS / TV_SIMPLY / ANDROID_VR give
+  the same ~1 MB-capped streams or nothing; youtubei.js's TV client answers "The page needs to be reloaded". Only
+  yt-dlp (its TVHTML5 client, which works only after its other clients ran) serves non-Premium accounts, at ~5 s on
+  Linux and ~20 s on Windows. So resolved streams are cached per song until near their `expire` and shared while
+  resolving (`api/streamCache.ts`: one resolution for prefetch, gapless and the play itself, also on repeat), InnerTube
+  is skipped for 15 min after failing for two songs in a row, and the next song is prepared right away when the
+  slow path is in use.
 - **The library listing lags behind edits**: new playlists appear late, deleted ones linger, track counts update
   late. A just-created playlist's page comes back without a title for a while. Use optimistic UI + reloads.
 - Own vs saved playlists: YouTube doesn't flag ownership in the library. Own playlists' subtitle is just a count

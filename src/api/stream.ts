@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { getClient } from "./client";
 import { lowestVariant, pickHlsAudio, pickHlsVideo } from "./hls";
+import { Breaker, StreamCache } from "./streamCache";
 
 export type Codec = "opus" | "aac";
 export type StreamSource = "innertube" | "yt-dlp";
@@ -59,7 +60,6 @@ const CONTAINER: Record<Codec, string> = { opus: "webm", aac: "mp4" };
 // WebView2 (Windows) rejects YouTube's AAC/MP4 audio ("Format error", playback-log 2026-10-05) but plays Opus/WebM;
 // WebKitGTK (Linux) has always played the AAC stream through GStreamer, so it keeps AAC first.
 const LINUX = /Linux/.test(navigator.userAgent);
-const PREFETCH_TTL_MS = 20 * 60 * 1000;
 
 export function supportedCodecs(canPlay: (mime: string) => string = (m) => new Audio().canPlayType(m)): Codec[] {
   return (["opus", "aac"] as Codec[]).filter((c) => canPlay(MIME[c]) !== "");
@@ -128,43 +128,57 @@ async function viaYtdlp(videoId: string, codecs: Codec[]): Promise<Stream> {
 }
 
 // InnerTube (YTMUSIC, ~0.3 s) first, yt-dlp (~8 s, solves challenges via node/deno) as the fallback.
-// `alternate` flips the order for retries after a MediaError.
+// `alternate` flips the order for retries after a MediaError. After InnerTube failed for two songs in a row it's
+// skipped for a while (it can't serve this account just now), so the slow path doesn't wait for it every time.
+const innertubeBreaker = new Breaker();
+let lastSource: StreamSource | null = null;
+
+/** The last song came from yt-dlp (slow): the player prepares the next one early. */
+export const slowResolver = () => lastSource === "yt-dlp";
+
 async function resolve(videoId: string, alternate: boolean): Promise<Stream> {
   const supported = supportedCodecs();
   if (!supported.length) throw new UnsupportedCodecError();
   const codecs = LINUX ? [...supported].sort((a, b) => (a === "aac" ? -1 : b === "aac" ? 1 : 0)) : supported;
-  const order = alternate ? [viaYtdlp, viaInnertube] : [viaInnertube, viaYtdlp];
+  const skipInnertube = !alternate && innertubeBreaker.open(Date.now());
+  const order = alternate || skipInnertube ? [viaYtdlp, viaInnertube] : [viaInnertube, viaYtdlp];
   const errors: string[] = [];
   for (const attempt of order) {
     try {
-      return await attempt(videoId, attempt === viaYtdlp ? supported : codecs); // yt-dlp keeps its old order
+      const s = await attempt(videoId, attempt === viaYtdlp ? supported : codecs); // yt-dlp keeps its old order
+      if (attempt === viaInnertube) innertubeBreaker.succeeded();
+      lastSource = s.source;
+      return s;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       errors.push(msg);
+      if (attempt === viaInnertube && msg.startsWith("innertube: no playable format")) innertubeBreaker.failed(Date.now());
       logPlayback(`${videoId} ${attempt === viaYtdlp ? "yt-dlp" : "innertube"} failed: ${msg}`);
     }
   }
   throw new Error(errors.join("\n"));
 }
 
-let prefetched: { id: string; at: number; promise: Promise<Stream> } | null = null;
+/** Resolved streams by video id: one resolution per song while its URL is good (streamCache.ts). */
+const streams = new StreamCache<Stream>();
 
+function cached(videoId: string): Promise<Stream> {
+  return streams.get(videoId, Date.now()) ?? streams.put(videoId, resolve(videoId, false), Date.now);
+}
+
+/** Starts resolving a song that's coming up (the result is shared with the play that follows). */
 export function prefetchStream(videoId: string) {
-  if (prefetched?.id === videoId) return;
-  const promise = resolve(videoId, false);
-  const entry = { id: videoId, at: Date.now(), promise };
-  prefetched = entry;
-  promise.catch(() => {
-    if (prefetched === entry) prefetched = null;
-  });
+  cached(videoId).catch(() => {});
 }
 
+/** A song's stream; `alternate` resolves again the other way (after a MediaError) and replaces the cached one. */
 export function getStreamUrl(videoId: string, opts: { alternate?: boolean } = {}): Promise<Stream> {
-  const hit = prefetched;
-  prefetched = null;
-  if (!opts.alternate && hit?.id === videoId && Date.now() - hit.at < PREFETCH_TTL_MS) return hit.promise;
-  return resolve(videoId, !!opts.alternate);
+  if (opts.alternate) return streams.put(videoId, resolve(videoId, true), Date.now);
+  return cached(videoId);
 }
+
+/** Forgets a song's stream (it failed to play): the next play resolves it again. */
+export const forgetStream = (videoId: string) => streams.delete(videoId);
 
 // ---------- video (podcast episodes, music videos) ----------
 

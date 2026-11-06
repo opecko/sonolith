@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { errorText } from "../api/errors";
 import { maxresUrl, mediaArtwork } from "../api/art";
 import type { NextResult } from "../api/queue";
-import { getStreamUrl, logPlayback, prefetchStream, probeStream, UnsupportedCodecError, viaProxy, type Stream } from "../api/stream";
+import { forgetStream, getStreamUrl, logPlayback, prefetchStream, probeStream, slowResolver, UnsupportedCodecError, viaProxy, type Stream } from "../api/stream";
 import type { QueueChip, Rating, Track } from "../api/types";
 import type { RadioSource } from "../api/queue";
 import { getChipTracks, getPodcastShow, getWatch, rate, startRadio } from "../api/ytm";
@@ -610,7 +610,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
     gaplessTick();
     for (const fn of tickListeners) fn();
     const { index } = get();
-    if (prefetchedFor !== index && audio.currentTime > Math.min(30, audio.duration / 2 || 30)) {
+    // When songs only resolve the slow way (yt-dlp), the next one starts resolving right away.
+    if (prefetchedFor !== index && audio.currentTime > (slowResolver() ? 2 : Math.min(30, audio.duration / 2 || 30))) {
       prefetchedFor = index;
       const next = peekNext();
       const track = next === null ? null : get().queue[next];
@@ -630,6 +631,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
     const track = get().queue[index];
     const failed = current;
     logPlayback(`${track?.id ?? "?"} MediaError code=${code} msg=${err?.message ?? ""} source=${failed?.source} codec=${failed?.codec} itag=${failed?.itag ?? "-"} proxied=${!!failed?.proxied} retry=${retries}`);
+    // A stream that failed isn't reused for the next play of this song.
+    if (track) forgetStream(track.id);
     // First failure of a stream: record what the server actually sends for it.
     if (failed && !failed.proxied) void probeStream(failed).then((p) => logPlayback(`${track?.id ?? "?"} probe ${failed.source}: ${p}`));
     const recoverable = code === MEDIA_ERR_SRC_NOT_SUPPORTED || code === MEDIA_ERR_NETWORK;
