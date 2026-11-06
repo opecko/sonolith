@@ -19,6 +19,8 @@ export function initHistory() {
       currentId = id;
       recorded = false;
     }
+    // The same song from the start again (Repeat one, Replay, seeking back to 0:00) is another play.
+    if (recorded && playbackTime() < 1) recorded = false;
     if (!id || recorded || status !== "playing" || !useSettings.getState().saveHistory || useAuth.getState().status !== "signedIn") return;
     // The real playback time: the displayed position stands still while the window is hidden (tray).
     const position = playbackTime();
