@@ -3907,7 +3907,7 @@ dependencies = [
 
 [[package]]
 name = "sonolith"
-version = "2.5.0"
+version = "2.5.1"
 dependencies = [
  "base64 0.22.1",
  "dirs",
