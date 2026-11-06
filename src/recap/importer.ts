@@ -56,7 +56,12 @@ export function importHistory(opts: { opening?: boolean; force?: boolean } = {})
   return promise;
 }
 
-export const cancelHistoryImport = () => inflight?.abort.abort();
+/** Stops a running import and waits until it's done, so nothing it read is written afterwards (Delete everything). */
+export async function stopHistoryImport() {
+  const running = inflight;
+  running?.abort.abort();
+  await running?.promise.catch(() => null);
+}
 
 async function run(signal: AbortSignal, { opening = false, force = false }): Promise<HistoryCache | null> {
   if (useAuth.getState().status !== "signedIn") return null;
@@ -78,8 +83,9 @@ async function run(signal: AbortSignal, { opening = false, force = false }): Pro
     if (signal.aborted) return null;
     const now = Date.now();
     const next = mergeObservations(cache, observe(shelves, dayOf(now)), now);
-    // The account may have changed meanwhile: keep each account's history in its own file.
-    if (accountFile() !== file) return null;
+    // The account may have changed meanwhile: keep each account's history in its own file. Stopped (data
+    // deleted meanwhile): nothing is written back.
+    if (accountFile() !== file || signal.aborted) return null;
     await writeJson(file, next);
     useHistoryImport.setState({ cache: next, running: false });
     return next;

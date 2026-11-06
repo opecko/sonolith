@@ -9,7 +9,7 @@ import { useSettings } from "../stores/settings";
 import { useToast } from "../stores/toast";
 import { SettingCard, SettingRow } from "../views/settings/kit";
 import { clockNow } from "./clock";
-import { useHistoryImport } from "./importer";
+import { stopHistoryImport, useHistoryImport } from "./importer";
 import type { RecapSettings as Shape } from "./settings";
 import { deleteAllRecapData, deletePlayLog, exportPlayLog } from "./storage";
 import { formatDay, dayOf } from "./days";
@@ -76,7 +76,14 @@ export default function RecapSettings() {
       danger: true,
     });
     if (!ok) return;
-    await deletePlayLog().then(() => toast("Listening log deleted", "info"), (e) => toast(`Could not delete the log: ${String(e)}`));
+    try {
+      await deletePlayLog();
+      // Recaps made from now on must not use the plays still loaded in memory.
+      if (useRecaps.getState().loaded) await loadRecaps(false, true);
+      toast("Listening log deleted", "info");
+    } catch (e) {
+      toast(`Could not delete the log: ${String(e)}`);
+    }
   };
   const doDeleteAll = async () => {
     const ok = await confirmAction({
@@ -87,6 +94,8 @@ export default function RecapSettings() {
     });
     if (!ok) return;
     try {
+      // A history import still running would write its file back after the deletion.
+      await stopHistoryImport();
       await deleteAllRecapData();
       useHistoryImport.setState({ cache: null });
       forgetRecaps();
