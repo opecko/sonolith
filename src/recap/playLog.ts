@@ -155,6 +155,18 @@ export class PlayTracker {
   }
 
   /**
+   * Buffering: time stops counting until `playing`. Unlike a pause it doesn't flush (stalls can come every few
+   * seconds); only what the last step itself asks to write (the play just counting, a due checkpoint) is returned.
+   */
+  stalled(pos: number, now: number): PlayEntry | null {
+    const c = this.cur;
+    if (!c || c.lastPos === null) return null;
+    const out = this.tick(pos, now);
+    c.lastPos = null;
+    return out;
+  }
+
+  /**
    * A seek started: the range jumped over is not listened. The element's position is already the target, so the
    * time since the last timeupdate (under a second) is dropped.
    */

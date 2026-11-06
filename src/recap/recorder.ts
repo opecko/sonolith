@@ -44,7 +44,7 @@ export function initPlayLog() {
     sync();
     write(tracker.paused(el().currentTime, Date.now()));
   });
-  onAudioEvent("waiting", () => write(tracker.paused(el().currentTime, Date.now())));
+  onAudioEvent("waiting", () => write(tracker.stalled(el().currentTime, Date.now())));
   onAudioEvent("timeupdate", () => {
     sync();
     if (!el().paused) write(tracker.tick(el().currentTime, Date.now()));

@@ -47,6 +47,18 @@ describe("PlayTracker", () => {
     expect(tr.track(info("b"), 100)).toBeNull();
   });
 
+  it("a buffering stall stops counting without a write", () => {
+    const tr = new PlayTracker();
+    tr.track(info(), 0);
+    tr.playing(0, 0);
+    play(tr, 0, 15, 0);
+    tr.stalled(15, 15_000);
+    tr.tick(15, 25_000); // no "playing" yet: not counted, nothing written
+    tr.playing(15, 25_000);
+    play(tr, 15, 16, 25_000);
+    expect(tr.track(null, 27_000)!.listenedMs).toBe(16_000);
+  });
+
   it("doesn't count paused time", () => {
     const tr = new PlayTracker();
     tr.track(info(), 0);
