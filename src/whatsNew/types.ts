@@ -12,7 +12,7 @@ export type WhatsNewAction =
   | { type: "openRecaps" };
 
 /** Housekeeping a release needs once, run when its entry opens (also a closed set). */
-export type WhatsNewChore = "clearLyricsCache";
+export type WhatsNewChore = "clearLyricsCache" | "repairYearRecaps";
 
 export interface WhatsNewEntry {
   /** The release this entry is for, "X.Y.Z". */

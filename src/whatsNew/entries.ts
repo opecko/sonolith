@@ -1,4 +1,4 @@
-import { AudioWaveform, Clapperboard, Keyboard, LayoutDashboard, ListMusic, Lock, LogIn, MicVocal, Palette, Plug, Podcast, Settings2, Sparkles, Terminal } from "lucide-react";
+import { AudioWaveform, Clapperboard, Keyboard, LayoutDashboard, ListMusic, Lock, LogIn, MicVocal, Palette, Plug, Podcast, Settings2, Sparkles, Terminal, Zap } from "lucide-react";
 import type { WhatsNewEntry } from "./types";
 
 /**
@@ -6,6 +6,24 @@ import type { WhatsNewEntry } from "./types";
  * entry shows nothing after the update.
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
+  {
+    version: "2.5.1",
+    title: "Important fixes",
+    highlights: [
+      {
+        icon: Zap,
+        title: "Songs load faster again",
+        text: "YouTube changed how it serves music without Premium, so songs could take up to 20 seconds to start. Each song is now looked up once, and the next one gets ready while the current one plays.",
+      },
+      {
+        icon: Sparkles,
+        title: "Your yearly recap, complete",
+        text: "If you unlocked your year early, it could show only a few songs. It's made again from your whole history the next time you open it.",
+      },
+    ],
+    actions: [{ label: "Open Recaps", action: { type: "openRecaps" } }],
+    onShow: ["repairYearRecaps"],
+  },
   {
     version: "2.5.0",
     title: "Sonolith Recap",

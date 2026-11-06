@@ -94,3 +94,10 @@ export function parseSnapshot(v: unknown): Snapshot | null {
   if (!Array.isArray(s.stats.topTracks) || !Array.isArray(s.stats.topArtists) || !Number.isFinite(s.stats.plays)) return null;
   return deepFreeze(s);
 }
+
+/**
+ * A yearly recap 2.5.0 may have frozen too thin after an early unlock: fewer plays than a recap needs, or, signed
+ * in, without the YouTube history. Such a snapshot is made again (2.5.1's What's new runs the check once).
+ */
+export const thinEarlyYear = (s: Snapshot, signedIn: boolean) =>
+  s.period.kind === "year" && s.frozen && (s.stats.plays < MIN_PLAYS.year || (signedIn && !s.sources.youtube && !s.sources.takeout));

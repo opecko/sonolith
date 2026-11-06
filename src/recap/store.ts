@@ -9,7 +9,7 @@ import { clockNow } from "./clock";
 import { importHistory, loadHistoryCache } from "./importer";
 import { firstDay, mergePlays, type Dataset } from "./merge";
 import { availability, cutoffOf, monthsToList, parsePeriodId, periodId, periodTitle, type Availability, type Period } from "./periods";
-import { buildSnapshot, freezesNow, historyFresh, keepFrozen, parseSnapshot, previewUsable, type Snapshot } from "./snapshot";
+import { buildSnapshot, freezesNow, thinEarlyYear, historyFresh, keepFrozen, parseSnapshot, previewUsable, type Snapshot } from "./snapshot";
 import { deleteJson, listJson, readJson, readPlays, writeJson } from "./storage";
 import { mergeTakeout, parseTakeout, parseTakeoutCache } from "./takeout";
 
@@ -245,4 +245,15 @@ export async function importTakeout(text: string): Promise<TakeoutImport> {
 export async function removeTakeout() {
   await deleteJson(TAKEOUT);
   await loadRecaps(false);
+}
+
+/** One-time repair (2.5.1): yearly recaps frozen too thin by 2.5.0's early unlock are made again on next open. */
+export async function repairThinYearRecaps() {
+  const signedIn = useAuth.getState().status === "signedIn";
+  for (const n of await listJson("snapshots")) {
+    const s = parseSnapshot(await readJson(n));
+    if (s && thinEarlyYear(s, signedIn)) await deleteJson(n);
+  }
+  forgetSnapshots();
+  await loadRecaps(false).catch(() => {});
 }

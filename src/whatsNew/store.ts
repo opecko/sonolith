@@ -42,6 +42,10 @@ function runChore(c: WhatsNewChore) {
       // Loaded when needed: the lyrics store pulls in the player (and its audio elements).
       void import("../lyrics/store").then((m) => m.clearLyricsCache()).catch(() => {});
       break;
+    case "repairYearRecaps":
+      // 2.5.0 could freeze an early-unlocked year from the local log alone: such recaps are made again.
+      void import("../recap/store").then((m) => m.repairThinYearRecaps()).catch(() => {});
+      break;
   }
 }
 

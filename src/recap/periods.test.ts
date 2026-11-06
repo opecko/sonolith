@@ -5,7 +5,7 @@ import {
   availability, canUnlockEarly, cutoffOf, daysUntil, earlyUnlockFrom, monthsToList, parsePeriodId, periodEnd, periodId, periodStart, playsIn,
   previousPeriod, type Period,
 } from "./periods";
-import { buildSnapshot, deepFreeze, freezesNow, historyFresh, keepFrozen, parseSnapshot, previewUsable } from "./snapshot";
+import { buildSnapshot, deepFreeze, freezesNow, historyFresh, keepFrozen, parseSnapshot, previewUsable, thinEarlyYear } from "./snapshot";
 import { syntheticLog } from "./synthetic";
 
 const at = (y: number, m: number, d: number, h = 0, min = 0) => new Date(y, m, d, h, min).getTime();
@@ -140,5 +140,16 @@ describe("snapshots", () => {
     expect(previewUsable(preview)).toBe(false);
     expect(previewUsable({ ...preview, frozen: true })).toBe(true);
     expect(previewUsable(buildSnapshot(y2026, data, at(2026, 10, 5, 21), at(2026, 10, 5, 21), { frozen: false, podcasts: false, youtube: false }))).toBe(true);
+  });
+
+  it("finds yearly recaps frozen too thin", () => {
+    const full = buildSnapshot(y2026, data, at(2026, 10, 5, 21), at(2026, 10, 5, 21), { frozen: true, podcasts: false, youtube: true });
+    const tiny = buildSnapshot(y2026, mergePlays(log.filter((e) => e.startedAt >= at(2026, 10, 5, 12) && e.startedAt < at(2026, 10, 5, 21)), []), at(2026, 10, 5, 21), at(2026, 10, 5, 21), { frozen: true, podcasts: false, youtube: false });
+    expect(thinEarlyYear(tiny, false)).toBe(true);
+    expect(thinEarlyYear(full, false)).toBe(false);
+    // Signed in, a year without any YouTube history is thin too; a month is never touched.
+    expect(thinEarlyYear(full, true)).toBe(true);
+    expect(thinEarlyYear({ ...full, sources: { ...full.sources, youtube: true } }, true)).toBe(false);
+    expect(thinEarlyYear(buildSnapshot(oct, data, periodEnd(oct), at(2026, 10, 2), { frozen: true, podcasts: false, youtube: false }), true)).toBe(false);
   });
 });
