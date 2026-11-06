@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Breaker, DEFAULT_AGE_MS, expiresAt, MAX_AGE_MS, StreamCache } from "./streamCache";
+import { Breaker, DEFAULT_AGE_MS, expiresAt, IN_FLIGHT_MAX_MS, MAX_AGE_MS, StreamCache } from "./streamCache";
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 type S = { url: string; origin?: string; live?: boolean };
@@ -25,6 +25,13 @@ describe("StreamCache", () => {
     expect(c.get("a", 1000)).toBe(p);
     t = 0;
     expect(c.get("a", 3_600_000)).toBeNull(); // past expire − 10 min
+  });
+
+  it("gives up on a resolution that hangs", () => {
+    const c = new StreamCache<S>();
+    c.put("a", new Promise<S>(() => {}), () => 0);
+    expect(c.get("a", IN_FLIGHT_MAX_MS - 1)).not.toBeNull();
+    expect(c.get("a", IN_FLIGHT_MAX_MS)).toBeNull();
   });
 
   it("drops failures and live streams", async () => {

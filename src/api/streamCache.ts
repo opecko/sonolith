@@ -7,6 +7,8 @@ export const MAX_AGE_MS = 3 * 60 * 60 * 1000;
 /** When the URL says nothing about its expiry. */
 export const DEFAULT_AGE_MS = 30 * 60 * 1000;
 const MARGIN_MS = 10 * 60 * 1000;
+/** A resolution still running after this is given up on (a hung yt-dlp): the next play starts a new one. */
+export const IN_FLIGHT_MAX_MS = 90 * 1000;
 const MAX_ENTRIES = 64;
 
 /** When a stream URL stops being usable, epoch ms (from its `expire` parameter, seconds). */
@@ -18,7 +20,7 @@ export function expiresAt(url: string | undefined, now: number): number {
 
 interface Entry<T> {
   promise: Promise<T>;
-  /** Until when it may be used; Infinity while the resolution is still running. */
+  /** Until when it may be used; while the resolution is still running, until it counts as stuck. */
   until: number;
 }
 
@@ -38,7 +40,7 @@ export class StreamCache<T extends { origin?: string; live?: boolean }> {
 
   /** Keeps a resolution; failures and live streams (endless, per session) are dropped once known. */
   put(id: string, promise: Promise<T>, now: () => number): Promise<T> {
-    const entry: Entry<T> = { promise, until: Infinity };
+    const entry: Entry<T> = { promise, until: now() + IN_FLIGHT_MAX_MS };
     this.entries.delete(id);
     this.entries.set(id, entry);
     while (this.entries.size > MAX_ENTRIES) this.entries.delete(this.entries.keys().next().value!);
