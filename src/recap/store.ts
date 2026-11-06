@@ -6,7 +6,7 @@ import { useAuth } from "../stores/auth";
 import { useSettings } from "../stores/settings";
 import { useToast } from "../stores/toast";
 import { clockNow, onClock } from "./clock";
-import { importHistory, loadHistoryCache } from "./importer";
+import { accountKey, importHistory, loadHistoryCache } from "./importer";
 import { firstDay, mergePlays, type Dataset } from "./merge";
 import { availability, cutoffOf, monthsToList, parsePeriodId, periodId, periodTitle, type Availability, type Period } from "./periods";
 import { buildSnapshot, freezesNow, thinEarlyYear, historyFresh, keepFrozen, parseSnapshot, previewUsable, type Snapshot } from "./snapshot";
@@ -22,7 +22,16 @@ interface Meta {
   playlists: Record<string, string>;
 }
 
-const META = "meta.json";
+/**
+ * Recaps belong to an account (its own YouTube history, its own saved playlists); signed out they're "local".
+ * Files from before accounts were kept apart (meta.json, snapshots/<period>.json) belong to the main account.
+ */
+const scope = () => (useAuth.getState().status === "signedIn" ? accountKey() : "local");
+const LEGACY_SCOPE = "a0";
+const metaFile = (sc: string) => `meta-${sc}.json`;
+const snapshotFile = (sc: string, id: string) => `snapshots/${sc}-${id}.json`;
+/** A snapshot file of this scope (or, for the main account, an older unscoped one). */
+const inScope = (name: string, sc: string) => name.startsWith(`snapshots/${sc}-`) || (sc === LEGACY_SCOPE && /^snapshots\/(month|year)-/.test(name));
 const TAKEOUT = "takeout.json";
 const EMPTY_META: Meta = { earlyUnlock: {}, seen: [], playlists: {} };
 
@@ -63,6 +72,8 @@ interface RecapState {
 export const useRecaps = create<RecapState>(() => ({ loaded: false, loading: false, data: null, local: null, takeout: 0, meta: EMPTY_META, frozen: {}, fresh: null }));
 
 let loading: Promise<void> | null = null;
+/** Bumped by forgetRecaps: a load that was running reads for an account that's no longer current. */
+let loadGen = 0;
 
 /** Loads (or reloads) everything Recaps need; `opening` = the Recaps page opened (imports history if due). */
 export function loadRecaps(opening = false, fresh = false): Promise<void> {
@@ -72,13 +83,18 @@ export function loadRecaps(opening = false, fresh = false): Promise<void> {
   loading = (async () => {
     try {
       if (opening) await importHistory({ opening: true }).catch(() => null);
-      const [plays, cache, takeoutRaw, meta, names] = await Promise.all([readPlays().catch(() => []), loadHistoryCache(), readJson(TAKEOUT), readJson(META), listJson("snapshots")]);
+      const sc = scope();
+      const gen = loadGen;
+      const [plays, cache, takeoutRaw, scopedMeta, names] = await Promise.all([readPlays().catch(() => []), loadHistoryCache(), readJson(TAKEOUT), readJson(metaFile(sc)), listJson("snapshots")]);
+      const meta = scopedMeta ?? (sc === LEGACY_SCOPE ? await readJson("meta.json") : null);
       const takeout = parseTakeoutCache(takeoutRaw);
       const frozen: Record<string, Snapshot> = {};
-      for (const n of names) {
+      for (const n of names.filter((x) => inScope(x, sc))) {
         const s = parseSnapshot(await readJson(n));
         if (s?.frozen) frozen[s.id] = s;
       }
+      // The account changed while reading: what was read belongs to the one before.
+      if (gen !== loadGen) return;
       // An imported Takeout file is on this computer: it counts signed out and in previews too.
       const data = mergePlays(plays, useAuth.getState().status === "signedIn" ? cache.plays : [], takeout.plays);
       useRecaps.setState({ data, local: mergePlays(plays, [], takeout.plays), takeout: takeout.plays.length, meta: parseMeta(meta), frozen, loaded: true });
@@ -118,7 +134,7 @@ function freshRecap(): string | null {
 async function saveMeta(patch: Partial<Meta>) {
   const meta = { ...useRecaps.getState().meta, ...patch };
   useRecaps.setState({ meta });
-  await writeJson(META, meta);
+  await writeJson(metaFile(scope()), meta);
 }
 
 /**
@@ -151,7 +167,7 @@ export async function openRecap(period: Period): Promise<Snapshot | null> {
     if (!previewUsable(made)) throw new Error("couldn't refresh your YouTube Music history. Try again when you're online");
     const shown = keepFrozen(stored, made);
     if (shown.frozen) {
-      await writeJson(`snapshots/${id}.json`, shown);
+      await writeJson(snapshotFile(scope(), id), shown);
       useRecaps.setState({ frozen: { ...useRecaps.getState().frozen, [id]: parseSnapshot(JSON.parse(JSON.stringify(shown)))! } });
     }
     await markSeen(id);
@@ -185,6 +201,7 @@ export async function rememberPlaylist(recapId: string, kind: string, playlistId
 
 /** After "Delete all recap data": forget everything loaded. */
 export function forgetRecaps() {
+  loadGen++;
   useRecaps.setState({ loaded: false, data: null, local: null, takeout: 0, meta: EMPTY_META, frozen: {}, fresh: null });
 }
 
@@ -219,6 +236,11 @@ function announce() {
 export function initRecaps() {
   if (started) return;
   started = true;
+  // Signing in or out or switching accounts: what's loaded belongs to the account before (its history, its
+  // recaps), so it's dropped and read again for the new one the next time it's needed.
+  useAuth.subscribe((s, prev) => {
+    if (s.accountGen !== prev.accountGen || s.status !== prev.status) forgetRecaps();
+  });
   // A new recap can only appear when the month changes (or the year unlocks on Dec 1, also a month change), so the
   // hourly check reloads the data only then, not every hour.
   let checked = "";

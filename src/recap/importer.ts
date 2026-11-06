@@ -20,12 +20,15 @@ interface ImportState {
 
 export const useHistoryImport = create<ImportState>(() => ({ running: false, error: null, cache: null }));
 
-/** History differs per account (brand accounts included); the local log doesn't. */
-export function accountFile(): string {
+/** The current account as a file-name part: "a0", "a1-<page id>" (brand accounts included). */
+export function accountKey(): string {
   const a = currentAccount();
   const page = (a.pageId ?? "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);
-  return `history/a${a.authUser}${page ? `-${page}` : ""}.json`;
+  return `a${a.authUser}${page ? `-${page}` : ""}`;
 }
+
+/** History differs per account; the local log doesn't. */
+export const accountFile = () => `history/${accountKey()}.json`;
 
 export async function loadHistoryCache(): Promise<HistoryCache> {
   const c = parseHistoryCache(await readJson(accountFile()));
