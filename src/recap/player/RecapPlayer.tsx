@@ -76,7 +76,7 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
   const slide = deck.slides[index];
   // Your top songs under the story, one per third; the toggle in the top bar is the "music" setting.
   const songIds = useMemo(() => musicTracks(snapshot.stats.topTracks).map((t) => t.videoId), [snapshot]);
-  useRecapMusic(songIds, songFor(index, n, songIds.length), music && songIds.length > 0);
+  const handOverMusic = useRecapMusic(songIds, songFor(index, n, songIds.length), music && songIds.length > 0);
   const toggleMusic = () => useSettings.getState().set({ recap: { ...useSettings.getState().recap, music: !music } });
   const last = index === n - 1;
 
@@ -291,7 +291,10 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
                 </EntranceHold.Provider>
                 {active && big && <Confetti colors={recapConfetti(pal)} />}
                 {active && s.play && (
-                  <button type="button" onClick={() => playTarget(s.play!)} className="absolute inline-flex items-center gap-1 rounded-full text-sm font-medium"
+                  <button type="button" onClick={() => {
+                    handOverMusic();
+                    playTarget(s.play!);
+                  }} className="absolute inline-flex items-center gap-1 rounded-full text-sm font-medium"
                     style={{ right: 14 * u, bottom: 14 * u, padding: `${6 * u}px ${12 * u}px`, fontSize: 13 * u, background: "var(--rc-fg)", color: "var(--rc-bg)" }}>
                     <Play size={14 * u} aria-hidden /> Play
                   </button>
