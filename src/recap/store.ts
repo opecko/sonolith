@@ -218,7 +218,18 @@ function announce() {
 export function initRecaps() {
   if (started) return;
   started = true;
-  const check = () => void loadRecaps(false).then(announce, () => {});
+  // A new recap can only appear when the month changes (or the year unlocks on Dec 1, also a month change), so the
+  // hourly check reloads the data only then, not every hour.
+  let checked = "";
+  const check = () => {
+    const d = new Date(clockNow());
+    const month = `${d.getFullYear()}-${d.getMonth()}`;
+    if (month === checked) return;
+    void loadRecaps(false).then(() => {
+      checked = month;
+      announce();
+    }, () => {});
+  };
   setTimeout(check, 20_000);
   setInterval(check, 3_600_000);
 }

@@ -20,7 +20,7 @@ import Confetti from "./Confetti";
 import { EndActions, FinalePoster } from "./Finale";
 import GameCard from "./GameCard";
 import { autoAdvancing, clickAction, keyAction, step, type NavAction } from "./nav";
-import { EntranceHold } from "./anim";
+import { easeInOut, EntranceHold } from "./anim";
 import { pickTransition, transitionFrame, TRANSITION_MS, type Frame, type TransitionKind } from "./transitions";
 import { useRecapMusic } from "./useRecapMusic";
 import { musicTracks, songFor } from "../music";
@@ -131,7 +131,7 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
       el.style.clipPath = f.clipPath ?? "";
       el.style.opacity = f.opacity ?? "";
     };
-    stopTransition.current = tween(TRANSITION_MS, (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2), (p) => {
+    stopTransition.current = tween(TRANSITION_MS, easeInOut, (p) => {
       const f = transitionFrame(move.kind, p, move.dir);
       apply(layerEls.current.get(move.to), f.in);
       apply(layerEls.current.get(move.from), f.out);

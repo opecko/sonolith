@@ -1,4 +1,5 @@
 // Conversational and travel looks: chat bubbles with typing, a boarding pass, head to head.
+import { Plane } from "lucide-react";
 import { useRef } from "react";
 import { hash } from "../../random";
 import { clamp01, easeBack, easeOut, parts, stagger, U, useEntrance } from "../anim";
@@ -69,7 +70,7 @@ export function Ticket({ slide, data }: StyleProps) {
           </div>
           <div className="flex items-center justify-between" style={{ padding: U(16), gap: U(8) }}>
             <div className="min-w-0"><p style={{ fontSize: U(38), fontWeight: 900, fontFamily: MONO }}>{code(from.label)}</p><p className="truncate" style={{ fontSize: U(12) }}>{from.label}</p></div>
-            <span aria-hidden style={{ fontSize: U(24) }}>✈</span>
+            <Plane aria-hidden style={{ width: U(24), height: U(24), flexShrink: 0 }} />
             <div className="min-w-0 text-right"><p style={{ fontSize: U(38), fontWeight: 900, fontFamily: MONO }}>{code(to.label)}</p><p className="truncate" style={{ fontSize: U(12) }}>{to.label}</p></div>
           </div>
           <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: U(10), padding: `0 ${U(16)} ${U(14)}`, fontSize: U(11) }}>

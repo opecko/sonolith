@@ -1,6 +1,6 @@
 // More looks: split-flap board, polaroids, cassette tape, donut chart, slot machine, magazine cover, medal, weekly
 // forecast.
-import { Cloud, CloudDrizzle, CloudSun, Sun } from "lucide-react";
+import { Cloud, CloudDrizzle, CloudSun, Heart, Music, Music2, Sparkles, Star, Sun, type LucideIcon } from "lucide-react";
 import { useRef } from "react";
 import { clamp01, easeBack, easeInOut, easeOut, parts, stagger, U, useEntrance, useLoop } from "../anim";
 import { bigText, Cover, Fill, fitSize, Head, jitter, listOf, MONO, rankNo, smallText, type StyleProps } from "../parts";
@@ -192,6 +192,14 @@ export function Donut({ slide, data }: StyleProps) {
   );
 }
 
+const REEL: (LucideIcon | string)[] = [Music, Star, Heart, "#1", Music2, Sparkles, Music, Star, Heart, "#1"];
+
+/** One symbol on a slot machine reel. */
+function ReelSymbol({ k }: { k: number }) {
+  const S = REEL[k % 10];
+  return typeof S === "string" ? <>{S}</> : <S aria-hidden style={{ width: U(34), height: U(34) }} />;
+}
+
 /** A slot machine: the lever drops, the reels spin and stop one by one on the answer. */
 export function SlotMachine({ slide, data }: StyleProps) {
   const root = useRef<HTMLDivElement>(null);
@@ -209,7 +217,6 @@ export function SlotMachine({ slide, data }: StyleProps) {
     });
     for (const el of parts(root.current, "win")) el.style.visibility = p >= 0.95 ? "visible" : "hidden";
   });
-  const symbols = ["♪", "★", "♥", "#1", "♫", "✦", "♪", "★", "♥", "#1"];
   return (
     <Fill style={{ background: "var(--rc-stage)" }}>
       <div ref={root} className="absolute inset-0 flex flex-col items-center" style={{ padding: U(22), gap: U(18) }}>
@@ -224,7 +231,7 @@ export function SlotMachine({ slide, data }: StyleProps) {
                 <div data-e="strip" className="absolute left-0 right-0" style={{ top: 0 }}>
                   {[...Array(11)].map((_, k) => (
                     <div key={k} className="flex items-center justify-center" style={{ height: U(H), fontSize: U(38), fontWeight: 900 }}>
-                      {k % 10 === 0 ? (image ? <Cover src={image} size={66} /> : digits[i]) : symbols[k % 10]}
+                      {k % 10 === 0 ? (image ? <Cover src={image} size={66} /> : digits[i]) : <ReelSymbol k={k} />}
                     </div>
                   ))}
                 </div>

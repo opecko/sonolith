@@ -1,5 +1,6 @@
 // Ranked lists, covers and single heroes: podium, vinyl crate flip, packed bubbles, constellation, album wall, sticker
 // sheet, countdown reveal, spotlight, trading card.
+import { Star } from "lucide-react";
 import { useRef, useState } from "react";
 import { clamp01, easeBack, easeInOut, easeOut, parts, stagger, U, useEntrance, useLoop } from "../anim";
 import { bigText, Cover, Fill, fitSize, Head, jitter, listOf, rankNo, smallText, type StyleProps } from "../parts";
@@ -354,7 +355,7 @@ export function TradingCard({ slide, data }: StyleProps) {
         <Head slide={slide} style={{ textAlign: "center" }} />
         <div data-e="card" className="relative overflow-hidden" style={{ width: U(260), height: U(400), borderRadius: U(18), background: "var(--rc-accent)", color: "var(--rc-on-accent)", padding: U(12), border: `${U(6)} solid var(--rc-accent2)` }}>
           <div className="flex justify-between" style={{ fontSize: U(13), fontWeight: 800 }}>
-            <span className="truncate">{item?.label}</span><span>★ #1</span>
+            <span className="truncate">{item?.label}</span><span className="inline-flex items-center" style={{ gap: U(3) }}><Star aria-hidden style={{ width: U(12), height: U(12) }} /> #1</span>
           </div>
           <Cover src={item?.image} size={224} style={{ marginTop: U(8), borderRadius: U(8), width: U(224), height: U(190), border: `${U(3)} solid var(--rc-on-accent)` }} />
           <p style={{ fontSize: U(12), fontStyle: "italic", marginTop: U(8) }}>{item?.sub}</p>
