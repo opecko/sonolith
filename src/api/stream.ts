@@ -128,8 +128,8 @@ async function viaYtdlp(videoId: string, codecs: Codec[]): Promise<Stream> {
 }
 
 // InnerTube (YTMUSIC, ~0.3 s) first, yt-dlp (~8 s, solves challenges via node/deno) as the fallback.
-// `alternate` flips the order for retries after a MediaError. After InnerTube failed for two songs in a row it's
-// skipped for a while (it can't serve this account just now), so the slow path doesn't wait for it every time.
+// `alternate` flips the order for retries after a MediaError. After InnerTube failed for two songs in a row for an
+// account without Premium it's skipped for a while (it can't serve it just now), so the slow path doesn't wait for it.
 const innertubeBreaker = new Breaker();
 let lastSource: StreamSource | null = null;
 
@@ -152,7 +152,9 @@ async function resolve(videoId: string, alternate: boolean): Promise<Stream> {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       errors.push(msg);
-      if (attempt === viaInnertube && msg.startsWith("innertube: no playable format")) innertubeBreaker.failed(Date.now());
+      // Only a failure that says the account can't be served (no Premium formats, the other clients failed too)
+      // counts; a Premium account's unavailable song doesn't send everything through yt-dlp.
+      if (attempt === viaInnertube && msg.startsWith("innertube: no playable format") && msg.includes("no Premium formats")) innertubeBreaker.failed(Date.now());
       logPlayback(`${videoId} ${attempt === viaYtdlp ? "yt-dlp" : "innertube"} failed: ${msg}`);
     }
   }
