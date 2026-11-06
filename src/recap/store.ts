@@ -5,7 +5,7 @@ import { create } from "zustand";
 import { useAuth } from "../stores/auth";
 import { useSettings } from "../stores/settings";
 import { useToast } from "../stores/toast";
-import { clockNow } from "./clock";
+import { clockNow, onClock } from "./clock";
 import { importHistory, loadHistoryCache } from "./importer";
 import { firstDay, mergePlays, type Dataset } from "./merge";
 import { availability, cutoffOf, monthsToList, parsePeriodId, periodId, periodTitle, type Availability, type Period } from "./periods";
@@ -135,12 +135,12 @@ export async function openRecap(period: Period): Promise<Snapshot | null> {
     const cutoff = cutoffOf(period, now, early);
     if (cutoff === null || !state.data) return null;
     const signedIn = useAuth.getState().status === "signedIn";
-    let fresh = historyFresh((await loadHistoryCache()).importedAt, now, cutoff);
+    let fresh = historyFresh(onClock((await loadHistoryCache()).importedAt), now, cutoff);
     // Freezing needs the history as it is now (an early-unlocked year's cutoff is newer than any import so far).
     if (signedIn && !fresh) {
       await importHistory({ force: true }).catch(() => null);
       await loadRecaps(false);
-      fresh = historyFresh((await loadHistoryCache()).importedAt, clockNow(), cutoff);
+      fresh = historyFresh(onClock((await loadHistoryCache()).importedAt), clockNow(), cutoff);
     }
     const current = useRecaps.getState();
     const frozen = freezesNow(signedIn, fresh);

@@ -8,7 +8,6 @@ import type { Shelf } from "../api/types";
 import { useAuth } from "../stores/auth";
 import { dayOf } from "./days";
 import { readJson, writeJson } from "./storage";
-import { clockNow } from "./clock";
 import { importDue, mergeObservations, observe, parseHistoryCache, type HistoryCache } from "./ytHistory";
 
 interface ImportState {
@@ -47,7 +46,8 @@ let inflight: { promise: Promise<HistoryCache | null>; abort: AbortController } 
  * (the stored cache is still loaded) or cancelled.
  */
 export function importHistory(opts: { opening?: boolean; force?: boolean } = {}): Promise<HistoryCache | null> {
-  if (inflight) return inflight.promise;
+  // A forced import waits for one already running (which may decide it's not due) and then runs itself.
+  if (inflight) return opts.force ? inflight.promise.catch(() => null).then(() => importHistory(opts)) : inflight.promise;
   const abort = new AbortController();
   const promise = run(abort.signal, opts).finally(() => {
     if (inflight?.abort === abort) inflight = null;
@@ -62,7 +62,9 @@ async function run(signal: AbortSignal, { opening = false, force = false }): Pro
   if (useAuth.getState().status !== "signedIn") return null;
   const file = accountFile();
   const cache = await loadHistoryCache();
-  if (!force && !importDue(cache.importedAt, clockNow(), opening)) return null;
+  // Real time, never the dev toolkit's travelled clock: YouTube's "Today" is today, and a stamp from the future
+  // would stop imports until that date (the data folder is shared with release builds).
+  if (!force && !importDue(cache.importedAt, Date.now(), opening)) return null;
   useHistoryImport.setState({ running: true, error: null });
   try {
     const first = await getHistory();
@@ -74,7 +76,7 @@ async function run(signal: AbortSignal, { opening = false, force = false }): Pro
       shelves.push(...(await getHistory(podcasts.browse)).items);
     }
     if (signal.aborted) return null;
-    const now = clockNow();
+    const now = Date.now();
     const next = mergeObservations(cache, observe(shelves, dayOf(now)), now);
     // The account may have changed meanwhile: keep each account's history in its own file.
     if (accountFile() !== file) return null;

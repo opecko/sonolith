@@ -152,5 +152,6 @@ export function parseHistoryCache(v: unknown): HistoryCache {
 
 /** Imports at most once a day in the background; opening Recaps imports whenever the last one is over an hour old. */
 export function importDue(importedAt: number, now: number, opening: boolean): boolean {
-  return importedAt <= 0 || now - importedAt >= (opening ? 3_600_000 : 86_400_000);
+  // A stamp in the future (a clock that was off) can't be trusted either.
+  return importedAt <= 0 || importedAt > now || now - importedAt >= (opening ? 3_600_000 : 86_400_000);
 }

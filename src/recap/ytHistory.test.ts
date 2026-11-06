@@ -84,5 +84,7 @@ describe("observe + merge", () => {
     expect(importDue(0, 1000, false)).toBe(true);
     expect(importDue(1, 3_600_001, true)).toBe(true);
     expect(importDue(1, 3_600_001, false)).toBe(false);
+    // Stamped in the future (a travelled dev clock): due again.
+    expect(importDue(10_000_000, 3_600_001, false)).toBe(true);
   });
 });

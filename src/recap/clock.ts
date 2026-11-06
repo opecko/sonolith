@@ -11,3 +11,6 @@ export function setClockTo(epochMs: number | null) {
 }
 
 export const clockTraveling = () => offset !== 0;
+
+/** A real moment on Recaps' clock (an import's real time, compared with a travelled-to cutoff). */
+export const onClock = (realMs: number) => realMs + offset;
