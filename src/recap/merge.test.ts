@@ -74,5 +74,13 @@ describe("mergePlays", () => {
     const more = mergePlays([], [hist("x", d, d, info("x", "Other"))], [tk("s1", d, 9)]);
     expect(more.plays.map((p) => p.origin).sort()).toEqual(["takeout", "youtube"]);
   });
-});
 
+  it("Takeout plays without a byline don't merge different songs by title", () => {
+    const noArtist = (videoId: string, hour: number): TakeoutPlay => ({ videoId, title: "Home", artist: "", artistId: null, at: startOfDay(d) + hour * 3_600_000 });
+    const m = mergePlays([], [], [noArtist("aaaaaaaaaaa", 9), noArtist("bbbbbbbbbbb", 10)]);
+    expect(new Set(m.plays.map((p) => p.key)).size).toBe(2);
+    // With the same video known elsewhere, it joins that song.
+    const known = mergePlays([logPlay("a", d, 8, { videoId: "s1", title: "Home" })], [], [noArtist("s1", 20)]);
+    expect(new Set(known.plays.map((p) => p.key)).size).toBe(1);
+  });
+});

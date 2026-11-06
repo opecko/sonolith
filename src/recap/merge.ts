@@ -96,14 +96,22 @@ export function mergePlays(log: PlayEntry[], history: HistoryPlay[], takeout: Ta
   // Per (day, track): the log's plays, then Takeout's beyond them (the ones nearest a logged play are its twins).
   const group = <T>(list: T[], key: (x: T) => string) => {
     const m = new Map<string, T[]>();
-    for (const x of list) m.set(key(x), [...(m.get(key(x)) ?? []), x]);
+    for (const x of list) {
+      const k = key(x);
+      const l = m.get(k);
+      if (l) l.push(x);
+      else m.set(k, [x]);
+    }
     return m;
   };
   const localBy = group(plays, (p) => `${p.from}|${p.key}`);
   const takeoutPlays = takeout.map((t) => {
-    const artists = t.artist ? [{ id: t.artistId, name: t.artist }] : [];
-    const key = trackKey(t.title, artists);
-    const borrowed = known.get(t.videoId) ?? known.get(key);
+    const named = t.artist ? [{ id: t.artistId, name: t.artist }] : [];
+    const sameVideo = known.get(t.videoId);
+    // Without a byline the title alone would join different songs: the same video's details, else the video itself.
+    const artists = named.length ? named : sameVideo?.artists ?? [];
+    const key = named.length || sameVideo ? trackKey(t.title, artists) : `${trackKey(t.title, [])}#${t.videoId}`;
+    const borrowed = sameVideo ?? known.get(key);
     const base = { key, videoId: t.videoId, type: borrowed?.type ?? ("song" as const), title: t.title, artists, album: borrowed?.album ?? null, durationMs: borrowed?.durationMs ?? 0, thumbnail: borrowed?.thumbnail };
     const day = dayOf(t.at);
     return estimate(base, day, day, t.at, "takeout");
@@ -126,7 +134,9 @@ export function mergePlays(log: PlayEntry[], history: HistoryPlay[], takeout: Ta
   const days = new Map<string, number[]>();
   for (const p of exactPlays) {
     count.set(`${p.from}|${p.key}`, (count.get(`${p.from}|${p.key}`) ?? 0) + 1);
-    days.set(p.key, [...(days.get(p.key) ?? []), p.from]);
+    const d = days.get(p.key);
+    if (d) d.push(p.from);
+    else days.set(p.key, [p.from]);
   }
   // History: exact days beyond what's there, then ranges no known play of the track falls inside.
   const accepted: Play[] = [];
