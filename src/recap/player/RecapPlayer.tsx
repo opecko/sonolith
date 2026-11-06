@@ -59,7 +59,16 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
   const n = deck.slides.length;
   const [index, setIndex] = useState(Math.min(start, n - 1));
   const [paused, setPaused] = useState(false);
-  const [heldByCard, setHeld] = useState(false);
+  // A card that waits for the user (scratch card) holds auto-advance; the hold belongs to that card's index, so it
+  // ends with the card without a reset effect (which would run after the new card's own hold and undo it).
+  const [hold, setHold] = useState<{ index: number; on: boolean }>({ index: -1, on: false });
+  const heldByCard = hold.index === index && hold.on;
+  const holders = useRef(new Map<number, (on: boolean) => void>());
+  const holdFor = (i: number) => {
+    let h = holders.current.get(i);
+    if (!h) holders.current.set(i, (h = (on: boolean) => setHold((cur) => (on ? { index: i, on } : cur.index === i ? { index: i, on: false } : cur))));
+    return h;
+  };
   // Entrances still playing on this card: the reading time starts once they're done.
   const [entering, setEntering] = useState(0);
   const onEntering = useCallback((d: number) => setEntering((n) => Math.max(0, n + d)), []);
@@ -139,9 +148,6 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
   const next = () => act("next");
 
   useEffect(() => saveResume(snapshot.id, seed, last ? 0 : index), [index]);
-  useEffect(() => {
-    setHeld(false);
-  }, [index]);
   // Performance marks per card (DevTools → Performance): from the card change to its first painted frame.
   useLayoutEffect(() => {
     performance.mark(`recap:card:${index}`);
@@ -276,11 +282,11 @@ function Player({ snapshot, seed, start, forceGames, forceStyle, deck: given }: 
                 style={{ ...(recapVars(palettes[s.mood]) as CSSProperties), ...(move?.to === i ? transitionFrame(move.kind, 0, move.dir).in : {}), zIndex: active ? 2 : 1, pointerEvents: active ? undefined : "none" }}>
                 <EntranceHold.Provider value={active ? onEntering : noEntering}>
                   {s.game ? (
-                    <GameCard game={s.game} seed={deck.seed + i} onDone={next} />
+                    <GameCard game={s.game} seed={deck.seed + i} onDone={next} active={active} />
                   ) : s.kind === "finale" ? (
                     <FinalePoster snap={snapshot} />
                   ) : C ? (
-                    <C slide={s} data={d} hold={active ? setHeld : noHold} />
+                    <C slide={s} data={d} hold={active ? holdFor(i) : noHold} />
                   ) : null}
                 </EntranceHold.Provider>
                 {active && big && <Confetti colors={recapConfetti(pal)} />}

@@ -8,7 +8,7 @@ import { seeded } from "../random";
 import { countTo, U, useEntrance } from "./anim";
 import { Cover, Fill } from "./parts";
 
-export default function GameCard({ game, seed, onDone }: { game: Game; seed: number; onDone: () => void }) {
+export default function GameCard({ game, seed, onDone, active = true }: { game: Game; seed: number; onDone: () => void; active?: boolean }) {
   const [round, setRound] = useState(0);
   const [picked, setPicked] = useState<string[]>([]);
   const [answered, setAnswered] = useState(false);
@@ -52,6 +52,8 @@ export default function GameCard({ game, seed, onDone }: { game: Game; seed: num
         proceed();
       }
     };
+    // A card on its way out (during a transition) no longer takes keys.
+    if (!active) return;
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
