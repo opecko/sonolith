@@ -7,7 +7,7 @@ import { useLibrary } from "../stores/library";
 import { useNav } from "../stores/nav";
 import { usePlayer } from "../stores/player";
 import { useToast } from "../stores/toast";
-import { asTrack, PLAYLIST_LABEL, playlistDescription, playlistTitle, selectTracks, type PlaylistKind } from "./playlists";
+import { asTrack, PLAYLIST_LABEL, playlistGone, playlistDescription, playlistTitle, selectTracks, type PlaylistKind } from "./playlists";
 import type { Snapshot } from "./snapshot";
 import { rememberPlaylist, savedPlaylist } from "./store";
 import { closeRecapPlayer } from "./ui";
@@ -28,14 +28,18 @@ export function queueRecapPlaylist(snap: Snapshot, kind: PlaylistKind) {
   toast(`Added ${tracks.length} songs to the queue`, "info");
 }
 
-/** The saved playlist's id if it still exists (a deleted one is forgotten). */
+/**
+ * The saved playlist's id if it still exists. Only a playlist YouTube reports as gone is forgotten: offline, another
+ * account or any other error keeps it (forgetting would offer Save again and make a duplicate).
+ */
 export async function existingPlaylist(snap: Snapshot, kind: PlaylistKind): Promise<string | null> {
   const id = savedPlaylist(snap.id, kind);
   if (!id) return null;
   try {
     await getPlaylist(id);
     return id;
-  } catch {
+  } catch (e) {
+    if (!playlistGone(e)) return id;
     await rememberPlaylist(snap.id, kind, null);
     return null;
   }

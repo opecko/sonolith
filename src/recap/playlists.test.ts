@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dayFromYmd as D, startOfDay } from "./days";
 import { mergePlays } from "./merge";
 import { periodEnd, type Period } from "./periods";
-import { asTrack, dedupe, playlistDescription, playlistTitle, selectTracks } from "./playlists";
+import { asTrack, dedupe, playlistGone, playlistDescription, playlistTitle, selectTracks } from "./playlists";
 import { buildSnapshot } from "./snapshot";
 import type { TrackStat } from "./stats";
 import { syntheticLog } from "./synthetic";
@@ -42,5 +42,12 @@ describe("recap playlists", () => {
     expect(playlistTitle("top", oct)).toBe("Top songs · October 2026");
     expect(playlistDescription(y)).toBe("Made by Sonolith from my listening in 2026");
     expect(asTrack(ts("x", "vid"))).toMatchObject({ type: "track", id: "vid", artists: ["A"] });
+  });
+
+  it("forgets a saved playlist only when it's really gone", () => {
+    expect(playlistGone(new Error("This playlist does not exist."))).toBe(true);
+    expect(playlistGone(new Error("Request failed with status 404"))).toBe(true);
+    expect(playlistGone(new Error("error sending request for url (https://music.youtube.com/…)"))).toBe(false);
+    expect(playlistGone(new Error("Sign in to see this"))).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
 // Recap playlists: which songs go into Top songs, Discoveries and On repeat. Pure; the actions (play, queue, save
 // to the library) are in playlistActions.ts.
+import { isNetworkError } from "../api/errors";
 import type { Track } from "../api/types";
 import type { Period } from "./periods";
 import { periodTitle } from "./periods";
@@ -63,3 +64,7 @@ export const asTrack = (t: TrackStat): Track => ({
 export const playlistTitle = (kind: PlaylistKind, period: Period) => `${PLAYLIST_LABEL[kind]} · ${periodTitle(period)}`;
 
 export const playlistDescription = (period: Period) => `Made by Sonolith from my listening in ${periodTitle(period)}`;
+
+/** YouTube says the playlist is gone (deleted), not that it couldn't be reached or isn't this account's to see. */
+export const playlistGone = (e: unknown) =>
+  !isNetworkError(e) && /does not exist|doesn't exist|not found|\b404\b|no longer available/i.test(e instanceof Error ? e.message : String(e));
