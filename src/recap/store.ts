@@ -65,8 +65,9 @@ export const useRecaps = create<RecapState>(() => ({ loaded: false, loading: fal
 let loading: Promise<void> | null = null;
 
 /** Loads (or reloads) everything Recaps need; `opening` = the Recaps page opened (imports history if due). */
-export function loadRecaps(opening = false): Promise<void> {
-  if (loading) return loading;
+export function loadRecaps(opening = false, fresh = false): Promise<void> {
+  // `fresh`: a load already running may have read the files before a change; wait for it, then read again.
+  if (loading) return fresh ? loading.catch(() => {}).then(() => loadRecaps(opening)) : loading;
   useRecaps.setState({ loading: true });
   loading = (async () => {
     try {
@@ -138,8 +139,8 @@ export async function openRecap(period: Period): Promise<Snapshot | null> {
     let fresh = historyFresh(onClock((await loadHistoryCache()).importedAt), now, cutoff);
     // Freezing needs the history as it is now (an early-unlocked year's cutoff is newer than any import so far).
     if (signedIn && !fresh) {
-      await importHistory({ force: true }).catch(() => null);
-      await loadRecaps(false);
+      // Only reloaded when an import really ran (offline it fails and the data is as it was).
+      if (await importHistory({ force: true }).catch(() => null)) await loadRecaps(false, true);
       fresh = historyFresh(onClock((await loadHistoryCache()).importedAt), clockNow(), cutoff);
     }
     const current = useRecaps.getState();
