@@ -101,6 +101,8 @@ export function useRecapMusic(videoIds: string[], song: number, on: boolean) {
         proxied = true;
         void viaProxy(stream).then((s) => {
           if (!alive()) return;
+          // A new source starts from 0 again: it plays only after its own seek to the start point.
+          positioned.delete(el);
           el.src = s.url;
           el.load();
         });
