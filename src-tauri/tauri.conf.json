@@ -18,8 +18,8 @@
         "title": "Sonolith",
         "width": 1200,
         "height": 780,
-        "minWidth": 480,
-        "minHeight": 520
+        "minWidth": 160,
+        "minHeight": 120
       }
     ],
     "security": {

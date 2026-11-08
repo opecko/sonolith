@@ -168,9 +168,12 @@ Sliders also `preventDefault()` on pointerdown (and focus themselves), so a drag
 ## Window size
 
 - **Hyprland (tiling) ignores the window's minimum size and scales the surface into the tile**, so a tile narrower
-  than `minWidth` (`tauri.conf.json`) shows the whole UI horizontally squashed. Keep `minWidth` low (480) and the
-  layout usable down to it: the sidebar is a rail below `lg`, the player bar drops ratings / ⋮ / volume slider below
-  `md` and shuffle / repeat below `sm` (all in Now Playing).
+  than `minWidth` (`tauri.conf.json`) shows the whole UI horizontally squashed. Keep `minWidth` low and every size
+  usable: the window may go down to 160 × 120; below 480 × 400 CSS px it shows the mini player and below 220 × 150 a
+  "Window too small" notice (`src/compact/`). Above that the sidebar is a rail below `lg`, the player bar drops
+  ratings / ⋮ / volume slider below `md` and shuffle / repeat below `sm` (all in Now Playing).
+- The breakpoints are CSS pixels (`innerWidth`), so the zoom setting moves them. "Full app" (`growWindow`) asks the
+  compositor for a bigger window (`core:window:allow-set-size`); tiling compositors may ignore it.
 
 ## Identifier change (ytdesk → Sonolith)
 
