@@ -6,7 +6,9 @@ import "./index.css";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { coverTokens, initCoverColors, paintCoverScope } from "./stores/coverColors";
 import { useSettings } from "./stores/settings";
+import { initWindowGlass } from "./stores/windowGlass";
 import { applyAnimations, applyLayout, applyTheme } from "./theme";
+import { glassOpacity, setGlassOpacity } from "./theme/glass";
 import { initMorph, setMotionEnabled } from "./motion";
 import { initFocusMode } from "./focusMode";
 
@@ -28,12 +30,17 @@ useSettings.subscribe((s, prev) => {
   if (a.palette !== p.palette || a.mode !== p.mode || a.overrides !== p.overrides || a.coverColors !== p.coverColors) applyColors();
   if (a.radius !== p.radius || a.density !== p.density || a.font !== p.font || a.fontFamily !== p.fontFamily) applyLayout(a);
   if (s.appearance.zoom !== prev.appearance.zoom) applyZoom(s.appearance.zoom);
+  if (a.windowOpacity !== p.windowOpacity && glassOpacity() !== null) {
+    setGlassOpacity(a.windowOpacity);
+    applyColors();
+  }
   if (a.animations !== p.animations) {
     applyAnimations(a);
     setMotionEnabled(a.animations);
   }
 });
 initCoverColors(applyColors);
+initWindowGlass(applyColors);
 initMorph();
 initFocusMode();
 

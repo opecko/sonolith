@@ -1,4 +1,5 @@
 import { isHex, isLight } from "./color";
+import { GLASS_PROPS, glassOpacity, glassVars } from "./glass";
 import { getPalette } from "./palettes";
 import { DEFAULT_TOKENS, paletteTokens, TOKENS, type Token, type TokenMap } from "./tokens";
 import type { Mode } from "./types";
@@ -59,8 +60,16 @@ export function applyTheme(t: ThemeChoice, extra: Partial<TokenMap> = {}, root: 
     if (v) root.style.setProperty(`--c-${k}`, v);
     else root.style.removeProperty(`--c-${k}`);
   }
+  writeGlass(root, all);
   // Native widgets (scrollbars, form controls, <input type=color>) follow the background's lightness.
   root.style.colorScheme = isLight(all.bg) ? "light" : "dark";
+}
+
+/** Transparent window: the surface tokens at the surface opacity, after the theme's own (glass.ts). */
+function writeGlass(el: HTMLElement, all: TokenMap) {
+  const o = glassOpacity();
+  if (o === null) return;
+  for (const [k, v] of Object.entries(glassVars(all, o))) el.style.setProperty(k, v);
 }
 
 /**
@@ -70,12 +79,14 @@ export function applyTheme(t: ThemeChoice, extra: Partial<TokenMap> = {}, root: 
 export function applyScopedTheme(el: HTMLElement, t: ThemeChoice, extra: Partial<TokenMap>) {
   const { all } = resolve(t, extra);
   for (const k of TOKENS) el.style.setProperty(`--c-${k}`, all[k]);
+  writeGlass(el, all);
   el.style.colorScheme = isLight(all.bg) ? "light" : "dark";
   el.dataset.themeScope = "";
 }
 
 export function clearScopedTheme(el: HTMLElement) {
   for (const k of TOKENS) el.style.removeProperty(`--c-${k}`);
+  for (const p of GLASS_PROPS) el.style.removeProperty(p);
   el.style.colorScheme = "";
   delete el.dataset.themeScope;
 }

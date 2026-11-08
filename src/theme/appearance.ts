@@ -1,4 +1,5 @@
 import { isHex } from "./color";
+import { clampOpacity, DEFAULT_OPACITY } from "./glass";
 import type { ThemeChoice } from "./index";
 import { BUILTIN_ID } from "./palettes";
 import { DEFAULT_TOKENS } from "./tokens";
@@ -36,6 +37,8 @@ export interface Appearance extends ThemeChoice {
   nowPlayingLayout: NowPlayingLayout;
   /** Springs, shape morphs and slides; off = everything jumps to its end state. */
   animations: boolean;
+  /** Transparent window (Linux; the switch itself lives in Rust's config.json): opacity of the surfaces, 0.3–1. */
+  windowOpacity: number;
 }
 
 export const AMBIENT_QUALITIES = ["low", "medium", "high"] as const;
@@ -70,6 +73,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   fontFamily: "",
   nowPlayingLayout: "material",
   animations: true,
+  windowOpacity: DEFAULT_OPACITY,
 };
 
 const num = (v: unknown, lo: number, hi: number, d: number) =>
@@ -104,5 +108,6 @@ export function normalizeAppearance(raw: unknown): Appearance {
     // No `uiStyle`: 2.0 had a Classic look next to Material 3; stored values of it are dropped here, everyone gets M3.
     nowPlayingLayout: NOW_PLAYING_LAYOUTS.includes(r.nowPlayingLayout as NowPlayingLayout) ? (r.nowPlayingLayout as NowPlayingLayout) : d.nowPlayingLayout,
     animations: typeof r.animations === "boolean" ? r.animations : !systemReducedMotion(),
+    windowOpacity: clampOpacity(r.windowOpacity),
   };
 }

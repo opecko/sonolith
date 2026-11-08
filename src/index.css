@@ -69,6 +69,10 @@ body {
   -webkit-user-select: none;
   user-select: none;
 }
+/* Transparent window (theme/glass.ts): nothing under the app's regions, so the sidebar, top bar, page, player bar
+   and Now Playing each lay their translucent surface over the desktop once instead of over the body's. */
+:root[data-glass] body { background: transparent; }
+:root[data-glass] .app-main { background: var(--c-bg); }
 /* Controls stay unselectable inside selectable text too (Settings, dialogs): a drag or double-click on them selects nothing. */
 button, label, [role="button"], [role="slider"], [role="switch"], [role="radio"], [role="tab"], [role="menuitem"], [role="option"] {
   -webkit-user-select: none;

@@ -32,6 +32,13 @@ describe("settings migration", () => {
     expect(parseSettings({ appearance: { uiStyle: "m3" } }).appearance).not.toHaveProperty("uiStyle");
   });
 
+  it("windowOpacity: missing or malformed is 85 %, out of range is clamped", () => {
+    expect(parseSettings({ appearance: {} }).appearance.windowOpacity).toBe(0.85);
+    expect(parseSettings({ appearance: { windowOpacity: "x" } }).appearance.windowOpacity).toBe(0.85);
+    expect(parseSettings({ appearance: { windowOpacity: 0.05 } }).appearance.windowOpacity).toBe(0.3);
+    expect(parseSettings({ appearance: { windowOpacity: 0.6 } }).appearance.windowOpacity).toBe(0.6);
+  });
+
   it("onboardingCompleted: only a stored true counts (1.x settings have none)", () => {
     expect(parseSettings({ autoplay: true }).onboardingCompleted).toBe(false);
     expect(parseSettings({ onboardingCompleted: true }).onboardingCompleted).toBe(true);

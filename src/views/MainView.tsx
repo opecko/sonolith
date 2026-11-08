@@ -61,7 +61,7 @@ export default function MainView() {
   }, [key]);
 
   return (
-    <main ref={ref} className="scroll-y min-h-0 flex-1 px-8 pb-8 pt-6">
+    <main ref={ref} className="app-main scroll-y min-h-0 flex-1 px-8 pb-8 pt-6">
       {status === "loading" ? null : status === "signedOut" && ACCOUNT_ROUTES.has(route.name) ? <SignInPrompt /> : <ErrorBoundary key={`${key}@${accountGen}`}><Routed /></ErrorBoundary>}
     </main>
   );

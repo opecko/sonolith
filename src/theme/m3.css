@@ -2,9 +2,19 @@
  * Material 3 Expressive foundations: color roles, corner scale and type scale. Values: docs/dev/m3-expressive.md.
  */
 
+/* Transparent window (theme/glass.ts): menus, dialogs and tooltips use the surface tokens' -float variants, which
+   stay more opaque than the rest. */
+:root[data-glass] :is(.m3-menu, .m3-dialog, .m3-tooltip, [role="listbox"], [data-float]) {
+  --c-bg: var(--c-bg-float);
+  --c-surface: var(--c-surface-float);
+  --c-surface-2: var(--c-surface-2-float);
+  --c-surface-3: var(--c-surface-3-float);
+}
+
 /* Color roles derived from the --c-* tokens (recipes in m3.ts; a test keeps both in sync). Declared again on a
-   themed scope (Now Playing with colors from album art only there) so they follow that scope's tokens. */
-:root, [data-theme-scope] {
+   themed scope (Now Playing with colors from album art only there) and on the floating surfaces of a transparent
+   window, so they follow that element's tokens. */
+:root, [data-theme-scope], :root[data-glass] :is(.m3-menu, .m3-dialog, .m3-tooltip, [role="listbox"], [data-float]) {
   --m3-primary: var(--c-accent);
   --m3-on-primary: var(--c-on-accent);
   --m3-primary-container: color-mix(in srgb, var(--c-accent) 22%, var(--c-bg));
