@@ -1,6 +1,5 @@
 /*
- * Material 3 Expressive foundations: color roles, corner scale and type scale. Only the M3 style
- * (html[data-ui-style="m3"]) uses them for components; Classic ignores them. Values: docs/dev/m3-expressive.md.
+ * Material 3 Expressive foundations: color roles, corner scale and type scale. Values: docs/dev/m3-expressive.md.
  */
 
 /* Color roles derived from the --c-* tokens (recipes in m3.ts; a test keeps both in sync). Declared again on a
@@ -63,15 +62,15 @@
   font-display: swap;
 }
 
-/* The M3 style's own font when the font setting is "Sonolith" (a font picked in Settings sets --font inline and wins).
+/* Sonolith's own font when the font setting is "Sonolith" (a font picked in Settings sets --font inline and wins).
    Google Sans Flex reads light at 400, so its regular is Medium (500) and medium steps up to 600. */
-:root[data-ui-style="m3"][data-font="app"] {
+:root[data-font="app"] {
   --font: "Google Sans Flex", "Google Sans", "Inter", "Roboto", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --w-regular: 500;
   --w-medium: 600;
   --font-weight-medium: 600;
 }
-:root[data-ui-style="m3"][data-font="app"] body { font-weight: var(--w-regular); }
+:root[data-font="app"] body { font-weight: var(--w-regular); }
 
 /* Roles and corners as Tailwind colors and radii: bg-m3-primary-container, text-m3-on-surface-variant, rounded-m3-lg … */
 @theme inline {

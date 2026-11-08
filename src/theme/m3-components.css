@@ -1,8 +1,8 @@
 /*
- * Material 3 Expressive component styles. Everything is scoped to [data-ui-style="m3"] (on <html> for the M3
- * style, or on a UiStyleScope such as the M3 Now Playing layouts inside the Classic app) and sits outside
- * Tailwind's layers, so it wins over the utility classes the components share with Classic (which stays exactly
- * as before). Components opt in with m3-* marker classes; .icon-btn and .chip are restyled as they are.
+ * Material 3 Expressive component styles. Every selector starts with `:root`: that keeps these rules one class above
+ * the shared ones (index.css, the Tailwind utilities the markup also carries), and they sit outside Tailwind's
+ * layers, so they win over those utility classes. Components opt in with m3-* marker classes; .icon-btn and .chip
+ * are restyled as they are.
  *
  * State layers are color-mixes of the content color over the container (--ct), never opacity animations.
  * Shapes: --r-rest / --r-sel / --r-press per state pick --r-now, which src/motion/morph.ts springs (inline) between
@@ -18,12 +18,12 @@
 @property --ct { syntax: "*"; inherits: false; }
 @property --sl { syntax: "*"; inherits: false; }
 
-/* Animations off (Settings or the OS): transitions jump too, in both styles. */
+/* Animations off (Settings or the OS): transitions jump too. */
 :root[data-animations="off"] *,
 :root[data-animations="off"] *::before,
 :root[data-animations="off"] *::after { transition: none !important; }
 
-[data-ui-style="m3"] {
+:root {
   --m3-ease-effects: cubic-bezier(0.34, 0.8, 0.34, 1);
   --m3-sl-hover: 8%;
   --m3-sl-press: 10%;
@@ -31,16 +31,16 @@
 
 /* ---------- Shared: shape states and the state layer ---------- */
 
-[data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph]) {
+:root :is(.m3-btn, .icon-btn, [data-morph]) {
   --r-sel: var(--r-rest);
   --r-press: var(--r-rest);
   --r-now: var(--r-rest);
   border-radius: var(--r-now);
 }
-[data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph]):is([aria-pressed="true"], [aria-checked="true"], [aria-selected="true"], [data-selected]) {
+:root :is(.m3-btn, .icon-btn, [data-morph]):is([aria-pressed="true"], [aria-checked="true"], [aria-selected="true"], [data-selected]) {
   --r-now: var(--r-sel);
 }
-[data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph])[data-pressed] { --r-now: var(--r-press); }
+:root :is(.m3-btn, .icon-btn, [data-morph])[data-pressed] { --r-now: var(--r-press); }
 /*
  * Repaint margin for shapes that morph. A rounded corner is antialiased, and at fractional positions (flex-1
  * widths, HiDPI scaling) its edge pixels fall just outside the pixel-snapped border box. WebKit invalidates only
@@ -48,23 +48,23 @@
  * transparent outline is part of the visual overflow: WebKit repaints the box plus 1px, which covers those pixels,
  * and draws nothing. (The focus ring replaces it while navigating by keyboard, see index.css.)
  */
-[data-ui-style="m3"] :is(.m3-btn, .icon-btn, [data-morph], .m3-seg) { outline: 1px solid transparent; outline-offset: 0; }
+:root :is(.m3-btn, .icon-btn, [data-morph], .m3-seg) { outline: 1px solid transparent; outline-offset: 0; }
 
-[data-ui-style="m3"] :is(.m3-btn, .icon-btn, .chip, .m3-sl) {
+:root :is(.m3-btn, .icon-btn, .chip, .m3-sl) {
   --ct: transparent;
   --sl: 0%;
   background-color: color-mix(in srgb, currentColor var(--sl), var(--ct));
   transition: background-color 200ms var(--m3-ease-effects), color 200ms var(--m3-ease-effects);
-  /* Classic's hover/press scaling (Tailwind's scale-* is the `scale` property). */
+  /* The hover/press scaling the markup's Tailwind classes ask for (scale-* is the `scale` property). */
   transform: none;
   scale: none;
 }
-[data-ui-style="m3"] :is(.m3-btn, .icon-btn, .chip, .m3-sl):hover:not(:disabled) { --sl: var(--m3-sl-hover); }
-[data-ui-style="m3"] :is(.m3-btn, .icon-btn, .chip, .m3-sl):is(:active, [data-pressed]):not(:disabled) { --sl: var(--m3-sl-press); }
+:root :is(.m3-btn, .icon-btn, .chip, .m3-sl):hover:not(:disabled) { --sl: var(--m3-sl-hover); }
+:root :is(.m3-btn, .icon-btn, .chip, .m3-sl):is(:active, [data-pressed]):not(:disabled) { --sl: var(--m3-sl-press); }
 
 /* ---------- Buttons: filled, tonal, outlined, text, danger ---------- */
 
-[data-ui-style="m3"] .m3-btn {
+:root .m3-btn {
   --r-rest: var(--m3-corner-full);
   --r-press: var(--m3-corner-sm);
   --r-sel: var(--m3-corner-md);
@@ -77,48 +77,48 @@
   font-weight: 500;
   letter-spacing: 0.1px;
 }
-[data-ui-style="m3"] .m3-btn:hover:not(:disabled) { transform: none; filter: none; }
-[data-ui-style="m3"] .m3-btn.m3-medium { --r-press: var(--m3-corner-md); --r-sel: var(--m3-corner-lg); padding-inline: 24px; }
-[data-ui-style="m3"] .m3-filled { --ct: var(--m3-primary); color: var(--m3-on-primary); }
-[data-ui-style="m3"] .m3-tonal { --ct: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
-[data-ui-style="m3"] .m3-outlined { box-shadow: inset 0 0 0 1px var(--m3-outline-variant); color: var(--m3-on-surface-variant); }
-[data-ui-style="m3"] .m3-outlined[aria-pressed="true"] { --ct: var(--m3-inverse-surface); color: var(--m3-inverse-on-surface); box-shadow: none; }
-[data-ui-style="m3"] .m3-text { color: var(--m3-primary); padding-inline: 12px; }
-[data-ui-style="m3"] .m3-danger { --ct: var(--m3-error); color: var(--m3-on-error); }
-[data-ui-style="m3"] .m3-btn:disabled {
+:root .m3-btn:hover:not(:disabled) { transform: none; filter: none; }
+:root .m3-btn.m3-medium { --r-press: var(--m3-corner-md); --r-sel: var(--m3-corner-lg); padding-inline: 24px; }
+:root .m3-filled { --ct: var(--m3-primary); color: var(--m3-on-primary); }
+:root .m3-tonal { --ct: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+:root .m3-outlined { box-shadow: inset 0 0 0 1px var(--m3-outline-variant); color: var(--m3-on-surface-variant); }
+:root .m3-outlined[aria-pressed="true"] { --ct: var(--m3-inverse-surface); color: var(--m3-inverse-on-surface); box-shadow: none; }
+:root .m3-text { color: var(--m3-primary); padding-inline: 12px; }
+:root .m3-danger { --ct: var(--m3-error); color: var(--m3-on-error); }
+:root .m3-btn:disabled {
   --ct: color-mix(in srgb, var(--m3-on-surface) 10%, transparent);
   color: color-mix(in srgb, var(--m3-on-surface) 38%, transparent);
   opacity: 1;
   box-shadow: none;
 }
-[data-ui-style="m3"] :is(.m3-outlined, .m3-text):disabled { --ct: transparent; }
+:root :is(.m3-outlined, .m3-text):disabled { --ct: transparent; }
 
 /* ---------- Icon buttons: standard (default), filled, tonal, outlined; toggles ---------- */
 
-[data-ui-style="m3"] .icon-btn {
+:root .icon-btn {
   --r-rest: var(--m3-corner-full);
   --r-press: var(--m3-corner-sm);
   --r-sel: var(--m3-corner-md);
   color: var(--m3-on-surface-variant);
 }
-[data-ui-style="m3"] .icon-btn:hover { color: var(--m3-on-surface-variant); }
-[data-ui-style="m3"] .icon-btn[aria-pressed="true"] { color: var(--m3-primary); }
-[data-ui-style="m3"] .icon-btn:disabled { opacity: 1; color: color-mix(in srgb, var(--m3-on-surface) 38%, transparent); }
-[data-ui-style="m3"] .icon-btn.m3-icon-filled { --ct: var(--m3-surface-container-highest); color: var(--m3-on-surface-variant); }
-[data-ui-style="m3"] .icon-btn.m3-icon-filled:not([aria-pressed]),
-[data-ui-style="m3"] .icon-btn.m3-icon-filled[aria-pressed="true"] { --ct: var(--m3-primary); color: var(--m3-on-primary); }
-[data-ui-style="m3"] .icon-btn.m3-icon-tonal { --ct: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
-[data-ui-style="m3"] .icon-btn.m3-icon-tonal[aria-pressed="true"] { --ct: var(--m3-secondary); color: var(--m3-on-secondary); }
-[data-ui-style="m3"] .icon-btn.m3-icon-outlined { box-shadow: inset 0 0 0 1px var(--m3-outline-variant); }
-[data-ui-style="m3"] .icon-btn.m3-icon-outlined[aria-pressed="true"] { --ct: var(--m3-inverse-surface); color: var(--m3-inverse-on-surface); box-shadow: none; }
+:root .icon-btn:hover { color: var(--m3-on-surface-variant); }
+:root .icon-btn[aria-pressed="true"] { color: var(--m3-primary); }
+:root .icon-btn:disabled { opacity: 1; color: color-mix(in srgb, var(--m3-on-surface) 38%, transparent); }
+:root .icon-btn.m3-icon-filled { --ct: var(--m3-surface-container-highest); color: var(--m3-on-surface-variant); }
+:root .icon-btn.m3-icon-filled:not([aria-pressed]),
+:root .icon-btn.m3-icon-filled[aria-pressed="true"] { --ct: var(--m3-primary); color: var(--m3-on-primary); }
+:root .icon-btn.m3-icon-tonal { --ct: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+:root .icon-btn.m3-icon-tonal[aria-pressed="true"] { --ct: var(--m3-secondary); color: var(--m3-on-secondary); }
+:root .icon-btn.m3-icon-outlined { box-shadow: inset 0 0 0 1px var(--m3-outline-variant); }
+:root .icon-btn.m3-icon-outlined[aria-pressed="true"] { --ct: var(--m3-inverse-surface); color: var(--m3-inverse-on-surface); box-shadow: none; }
 /* Toggle in a toolbar (shuffle, repeat, queue): no container until selected, then a tonal square. */
-[data-ui-style="m3"] .icon-btn.m3-icon-toggle[aria-pressed="true"],
-[data-ui-style="m3"] .icon-btn.m3-icon-toggle[aria-expanded="true"] { --ct: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
-[data-ui-style="m3"] :is(.icon-btn.m3-icon-filled, .icon-btn.m3-icon-tonal):disabled { --ct: color-mix(in srgb, var(--m3-on-surface) 10%, transparent); }
+:root .icon-btn.m3-icon-toggle[aria-pressed="true"],
+:root .icon-btn.m3-icon-toggle[aria-expanded="true"] { --ct: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+:root :is(.icon-btn.m3-icon-filled, .icon-btn.m3-icon-tonal):disabled { --ct: color-mix(in srgb, var(--m3-on-surface) 10%, transparent); }
 
 /* ---------- Chips (filter chips: assist look until selected) ---------- */
 
-[data-ui-style="m3"] .chip {
+:root .chip {
   height: 32px;
   padding: 0 16px;
   border-radius: var(--m3-corner-sm);
@@ -127,17 +127,17 @@
   font-weight: 500;
   letter-spacing: 0.1px;
 }
-[data-ui-style="m3"] .chip[aria-pressed="true"] {
+:root .chip[aria-pressed="true"] {
   --ct: var(--m3-secondary-container);
   color: var(--m3-on-secondary-container);
   box-shadow: none;
 }
-[data-ui-style="m3"] .m3-chip-assist { --ct: transparent; color: var(--m3-on-surface); }
+:root .m3-chip-assist { --ct: transparent; color: var(--m3-on-surface); }
 
 /* Medium buttons (page headers: Play, Shuffle, Radio) and the extended FAB (New playlist). */
-[data-ui-style="m3"] .m3-btn.m3-medium { height: 56px; font-size: 16px; letter-spacing: 0.15px; }
-[data-ui-style="m3"] .m3-btn.m3-medium svg { width: 24px; height: 24px; }
-[data-ui-style="m3"] .m3-btn.m3-fab {
+:root .m3-btn.m3-medium { height: 56px; font-size: 16px; letter-spacing: 0.15px; }
+:root .m3-btn.m3-medium svg { width: 24px; height: 24px; }
+:root .m3-btn.m3-fab {
   --ct: var(--m3-primary-container);
   --r-rest: var(--m3-corner-lg);
   --r-press: var(--m3-corner-md);
@@ -150,27 +150,27 @@
 
 /* ---------- Connected button group (player transport) ---------- */
 
-[data-ui-style="m3"] .m3-connected { gap: 2px; }
+:root .m3-connected { gap: 2px; }
 /* Outer corners morph (--r-now), inner corners stay at the connected-group inner radius (8, docs/dev/m3-expressive.md):
    the group reads as one piece. --pill (half the button height, set by the component) clamps the full corner. */
-[data-ui-style="m3"] :is(.m3-cg-start, .m3-cg-end) {
+:root :is(.m3-cg-start, .m3-cg-end) {
   --r-rest: min(var(--m3-corner-full), var(--pill, 20px));
   --r-press: var(--m3-corner-md);
   --r-sel: var(--r-rest);
 }
-[data-ui-style="m3"] .m3-cg-start {
+:root .m3-cg-start {
   border-radius: var(--r-now) var(--m3-corner-sm) var(--m3-corner-sm) var(--r-now);
 }
-[data-ui-style="m3"] .m3-cg-end {
+:root .m3-cg-end {
   border-radius: var(--m3-corner-sm) var(--r-now) var(--r-now) var(--m3-corner-sm);
 }
 /* Play/pause: a pill while paused, a rounded square while playing. */
-[data-ui-style="m3"] .m3-play { --r-sel: var(--m3-corner-lg); --r-press: var(--m3-corner-sm); }
+:root .m3-play { --r-sel: var(--m3-corner-lg); --r-press: var(--m3-corner-sm); }
 
 /* ---------- Player bar, slider value indicator ---------- */
 
-[data-ui-style="m3"] .m3-playerbar { background: var(--m3-surface-container); border-top-color: transparent; }
-[data-ui-style="m3"] .m3-tooltip {
+:root .m3-playerbar { background: var(--m3-surface-container); border-top-color: transparent; }
+:root .m3-tooltip {
   padding: 6px 12px;
   border-radius: var(--m3-corner-full);
   background: var(--m3-inverse-surface);
@@ -184,9 +184,9 @@
 
 /* ---------- Navigation: drawer with active-indicator pills, top app bar, search bar ---------- */
 
-[data-ui-style="m3"] .m3-drawer { background: var(--m3-surface); border-right-color: transparent; padding-inline: 4px; }
-[data-ui-style="m3"] .m3-nav-item,
-[data-ui-style="m3"] .m3-nav-sub {
+:root .m3-drawer { background: var(--m3-surface); border-right-color: transparent; padding-inline: 4px; }
+:root .m3-nav-item,
+:root .m3-nav-sub {
   --ct: transparent;
   --sl: 0%;
   border-radius: var(--m3-corner-full);
@@ -194,20 +194,20 @@
   background-color: color-mix(in srgb, currentColor var(--sl), var(--ct));
   transition: background-color 200ms var(--m3-ease-effects), color 200ms var(--m3-ease-effects);
 }
-[data-ui-style="m3"] .m3-nav-item { height: 56px; font-size: 14px; letter-spacing: 0.1px; font-weight: 500; }
-[data-ui-style="m3"] :is(.m3-nav-item, .m3-nav-sub):hover { --sl: var(--m3-sl-hover); }
-[data-ui-style="m3"] :is(.m3-nav-item, .m3-nav-sub):active { --sl: var(--m3-sl-press); }
-[data-ui-style="m3"] :is(.m3-nav-item, .m3-nav-sub)[aria-current="page"] {
+:root .m3-nav-item { height: 56px; font-size: 14px; letter-spacing: 0.1px; font-weight: 500; }
+:root :is(.m3-nav-item, .m3-nav-sub):hover { --sl: var(--m3-sl-hover); }
+:root :is(.m3-nav-item, .m3-nav-sub):active { --sl: var(--m3-sl-press); }
+:root :is(.m3-nav-item, .m3-nav-sub)[aria-current="page"] {
   --ct: var(--m3-secondary-container);
   color: var(--m3-on-secondary-container);
   font-weight: 700;
 }
-[data-ui-style="m3"] .m3-nav-sub { padding-left: 20px; }
-[data-ui-style="m3"] .m3-nav-sub span + span { color: inherit; opacity: 0.8; }
-[data-ui-style="m3"] .m3-divider { border-color: var(--m3-outline-variant); }
+:root .m3-nav-sub { padding-left: 20px; }
+:root .m3-nav-sub span + span { color: inherit; opacity: 0.8; }
+:root .m3-divider { border-color: var(--m3-outline-variant); }
 
-[data-ui-style="m3"] .m3-appbar { background: var(--m3-surface); border-bottom-color: transparent; }
-[data-ui-style="m3"] .m3-search {
+:root .m3-appbar { background: var(--m3-surface); border-bottom-color: transparent; }
+:root .m3-search {
   height: 48px;
   border: 0;
   border-radius: var(--m3-corner-full);
@@ -217,20 +217,20 @@
   letter-spacing: 0.5px;
   transition: background-color 200ms var(--m3-ease-effects);
 }
-[data-ui-style="m3"] .m3-search:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, var(--m3-surface-container-high)); }
-[data-ui-style="m3"] .m3-search:focus { background: var(--m3-surface-container-highest); }
-[data-ui-style="m3"] .m3-search::placeholder { color: var(--m3-on-surface-variant); }
+:root .m3-search:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, var(--m3-surface-container-high)); }
+:root .m3-search:focus { background: var(--m3-surface-container-highest); }
+:root .m3-search::placeholder { color: var(--m3-on-surface-variant); }
 
 /* ---------- Menus (⋮, right-click, search suggestions) ---------- */
 
-[data-ui-style="m3"] .m3-menu {
+:root .m3-menu {
   padding: 4px;
   border: 0;
   border-radius: var(--m3-corner-lg);
   background: var(--m3-surface-container);
   box-shadow: 0 2px 6px 2px color-mix(in srgb, var(--m3-scrim) 15%, transparent), 0 1px 2px color-mix(in srgb, var(--m3-scrim) 30%, transparent);
 }
-[data-ui-style="m3"] .m3-menu-item {
+:root .m3-menu-item {
   --ct: transparent;
   --sl: 0%;
   min-height: 44px;
@@ -242,50 +242,50 @@
   background-color: color-mix(in srgb, currentColor var(--sl), var(--ct));
   transition: background-color 150ms var(--m3-ease-effects);
 }
-[data-ui-style="m3"] .m3-menu-item:hover:not(:disabled) { --sl: var(--m3-sl-hover); }
-[data-ui-style="m3"] .m3-menu-item:active:not(:disabled) { --sl: var(--m3-sl-press); }
-[data-ui-style="m3"] [aria-selected="true"] > .m3-menu-item { --ct: var(--m3-tertiary-container); color: var(--m3-on-tertiary-container); }
-[data-ui-style="m3"] .m3-menu-item > span:first-child { color: var(--m3-on-surface-variant); }
+:root .m3-menu-item:hover:not(:disabled) { --sl: var(--m3-sl-hover); }
+:root .m3-menu-item:active:not(:disabled) { --sl: var(--m3-sl-press); }
+:root [aria-selected="true"] > .m3-menu-item { --ct: var(--m3-tertiary-container); color: var(--m3-on-tertiary-container); }
+:root .m3-menu-item > span:first-child { color: var(--m3-on-surface-variant); }
 /* A menu's header block (account name and handle) and the divider under it. */
-[data-ui-style="m3"] .m3-menu-header { margin-bottom: 4px; padding: 8px 12px 12px; border-bottom: 1px solid var(--m3-outline-variant); }
-[data-ui-style="m3"] .m3-menu-header p:first-child { color: var(--m3-on-surface); font-weight: 500; }
-[data-ui-style="m3"] .m3-menu-header p + p { color: var(--m3-on-surface-variant); }
+:root .m3-menu-header { margin-bottom: 4px; padding: 8px 12px 12px; border-bottom: 1px solid var(--m3-outline-variant); }
+:root .m3-menu-header p:first-child { color: var(--m3-on-surface); font-weight: 500; }
+:root .m3-menu-header p + p { color: var(--m3-on-surface-variant); }
 /* The account switcher's list in the account menu. */
-[data-ui-style="m3"] .m3-menu-section { border-color: var(--m3-outline-variant); }
-[data-ui-style="m3"] .m3-menu-item:disabled { opacity: 1; color: color-mix(in srgb, var(--m3-on-surface) 38%, transparent); }
+:root .m3-menu-section { border-color: var(--m3-outline-variant); }
+:root .m3-menu-item:disabled { opacity: 1; color: color-mix(in srgb, var(--m3-on-surface) 38%, transparent); }
 
 /* ---------- Dialogs, snackbar, floating cards ---------- */
 
-[data-ui-style="m3"] .m3-dialog {
+:root .m3-dialog {
   border: 0;
   border-radius: var(--m3-corner-xl);
   background: var(--m3-surface-container-high);
   box-shadow: 0 4px 8px 3px color-mix(in srgb, var(--m3-scrim) 15%, transparent), 0 1px 3px color-mix(in srgb, var(--m3-scrim) 30%, transparent);
 }
-[data-ui-style="m3"] .m3-dialog h2 { font-size: 24px; line-height: 32px; font-weight: 400; }
-[data-ui-style="m3"] .m3-dialog footer { border-top-color: transparent; }
-[data-ui-style="m3"] .m3-snackbar {
+:root .m3-dialog h2 { font-size: 24px; line-height: 32px; font-weight: 400; }
+:root .m3-dialog footer { border-top-color: transparent; }
+:root .m3-snackbar {
   border: 0;
   border-radius: var(--m3-corner-xs);
   background: var(--m3-inverse-surface);
   color: var(--m3-inverse-on-surface);
 }
-[data-ui-style="m3"] .m3-snackbar svg { color: var(--m3-inverse-primary); }
-[data-ui-style="m3"] .m3-surface-card { border: 0; border-radius: var(--m3-corner-lg); background: var(--m3-surface-container-high); }
+:root .m3-snackbar svg { color: var(--m3-inverse-primary); }
+:root .m3-surface-card { border: 0; border-radius: var(--m3-corner-lg); background: var(--m3-surface-container-high); }
 
 /* ---------- Loading indicator, skeletons ---------- */
 
 :root .m3-loading { color: var(--m3-primary); }
 :root .m3-loading.m3-loading-contained { background: var(--m3-primary-container); color: var(--m3-on-primary-container); }
-[data-ui-style="m3"] .skeleton { border-radius: var(--m3-corner-md); background: var(--m3-surface-container-high); }
+:root .skeleton { border-radius: var(--m3-corner-md); background: var(--m3-surface-container-high); }
 
 /* ---------- Artwork, cards, list rows ---------- */
 
-[data-ui-style="m3"] .m3-art { border-radius: var(--m3-corner-sm); }
-[data-ui-style="m3"] .m3-art-lg { border-radius: var(--m3-corner-lg); }
-[data-ui-style="m3"] .m3-art-xl { border-radius: var(--m3-corner-xl); }
+:root .m3-art { border-radius: var(--m3-corner-sm); }
+:root .m3-art-lg { border-radius: var(--m3-corner-lg); }
+:root .m3-art-xl { border-radius: var(--m3-corner-xl); }
 /* Card play button: a small FAB on the art. */
-[data-ui-style="m3"] .m3-card-play {
+:root .m3-card-play {
   --r-rest: var(--m3-corner-md);
   --r-press: var(--m3-corner-sm);
   background: var(--m3-primary-container);
@@ -293,38 +293,38 @@
   transform: none;
   scale: none;
 }
-[data-ui-style="m3"] .m3-card-play:hover { background: color-mix(in srgb, var(--m3-on-primary-container) 8%, var(--m3-primary-container)); }
+:root .m3-card-play:hover { background: color-mix(in srgb, var(--m3-on-primary-container) 8%, var(--m3-primary-container)); }
 
-[data-ui-style="m3"] .m3-row {
+:root .m3-row {
   border-bottom-color: transparent;
   border-radius: var(--m3-corner-md);
   transition: background-color 150ms var(--m3-ease-effects);
 }
-[data-ui-style="m3"] .m3-row:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, transparent); }
-[data-ui-style="m3"] .m3-row[data-current] { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
-[data-ui-style="m3"] .m3-row[data-current]:hover { background: color-mix(in srgb, var(--m3-on-secondary-container) 8%, var(--m3-secondary-container)); }
-[data-ui-style="m3"] .m3-row[data-current] .font-medium { color: var(--m3-on-secondary-container); font-weight: 700; }
+:root .m3-row:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, transparent); }
+:root .m3-row[data-current] { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+:root .m3-row[data-current]:hover { background: color-mix(in srgb, var(--m3-on-secondary-container) 8%, var(--m3-secondary-container)); }
+:root .m3-row[data-current] .font-medium { color: var(--m3-on-secondary-container); font-weight: 700; }
 
 /* ---------- Settings: sections as cards, segmented choices as connected button groups ---------- */
 
-[data-ui-style="m3"] .m3-section { border-radius: var(--m3-corner-xl); background: var(--m3-surface-container-low); }
+:root .m3-section { border-radius: var(--m3-corner-xl); background: var(--m3-surface-container-low); }
 /* The Recaps page's hero card: a primary container (its text stays readable on it), the Play pill inverted. */
-[data-ui-style="m3"] .recap-hero { border-radius: var(--m3-corner-xl); background: var(--m3-primary-container); color: var(--m3-on-primary-container); }
-[data-ui-style="m3"] .recap-hero-play { background: var(--m3-primary); color: var(--m3-on-primary); }
-[data-ui-style="m3"] .m3-section > h2,
-[data-ui-style="m3"] .m3-section-toggle > span > span:first-child { font-size: 22px; line-height: 28px; font-weight: 500; }
-[data-ui-style="m3"] .m3-section-toggle { border-radius: var(--m3-corner-xl); }
-[data-ui-style="m3"] .m3-section-toggle:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, transparent); }
-[data-ui-style="m3"] .m3-field {
+:root .recap-hero { border-radius: var(--m3-corner-xl); background: var(--m3-primary-container); color: var(--m3-on-primary-container); }
+:root .recap-hero-play { background: var(--m3-primary); color: var(--m3-on-primary); }
+:root .m3-section > h2,
+:root .m3-section-toggle > span > span:first-child { font-size: 22px; line-height: 28px; font-weight: 500; }
+:root .m3-section-toggle { border-radius: var(--m3-corner-xl); }
+:root .m3-section-toggle:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, transparent); }
+:root .m3-field {
   border: 0;
   border-radius: var(--m3-corner-sm);
   background: var(--m3-surface-container-highest);
   box-shadow: inset 0 -1px 0 var(--m3-on-surface-variant);
 }
-[data-ui-style="m3"] .m3-field:focus { box-shadow: inset 0 -2px 0 var(--m3-primary); }
+:root .m3-field:focus { box-shadow: inset 0 -2px 0 var(--m3-primary); }
 
-[data-ui-style="m3"] .m3-segmented { gap: 2px; padding: 0; background: transparent; }
-[data-ui-style="m3"] .m3-seg {
+:root .m3-segmented { gap: 2px; padding: 0; background: transparent; }
+:root .m3-seg {
   --ct: var(--m3-surface-container-highest);
   --sl: 0%;
   --r-rest: var(--m3-corner-sm);
@@ -345,20 +345,20 @@
   background-color: color-mix(in srgb, currentColor var(--sl), var(--ct));
   transition: background-color 200ms var(--m3-ease-effects), color 200ms var(--m3-ease-effects);
 }
-[data-ui-style="m3"] .m3-seg:hover { --sl: var(--m3-sl-hover); color: var(--m3-on-surface-variant); }
-[data-ui-style="m3"] .m3-seg[data-pressed] { --sl: var(--m3-sl-press); --r-now: var(--r-press); }
-[data-ui-style="m3"] .m3-seg[aria-pressed="true"] { --ct: var(--m3-primary); --r-now: var(--r-sel); color: var(--m3-on-primary); }
+:root .m3-seg:hover { --sl: var(--m3-sl-hover); color: var(--m3-on-surface-variant); }
+:root .m3-seg[data-pressed] { --sl: var(--m3-sl-press); --r-now: var(--r-press); }
+:root .m3-seg[aria-pressed="true"] { --ct: var(--m3-primary); --r-now: var(--r-sel); color: var(--m3-on-primary); }
 /* Outer corners of the group stay round; the inner ones morph. */
-[data-ui-style="m3"] .m3-seg:first-child { border-radius: min(var(--m3-corner-full), 20px) var(--r-now) var(--r-now) min(var(--m3-corner-full), 20px); }
-[data-ui-style="m3"] .m3-seg:last-child { border-radius: var(--r-now) min(var(--m3-corner-full), 20px) min(var(--m3-corner-full), 20px) var(--r-now); }
-[data-ui-style="m3"] .m3-seg:first-child:last-child { border-radius: var(--r-now); }
+:root .m3-seg:first-child { border-radius: min(var(--m3-corner-full), 20px) var(--r-now) var(--r-now) min(var(--m3-corner-full), 20px); }
+:root .m3-seg:last-child { border-radius: var(--r-now) min(var(--m3-corner-full), 20px) min(var(--m3-corner-full), 20px) var(--r-now); }
+:root .m3-seg:first-child:last-child { border-radius: var(--r-now); }
 
 /* ---------- Error box ---------- */
 
-[data-ui-style="m3"] .m3-error-box { border: 0; border-radius: var(--m3-corner-lg); background: var(--m3-error-container); color: var(--m3-on-error-container); }
-[data-ui-style="m3"] .m3-error-box :is(p, svg) { color: inherit; }
+:root .m3-error-box { border: 0; border-radius: var(--m3-corner-lg); background: var(--m3-error-container); color: var(--m3-on-error-container); }
+:root .m3-error-box :is(p, svg) { color: inherit; }
 
-/* ---------- Now Playing: Material and Bento layouts (always M3, also inside the Classic app) ---------- */
+/* ---------- Now Playing: Material and Bento layouts ---------- */
 
 /* Material sizes the cover and the info column from the viewport and the side panel's width (--np-panel), so
    the group fits beside the docked panel unchanged: docking only re-centers it (a pure translation, no re-wrap). */
@@ -397,9 +397,9 @@
 
 /* Controls tile: five equally tall rounded squares, the play pill twice as wide. */
 .bento-transport { height: clamp(56px, 8vh, 72px); }
-[data-ui-style="m3"] .bento-sq { --r-rest: var(--m3-corner-lg); --r-press: var(--m3-corner-md); --r-sel: var(--m3-corner-full); }
-[data-ui-style="m3"] .bento-sq[aria-pressed="true"] { --ct: var(--m3-secondary); color: var(--m3-on-secondary); }
-[data-ui-style="m3"] .bento-play { --r-press: var(--m3-corner-md); }
+:root .bento-sq { --r-rest: var(--m3-corner-lg); --r-press: var(--m3-corner-md); --r-sel: var(--m3-corner-full); }
+:root .bento-sq[aria-pressed="true"] { --ct: var(--m3-secondary); color: var(--m3-on-secondary); }
+:root .bento-play { --r-press: var(--m3-corner-md); }
 
 /* The lyrics preview fills its tile when the tile is given height (wide windows); elsewhere it shows a few lines. */
 .bento-lyrics-text { max-height: 7.5em; }
@@ -481,20 +481,19 @@
 
 /* ---------- Choice cards (Now Playing layout picker) ---------- */
 
-[data-ui-style="m3"] .m3-choice {
+:root .m3-choice {
   border-radius: var(--m3-corner-lg);
   border-color: var(--m3-outline-variant);
   background: var(--m3-surface-container);
   transition: background-color 200ms var(--m3-ease-effects), border-color 200ms var(--m3-ease-effects);
 }
-[data-ui-style="m3"] .m3-choice:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, var(--m3-surface-container)); }
-[data-ui-style="m3"] .m3-choice[aria-checked="true"] { border-color: var(--m3-primary); box-shadow: inset 0 0 0 1px var(--m3-primary); background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
-[data-ui-style="m3"] .m3-choice > span:first-child { background: var(--m3-surface); }
+:root .m3-choice:hover { background: color-mix(in srgb, var(--m3-on-surface) 8%, var(--m3-surface-container)); }
+:root .m3-choice[aria-checked="true"] { border-color: var(--m3-primary); box-shadow: inset 0 0 0 1px var(--m3-primary); background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+:root .m3-choice > span:first-child { background: var(--m3-surface); }
 
 /* ---------- What's new ---------- */
 
-.m3-whats-icon { color: var(--c-text); }
-[data-ui-style="m3"] .m3-whats-icon { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+:root .m3-whats-icon { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
 
 /* Wavy seek bar (Slider.tsx Wave): an endless slide by one wavelength on its own compositor layer. */
 .m3-wave { display: block; will-change: transform; animation: m3-wave linear infinite; }
@@ -502,12 +501,3 @@
 /* Round caps on the wave's cut ends: bob ±3 px like the wave under them (Slider.tsx keeps their time in step). */
 .m3-wave-cap { will-change: transform; animation: m3-wave-cap ease-in-out infinite alternate; animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
 @keyframes m3-wave-cap { from { transform: translateY(-3px); } to { transform: translateY(3px); } }
-
-/* ---------- Settings ---------- */
-[data-ui-style="m3"] .settings-cats { border-radius: var(--m3-corner-xl); }
-[data-ui-style="m3"] .settings-cat { background: var(--m3-surface-container-low); }
-[data-ui-style="m3"] .settings-cat:hover { background: var(--m3-surface-container); }
-[data-ui-style="m3"] .settings-cat[aria-current="page"] { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
-@container (min-width: 48rem) { [data-ui-style="m3"] .settings-cat[data-fallback] { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); } }
-[data-ui-style="m3"] .settings-card > * + * { border-top-color: var(--m3-outline-variant); }
-[data-ui-style="m3"] [data-setting][data-focused] { background: var(--m3-primary-container); }

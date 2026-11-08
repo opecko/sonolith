@@ -10,7 +10,7 @@ import { motionOn, Spring } from "./engine";
  * and its state rules pick one as `--r-now`, which `border-radius` uses; with animations off the shape simply
  * switches. With animations on, `--r-now` springs between states as an inline value (removed once it rests, when
  * the stylesheet's own value for the state is the same number); asymmetric shapes (connected groups) use it for
- * their outer corners only. Only inside [data-ui-style="m3"]: Classic shapes never morph.
+ * their outer corners only.
  */
 const MORPH = "[data-morph], .m3-btn, .icon-btn, .m3-seg";
 const springs = new WeakMap<HTMLElement, Spring>();
@@ -21,7 +21,7 @@ const isSelected = (el: HTMLElement, attr?: string, old?: string | null) => {
     (attr === "data-selected" ? old !== null : el.hasAttribute("data-selected"));
 };
 
-/** Radius for a state in px; null when the element has no M3 shape (Classic). Full corners clamp to a pill. */
+/** Radius for a state in px; null when the element has no M3 shape. Full corners clamp to a pill. */
 function radiusFor(el: HTMLElement, pressed: boolean, selected: boolean): number | null {
   const cs = getComputedStyle(el);
   const v = (name: string) => {
@@ -29,7 +29,7 @@ function radiusFor(el: HTMLElement, pressed: boolean, selected: boolean): number
     return s ? parseFloat(s) : NaN;
   };
   const rest = v("--r-rest");
-  if (Number.isNaN(rest) || !el.closest('[data-ui-style="m3"]')) return null;
+  if (Number.isNaN(rest)) return null;
   const sel = v("--r-sel"), press = v("--r-press");
   const r = pressed && !Number.isNaN(press) ? press : selected && !Number.isNaN(sel) ? sel : rest;
   return Math.min(r, el.offsetHeight / 2, el.offsetWidth / 2);

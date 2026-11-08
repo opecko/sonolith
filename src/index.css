@@ -108,9 +108,7 @@ button:disabled { cursor: default; }
 /* Synced lyrics (lyrics/LyricsView): lines dim, the current one bright, sung words bright on word-synced lines.
    Only colors change, with no transition (WebKitGTK); the scroll is a spring on the scroller. */
 .lyrics-synced { display: flex; flex-direction: column; gap: 0.55em; font-size: 1.5rem; line-height: 1.3; font-weight: 700;
-  --ly-on: var(--c-text); --ly-off: var(--c-text-subtle); --ly-glow: color-mix(in srgb, var(--c-accent) 60%, transparent);
-  --ly-past: color-mix(in srgb, var(--c-accent) 60%, transparent); }
-[data-ui-style="m3"] .lyrics-synced { --ly-on: var(--m3-on-surface); --ly-off: color-mix(in srgb, var(--m3-on-surface) 38%, transparent);
+  --ly-on: var(--m3-on-surface); --ly-off: color-mix(in srgb, var(--m3-on-surface) 38%, transparent);
   --ly-glow: color-mix(in srgb, var(--m3-primary) 60%, transparent); --ly-past: color-mix(in srgb, var(--m3-primary) 62%, transparent); }
 .lyrics-synced li { color: var(--ly-off); cursor: pointer; border-radius: var(--radius); }
 .lyrics-synced li:hover { color: var(--c-text-muted); }
@@ -149,46 +147,28 @@ button:disabled { cursor: default; }
 .track-link:hover { text-decoration: underline; }
 
 @layer components {
+  /* Shape, colors and states of these three are in m3-components.css. */
   .icon-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 9999px;
-    color: var(--c-text-muted);
   }
-  .icon-btn:hover { background: var(--c-hover); color: var(--c-text); }
-  .icon-btn:active { background: var(--c-active); transform: scale(0.94); }
-  .icon-btn[aria-pressed="true"] { color: var(--c-text); }
-  .icon-btn:disabled { opacity: 0.4; background: transparent; transform: none; }
 
   .chip {
     flex-shrink: 0;
-    height: 32px;
-    padding: 0 12px;
-    border-radius: 8px;
     font-size: 14px;
     white-space: nowrap;
-    background: var(--c-chip);
-    color: var(--c-text);
-  }
-  .chip:hover { background: var(--c-chip-hover); }
-  .chip[aria-pressed="true"] { background: var(--c-text); color: var(--c-surface); }
-
-  /* Static placeholder: an infinite shimmer repaints the whole area every frame (software-rendered on WebKitGTK). */
-  .skeleton {
-    background: var(--c-skeleton);
-    border-radius: var(--radius);
   }
 }
 
 /* ---------- Settings: grouped category list, cards of rows ---------- */
 /* A group is one rounded block; its items sit 2px apart. */
-.settings-cats { display: flex; flex-direction: column; gap: 2px; overflow: hidden; border-radius: calc(var(--radius) * 2.5); }
-.settings-cat { background: var(--c-surface); transition: background-color 150ms; }
-.settings-cat:hover { background: color-mix(in srgb, var(--c-text) 6%, var(--c-surface)); }
-.settings-cat[aria-current="page"] { background: color-mix(in srgb, var(--c-accent) 18%, var(--c-surface)); }
+.settings-cats { display: flex; flex-direction: column; gap: 2px; overflow: hidden; border-radius: var(--m3-corner-xl); }
+.settings-cat { background: var(--m3-surface-container-low); transition: background-color 150ms; }
+.settings-cat:hover { background: var(--m3-surface-container); }
+.settings-cat[aria-current="page"] { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
 /* Nothing picked yet: a wide Settings shows its first category, so that one is lit; the narrow list lights none. */
-@container (min-width: 48rem) { .settings-cat[data-fallback] { background: color-mix(in srgb, var(--c-accent) 18%, var(--c-surface)); } }
+@container (min-width: 48rem) { .settings-cat[data-fallback] { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); } }
 /* Pastel circles, one hue per group, the same in every palette (like the system settings they're modeled on). */
 .settings-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 9999px; color: #1b1b1f; background: var(--tone); }
 .settings-icon[data-tone="blue"] { --tone: #a8c7fa; }
@@ -197,7 +177,7 @@ button:disabled { cursor: default; }
 .settings-icon[data-tone="pink"] { --tone: #f4b2c8; }
 .settings-icon[data-tone="teal"] { --tone: #8fd5c6; }
 .settings-card { overflow: hidden; }
-.settings-card > * + * { border-top: 1px solid var(--c-outline); }
+.settings-card > * + * { border-top: 1px solid var(--m3-outline-variant); }
 /* A setting a link pointed at: lit up, then fading back. */
 [data-setting] { transition: background-color 700ms; }
-[data-setting][data-focused] { background: color-mix(in srgb, var(--c-accent) 18%, transparent); transition: none; }
+[data-setting][data-focused] { background: var(--m3-primary-container); transition: none; }

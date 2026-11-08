@@ -125,7 +125,5 @@ export function applyLayout(
 
 /** The animations setting on <html>: CSS and the motion engine read data-animations. */
 export function applyAnimations(a: { animations: boolean }, root: HTMLElement = document.documentElement) {
-  // Until the stylesheet drops its scope (next change): it still keys on this.
-  root.dataset.uiStyle = "m3";
   root.dataset.animations = a.animations ? "on" : "off";
 }
