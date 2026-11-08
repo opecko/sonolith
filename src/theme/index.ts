@@ -25,10 +25,10 @@ const validOverrides = (o: ThemeChoice["overrides"]) =>
 
 /**
  * Tokens that follow another one unless set themselves, so changing a main color (as the Simple editor does)
- * carries over: a custom accent also recolors the slider fill. For the built-in look index.css does the same
+ * carries over: a custom muted text color also recolors the focus ring. For the built-in look index.css does the same
  * through var(); palettes also tie the filled buttons to the accent (that's how they map).
  */
-const FOLLOWS: [Token, Token][] = [["slider-fill", "accent"], ["skeleton", "surface-2"], ["focus", "text-muted"]];
+const FOLLOWS: [Token, Token][] = [["focus", "text-muted"]];
 const PALETTE_FOLLOWS: [Token, Token][] = [...FOLLOWS, ["button", "accent"], ["on-button", "on-accent"]];
 
 /** `inline`: what goes on <html> (palette, then `extra`, then overrides); `all`: what every token shows as. */

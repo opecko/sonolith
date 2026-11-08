@@ -26,13 +26,9 @@
   /* Filled pill buttons (Play, Subscribe, Sign in) and the player's play button. */
   --c-button: #ffffff;
   --c-on-button: #000000;
-  --c-chip: rgba(255, 255, 255, 0.1);
-  --c-chip-hover: rgba(255, 255, 255, 0.2);
   --c-scrollbar: rgba(255, 255, 255, 0.18);
   --c-scrollbar-hover: rgba(255, 255, 255, 0.32);
   --c-slider-track: rgba(255, 255, 255, 0.2);
-  --c-slider-fill: var(--c-accent);
-  --c-skeleton: var(--c-surface-2);
   /* Dialog backdrops and the tint over Now Playing's ambient light. */
   --c-overlay: rgba(0, 0, 0, 0.6);
   /* Darkening over artwork (hover play overlays, video letterbox); used with an opacity modifier. */

@@ -103,7 +103,7 @@ spawning processes, CORS-free streaming).
   enforces it). Tailwind sees them via `@theme inline` (`bg-fg/10`, `bg-scrim/60`, `bg-button`, `text-on-accent`…).
 - A palette (16 Material-style colors, `palettes.json`, ~117 bundled) maps to tokens in `paletteTokens()`. Built-in
   look = id `ytm` = no inline tokens at all. User overrides sit on top; some tokens follow others (`FOLLOWS`:
-  slider-fill←accent, …). `applyTheme` writes only inline custom properties on `<html>`.
+  focus←text-muted). `applyTheme` writes only inline custom properties on `<html>`.
 - `appearance.ts`: the Appearance settings shape (palette, mode, overrides, ambient, coverAccent, radius, density,
   zoom, font, **uiStyle** `m3|classic`, **nowPlayingLayout** `material|bento|classic`, **animations**) +
   `normalizeAppearance` (migration/validation; also used for theme import, which keeps the user's own animations).
