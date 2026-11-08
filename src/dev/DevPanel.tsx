@@ -14,6 +14,7 @@ import { useUpdate, type UpdateInfo } from "../stores/update";
 import { NOW_PLAYING_LAYOUTS } from "../theme/appearance";
 import { WHATS_NEW } from "../whatsNew/entries";
 import { useWhatsNew } from "../whatsNew/store";
+import { checkerOn, setChecker } from "./checker";
 import { useDevFlags } from "./flags";
 import RecapDev from "./RecapDev";
 
@@ -118,6 +119,7 @@ export default function DevPanel({ onClose }: { onClose: () => void }) {
   const settings = useSettings();
   const { nowPlayingLayout, animations } = settings.appearance;
   const [version, setVersion] = useState("0.0.0");
+  const [checker, setCheckerState] = useState(checkerOn);
   const [flavor, setFlavor] = useState<Flavor>("github");
   const noHistory = useDevFlags((s) => s.noHistory);
   const setNoHistory = useDevFlags((s) => s.setNoHistory);
@@ -184,6 +186,10 @@ export default function DevPanel({ onClose }: { onClose: () => void }) {
           <div className="flex items-center justify-between">
             <span className="type-body-medium">Animations</span>
             <Switch on={animations} onChange={(on) => setAppearance({ animations: on })} label="Animations" />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="type-body-medium">Checkerboard behind window</span>
+            <Switch on={checker} onChange={(on) => { setChecker(on); setCheckerState(on); }} label="Checkerboard behind window" />
           </div>
         </Section>
         <Section title="Playback">
