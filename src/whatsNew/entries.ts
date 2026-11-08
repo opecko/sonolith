@@ -1,4 +1,4 @@
-import { AudioWaveform, Clapperboard, Keyboard, LayoutDashboard, ListMusic, Lock, LogIn, MicVocal, Palette, Plug, Podcast, Settings2, Sparkles, Terminal, Zap } from "lucide-react";
+import { AudioWaveform, Clapperboard, Keyboard, Layers, LayoutDashboard, ListMusic, Lock, LogIn, MicVocal, Palette, Plug, Podcast, Settings2, Sparkles, Terminal, Zap } from "lucide-react";
 import type { WhatsNewEntry } from "./types";
 
 /**
@@ -8,12 +8,17 @@ import type { WhatsNewEntry } from "./types";
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     version: "2.6.0",
-    title: "One look: Material 3 Expressive",
+    title: "One look, and a transparent window",
     highlights: [
       {
         icon: Palette,
         title: "Sonolith is now Material 3 Expressive only",
         text: "The Classic style is gone, and the Style setting with it. Everything you chose besides the style stays as it was; the Classic layout for Now Playing is still available.",
+      },
+      {
+        icon: Layers,
+        title: "Transparent window (Linux)",
+        text: "Let your desktop show through Sonolith, blurred if your compositor does blur, and pick how solid the surfaces are in Settings → Look → Window.",
       },
     ],
     actions: [{ label: "Look settings", action: { type: "openSettings", section: "look" } }],
