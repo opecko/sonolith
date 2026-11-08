@@ -12,6 +12,7 @@ mod recap;
 mod render;
 mod tray;
 mod update;
+mod window;
 mod ytdlp;
 
 use std::io::Write;
@@ -64,7 +65,7 @@ fn mpris_update(_snapshot: serde_json::Value) {}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let context = tauri::generate_context!();
-    // Before the builder: Tauri creates the window, and with it the webview's data directory, before setup runs.
+    // Before the builder: the main window, and with it the webview's data directory, is created first thing in setup.
     migrate::run(&context.config().identifier);
     tauri::Builder::default()
         // Must be the first plugin: a second launch (e.g. from the app launcher while hidden in the tray) hands over
@@ -74,6 +75,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
+            window::create_main(app.handle())?;
             app.manage(lyrics::LyricsState::new(app.handle()));
             // Before ensure_fresh: its install creates the directory that marks an existing install.
             app.manage(render::PriorData(render::prior_data_on_disk(app.handle())));
@@ -114,6 +116,9 @@ pub fn run() {
             tray::tray_update,
             render::render_set_gpu,
             render::app_has_prior_data,
+            window::window_info,
+            window::window_set_transparent,
+            window::app_restart,
             lyrics::lyrics_get,
             lyrics::lyrics_clear_cache,
             proxy::proxy_url,

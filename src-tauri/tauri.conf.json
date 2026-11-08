@@ -13,6 +13,8 @@
   "app": {
     "windows": [
       {
+        "label": "main",
+        "create": false,
         "title": "Sonolith",
         "width": 1200,
         "height": 780,
