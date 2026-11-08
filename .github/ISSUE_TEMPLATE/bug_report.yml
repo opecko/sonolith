@@ -50,8 +50,8 @@ body:
   - type: input
     id: style
     attributes:
-      label: UI style and Now Playing layout
-      description: Settings → Appearance (Material 3 or Classic; Material, Bento or Classic layout). For visual bugs.
+      label: Now Playing layout
+      description: Settings → Now Playing (Material, Bento or Classic). For visual bugs.
   - type: textarea
     id: log
     attributes:

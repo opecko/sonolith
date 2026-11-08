@@ -76,13 +76,13 @@ its shape.
   (`open_credit`).
 - Errors cross the bridge as `Result<_, String>` with a readable message.
 
-## Material 3 style (2.0) and Classic
+## Material 3 Expressive
 
-- **Classic must not change.** Shared markup keeps its Tailwind classes; M3 differences are marker classes
+- Components carry marker classes for the M3 look
   (`m3-btn m3-filled|m3-tonal|m3-outlined|m3-text|m3-danger|m3-medium|m3-fab`, `m3-seg`/`m3-segmented`,
-  `m3-menu(-item)`, `m3-dialog`, `m3-row`, `m3-art(-lg|-xl)`, `m3-section`, `icon-btn m3-icon-*`…) styled only in
-  `src/theme/m3-components.css` under `[data-ui-style="m3"]`. Markup forks (`Slider`, `Switch`, `PlayerBar`
-  transport, `Status` list loading) go through `useUiStyle()`, never the setting directly.
+  `m3-menu(-item)`, `m3-dialog`, `m3-row`, `m3-art(-lg|-xl)`, `m3-section`, `icon-btn m3-icon-*`…) styled in
+  `src/theme/m3-components.css`. Every selector there starts with `:root`: that keeps it above the shared rules and the
+  utility classes (the file is unlayered, so it beats Tailwind's layers anyway), so a new rule needs the same prefix.
 - M3 colors: `var(--m3-<role>)` / Tailwind `bg-m3-…`, never new hex. Corners: `var(--m3-corner-*)` (follow the
   corner setting). Type: `type-title-large-em` etc.
 - **State layers** are `color-mix(currentColor var(--sl), var(--ct))` with background-color transitions; never

@@ -7,7 +7,7 @@ Automated coverage is in `src-tauri/src/api/tests.rs` (server, over a real socke
 
 **Not verified before this checklist (check these closely):** `playlist.create` with `privacy` / `items` (raw
 `/playlist/create`), `rating.set` on an album (the OLAK playlist lookup) and on a podcast, `playlist.removeTracks`
-(entry ids are video ids), and how everything looks in both styles (M3 and Classic).
+(entry ids are video ids), and how everything looks.
 
 > Writes to your account. Use only the playlists this checklist creates (all named `SNL test …`); don't point the
 > destructive calls at your own playlists. Delete the leftovers at the end (step 9).
@@ -26,7 +26,7 @@ echo $SNL_SOCK    # should be .../sonolith/api.sock
 - [ ] Turn the switch **on**, open **For developers**: a "Socket" row shows the path; the copy button puts it in the clipboard
       (`wl-paste`) and shows "Copied to clipboard". `ls -l $SNL_SOCK` shows `srw-------`. `cat $XDG_RUNTIME_DIR/sonolith/discovery.json` has `pid` = Sonolith's pid (`pgrep -x sonolith`).
 - [ ] "API documentation" opens the SPEC in the browser.
-- [ ] The page looks right in **Classic** and **Material** (Settings → Look → style), light and dark, and in a 480 px wide
+- [ ] The page looks right in light and dark, and in a 480 px wide
       window; Tab reaches every button and the disclosures open with Enter / Space.
 
 ## 1. Consent: deny, cooldown, allow, block

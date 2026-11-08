@@ -34,7 +34,7 @@ spawning processes, CORS-free streaming).
 | `theme/` | Theme engine: tokens, palettes, color math, appearance settings shape + migration, cover-art accent, font stacks. |
 | `hooks/useData.ts` | Page data cache: `useAsync(key, fn)`, `usePaged(key, first)`, `prefetch`, `invalidate(key)`. |
 | `motion/` | Motion engine: analytic spring solver + M3 presets (`spring.ts`), one shared rAF loop with the central animations switch and pause-while-hidden (`engine.ts`: `Spring`, `tween`, `ticker`, `setMotionEnabled`), delegated shape morph for M3 buttons (`morph.ts`), `useSpring`. |
-| `views/nowplaying/` | Now Playing layouts inside the `NowPlaying.tsx` shell (slide, ambient, Esc, Try-the-looks card): `Classic.tsx` (pre-2.0, unchanged), `Material.tsx`, `Bento.tsx`; `shared.tsx` = Up next / Lyrics / Related panels; `parts.tsx` = M3 pieces (cover, links, seek bar, transport, slide-in panel). |
+| `views/nowplaying/` | Now Playing layouts inside the `NowPlaying.tsx` shell (slide, ambient, Esc, Try-the-looks card): `Classic.tsx` (the pre-2.0 layout, unchanged), `Material.tsx`, `Bento.tsx`; `shared.tsx` = Up next / Lyrics / Related panels; `parts.tsx` = M3 pieces (cover, links, seek bar, transport, slide-in panel). |
 | `onboarding/` | First-run welcome: fresh-install detection (`detect.ts`, pure + tested: stored settings with or without `onboardingCompleted`, other 1.x keys, keyring cookie, native files via `app_has_prior_data`), startup/finish (`store.ts`, runs What's new after deciding), the lazy-loaded layer (`Onboarding.tsx`) and its steps. Existing installs never see it unasked; Settings → About → Run setup again re-opens it (`rerunOnboarding`: current settings, no flags or What's new, Done returns to About). |
 | `playback/` | Video in Now Playing (`videoSync.ts`, pure + tested): the muted `<video>` of a podcast episode or music video (`Track.video`, from `/next`'s music video type OMV/UGC; songs have only a still) follows the `<audio>` clock at its rate, seeking ahead (by the measured seek time) only when more than 0.25 s off and never while a seek is landing; `components/TrackVideo.tsx` runs it every 250 ms and on audio events, via the local proxy on Linux. Smooth playhead (`playhead.ts`): an interpolator between the audio clock's coarse steps and one frame loop (on the motion ticker) for karaoke lyrics; runs only while playing with a listener, otherwise listeners hear the clock's events. Seek bars deliberately stay on the 1 Hz `progress.ts` clock (the per-frame seek bar cost too much CPU on WebKitGTK). |
 | `visualizer/` | Now Playing's audio visualizer (Settings → Now Playing: Background, On the cover, Glow; bars or wave). `tap.ts` plays a silent copy of the current stream (a second `<audio>` through the local proxy, kept in step with the player, captured by Web Audio and ending in a zero gain) and analyses it; the player's own element is never routed through Web Audio. `spectrum.ts` (pure, tested) turns FFT bins into smoothed log bands and paces frames; `Visualizer.tsx` draws a canvas at 1 canvas px per CSS px (the glow: a pre-drawn sprite stamped with an alpha) on the motion ticker at ≤ 30 fps (24 unfocused, optional); it stops when paused, hidden or closed, and so does the copy. |
@@ -105,15 +105,15 @@ spawning processes, CORS-free streaming).
   look = id `ytm` = no inline tokens at all. User overrides sit on top; some tokens follow others (`FOLLOWS`:
   focus←text-muted). `applyTheme` writes only inline custom properties on `<html>`.
 - `appearance.ts`: the Appearance settings shape (palette, mode, overrides, ambient, coverAccent, radius, density,
-  zoom, font, **uiStyle** `m3|classic`, **nowPlayingLayout** `material|bento|classic`, **animations**) +
+  zoom, font, **nowPlayingLayout** `material|bento|classic`, **animations**) +
   `normalizeAppearance` (migration/validation; also used for theme import, which keeps the user's own animations).
-- **Material 3 style** (2.0): `m3.ts` derives M3 color roles (`--m3-primary`, `-container`, surface containers…)
+- **Material 3 Expressive** (the only style): `m3.ts` derives M3 color roles (`--m3-primary`, `-container`, surface containers…)
   from the `--c-*` tokens; `m3.css` holds the same recipes as `color-mix()` (a test keeps them in sync), the corner
   scale (`--m3-corner-*`, plain px written by `applyLayout` from the corner setting) and the type scale
-  (`type-*` / `type-*-em` utilities). `m3-components.css` styles components under `[data-ui-style="m3"]`
-  (unlayered, so it beats the shared Tailwind classes). `applyStyle` puts `data-ui-style` / `data-animations` on
-  `<html>`; `components/UiStyle.tsx` (`UiStyleScope`, `useUiStyle`) lets M3 parts (Material/Bento Now Playing,
-  dev panel) be M3 inside the Classic app. `settings.lastSeenVersion` drives What's new.
+  (`type-*` / `type-*-em` utilities). `m3-components.css` styles components (unlayered, so it beats the shared
+  Tailwind classes; its selectors start with `:root`). `applyAnimations` puts `data-animations` on `<html>`. A stored
+  `uiStyle` from 2.0–2.5 (when Classic was a style) is dropped by `normalizeAppearance`. `settings.lastSeenVersion`
+  drives What's new.
 
 ## Rust backend (`src-tauri/src/`)
 

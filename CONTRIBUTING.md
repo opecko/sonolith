@@ -103,8 +103,8 @@ The full list is in [docs/dev/conventions.md](docs/dev/conventions.md). The ones
   `rgba()`, `bg-white` or `text-black` outside `src/index.css` and `src/theme/`.
 - **Icons: `lucide-react` only.**
 - **UI text is English, sentence case** ("Add to queue", not "Add To Queue").
-- **Both styles (Material 3 and Classic) and all Now Playing layouts must keep working.** Classic must not change
-  unless your change is about it. Check dark and light.
+- **Material 3 Expressive is the only style, and all Now Playing layouts must keep working** (the Classic layout
+  must not change unless your change is about it). Check dark and light, and narrow windows (480 px).
 - **Respect the animations setting.** Use the helpers in `src/motion`; don't write ad-hoc animation loops. Avoid CSS
   `transform`/`opacity` animations for anything that must not flicker (WebKitGTK flashes at the end; see pitfalls).
 - **Small pure modules with tests.** Put logic in a plain module with a `*.test.ts` (vitest) next to it; keep stores
@@ -138,7 +138,7 @@ regenerated files.
    into your branch.
 3. Make sure the **verify step passes** locally; CI runs it on your PR.
 4. Fill in the **pull request template**. Say what changed, why, and how you tested it.
-5. For **UI changes**, attach screenshots or a short GIF in **Material 3 and Classic**, **dark and light**.
+5. For **UI changes**, attach screenshots or a short GIF in **dark and light**.
 6. **Link the issue** (`Fixes #123`).
 7. **Don't** bump versions, write release notes or "What's new" entries, or touch packaging (`packaging/`,
    `scripts/release.sh`, workflows) unless the maintainer asked for it. They do this when cutting a release.

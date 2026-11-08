@@ -33,7 +33,7 @@ an account; sign in with Google for your library, playlists, likes, mixes and hi
   history (or your whole history from Google Takeout, if you add it)
 - **Podcasts**: show pages, episodes remember where you left off, the next episode plays when one ends, playback
   speed, skip −10 s / +30 s, optional video
-- **Appearance**: a Material 3 Expressive design (or the Classic look), over 100 color palettes (dark and light),
+- **Appearance**: a Material 3 Expressive design, over 100 color palettes (dark and light),
   your own colors for every part of the UI, theme import/export, colors from the album art for the whole app or just
   Now Playing, corner radius, compact density, interface size, fonts, and an animations switch
 - **Keyboard shortcuts** in the window (rebindable) and global **media keys**

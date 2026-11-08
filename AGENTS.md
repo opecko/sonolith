@@ -37,8 +37,8 @@ assistant (Claude Code, Codex, Cursor, Copilot, …) working in this repository 
 
 - Colors only through theme tokens (`var(--c-…)`, `var(--m3-…)`, token Tailwind classes), never hex or `rgba()`
   outside `src/index.css` and `src/theme/`. Icons: `lucide-react` only.
-- Both UI styles (Material 3 and Classic) and every Now Playing layout must keep working. Classic must not change
-  unless the task is about it. Respect the animations setting (use `src/motion`, no ad-hoc loops).
+- Material 3 Expressive is the only style; every Now Playing layout and narrow windows (480 px) must keep working. The
+  Classic layout must not change unless the task is about it. Respect the animations setting (use `src/motion`, no ad-hoc loops).
 - Logic goes into small pure modules with a vitest file next to them; stores and components stay thin.
 - Parsers of YouTube responses never throw on unknown shapes.
 - Never use CSS `transform`/`opacity` animations for anything that must not flicker: WebKitGTK flashes the old frame

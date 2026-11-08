@@ -102,5 +102,5 @@ Testing the API implementation:
 - Logic lives in small pure modules with a `*.test.ts` next to them (vitest); fixtures are trimmed real responses in
   `__fixtures__/`. Parsers get a fixture test for every shape they handle and for shapes they must skip.
 - Rust has unit tests in the module and integration tests for the API server (`cargo test`).
-- UI is checked by hand in the running app, in **both** styles (M3 and Classic), dark and light, and in every Now
+- UI is checked by hand in the running app, dark and light, in a narrow window (480 px), and in every Now
   Playing layout when the change touches it.
