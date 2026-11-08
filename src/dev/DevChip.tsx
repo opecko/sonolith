@@ -1,6 +1,5 @@
 import { Wrench } from "lucide-react";
 import { useState } from "react";
-import { UiStyleScope } from "../components/UiStyle";
 import DevPanel from "./DevPanel";
 
 /** "Dev build" assist chip in the top bar (tertiary); opens the dev panel. */
@@ -12,7 +11,7 @@ export default function DevChip() {
         onClick={() => setOpen((o) => !o)} aria-expanded={open} title="Developer tools (dev builds only)">
         <Wrench size={16} aria-hidden /> Dev build
       </button>
-      {open && <UiStyleScope value="m3"><DevPanel onClose={() => setOpen(false)} /></UiStyleScope>}
+      {open && <DevPanel onClose={() => setOpen(false)} />}
     </>
   );
 }

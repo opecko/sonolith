@@ -20,9 +20,6 @@ export function runWhatsNewAction(a: WhatsNewAction) {
       useUi.getState().setNowPlaying(false);
       openSettings(a.section, a.focus);
       break;
-    case "setStyle":
-      setAppearance({ uiStyle: a.style });
-      break;
     case "setNowPlayingLayout":
       setAppearance({ nowPlayingLayout: a.layout });
       if (a.tryCard) useUi.getState().setTryLooks("whatsNew");

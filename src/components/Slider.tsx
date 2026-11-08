@@ -2,7 +2,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useSpring } from "../motion";
 import { useSettings } from "../stores/settings";
-import { useUiStyle } from "./UiStyle";
 
 interface SliderProps {
   value: number;
@@ -18,15 +17,15 @@ interface SliderProps {
   disabled?: boolean;
   className?: string;
   /**
-   * M3 look: "xs" = the expressive slider (16 px track, bar handle), "sm" = a smaller one for the player bar,
-   * "seek" = a thin progress-style track. Classic ignores it.
+   * "xs" = the expressive slider (16 px track, bar handle), "sm" = a smaller one for the player bar,
+   * "seek" = a thin progress-style track.
    */
   size?: "xs" | "sm" | "seek";
-  /** M3 "seek" only: the active track waves (playing); the wave flattens out when this turns false. */
+  /** "seek" only: the active track waves (playing); the wave flattens out when this turns false. */
   wavy?: boolean;
 }
 
-/** Pointer, keyboard and hover handling shared by both looks. */
+/** Pointer, keyboard and hover handling. */
 function useSliderInput({ value, max, onCommit, onChange, live = false, step, disabled }: SliderProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<number | null>(null);
@@ -34,10 +33,9 @@ function useSliderInput({ value, max, onCommit, onChange, live = false, step, di
   const shown = drag ?? value;
   const pct = max > 0 ? Math.min(100, Math.max(0, (shown / max) * 100)) : 0;
 
-  // The position is a CSS variable (--p 0–100, --f 0–1) on the root, written before paint on every render.
+  // The position is a CSS variable (--p 0–100) on the root, written before paint on every render.
   useLayoutEffect(() => {
     ref.current?.style.setProperty("--p", String(pct));
-    ref.current?.style.setProperty("--f", String(pct / 100));
   });
 
   const at = (e: PointerEvent) => {
@@ -82,58 +80,15 @@ function useSliderInput({ value, max, onCommit, onChange, live = false, step, di
   return { ref, drag, hover, shown, pct, handlers };
 }
 
-/**
- * Thin track with a thumb that appears on hover/drag (Classic), or the M3 Expressive slider. `onChange` fires live
- * while dragging when `live` is set, otherwise only `onCommit` fires on release.
- */
-export default function Slider(props: SliderProps) {
-  return useUiStyle() === "m3" ? <M3Slider {...props} /> : <ClassicSlider {...props} />;
-}
-
-function ClassicSlider(props: SliderProps) {
-  const { max, label, format, tooltip = "hover", disabled, className = "" } = props;
-  const { ref, drag, hover, shown, handlers } = useSliderInput(props);
-  return (
-    <div
-      ref={ref}
-      role="slider"
-      tabIndex={disabled ? -1 : 0}
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={max}
-      aria-valuenow={Math.round(shown)}
-      aria-valuetext={format?.(shown)}
-      aria-disabled={disabled}
-      {...handlers}
-      className={`group relative flex h-4 cursor-pointer touch-none select-none items-center ${disabled ? "pointer-events-none opacity-40" : ""} ${className}`}
-    >
-      <div className="relative h-1 w-full overflow-hidden rounded-full bg-[var(--c-slider-track)] group-hover:h-1.5">
-        {hover !== null && max > 0 && <div className="absolute inset-0 origin-left bg-fg/20" style={{ transform: `scaleX(${hover / max})` }} />}
-        {/* scaleX instead of width: no layout on every clock tick */}
-        <div className="absolute inset-0 origin-left bg-[var(--c-slider-fill)]" style={{ transform: "scaleX(var(--f))" }} />
-      </div>
-      <div
-        className={`absolute h-3 w-3 -translate-x-1/2 rounded-full bg-[var(--c-accent)] shadow ${drag !== null ? "block" : "hidden group-hover:block group-focus-visible:block"}`}
-        style={{ left: "calc(var(--p) * 1%)" }}
-      />
-      {(hover !== null || drag !== null) && format && max > 0 && (
-        <div className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded bg-[var(--c-surface-3)] px-2 py-1 text-xs tabular-nums shadow whitespace-nowrap"
-          style={{ left: `${((hover ?? shown) / max) * 100}%` }}>
-          {format(tooltip === "value" ? shown : hover ?? shown)}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /** Track height, handle height, track corner and the gap around the handle, in px (docs/dev/m3-expressive.md). */
 const M3_SIZES = { xs: [16, 44, 8, 6], sm: [12, 32, 6, 4], seek: [4, 16, 2, 4] } as const;
 
 /**
  * M3 Expressive slider: active and inactive tracks with a gap around a vertical bar handle. The tracks are
- * full-width layers cut with clip-path, so a clock tick only repaints; nothing is laid out again.
+ * full-width layers cut with clip-path, so a clock tick only repaints; nothing is laid out again. `onChange` fires
+ * live while dragging when `live` is set, otherwise only `onCommit` fires on release.
  */
-function M3Slider(props: SliderProps) {
+export default function Slider(props: SliderProps) {
   const { max, label, format, tooltip = "hover", disabled, className = "", size = "xs", wavy } = props;
   const { ref, drag, hover, shown, pct, handlers } = useSliderInput(props);
   const [track, handle, corner, gap] = M3_SIZES[size];

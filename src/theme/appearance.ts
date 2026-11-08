@@ -32,9 +32,7 @@ export interface Appearance extends ThemeChoice {
   font: FontKind;
   /** An installed font family, used when `font` is "custom". */
   fontFamily: string;
-  /** "m3" = Material 3 Expressive, "classic" = the look from before 2.0. */
-  uiStyle: UiStyle;
-  /** Now Playing layout; independent of `uiStyle`. */
+  /** Now Playing layout. */
   nowPlayingLayout: NowPlayingLayout;
   /** Springs, shape morphs and slides; off = everything jumps to its end state. */
   animations: boolean;
@@ -42,8 +40,6 @@ export interface Appearance extends ThemeChoice {
 
 export const AMBIENT_QUALITIES = ["low", "medium", "high"] as const;
 export type AmbientQuality = (typeof AMBIENT_QUALITIES)[number];
-export const UI_STYLES = ["m3", "classic"] as const;
-export type UiStyle = (typeof UI_STYLES)[number];
 export const NOW_PLAYING_LAYOUTS = ["material", "bento", "classic"] as const;
 export type NowPlayingLayout = (typeof NOW_PLAYING_LAYOUTS)[number];
 
@@ -72,7 +68,6 @@ export const DEFAULT_APPEARANCE: Appearance = {
   zoom: 1,
   font: "app",
   fontFamily: "",
-  uiStyle: "m3",
   nowPlayingLayout: "material",
   animations: true,
 };
@@ -106,8 +101,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
     zoom: num(r.zoom, 0.9, 1.25, d.zoom),
     font: FONT_KINDS.includes(r.font as FontKind) ? (r.font as FontKind) : d.font,
     fontFamily: typeof r.fontFamily === "string" ? r.fontFamily.slice(0, 200) : d.fontFamily,
-    // Settings from before 2.0 have none of these: existing users get the new look, like a fresh install.
-    uiStyle: UI_STYLES.includes(r.uiStyle as UiStyle) ? (r.uiStyle as UiStyle) : d.uiStyle,
+    // No `uiStyle`: 2.0 had a Classic look next to Material 3; stored values of it are dropped here, everyone gets M3.
     nowPlayingLayout: NOW_PLAYING_LAYOUTS.includes(r.nowPlayingLayout as NowPlayingLayout) ? (r.nowPlayingLayout as NowPlayingLayout) : d.nowPlayingLayout,
     animations: typeof r.animations === "boolean" ? r.animations : !systemReducedMotion(),
   };

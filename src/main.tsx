@@ -6,7 +6,7 @@ import "./index.css";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { coverTokens, initCoverColors, paintCoverScope } from "./stores/coverColors";
 import { useSettings } from "./stores/settings";
-import { applyLayout, applyStyle, applyTheme } from "./theme";
+import { applyAnimations, applyLayout, applyTheme } from "./theme";
 import { initMorph, setMotionEnabled } from "./motion";
 import { initFocusMode } from "./focusMode";
 
@@ -18,7 +18,7 @@ const applyColors = () => {
 const applyZoom = (z: number) => void getCurrentWebview().setZoom(z).catch(() => {});
 applyColors();
 applyLayout(useSettings.getState().appearance);
-applyStyle(useSettings.getState().appearance);
+applyAnimations(useSettings.getState().appearance);
 setMotionEnabled(useSettings.getState().appearance.animations);
 if (useSettings.getState().appearance.zoom !== 1) applyZoom(useSettings.getState().appearance.zoom);
 useSettings.subscribe((s, prev) => {
@@ -28,8 +28,8 @@ useSettings.subscribe((s, prev) => {
   if (a.palette !== p.palette || a.mode !== p.mode || a.overrides !== p.overrides || a.coverColors !== p.coverColors) applyColors();
   if (a.radius !== p.radius || a.density !== p.density || a.font !== p.font || a.fontFamily !== p.fontFamily) applyLayout(a);
   if (s.appearance.zoom !== prev.appearance.zoom) applyZoom(s.appearance.zoom);
-  if (a.uiStyle !== p.uiStyle || a.animations !== p.animations) {
-    applyStyle(a);
+  if (a.animations !== p.animations) {
+    applyAnimations(a);
     setMotionEnabled(a.animations);
   }
 });

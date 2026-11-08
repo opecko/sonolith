@@ -116,15 +116,16 @@ export function applyLayout(
   for (const step of Object.keys(M3_CORNERS) as (keyof typeof M3_CORNERS)[])
     root.style.setProperty(`--m3-corner-${step}`, `${m3Corner(step, a.radius)}px`);
   root.dataset.density = a.density;
-  // "app" = the style's own font (CSS picks it by data-ui-style); anything else is the user's pick, inline.
+  // "app" = Sonolith's own font (CSS picks it by data-font); anything else is the user's pick, inline.
   root.dataset.font = a.font === "custom" && !a.fontFamily.trim() ? "app" : a.font;
   const stack = fontStack(a.font, a.fontFamily);
   if (stack) root.style.setProperty("--font", stack);
   else root.style.removeProperty("--font");
 }
 
-/** Style switch and animations on <html>: CSS picks the look from data-ui-style, the motion engine reads data-animations. */
-export function applyStyle(a: { uiStyle: string; animations: boolean }, root: HTMLElement = document.documentElement) {
-  root.dataset.uiStyle = a.uiStyle;
+/** The animations setting on <html>: CSS and the motion engine read data-animations. */
+export function applyAnimations(a: { animations: boolean }, root: HTMLElement = document.documentElement) {
+  // Until the stylesheet drops its scope (next change): it still keys on this.
+  root.dataset.uiStyle = "m3";
   root.dataset.animations = a.animations ? "on" : "off";
 }

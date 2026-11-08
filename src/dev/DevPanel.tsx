@@ -11,7 +11,7 @@ import { usePlayer } from "../stores/player";
 import { previewOnboarding } from "../onboarding/store";
 import { flush, setAppearance, useSettings } from "../stores/settings";
 import { useUpdate, type UpdateInfo } from "../stores/update";
-import { NOW_PLAYING_LAYOUTS, UI_STYLES } from "../theme/appearance";
+import { NOW_PLAYING_LAYOUTS } from "../theme/appearance";
 import { WHATS_NEW } from "../whatsNew/entries";
 import { useWhatsNew } from "../whatsNew/store";
 import { useDevFlags } from "./flags";
@@ -113,10 +113,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-/** Dev panel: fake update, What's new for any entry, lastSeenVersion reset, onboarding, look toggles, settings JSON. */
+/** Dev panel: fake update, What's new for any entry, lastSeenVersion reset, onboarding, Now Playing layout and animations toggles, settings JSON. */
 export default function DevPanel({ onClose }: { onClose: () => void }) {
   const settings = useSettings();
-  const { uiStyle, nowPlayingLayout, animations } = settings.appearance;
+  const { nowPlayingLayout, animations } = settings.appearance;
   const [version, setVersion] = useState("0.0.0");
   const [flavor, setFlavor] = useState<Flavor>("github");
   const noHistory = useDevFlags((s) => s.noHistory);
@@ -178,9 +178,6 @@ export default function DevPanel({ onClose }: { onClose: () => void }) {
           <p className="type-body-small text-[var(--m3-on-surface-variant)]">Show: a preview, no flags change and the look comes back when it closes. Simulate: the real first-run check on a reload.</p>
         </Section>
         <Section title="Look">
-          <div className="m3-segmented flex" role="group" aria-label="Style">
-            {UI_STYLES.map((s) => <button key={s} className={seg} aria-pressed={uiStyle === s} onClick={() => setAppearance({ uiStyle: s })}>{s === "m3" ? "M3" : "Classic"}</button>)}
-          </div>
           <div className="m3-segmented flex" role="group" aria-label="Now Playing layout">
             {NOW_PLAYING_LAYOUTS.map((l) => <button key={l} className={`${seg} capitalize`} aria-pressed={nowPlayingLayout === l} onClick={() => setAppearance({ nowPlayingLayout: l })}>{l}</button>)}
           </div>

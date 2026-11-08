@@ -1,6 +1,5 @@
 import { ListMusic, MicVocal, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { UiStyleScope } from "../../components/UiStyle";
 import { useSwap } from "../../motion";
 import PodcastSpeed from "../../components/PodcastSpeed";
 import VolumeControl from "../../components/VolumeControl";
@@ -78,7 +77,7 @@ export default function MaterialLayout() {
     { id: "related", label: "Related", icon: Sparkles, show: hasRelated },
   ];
   return (
-    <UiStyleScope value="m3" className="np-material relative flex min-h-0 min-w-0 flex-1 overflow-hidden" style={{ "--np-panel": `${width}px` } as CSSProperties}>
+    <div className="np-material relative flex min-h-0 min-w-0 flex-1 overflow-hidden" style={{ "--np-panel": `${width}px` } as CSSProperties}>
       {/* Outside the pushed content and above the panel: the toggles stay put while the panel slides. */}
       <div className="absolute right-6 top-4 z-30 flex items-center gap-2" role="toolbar" aria-label="Now playing panels">
         {tabs.filter((t) => t.show).map(({ id, label, icon: Icon }) => (
@@ -132,6 +131,6 @@ export default function MaterialLayout() {
           </div>
         </section>
       )}
-    </UiStyleScope>
+    </div>
   );
 }

@@ -1,7 +1,5 @@
-import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { ticker } from "../motion";
-import { useUiStyle } from "./UiStyle";
 
 const N = 72;
 const TAU = Math.PI * 2;
@@ -73,9 +71,7 @@ export function LoadingIndicator({ size = 48, contained = false, label = "Loadin
   );
 }
 
-/** Small busy indicator in either style: Classic's spinner or the M3 loading indicator. */
-export function Spinner({ size = 24, label = "Loading", className = "" }: { size?: number; label?: string; className?: string }) {
-  return useUiStyle() === "m3"
-    ? <LoadingIndicator size={Math.round(size * 1.5)} label={label} />
-    : <Loader2 size={size} className={`animate-spin ${className}`} aria-label={label} />;
+/** Small busy indicator: the M3 loading indicator, sized like an icon of `size`. */
+export function Spinner({ size = 24, label = "Loading" }: { size?: number; label?: string }) {
+  return <LoadingIndicator size={Math.round(size * 1.5)} label={label} />;
 }

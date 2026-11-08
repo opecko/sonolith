@@ -15,7 +15,7 @@ import Switch from "../Switch";
 import ColorEditor, { ContrastWarnings, type EditorView } from "./ColorEditor";
 import FontPicker from "./FontPicker";
 import PaletteGallery, { ModeToggle, PaletteGrid, SearchField } from "./PaletteGallery";
-import { AnimationsSwitch, LayoutPicker, ResetToClassic, StylePicker, styleDetail } from "./StyleOptions";
+import { AnimationsSwitch, LayoutPicker } from "./StyleOptions";
 import ThemeTransfer from "./ThemeTransfer";
 import type { VisualizerMode, VisualizerSettings } from "../../visualizer/settings";
 import { VisualizerPreview } from "../../visualizer/Visualizer";
@@ -34,18 +34,14 @@ const pct = (v: number) => `${Math.round(v * 100)} %`;
 
 const outlineBtn = "m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]";
 
-/** Settings → Look: the style, motion, shapes, size and font. */
+/** Settings → Look: motion, shapes, size and font. */
 export function LookSettings() {
   const a = useSettings((s) => s.appearance);
   return (
     <>
-      <SettingCard title="Style">
-        <SettingRow id="style" title="Style" detail={styleDetail(a.uiStyle)}><StylePicker /></SettingRow>
+      <SettingCard title="Motion">
         <SettingRow id="animations" title="Animations" detail="Springs, shape changes and slides. Off reduces motion; by default it follows your system's setting.">
           <AnimationsSwitch />
-        </SettingRow>
-        <SettingRow id="classic" title="Classic look" detail="Back to the look from before 2.0: Classic style and the Classic Now Playing.">
-          <ResetToClassic />
         </SettingRow>
       </SettingCard>
       <SettingCard title="Size and shape">

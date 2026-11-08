@@ -1,36 +1,19 @@
 import { Volume1, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useUiStyle } from "../components/UiStyle";
 import { Spring } from "../motion";
 import { usePlayer } from "../stores/player";
 import { useShortcutUi } from "./store";
 
 const iconFor = (level: number, muted: boolean) => (muted || level === 0 ? VolumeX : level < 50 ? Volume1 : Volume2);
 
-/** The volume a shortcut just set, for when no volume control is on screen (or it's out of sight). */
-export default function ShortcutFeedback() {
-  return useUiStyle() === "m3" ? <M3VolumeBubble /> : <ClassicVolumeBubble />;
-}
-
-function ClassicVolumeBubble() {
-  const volume = useShortcutUi((s) => s.volume);
-  if (volume === null) return null;
-  const level = Math.round(volume * 100);
-  const Icon = iconFor(level, false);
-  return (
-    <div role="status" className="pointer-events-none fixed bottom-24 left-1/2 z-[60] flex -translate-x-1/2 items-center gap-2 rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] px-4 py-2.5 text-sm tabular-nums shadow-2xl">
-      <Icon size={18} aria-hidden /> Volume {level} %
-    </div>
-  );
-}
-
 /**
- * M3 Expressive: an inverse-surface pill with the speaker icon, a short linear progress and the value. It grows in
- * from its anchor (bottom center) on a spring, the bar follows the level on a spring, and it shrinks away once the
- * store hides it; a new change while it's up only moves the bar (the store restarts the hide timer). All per frame
- * from the motion engine, instant with animations off.
+ * The volume a shortcut just set, for when no volume control is on screen (or it's out of sight): an
+ * inverse-surface pill with the speaker icon, a short linear progress and the value. It grows in from its anchor
+ * (bottom center) on a spring, the bar follows the level on a spring, and it shrinks away once the store hides it;
+ * a new change while it's up only moves the bar (the store restarts the hide timer). All per frame from the motion
+ * engine, instant with animations off.
  */
-function M3VolumeBubble() {
+export default function ShortcutFeedback() {
   const volume = useShortcutUi((s) => s.volume);
   const muted = usePlayer((s) => s.muted);
   // Kept while the exit runs: the last value shown.

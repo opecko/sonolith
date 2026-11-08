@@ -8,7 +8,6 @@ import PodcastSpeed from "../../components/PodcastSpeed";
 import VolumeControl from "../../components/VolumeControl";
 import { QueueChips } from "../../components/QueueChips";
 import { useTransportTitles } from "../../shortcuts/hint";
-import { UiStyleScope } from "../../components/UiStyle";
 import { Spring, tween, useSwap } from "../../motion";
 import { usePlayer, type Repeat as RepeatMode } from "../../stores/player";
 import { CloseNowPlaying, CoverArt, VideoMode, SeekBar, TrackActions, TrackLinks, useCurrentTrack } from "./parts";
@@ -253,7 +252,7 @@ export default function BentoLayout() {
   const toggleQueue = useCallback(() => setBig((b) => (b === "queue" ? null : "queue")), []);
 
   return (
-    <UiStyleScope value="m3" className="np-bento relative flex min-h-0 min-w-0 flex-1 flex-col">
+    <div className="np-bento relative flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="scroll-y min-h-0 flex-1 px-6 pt-6">
         <div className="bento-grid" data-expanded={expanded ? "" : undefined} data-lyrics={lyricsAside ? "" : undefined}>
           <Tile area="cover" label="Artwork" className="relative overflow-hidden !p-0">
@@ -320,6 +319,6 @@ export default function BentoLayout() {
       </div>
       {/* The close button's strip: its own space, so no tile ever sits under it. */}
       <div className="flex h-16 shrink-0 items-center justify-end px-4"><CloseNowPlaying /></div>
-    </UiStyleScope>
+    </div>
   );
 }

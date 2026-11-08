@@ -6,7 +6,6 @@ import { useShallow } from "zustand/react/shallow";
 import { usePlayer, type Repeat as RepeatMode } from "../stores/player";
 import { useProgress } from "../stores/progress";
 import { useUi } from "../stores/ui";
-import { useUiStyle } from "./UiStyle";
 import { useSettings } from "../stores/settings";
 import type { Track } from "../api/types";
 import { itemEntries, useTrackMenu } from "./ItemMenu";
@@ -88,54 +87,7 @@ function Controls() {
   const { status, shuffle, repeat, hasTrack, podcast } = usePlayer(
     useShallow((s) => ({ status: s.status, shuffle: s.shuffle, repeat: s.repeat, hasTrack: s.index >= 0, podcast: !!s.queue[s.index]?.podcast })),
   );
-  const m3 = useUiStyle() === "m3";
-  if (m3) return <M3Controls status={status} shuffle={shuffle} repeat={repeat} hasTrack={hasTrack} podcast={podcast} />;
-  return <ClassicControls status={status} shuffle={shuffle} repeat={repeat} hasTrack={hasTrack} podcast={podcast} />;
-}
-
-function ClassicControls({ status, shuffle, repeat, hasTrack, podcast }: {
-  status: string; shuffle: boolean; repeat: RepeatMode; hasTrack: boolean; podcast: boolean;
-}) {
-  const { togglePlay, next, prev, toggleShuffle, cycleRepeat, skipBy } = usePlayer.getState();
-  const playing = status === "playing";
-  const titles = useTransportTitles();
-  const playButton = (
-    <button
-      className="flex h-10 w-10 items-center justify-center rounded-full bg-button text-on-button hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
-      onClick={togglePlay}
-      disabled={!hasTrack}
-      aria-label={playing ? "Pause" : "Play"}
-      title={titles.play(playing)}
-    >
-      {status === "loading" ? <Loader2 size={20} className="animate-spin" /> : playing ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
-    </button>
-  );
-  // Podcast episodes: jump back 10 s / forward 30 s instead of previous / next, like YouTube Music.
-  if (podcast)
-    return (
-      <div className="flex items-center gap-2">
-        <SkipSeconds sec={-10} onClick={() => skipBy(-10)} />
-        {playButton}
-        <SkipSeconds sec={30} onClick={() => skipBy(30)} />
-      </div>
-    );
-  return (
-    <div className="flex items-center gap-2">
-      <button className={`icon-btn h-10 w-10 ${shuffle ? "!text-[var(--c-text)]" : ""}`} onClick={toggleShuffle} aria-label="Shuffle" aria-pressed={shuffle}>
-        <Shuffle size={20} />
-      </button>
-      <button className="icon-btn h-10 w-10" onClick={prev} disabled={!hasTrack} aria-label="Previous" title={titles.prev}>
-        <SkipBack size={24} fill="currentColor" />
-      </button>
-      {playButton}
-      <button className="icon-btn h-10 w-10" onClick={next} disabled={!hasTrack} aria-label="Next" title={titles.next}>
-        <SkipForward size={24} fill="currentColor" />
-      </button>
-      <button className={`icon-btn h-10 w-10 ${repeat !== "off" ? "!text-[var(--c-text)]" : ""}`} onClick={cycleRepeat} aria-label={repeatLabel[repeat]} aria-pressed={repeat !== "off"}>
-        {repeat === "one" ? <Repeat1 size={20} /> : <Repeat size={20} />}
-      </button>
-    </div>
-  );
+  return <M3Controls status={status} shuffle={shuffle} repeat={repeat} hasTrack={hasTrack} podcast={podcast} />;
 }
 
 export const PlayIcon = ({ status, size }: { status: string; size: number }) =>
@@ -236,14 +188,13 @@ function SeekProgress() {
   const position = useProgress((s) => s.position);
   const duration = useProgress((s) => s.duration);
   const seek = usePlayer((s) => s.seek);
-  // M3: the wavy track while playing (flat when paused); Classic keeps its plain bar.
+  // The wavy track while playing (flat when paused).
   const playing = usePlayer((s) => s.status === "playing");
   const podcast = usePlayer((s) => !!s.queue[s.index]?.podcast);
-  const m3 = useUiStyle() === "m3";
   return (
     <div className="flex w-full max-w-[600px] items-center gap-2 text-xs tabular-nums text-[var(--c-text-muted)]">
       <span className="w-10 text-right">{fmtTime(position)}</span>
-      <Slider className="flex-1" value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" wavy={m3 ? playing : undefined} />
+      <Slider className="flex-1" value={position} max={duration} step={5} onCommit={seek} label="Seek" format={fmtTime} disabled={!duration} size="seek" wavy={playing} />
       {/* Episodes: the time left. */}
       <span className="w-12">{podcast && duration ? `−${fmtTime(Math.max(0, duration - position))}` : fmtTime(duration)}</span>
     </div>

@@ -5,7 +5,6 @@ import { usePlayer } from "../stores/player";
 import { setAppearance, useSettings } from "../stores/settings";
 import type { AmbientQuality, NowPlayingLayout } from "../theme/appearance";
 import { Spring, tween } from "../motion";
-import { UiStyleScope, useUiStyle } from "../components/UiStyle";
 import { useUi } from "../stores/ui";
 import BentoLayout from "./nowplaying/Bento";
 import ClassicLayout from "./nowplaying/Classic";
@@ -102,36 +101,23 @@ const Backdrop = memo(function Backdrop({ src, intensity, quality }: { src?: str
  * closed overlay right after opening, the open one right after closing. Setting the transform every frame from the
  * main thread leaves nothing stale to show. Position is in % of the overlay's height (100 = hidden).
  */
-function useSlide(ref: RefObject<HTMLDivElement | null>, open: boolean, onOpened: () => void, onClosed: () => void, m3: boolean) {
+function useSlide(ref: RefObject<HTMLDivElement | null>, open: boolean, onOpened: () => void, onClosed: () => void) {
   const pos = useRef(100);
   const spring = useRef<Spring | null>(null);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (m3) {
-      // M3: a critically damped slow spatial spring (no overshoot: the overlay must not lift off the player bar).
-      el.style.transform = `translateY(${pos.current}%)`;
-      spring.current ??= new Spring(pos.current, { damping: 1, stiffness: 240 }, (y) => {
-        pos.current = y;
-        el.style.transform = `translateY(${y}%)`;
-      }, { precision: 0.05 });
-      spring.current.to(open ? 0 : 100, () => {
-        if (open) return onOpened();
-        spring.current = null;
-        onClosed();
-      });
-      return;
-    }
-    const from = pos.current;
-    const [to, ms, ease] = open
-      ? [0, 200, (t: number) => 1 - (1 - t) ** 4] // like cubic-bezier(0.2, 0, 0, 1)
-      : [100, 160, (t: number) => t * t];
-    // Before the first paint, so the overlay never shows at its final place first.
-    el.style.transform = `translateY(${from}%)`;
-    return tween(ms, ease, (p) => {
-      pos.current = from + (to - from) * p;
-      el.style.transform = `translateY(${pos.current}%)`;
-    }, open ? onOpened : onClosed);
+    // A critically damped slow spatial spring (no overshoot: the overlay must not lift off the player bar).
+    el.style.transform = `translateY(${pos.current}%)`;
+    spring.current ??= new Spring(pos.current, { damping: 1, stiffness: 240 }, (y) => {
+      pos.current = y;
+      el.style.transform = `translateY(${y}%)`;
+    }, { precision: 0.05 });
+    spring.current.to(open ? 0 : 100, () => {
+      if (open) return onOpened();
+      spring.current = null;
+      onClosed();
+    });
     // The callbacks only run at the end; re-running for new ones would restart the slide.
   }, [open]);
 }
@@ -144,14 +130,14 @@ const TRY_TEXT = {
   settings: { title: "Try out the different styles", done: "Keep this one" },
 } as const;
 
-/** Switch layouts in place, then dismiss ("Try out…", from What's new or Settings). Always M3. */
+/** Switch layouts in place, then dismiss ("Try out…", from What's new or Settings). */
 function TryLooksCard() {
   const from = useUi((s) => s.tryLooks);
   const layout = useSettings((s) => s.appearance.nowPlayingLayout);
   if (!from) return null;
   const text = TRY_TEXT[from];
   return (
-    <UiStyleScope value="m3" className="pointer-events-none absolute inset-x-0 top-4 z-40 flex justify-center px-20">
+    <div className="pointer-events-none absolute inset-x-0 top-4 z-40 flex justify-center px-20">
       <div role="region" aria-label={text.title}
         className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-5 gap-y-3 rounded-[var(--m3-corner-xl)] bg-[var(--m3-surface-container-high)] px-5 py-3 text-[var(--m3-on-surface)] shadow-[0_4px_16px_color-mix(in_srgb,var(--m3-scrim)_30%,transparent)]">
         <p className="type-title-medium-em">{text.title}</p>
@@ -166,7 +152,7 @@ function TryLooksCard() {
           if (from === "settings") useUi.getState().setNowPlaying(false);
         }}>{text.done}</button>
       </div>
-    </UiStyleScope>
+    </div>
   );
 }
 
@@ -189,12 +175,11 @@ export default function NowPlaying() {
     panel.current = el;
     setCoverScope(el);
   }, []);
-  const m3 = useUiStyle() === "m3";
   const layout = useSettings((s) => s.appearance.nowPlayingLayout);
   useSlide(panel, open, () => useUi.getState().setNowPlayingCovering(true), () => {
     setMounted(false);
     useUi.getState().setTryLooks(null);
-  }, m3);
+  });
 
   useEffect(() => {
     if (!open) return;

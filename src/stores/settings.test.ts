@@ -8,17 +8,28 @@ describe("settings migration", () => {
     const old = { autoplay: false, appearance: { palette: "nord", mode: "light", radius: 12 } };
     const s = parseSettings(old);
     expect(s.autoplay).toBe(false);
-    expect(s.appearance).toMatchObject({ palette: "nord", mode: "light", radius: 12, uiStyle: "m3", nowPlayingLayout: "material", animations: true });
+    expect(s.appearance).toMatchObject({ palette: "nord", mode: "light", radius: 12, nowPlayingLayout: "material", animations: true });
     expect(s.lastSeenVersion).toBeNull();
     expect(s.appearance.ambientQuality).toBe("medium");
   });
 
   it("keeps valid 2.0 values and drops malformed ones", () => {
-    expect(parseSettings({ appearance: { uiStyle: "classic", nowPlayingLayout: "bento", animations: false }, lastSeenVersion: "2.0.0" }))
-      .toMatchObject({ appearance: { uiStyle: "classic", nowPlayingLayout: "bento", animations: false }, lastSeenVersion: "2.0.0" });
-    const bad = parseSettings({ appearance: { uiStyle: "m4", nowPlayingLayout: 3, animations: "yes" }, lastSeenVersion: 2 });
-    expect(bad.appearance).toMatchObject({ uiStyle: "m3", nowPlayingLayout: "material", animations: true });
+    expect(parseSettings({ appearance: { nowPlayingLayout: "bento", animations: false }, lastSeenVersion: "2.0.0" }))
+      .toMatchObject({ appearance: { nowPlayingLayout: "bento", animations: false }, lastSeenVersion: "2.0.0" });
+    const bad = parseSettings({ appearance: { nowPlayingLayout: 3, animations: "yes" }, lastSeenVersion: 2 });
+    expect(bad.appearance).toMatchObject({ nowPlayingLayout: "material", animations: true });
     expect(bad.lastSeenVersion).toBeNull();
+  });
+
+  it("a stored Classic style is dropped silently and nothing else changes", () => {
+    const stored = { palette: "nord", mode: "light", radius: 12, nowPlayingLayout: "classic", animations: false };
+    const withStyle = parseSettings({ appearance: { ...stored, uiStyle: "classic" }, lastSeenVersion: "2.5.1" });
+    const without = parseSettings({ appearance: stored, lastSeenVersion: "2.5.1" });
+    expect(withStyle).toEqual(without);
+    expect(withStyle.appearance).not.toHaveProperty("uiStyle");
+    // The Classic Now Playing layout is a separate setting and stays.
+    expect(withStyle.appearance).toMatchObject({ palette: "nord", mode: "light", radius: 12, nowPlayingLayout: "classic", animations: false });
+    expect(parseSettings({ appearance: { uiStyle: "m3" } }).appearance).not.toHaveProperty("uiStyle");
   });
 
   it("onboardingCompleted: only a stored true counts (1.x settings have none)", () => {

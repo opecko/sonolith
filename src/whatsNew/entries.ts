@@ -173,7 +173,6 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     actions: [
       { label: "Try the new Now Playing", action: { type: "setNowPlayingLayout", layout: "material", open: true, tryCard: true } },
       { label: "Appearance settings", action: { type: "openSettings", section: "look" } },
-      { label: "Prefer the old look? Switch to Classic", action: { type: "setStyle", style: "classic" } },
     ],
   },
 ];

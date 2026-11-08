@@ -1,6 +1,5 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
-import { UiStyleScope } from "../components/UiStyle";
 import { Spring, useSwap } from "../motion";
 import { useAuth } from "../stores/auth";
 import { openSettings, useNav } from "../stores/nav";
@@ -98,7 +97,7 @@ export default function Onboarding() {
 
   return (
     <div ref={root} role="dialog" aria-modal="true" aria-label="Welcome to Sonolith" onKeyDown={onKeyDown} className="fixed inset-0 z-[80]">
-      <UiStyleScope value="m3" className="flex h-full flex-col bg-[var(--m3-surface)] text-[var(--m3-on-surface)]">
+      <div className="flex h-full flex-col bg-[var(--m3-surface)] text-[var(--m3-on-surface)]">
         <header className="flex shrink-0 items-center gap-4 px-6 pt-5">
           <ol className="flex flex-1 items-center gap-1.5" aria-label="Setup steps">
             {STEPS.map((s, i) => (
@@ -149,7 +148,7 @@ export default function Onboarding() {
             </div>
           </div>
         )}
-      </UiStyleScope>
+      </div>
     </div>
   );
 }

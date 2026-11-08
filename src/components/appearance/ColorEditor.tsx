@@ -1,7 +1,6 @@
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { M3_CONTRAST_PAIRS, m3Roles } from "../../theme/m3";
-import { useUiStyle } from "../UiStyle";
 import { contrast, isHex, parseHex, toHex } from "../../theme/color";
 import { SIMPLE_TOKENS, TOKEN_LABELS, TOKENS, type Token, type TokenMap } from "../../theme/tokens";
 
@@ -14,12 +13,11 @@ const PAIRS: { fg: Token; bg: Token; label: string }[] = [
 ];
 
 export function ContrastWarnings({ tokens }: { tokens: TokenMap }) {
-  const m3 = useUiStyle() === "m3";
-  const roles = useMemo(() => (m3 ? m3Roles(tokens) : null), [m3, tokens]);
+  const roles = useMemo(() => m3Roles(tokens), [tokens]);
   const low = [
     ...PAIRS.map((p) => ({ label: p.label, ratio: contrast(tokens[p.fg], tokens[p.bg]) })),
-    // The M3 style also puts text on colors derived from the tokens (containers).
-    ...(roles ? M3_CONTRAST_PAIRS.map((p) => ({ label: p.label, ratio: contrast(roles[p.fg], roles[p.bg]) })) : []),
+    // M3 also puts text on colors derived from the tokens (containers).
+    ...M3_CONTRAST_PAIRS.map((p) => ({ label: p.label, ratio: contrast(roles[p.fg], roles[p.bg]) })),
   ].filter((p) => p.ratio < MIN_CONTRAST);
   if (!low.length) return null;
   return (

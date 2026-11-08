@@ -1,13 +1,6 @@
-import { RotateCcw } from "lucide-react";
 import { setAppearance, useSettings } from "../../stores/settings";
-import type { NowPlayingLayout, UiStyle } from "../../theme/appearance";
-import { Segmented } from "../../views/settings/kit";
+import type { NowPlayingLayout } from "../../theme/appearance";
 import Switch from "../Switch";
-
-export const STYLES: { id: UiStyle; label: string; detail: string }[] = [
-  { id: "m3", label: "Material 3 Expressive", detail: "Rounder shapes, tonal colors, springy motion and buttons that change shape as you press them." },
-  { id: "classic", label: "Classic", detail: "The look from before 2.0: flat, compact, like YouTube Music." },
-];
 
 export const LAYOUTS: { id: NowPlayingLayout; label: string }[] = [
   { id: "material", label: "Material" },
@@ -51,14 +44,6 @@ export function LayoutPreview({ id }: { id: NowPlayingLayout }) {
   );
 }
 
-/** The Style choice (Material 3 Expressive / Classic). */
-export function StylePicker() {
-  const uiStyle = useSettings((s) => s.appearance.uiStyle);
-  return <Segmented value={uiStyle} options={STYLES.map((s) => [s.id, s.label] as const)} onChange={(id) => setAppearance({ uiStyle: id })} label="Style" />;
-}
-
-export const styleDetail = (id: UiStyle) => STYLES.find((s) => s.id === id)!.detail;
-
 /** The Now Playing layout cards, each with a schematic. */
 export function LayoutPicker() {
   const layout = useSettings((s) => s.appearance.nowPlayingLayout);
@@ -78,15 +63,4 @@ export function LayoutPicker() {
 export function AnimationsSwitch() {
   const animations = useSettings((s) => s.appearance.animations);
   return <Switch on={animations} onChange={(on) => setAppearance({ animations: on })} label="Animations" />;
-}
-
-/** Back to the pre-2.0 look: Classic style and the Classic Now Playing. */
-export function ResetToClassic() {
-  const classic = useSettings((s) => s.appearance.uiStyle === "classic" && s.appearance.nowPlayingLayout === "classic");
-  return (
-    <button className="m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)] disabled:opacity-50"
-      disabled={classic} onClick={() => setAppearance({ uiStyle: "classic", nowPlayingLayout: "classic" })}>
-      <RotateCcw size={16} aria-hidden /> Reset
-    </button>
-  );
 }

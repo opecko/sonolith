@@ -3,7 +3,6 @@ import { Component, useEffect, type ReactNode } from "react";
 import { AuthError } from "../api/client";
 import { isNetworkError } from "../api/errors";
 import { useAuth } from "../stores/auth";
-import { useUiStyle } from "./UiStyle";
 import { LoadingIndicator } from "./LoadingIndicator";
 
 export function Loading({ variant = "shelves", label = "Loading" }: { variant?: "shelves" | "list" | "grid"; label?: string }) {
@@ -15,9 +14,8 @@ export function Loading({ variant = "shelves", label = "Loading" }: { variant?: 
     </div>
   );
   const six = [0, 1, 2, 3, 4, 5, 6];
-  const m3 = useUiStyle() === "m3";
-  // M3: lists wait on the loading indicator; shelves and grids keep their skeletons (they hold the page's layout).
-  if (m3 && variant === "list")
+  // Lists wait on the loading indicator; shelves and grids keep their skeletons (they hold the page's layout).
+  if (variant === "list")
     return (
       <div role="status" aria-busy="true" aria-label={label} className="flex justify-center py-16">
         <LoadingIndicator contained label={label} />
@@ -39,13 +37,6 @@ export function Loading({ variant = "shelves", label = "Loading" }: { variant?: 
           ))}
         </div>
       )}
-      {variant === "list" &&
-        Array.from({ length: 8 }, (_, i) => (
-          <div key={i} className="flex items-center gap-4 px-2 py-2">
-            <div className="skeleton h-10 w-10" />
-            <div className="flex-1"><div className="skeleton h-4 w-1/3" /><div className="skeleton mt-2 h-4 w-1/5" /></div>
-          </div>
-        ))}
     </div>
   );
 }

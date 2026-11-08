@@ -250,7 +250,7 @@ interface Category { id: SettingsSection; title: string; detail: string; icon: L
 /** The list, in groups; each group's icons share a color. */
 const GROUPS: { tone: string; items: Category[] }[] = [
   { tone: "blue", items: [
-    { id: "look", title: "Look", detail: "Style, animations, size, font", icon: Paintbrush, page: () => <LookSettings /> },
+    { id: "look", title: "Look", detail: "Animations, size, font", icon: Paintbrush, page: () => <LookSettings /> },
     { id: "colors", title: "Colors", detail: "Palette, album art colors", icon: Palette, page: () => <ColorSettings /> },
     { id: "nowplaying", title: "Now Playing", detail: "Layout, ambient light, Save button, visualizer", icon: Disc3, page: () => <NowPlayingSettings /> },
   ] },

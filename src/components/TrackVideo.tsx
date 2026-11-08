@@ -143,7 +143,7 @@ function VideoFrame({ videoRef, src, loaded, error, onError, onLoaded }: {
       {src && <video ref={videoRef} src={src} muted playsInline preload="auto" onError={onError} onLoadedData={onLoaded} className={`h-full w-full object-contain ${loaded ? "" : "invisible"}`} />}
       {!loaded && !error && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <Spinner size={32} className="text-[var(--c-text-muted)]" label="Loading video" />
+          <Spinner size={32} label="Loading video" />
         </div>
       )}
       {error && <p className="px-6 text-center text-sm text-[var(--c-text-muted)]">{error}</p>}
