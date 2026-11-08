@@ -17,7 +17,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       },
       {
         icon: Layers,
-        title: "Transparent window (Linux)",
+        title: "Transparent window (Linux only)",
         text: "Let your desktop show through Sonolith, blurred if your compositor does blur, and pick how solid the surfaces are in Settings → Look → Window.",
       },
     ],
