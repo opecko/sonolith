@@ -165,7 +165,7 @@ export class Spring {
   }
 }
 
-/** A fixed-duration animation from 0 to 1 through `ease` (Classic's own timings); same switch as springs. */
+/** A fixed-duration animation from 0 to 1 through `ease` (no overshoot); same switch as springs. */
 export function tween(ms: number, ease: (t: number) => number, onUpdate: (p: number) => void, onDone?: () => void): () => void {
   let t0 = -1;
   const anim: Running = {

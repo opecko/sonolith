@@ -46,7 +46,7 @@ export default function Avatar() {
         {data?.photo ? <img src={data.photo} alt="" className="h-full w-full object-cover" /> : <User size={18} />}
       </button>
       {open && (
-        // The same menu surface as the ⋮ menus (m3-menu): M3 in the M3 style, unchanged in Classic.
+        // The same menu surface as the ⋮ menus (m3-menu).
         <div role="menu" aria-label="Account" className="m3-menu absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] py-2 shadow-2xl">
           {data && (
             <div className="m3-menu-header border-b border-[var(--c-outline)] px-4 pb-3 pt-1">

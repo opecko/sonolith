@@ -25,7 +25,7 @@ function SignInPrompt() {
     <div className="mx-auto mt-24 max-w-sm text-center">
       <h2 className="text-2xl font-bold tracking-tight">Sign in to YouTube Music</h2>
       <p className="mt-2 text-sm text-[var(--c-text-muted)]">Your library, likes and history need an account. A Google sign-in window will open; your cookies are stored in the OS keyring.</p>
-      <button onClick={login} className="m3-btn m3-filled mt-6 h-10 rounded-full bg-button px-6 text-sm font-medium text-on-button hover:scale-105">Sign in</button>
+      <button onClick={login} className="m3-btn m3-filled mt-6 h-10 rounded-full bg-button px-6 text-sm font-medium text-on-button">Sign in</button>
       {error && <p className="mt-3 text-sm text-[var(--c-error)]">{error}</p>}
     </div>
   );

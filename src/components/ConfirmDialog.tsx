@@ -48,7 +48,7 @@ export default function ConfirmDialog() {
         <div className="mt-2 flex justify-end gap-2">
           <button ref={cancel} className={`${btn} m3-btn m3-text border border-[var(--c-outline)] hover:bg-[var(--c-hover)]`} onClick={() => answer(false)}>Cancel</button>
           <button
-            className={`${btn} m3-btn ${request.danger ? "m3-danger bg-[var(--c-error)] text-[var(--c-bg)] hover:brightness-110" : "m3-filled bg-button text-on-button hover:bg-button/90"}`}
+            className={`${btn} m3-btn ${request.danger ? "m3-danger bg-[var(--c-error)] text-[var(--c-bg)]" : "m3-filled bg-button text-on-button hover:bg-button/90"}`}
             onClick={() => answer(true)}
           >
             {request.confirmLabel}

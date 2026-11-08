@@ -26,7 +26,7 @@ export default function PageHeader({ title, subtitle, thumbnail, tracks, round, 
           <div className="mt-6 flex gap-3">
             {!!tracks?.length && (<>
             <button onClick={() => playQueue(tracks, 0, { playlistId, title })}
-              className="m3-btn m3-filled m3-medium flex h-10 items-center gap-2 rounded-full bg-button px-6 text-sm font-medium text-on-button hover:scale-105 active:scale-95">
+              className="m3-btn m3-filled m3-medium flex h-10 items-center gap-2 rounded-full bg-button px-6 text-sm font-medium text-on-button">
               <Play size={20} fill="currentColor" aria-hidden /> Play
             </button>
             <button

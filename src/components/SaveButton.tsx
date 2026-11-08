@@ -47,16 +47,14 @@ export default function SaveButton({ track, className = "h-10 w-10" }: { track: 
 
   if (b.kind === "hidden") return null;
   const icon = flash || inPlaylist ? <ListCheck size={20} /> : <ListPlus size={20} />;
-  // Pressed: the M3 style colors it; Classic gets the accent.
-  const pressed = flash || inPlaylist ? "text-[var(--c-accent)]" : "";
   if (b.kind === "picker")
     return (
-      <Menu label={flash ? "Saved" : "Save to playlist"} className={`icon-btn shrink-0 ${pressed} ${className}`} trigger={icon}
+      <Menu label={flash ? "Saved" : "Save to playlist"} className={`icon-btn shrink-0 ${className}`} trigger={icon}
         entries={() => playlistEntries(track, () => setFlash(true))} />
     );
   const title = b.kind === "direct" ? (inPlaylist ? `Remove from "${b.title}"` : `Save to "${b.title}"`) : "Save to playlist";
   return (
-    <button className={`icon-btn shrink-0 ${pressed} ${className}`} aria-label={title} title={title}
+    <button className={`icon-btn shrink-0 ${className}`} aria-label={title} title={title}
       aria-pressed={b.kind === "direct" ? inPlaylist : undefined}
       onClick={() => {
         if (b.kind !== "direct") {
