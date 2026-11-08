@@ -17,6 +17,7 @@ import FontPicker from "./FontPicker";
 import PaletteGallery, { ModeToggle, PaletteGrid, SearchField } from "./PaletteGallery";
 import { AnimationsSwitch, LayoutPicker } from "./StyleOptions";
 import ThemeTransfer from "./ThemeTransfer";
+import WindowSettings from "./WindowSettings";
 import type { VisualizerMode, VisualizerSettings } from "../../visualizer/settings";
 import { VisualizerPreview } from "../../visualizer/Visualizer";
 import { useAuth } from "../../stores/auth";
@@ -34,7 +35,7 @@ const pct = (v: number) => `${Math.round(v * 100)} %`;
 
 const outlineBtn = "m3-btn m3-outlined flex h-9 items-center gap-2 rounded-full border border-[var(--c-outline)] px-4 text-sm hover:bg-[var(--c-hover)]";
 
-/** Settings → Look: motion, shapes, size and font. */
+/** Settings → Look: motion, the window (Linux), shapes, size and font. */
 export function LookSettings() {
   const a = useSettings((s) => s.appearance);
   return (
@@ -44,6 +45,7 @@ export function LookSettings() {
           <AnimationsSwitch />
         </SettingRow>
       </SettingCard>
+      <WindowSettings />
       <SettingCard title="Size and shape">
         <SettingRow id="zoom" title="Interface size" detail="Scales everything: text, buttons and pictures.">
           {/* Slider covers 90–125 %; it works on the offset so the track starts at 90. */}
@@ -298,7 +300,7 @@ export function ColorSettings() {
 
       {gallery && <PaletteGallery mode={mode} selected={selected.id} onSelect={select} onMode={setMode} onClose={closeGallery} />}
       {transfer && (
-        <ThemeTransfer kind={transfer} current={appearance} onImport={(a) => useSettings.getState().set({ appearance: { ...a, animations: appearance.animations } })} onClose={() => setTransfer(null)} />
+        <ThemeTransfer kind={transfer} current={appearance} onImport={(a) => useSettings.getState().set({ appearance: { ...a, animations: appearance.animations, windowOpacity: appearance.windowOpacity } })} onClose={() => setTransfer(null)} />
       )}
     </>
   );
