@@ -12,6 +12,8 @@ filters (WebKitGTK renders them in software and they flicker; see pitfalls.md).
   The visual can only be chosen before the window is realized, so **the switch needs a restart**: it's stored in
   `config.json` (`transparent_window`, next to `gpu_rendering`), read at startup, and Settings shows "Restart
   Sonolith" (`app_restart`) when the stored value differs from what the window was created with.
+  Under `tauri dev` that restart ends the dev command, and with it Vite: the new process shows no page. Close it
+  and run `tauri dev` again (release builds restart normally).
 - **No compositor** (an X11 session without a compositing manager): an RGBA window would be black where it's
   transparent. `window.rs` asks GDK (`gdk_screen_is_composited`) and keeps the window opaque then; Settings says
   why. Wayland always composites.
