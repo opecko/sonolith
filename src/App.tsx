@@ -27,6 +27,10 @@ import UpdateDialog from "./components/UpdateDialog";
 import { initUpdates } from "./stores/update";
 import WhatsNewDialog from "./whatsNew/WhatsNewDialog";
 import { initOnboarding, useOnboarding } from "./onboarding/store";
+import { windowMode } from "./compact/layout";
+import { initWindowSize, useWindowSize } from "./compact/windowSize";
+import CompactPlayer from "./compact/CompactPlayer";
+import TooSmall from "./compact/TooSmall";
 
 // The welcome is only ever needed on a fresh install: its code loads when it opens.
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
@@ -38,7 +42,11 @@ export default function App() {
   const covered = useUi((s) => s.nowPlayingCovering);
   const onboarding = useOnboarding((s) => s.open);
   const recapOpen = useRecapUi((s) => !!s.open);
+  // A small window gets the mini player, a tiny one a notice (compact/layout.ts); the full layout stays mounted under
+  // them, hidden, so pages, Now Playing and the video keep their state.
+  const mode = useWindowSize((s) => windowMode(s.width, s.height));
   useEffect(() => {
+    initWindowSize();
     useAuth.getState().init();
     initMediaKeys();
     void initTray();
@@ -57,15 +65,19 @@ export default function App() {
   // One delegated handler for every artist / album link in the app (TrackByline): rows carry only data-* attributes.
   return (
     <div className="flex h-full flex-col" {...browseLinks}>
-      <div data-np-under="" className={`flex min-h-0 flex-1 ${covered ? "invisible" : ""}`}>
-        <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar />
-          <MainView />
+      <div className={`contents ${mode === "full" ? "" : "invisible"}`}>
+        <div data-np-under="" className={`flex min-h-0 flex-1 ${covered ? "invisible" : ""}`}>
+          <Sidebar />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <TopBar />
+            <MainView />
+          </div>
         </div>
+        <NowPlaying />
+        <PlayerBar />
       </div>
-      <NowPlaying />
-      <PlayerBar />
+      {mode === "compact" && <CompactPlayer />}
+      {mode === "tiny" && <TooSmall />}
       <CreditsDialog />
       <UpdateDialog />
       <WhatsNewDialog />

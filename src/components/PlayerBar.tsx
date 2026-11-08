@@ -178,7 +178,7 @@ export function LiveIndicator({ className = "" }: { className?: string }) {
 }
 
 /** The only component subscribed to the playback clock. */
-function Progress() {
+export function Progress() {
   const live = usePlayer((s) => s.live);
   if (live) return <div className="flex w-full max-w-[600px] items-center text-xs"><LiveIndicator /></div>;
   return <SeekProgress />;
