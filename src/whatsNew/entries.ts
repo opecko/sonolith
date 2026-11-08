@@ -7,6 +7,18 @@ import type { WhatsNewEntry } from "./types";
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "2.6.0",
+    title: "One look: Material 3 Expressive",
+    highlights: [
+      {
+        icon: Palette,
+        title: "Sonolith is now Material 3 Expressive only",
+        text: "The Classic style is gone, and the Style setting with it. Everything you chose besides the style stays as it was; the Classic layout for Now Playing is still available.",
+      },
+    ],
+    actions: [{ label: "Look settings", action: { type: "openSettings", section: "look" } }],
+  },
+  {
     version: "2.5.1",
     title: "Important fixes",
     highlights: [
