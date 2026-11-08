@@ -5,6 +5,8 @@ import { usePlayer } from "../stores/player";
 import { setAppearance, useSettings } from "../stores/settings";
 import type { AmbientQuality, NowPlayingLayout } from "../theme/appearance";
 import { Spring, tween } from "../motion";
+import { glassOpacity } from "../theme/glass";
+import { underInset } from "./nowplaying/underClip";
 import { useUi } from "../stores/ui";
 import BentoLayout from "./nowplaying/Bento";
 import ClassicLayout from "./nowplaying/Classic";
@@ -107,15 +109,23 @@ function useSlide(ref: RefObject<HTMLDivElement | null>, open: boolean, onOpened
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    // A critically damped slow spatial spring (no overshoot: the overlay must not lift off the player bar).
-    el.style.transform = `translateY(${pos.current}%)`;
-    spring.current ??= new Spring(pos.current, { damping: 1, stiffness: 240 }, (y) => {
+    // Transparent window: the app under the overlay is cut away where it's covered, so it doesn't show through
+    // while the overlay slides (once covered it's hidden altogether). Boxes are read once per slide.
+    const under = glassOpacity() !== null ? document.querySelector<HTMLElement>("[data-np-under]") : null;
+    const panelBox = { top: el.offsetTop, height: el.offsetHeight };
+    const contentBox = under?.getBoundingClientRect();
+    const move = (y: number) => {
       pos.current = y;
       el.style.transform = `translateY(${y}%)`;
-    }, { precision: 0.05 });
+      if (under && contentBox) under.style.clipPath = `inset(0 0 ${underInset(y, panelBox, contentBox)}px 0)`;
+    };
+    // A critically damped slow spatial spring (no overshoot: the overlay must not lift off the player bar).
+    move(pos.current);
+    spring.current ??= new Spring(pos.current, { damping: 1, stiffness: 240 }, (y) => move(y), { precision: 0.05 });
     spring.current.to(open ? 0 : 100, () => {
       if (open) return onOpened();
       spring.current = null;
+      under?.style.removeProperty("clip-path");
       onClosed();
     });
     // The callbacks only run at the end; re-running for new ones would restart the slide.

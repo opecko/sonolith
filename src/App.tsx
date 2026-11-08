@@ -57,7 +57,7 @@ export default function App() {
   // One delegated handler for every artist / album link in the app (TrackByline): rows carry only data-* attributes.
   return (
     <div className="flex h-full flex-col" {...browseLinks}>
-      <div className={`flex min-h-0 flex-1 ${covered ? "invisible" : ""}`}>
+      <div data-np-under="" className={`flex min-h-0 flex-1 ${covered ? "invisible" : ""}`}>
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />
