@@ -24,7 +24,7 @@ describe("ids and boundaries", () => {
     expect(periodStart(oct)).toBe(at(2026, 9, 1));
     expect(periodEnd(oct)).toBe(at(2026, 10, 1));
     expect(periodEnd({ kind: "month", year: 2028, month: 1 }) - periodStart({ kind: "month", year: 2028, month: 1 })).toBeGreaterThan(28.9 * 86_400_000);
-    expect(periodEnd(y2026)).toBe(at(2026, 11, 1));
+    expect(periodEnd(y2026)).toBe(at(2026, 10, 1));
   });
 });
 
@@ -41,17 +41,17 @@ describe("availability", () => {
     expect(availability(oct, at(2026, 11, 1), few)).toEqual({ state: "notEnough", plays: 19, needed: 20 });
   });
 
-  it("the year unlocks on Dec 1, or early from Oct 15", () => {
-    expect(cutoffOf(y2026, at(2026, 10, 30, 23), null)).toBeNull();
-    expect(cutoffOf(y2026, at(2026, 11, 1), null)).toBe(at(2026, 11, 1));
+  it("the year unlocks on Nov 1, or early from Oct 15", () => {
+    expect(cutoffOf(y2026, at(2026, 9, 31, 23), null)).toBeNull();
+    expect(cutoffOf(y2026, at(2026, 10, 1), null)).toBe(at(2026, 10, 1));
     expect(canUnlockEarly(2026, at(2026, 9, 14, 23, 59), null)).toBe(false);
     expect(canUnlockEarly(2026, at(2026, 9, 15), null)).toBe(true);
-    expect(canUnlockEarly(2026, at(2026, 10, 30, 23), null)).toBe(true);
-    expect(canUnlockEarly(2026, at(2026, 11, 1), null)).toBe(false);
+    expect(canUnlockEarly(2026, at(2026, 9, 31, 23), null)).toBe(true);
+    expect(canUnlockEarly(2026, at(2026, 10, 1), null)).toBe(false);
     expect(canUnlockEarly(2026, at(2026, 9, 20), at(2026, 9, 18))).toBe(false);
     const early = at(2026, 9, 20, 15, 30);
     expect(cutoffOf(y2026, at(2026, 9, 20, 16), early)).toBe(early);
-    // Still the early moment after Dec 1.
+    // Still the early moment after Nov 1.
     expect(cutoffOf(y2026, at(2027, 0, 5), early)).toBe(early);
     expect(earlyUnlockFrom(2026)).toBe(at(2026, 9, 15));
   });
@@ -143,15 +143,15 @@ describe("snapshots", () => {
   });
 
   it("finds yearly recaps frozen too thin", () => {
-    const full = buildSnapshot(y2026, data, at(2026, 10, 5, 21), at(2026, 10, 5, 21), { frozen: true, podcasts: false, youtube: true });
-    const tiny = buildSnapshot(y2026, mergePlays(log.filter((e) => e.startedAt >= at(2026, 10, 5, 12) && e.startedAt < at(2026, 10, 5, 21)), []), at(2026, 10, 5, 21), at(2026, 10, 5, 21), { frozen: true, podcasts: false, youtube: false });
+    const full = buildSnapshot(y2026, data, at(2026, 9, 20, 21), at(2026, 9, 20, 21), { frozen: true, podcasts: false, youtube: true });
+    const tiny = buildSnapshot(y2026, mergePlays(log.filter((e) => e.startedAt >= at(2026, 9, 20, 12) && e.startedAt < at(2026, 9, 20, 21)), []), at(2026, 9, 20, 21), at(2026, 9, 20, 21), { frozen: true, podcasts: false, youtube: false });
     expect(thinEarlyYear(tiny, false)).toBe(true);
     expect(thinEarlyYear(full, false)).toBe(false);
     // Signed in, a year without any YouTube history is thin too; a month is never touched.
     expect(thinEarlyYear(full, true)).toBe(true);
     expect(thinEarlyYear({ ...full, sources: { ...full.sources, youtube: true } }, true)).toBe(false);
     expect(thinEarlyYear(buildSnapshot(oct, data, periodEnd(oct), at(2026, 10, 2), { frozen: true, podcasts: false, youtube: false }), true)).toBe(false);
-    // A year unlocked on Dec 1 (not early) is left alone, thin or not.
+    // A year unlocked on Nov 1 (not early) is left alone, thin or not.
     expect(thinEarlyYear({ ...tiny, cutoff: periodEnd(y2026) }, false)).toBe(false);
   });
 });

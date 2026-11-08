@@ -61,7 +61,7 @@ export default function RecapsView() {
   const unlock = async () => {
     const ok = await confirmAction({
       title: `Unlock ${periodTitle(year.period)} now?`,
-      message: "Your yearly recap will be frozen as of now and won't include later listening. It normally unlocks on December 1.",
+      message: "Your yearly recap will be frozen as of now and won't include later listening. It normally unlocks on November 1.",
       confirmLabel: "Unlock now",
     });
     if (!ok || year.period.kind !== "year") return;

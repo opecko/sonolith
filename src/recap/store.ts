@@ -183,7 +183,7 @@ async function markSeen(id: string) {
   useRecaps.setState({ fresh: freshRecap() });
 }
 
-/** Unlocks this year's recap now (Oct 15 – Nov 30); it's frozen as of this moment. */
+/** Unlocks this year's recap now (Oct 15 – Oct 31); it's frozen as of this moment. */
 export async function unlockYearEarly(year: number) {
   const { meta } = useRecaps.getState();
   if (meta.earlyUnlock[String(year)]) return;
@@ -241,7 +241,7 @@ export function initRecaps() {
   useAuth.subscribe((s, prev) => {
     if (s.accountGen !== prev.accountGen || s.status !== prev.status) forgetRecaps();
   });
-  // A new recap can only appear when the month changes (or the year unlocks on Dec 1, also a month change), so the
+  // A new recap can only appear when the month changes (or the year unlocks on Nov 1, also a month change), so the
   // hourly check reloads the data only then, not every hour.
   let checked = "";
   const check = () => {

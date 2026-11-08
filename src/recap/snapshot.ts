@@ -13,7 +13,7 @@ export interface Snapshot {
   id: string;
   period: Period;
   createdAt: number;
-  /** Where counting stopped (end of the month, Dec 1, or the moment of an early unlock). */
+  /** Where counting stopped (end of the month, Nov 1, or the moment of an early unlock). */
   cutoff: number;
   /** First day the recap's data covers ("Based on your history since …" when later than the period's start). */
   coveredFrom: number;

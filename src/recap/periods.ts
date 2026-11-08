@@ -27,10 +27,10 @@ export const previousPeriod = (p: Period): Period =>
 /** First moment of the period, epoch ms. */
 export const periodStart = (p: Period) => startOfDay(p.kind === "month" ? dayFromYmd(p.year, p.month, 1) : dayFromYmd(p.year, 0, 1));
 
-/** Normal end: a month ends when the next one starts; a year's recap covers Jan 1 → Dec 1. */
-export const periodEnd = (p: Period) => startOfDay(p.kind === "month" ? dayFromYmd(p.year, p.month + 1, 1) : dayFromYmd(p.year, 11, 1));
+/** Normal end: a month ends when the next one starts; a year's recap covers Jan 1 → Nov 1. */
+export const periodEnd = (p: Period) => startOfDay(p.kind === "month" ? dayFromYmd(p.year, p.month + 1, 1) : dayFromYmd(p.year, 10, 1));
 
-/** When the yearly recap may be unlocked early (Oct 15) — until it unlocks by itself on Dec 1. */
+/** When the yearly recap may be unlocked early (Oct 15) — until it unlocks by itself on Nov 1. */
 export const earlyUnlockFrom = (year: number) => startOfDay(dayFromYmd(year, 9, 15));
 
 export function canUnlockEarly(year: number, now: number, unlockedAt: number | null): boolean {
