@@ -27,7 +27,7 @@ import UpdateDialog from "./components/UpdateDialog";
 import { initUpdates } from "./stores/update";
 import WhatsNewDialog from "./whatsNew/WhatsNewDialog";
 import { initOnboarding, useOnboarding } from "./onboarding/store";
-import { windowMode } from "./compact/layout";
+import { shownMode } from "./compact/layout";
 import { initWindowSize, useWindowSize } from "./compact/windowSize";
 import CompactPlayer from "./compact/CompactPlayer";
 import TooSmall from "./compact/TooSmall";
@@ -44,7 +44,7 @@ export default function App() {
   const recapOpen = useRecapUi((s) => !!s.open);
   // A small window gets the mini player, a tiny one a notice (compact/layout.ts); the full layout stays mounted under
   // them, hidden, so pages, Now Playing and the video keep their state.
-  const mode = useWindowSize((s) => windowMode(s.width, s.height));
+  const mode = useWindowSize((s) => shownMode(s.width, s.height, s.forceFull));
   useEffect(() => {
     initWindowSize();
     useAuth.getState().init();

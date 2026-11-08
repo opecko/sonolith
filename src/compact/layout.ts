@@ -27,6 +27,14 @@ export function windowMode(width: number, height: number): WindowMode {
   return "full";
 }
 
+/**
+ * The UI actually shown: "Full app" in a window the compositor won't grow (tiling, or a size it keeps) forces the
+ * full layout anyway, squashed.
+ */
+export function shownMode(width: number, height: number, forceFull: boolean): WindowMode {
+  return forceFull ? "full" : windowMode(width, height);
+}
+
 /** How the mini player arranges itself in a window of this size. */
 export function compactShape(width: number, height: number): CompactShape {
   if (height >= COLUMN_MIN_HEIGHT) return "column";

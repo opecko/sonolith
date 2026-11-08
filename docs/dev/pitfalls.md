@@ -173,7 +173,9 @@ Sliders also `preventDefault()` on pointerdown (and focus themselves), so a drag
   "Window too small" notice (`src/compact/`). Above that the sidebar is a rail below `lg`, the player bar drops
   ratings / ⋮ / volume slider below `md` and shuffle / repeat below `sm` (all in Now Playing).
 - The breakpoints are CSS pixels (`innerWidth`), so the zoom setting moves them. "Full app" (`growWindow`) asks the
-  compositor for a bigger window (`core:window:allow-set-size`); tiling compositors may ignore it.
+  compositor for a bigger window (`core:window:allow-set-size`). Compositors may ignore that (tiling ones, and some
+  keep a floating window's size, as umbriel did), so when the window is still small after 600 ms the full layout is
+  forced (`forceFull`) until the user resizes the window.
 
 ## Identifier change (ytdesk → Sonolith)
 

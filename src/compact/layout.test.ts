@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMPACT_MIN, FULL_MIN, columnCoverSize, compactShape, grownSize, rowCoverSize, windowMode } from "./layout";
+import { COMPACT_MIN, FULL_MIN, columnCoverSize, compactShape, grownSize, rowCoverSize, shownMode, windowMode } from "./layout";
 
 describe("windowMode", () => {
   it("keeps the full layout from its minimum up", () => {
@@ -23,6 +23,15 @@ describe("windowMode", () => {
     expect(windowMode(0, 0)).toBe("full");
     expect(windowMode(NaN, 500)).toBe("full");
     expect(windowMode(300, -1)).toBe("full");
+  });
+});
+
+describe("shownMode", () => {
+  it("follows the size unless the full app is forced", () => {
+    expect(shownMode(300, 300, false)).toBe("compact");
+    expect(shownMode(300, 300, true)).toBe("full");
+    expect(shownMode(100, 100, true)).toBe("full");
+    expect(shownMode(1200, 780, false)).toBe("full");
   });
 });
 
