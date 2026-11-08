@@ -5,12 +5,11 @@ import { Spring, useSwap } from "../motion";
 import { useAuth } from "../stores/auth";
 import { openSettings, useNav } from "../stores/nav";
 import { finishOnboarding, useOnboarding } from "./store";
-import { AppsStep, ColorsStep, Done, LyricsStep, NowPlayingStep, SignIn, StyleStep, Welcome } from "./steps";
+import { AppsStep, ColorsStep, Done, LyricsStep, NowPlayingStep, SignIn, Welcome } from "./steps";
 
 const STEPS = [
   { id: "welcome", label: "Welcome" },
   { id: "signin", label: "Sign in" },
-  { id: "style", label: "Style" },
   { id: "colors", label: "Colors" },
   { id: "nowplaying", label: "Now Playing" },
   { id: "lyrics", label: "Lyrics" },
@@ -21,7 +20,7 @@ const STEPS = [
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /**
- * First-run welcome: a full-window layer (M3 style) over the app, eight short steps. Every choice is applied and
+ * First-run welcome: a full-window layer (M3 style) over the app, seven short steps. Every choice is applied and
  * saved as it's made; "Skip setup" (every step) and "Start listening" end it for good. Keyboard: Tab stays inside,
  * Enter goes on (unless a control has the focus), Esc asks whether to skip. Steps swap on a spring and the layer
  * fades in and out on one, all instant with animations off. Loaded lazily: only a fresh install ever pays for it.
@@ -117,7 +116,6 @@ export default function Onboarding() {
           <div ref={swap} className="mx-auto my-auto w-full max-w-3xl px-6 py-8 max-sm:px-4">
             {STEPS[step].id === "welcome" && <Welcome />}
             {STEPS[step].id === "signin" && <SignIn busy={signingIn} onSignIn={signIn} onContinue={() => go(step + 1)} />}
-            {STEPS[step].id === "style" && <StyleStep />}
             {STEPS[step].id === "colors" && <ColorsStep onMore={() => close(() => openSettings("colors", "palette"))} />}
             {STEPS[step].id === "nowplaying" && <NowPlayingStep />}
             {STEPS[step].id === "lyrics" && <LyricsStep />}

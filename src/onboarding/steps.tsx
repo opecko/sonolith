@@ -2,18 +2,16 @@ import { CircleCheck, History, Plug, Keyboard, Library, Loader2, LogIn, MousePoi
 import { useEffect, useMemo, type ReactNode } from "react";
 import { getAccount } from "../api/ytm";
 import { ModeToggle, PaletteGrid } from "../components/appearance/PaletteGallery";
-import { LAYOUTS, LayoutPreview, STYLES } from "../components/appearance/StyleOptions";
-import { TransportSample } from "../components/PlayerBar";
+import { LAYOUTS, LayoutPreview } from "../components/appearance/StyleOptions";
 import Select from "../components/Select";
 import Slider from "../components/Slider";
 import Switch from "../components/Switch";
-import { UiStyleScope } from "../components/UiStyle";
 import { useAsync } from "../hooks/useData";
 import { useLocalApi } from "../localApi/store";
 import { KaraokeChoices } from "../lyrics/KaraokeSetting";
 import { useAuth } from "../stores/auth";
 import { setAppearance, useSettings } from "../stores/settings";
-import { AMBIENT_QUALITIES, COVER_COLOR_OPTIONS, type UiStyle } from "../theme/appearance";
+import { AMBIENT_QUALITIES, COVER_COLOR_OPTIONS } from "../theme/appearance";
 import { FEATURED } from "../theme/featured";
 import { getPalette, PALETTES } from "../theme/palettes";
 import logo from "../../src-tauri/icons/128x128@2x.png";
@@ -104,41 +102,6 @@ export function SignIn({ onContinue, busy, onSignIn }: { onContinue: () => void;
       )}
       {error && status !== "signedIn" && <p className="type-body-medium mt-3 text-[var(--m3-error)]" role="alert">{error}</p>}
       <p className="type-body-medium mt-4 text-[var(--m3-on-surface-variant)]">You can also sign in later from the avatar at the top right.</p>
-    </div>
-  );
-}
-
-/** A small sample drawn by the real components in one style: the transport, a slider and a switch (inert). */
-function StyleSample({ id }: { id: UiStyle }) {
-  return (
-    <span aria-hidden className="pointer-events-none block" inert>
-      <UiStyleScope value={id} className="flex h-36 flex-col items-center justify-center gap-4 bg-[var(--c-bg)] px-5">
-        <TransportSample />
-        <div className="flex w-full items-center gap-4">
-          <Slider className="flex-1" value={0.6} max={1} step={0.05} label="Sample" onCommit={() => {}} size="sm" />
-          <Switch on onChange={() => {}} label="Sample" />
-        </div>
-      </UiStyleScope>
-    </span>
-  );
-}
-
-export function StyleStep() {
-  const uiStyle = useSettings((s) => s.appearance.uiStyle);
-  return (
-    <div>
-      <StepTitle sub="Pick the look you like; it changes right away.">Choose a style</StepTitle>
-      <div className="grid gap-4 sm:grid-cols-2" role="radiogroup" aria-label="Style">
-        {STYLES.map((s) => (
-          <button key={s.id} type="button" role="radio" aria-checked={uiStyle === s.id} className={choice(uiStyle === s.id)} onClick={() => setAppearance({ uiStyle: s.id })}>
-            <StyleSample id={s.id} />
-            <span className="block p-4">
-              <span className="type-title-medium-em block">{s.label}{s.id === "m3" && <span className="type-label-medium ml-2 rounded-full bg-[var(--m3-tertiary-container)] px-2 py-0.5 text-[var(--m3-on-tertiary-container)]">New</span>}</span>
-              <span className="type-body-medium mt-1 block text-[var(--m3-on-surface-variant)]">{s.detail}</span>
-            </span>
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
