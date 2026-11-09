@@ -15,6 +15,15 @@ function phones(paired: number, connected: number): string {
   return connected > 0 ? `${p}, ${connected} connected now.` : `${p}.`;
 }
 
+/** The link's port, for the firewall hint. */
+function portOf(url: string | null): string | null {
+  try {
+    return url ? new URL(url).port || null : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Settings → Phone remote: the switch with what it means, then the link and its QR code. */
 export default function PhoneRemoteSettings() {
   const status = useRemote((s) => s.status);
@@ -72,7 +81,7 @@ export default function PhoneRemoteSettings() {
             <>
               <SettingRow
                 title="Scan the QR code with your phone"
-                detail="Or open the link in the phone's browser. The phone has to be on the same network."
+                detail={`Or open the link in the phone's browser. The phone has to be on the same network.${portOf(status.url) ? ` If it can't connect, a firewall on this computer may be blocking port ${portOf(status.url)} (TCP).` : ""}`}
               >
                 <button className={outlined} onClick={() => setShown((v) => !v)} aria-pressed={shown}>
                   {shown ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
