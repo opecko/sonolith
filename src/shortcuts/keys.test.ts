@@ -22,6 +22,7 @@ describe("key matching", () => {
     expect(match(ev("k", { ctrlKey: true }))).toBe("commandPalette");
     expect(match(ev("K", { ctrlKey: true }))).toBe("commandPalette");
     expect(match(ev("k"))).toBeNull();
+    expect(match(ev("F11"))).toBe("fullscreen");
   });
 
   it("matches the character, whatever the layout needs to type it", () => {

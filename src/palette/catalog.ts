@@ -2,6 +2,7 @@
 import { openSearch, openSettings, SETTINGS_SECTIONS, useNav, type SettingsSection } from "../stores/nav";
 import { usePlayer } from "../stores/player";
 import { setAppearance, useSettings } from "../stores/settings";
+import { toggleFullscreen } from "../stores/fullscreen";
 import { useUi } from "../stores/ui";
 import type { PaletteItem } from "./rank";
 
@@ -56,6 +57,7 @@ export function commands(): Command[] {
   const a = useSettings.getState().appearance;
   list.push(
     { id: "mode", title: a.mode === "dark" ? "Light mode" : "Dark mode", group: "Appearance", keywords: ["theme", "colors"], run: () => setAppearance({ mode: a.mode === "dark" ? "light" : "dark" }) },
+    { id: "fullscreen", title: "Full screen", group: "Window", keywords: ["fullscreen", "maximize", "f11", "exit full screen"], run: () => void toggleFullscreen() },
     { id: "animations", title: a.animations ? "Animations off" : "Animations on", group: "Appearance", keywords: ["motion", "reduce"], run: () => setAppearance({ animations: !a.animations }) },
   );
   for (const s of SETTINGS_SECTIONS) {

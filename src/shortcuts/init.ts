@@ -1,6 +1,7 @@
 import { stepVolume } from "../components/VolumeControl";
 import { useOnboarding } from "../onboarding/store";
 import { openPalette } from "../palette/store";
+import { toggleFullscreen } from "../stores/fullscreen";
 import { useRecapUi } from "../recap/ui";
 import { usePlayer } from "../stores/player";
 import { useSettings } from "../stores/settings";
@@ -26,6 +27,7 @@ const RUN: Record<ShortcutAction, () => void> = {
   volumeUp: () => showVolume(stepVolume(1)),
   volumeDown: () => showVolume(stepVolume(-1)),
   commandPalette: () => openPalette(),
+  fullscreen: () => void toggleFullscreen(),
 };
 
 function onKeyDown(e: KeyboardEvent) {
@@ -40,8 +42,8 @@ function onKeyDown(e: KeyboardEvent) {
     bindings,
   );
   if (!action) return;
-  // Typing keeps its keys; only the command palette opens from a text field too (the search box, say).
-  if (isTyping(target) && action !== "commandPalette") return;
+  // Typing keeps its keys; only the command palette and full screen work from a text field too (the search box, say).
+  if (isTyping(target) && action !== "commandPalette" && action !== "fullscreen") return;
   if (e.key === " " && spaceOwnedByControl(target)) return;
   // No button activation, no page scroll.
   e.preventDefault();
