@@ -9,6 +9,7 @@ mod mpris;
 mod live;
 mod proxy;
 mod recap;
+mod remote;
 mod render;
 mod track_note;
 mod tray;
@@ -90,6 +91,7 @@ pub fn run() {
                 render::apply(app.handle(), false);
             }
             api::init(app.handle());
+            remote::init(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -157,6 +159,10 @@ pub fn run() {
             api::api_block,
             api::api_unblock,
             api::api_allow_asking_again,
+            remote::remote_status,
+            remote::remote_set_enabled,
+            remote::remote_new_link,
+            remote::remote_theme,
             recap::recap_log_append,
             recap::recap_log_read,
             recap::recap_log_delete,
@@ -172,6 +178,7 @@ pub fn run() {
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
                 api::shutdown(app);
+                remote::shutdown(app);
             }
         });
 }

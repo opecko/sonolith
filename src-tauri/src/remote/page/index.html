@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Sonolith remote</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/theme.css">
+<script type="module" src="/app.js"></script>
+</head>
+<body>
+<main id="app">
+  <section id="message" class="message" hidden>
+    <h1 id="message-title">Sonolith remote</h1>
+    <p id="message-text"></p>
+    <button id="retry" class="btn tonal" type="button" hidden>Try again</button>
+  </section>
+
+  <section id="player" class="player" hidden>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <div class="art-wrap"><img id="art" class="art" alt="" hidden></div>
+    <div class="meta">
+      <h1 id="title" class="title">Nothing playing</h1>
+      <p id="artists" class="artists"></p>
+    </div>
+    <div class="seek">
+      <input id="position" class="slider" type="range" min="0" max="1000" value="0" step="1" aria-label="Position">
+      <div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div>
+    </div>
+    <div class="controls">
+      <button id="prev" class="btn icon" type="button" aria-label="Previous">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg>
+      </button>
+      <button id="toggle" class="btn play" type="button" aria-label="Play">
+        <svg id="icon-play" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+        <svg id="icon-pause" viewBox="0 0 24 24" aria-hidden="true" hidden><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>
+      </button>
+      <button id="next" class="btn icon" type="button" aria-label="Next">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+      </button>
+    </div>
+    <div class="volume">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/></svg>
+      <input id="volume" class="slider" type="range" min="0" max="100" value="50" step="1" aria-label="Volume">
+    </div>
+
+    <section class="queue">
+      <button id="queue-ask" class="btn tonal wide" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15V6"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/></svg>
+        <span>Show the queue</span>
+      </button>
+      <p id="queue-note" class="note" hidden></p>
+      <h2 id="queue-title" class="queue-title" hidden>Up next</h2>
+      <ol id="queue-list" class="queue-list"></ol>
+    </section>
+  </section>
+</main>
+</body>
+</html>

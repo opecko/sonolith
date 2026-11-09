@@ -1,0 +1,6 @@
+{
+  "name": "Sonolith remote",
+  "short_name": "Sonolith",
+  "start_url": "/",
+  "display": "standalone"
+}
