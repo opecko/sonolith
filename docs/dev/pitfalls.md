@@ -222,3 +222,9 @@ Sliders also `preventDefault()` on pointerdown (and focus themselves), so a drag
   log directory (a release build has no console).
 - Consent answers are ignored for 1 s after the request on screen changes (`CONSENT_ARM_MS`, store.ts); tests of the
   dialog flow need fake timers.
+- **`positionMs` is the position at `positionAt`**, which can be long ago (the last play or seek): snapshots and
+  `player.position` events keep that anchor. A client that counts from when an event arrived runs ahead; count from
+  `positionAt` on Sonolith's clock (the phone remote gets that clock in its stream's `hello` as `serverTime`).
+- **Phone remote:** `close_all` (the API switch) spares phones and `close_remote` ends only them; they are told apart
+  by the identity kind `remote`. The phone page is embedded with `include_str!`, so a page edit needs a Rust rebuild
+  (`tauri dev` restarts the app for it).
