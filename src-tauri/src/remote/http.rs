@@ -88,8 +88,8 @@ pub fn parse_head(raw: &[u8]) -> Option<Head> {
 const COMMON: &str = "Cache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\n\
 X-Frame-Options: DENY\r\nCross-Origin-Resource-Policy: same-origin\r\nConnection: close\r\n";
 
-/// The page may load only its own files and artwork over HTTPS.
-pub const PAGE_CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src https: data:; \
+/// The page may load only its own files (scripts, styles, icons, the font) and artwork over HTTPS.
+pub const PAGE_CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; font-src 'self'; \
 connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 pub fn reason(status: u16) -> &'static str {

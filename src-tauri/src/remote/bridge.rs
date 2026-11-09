@@ -38,10 +38,24 @@ const HELLO_ID: &str = "remote-hello";
 pub const PAIRED_SCOPES: &[&str] = &["player:read", "player:control"];
 
 const INDEX: &str = include_str!("page/index.html");
-const SCRIPT: &str = include_str!("page/app.js");
-const LOGIC: &str = include_str!("page/logic.js");
-const STYLE: &str = include_str!("page/app.css");
-const MANIFEST: &str = include_str!("page/manifest.webmanifest");
+
+/// The page's own files (path, content type, bytes): fixed at build time, nothing is read from disk.
+const ASSETS: &[(&str, &str, &[u8])] = &[
+    ("/app.js", "text/javascript; charset=utf-8", include_bytes!("page/app.js")),
+    ("/logic.js", "text/javascript; charset=utf-8", include_bytes!("page/logic.js")),
+    ("/app.css", "text/css; charset=utf-8", include_bytes!("page/app.css")),
+    ("/manifest.webmanifest", "application/manifest+json", include_bytes!("page/manifest.webmanifest")),
+    ("/icon.svg", "image/svg+xml", include_bytes!("page/icons/icon.svg")),
+    ("/icon-192.png", "image/png", include_bytes!("page/icons/icon-192.png")),
+    ("/icon-512.png", "image/png", include_bytes!("page/icons/icon-512.png")),
+    ("/apple-touch-icon.png", "image/png", include_bytes!("page/icons/apple-touch-icon.png")),
+    // The app's own font (OFL), so the page reads like Sonolith.
+    ("/font.woff2", "font/woff2", include_bytes!("../../../src/assets/fonts/GoogleSansFlex.woff2")),
+];
+
+fn asset(path: &str) -> Option<&'static (&'static str, &'static str, &'static [u8])> {
+    ASSETS.iter().find(|(p, _, _)| *p == path)
+}
 
 struct Session {
     app_id: String,
@@ -116,14 +130,14 @@ impl Remote {
         }
         let out = match (head.method.as_str(), head.path.as_str()) {
             ("GET", "/") => http::response(200, "text/html; charset=utf-8", &format!("Content-Security-Policy: {}\r\n", http::PAGE_CSP), INDEX.as_bytes()),
-            ("GET", "/app.js") => http::response(200, "text/javascript; charset=utf-8", "", SCRIPT.as_bytes()),
-            ("GET", "/logic.js") => http::response(200, "text/javascript; charset=utf-8", "", LOGIC.as_bytes()),
-            ("GET", "/app.css") => http::response(200, "text/css; charset=utf-8", "", STYLE.as_bytes()),
             ("GET", "/theme.css") => {
                 let css = self.theme_css.lock().unwrap().clone();
                 http::response(200, "text/css; charset=utf-8", "", css.as_bytes())
             }
-            ("GET", "/manifest.webmanifest") => http::response(200, "application/manifest+json", "", MANIFEST.as_bytes()),
+            ("GET", path) if asset(path).is_some() => {
+                let (_, ctype, bytes) = asset(path).unwrap();
+                http::response(200, ctype, "", bytes)
+            }
             ("GET", "/api/stream") => return self.stream(sock, &head).await,
             ("POST", "/api/pair") => match read_body(&mut sock, &head, rest, MAX_PAIR_BODY).await {
                 Ok(body) => self.pair(&head, &body, ip),
@@ -133,7 +147,7 @@ impl Remote {
                 Ok(body) => self.rpc(&head, &body),
                 Err(status) => http::json(status, &json!({ "error": "badRequest" })),
             },
-            (_, "/" | "/app.js" | "/logic.js" | "/app.css" | "/theme.css" | "/manifest.webmanifest" | "/api/stream" | "/api/pair" | "/api/rpc") => {
+            (_, path) if asset(path).is_some() || matches!(path, "/" | "/theme.css" | "/api/stream" | "/api/pair" | "/api/rpc") => {
                 http::json(405, &json!({ "error": "methodNotAllowed" }))
             }
             _ => http::json(404, &json!({ "error": "notFound" })),
