@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Sonolith remote",
-  "short_name": "Sonolith",
+  "name": "Sonolith Remote",
+  "short_name": "Sonolith Remote",
   "description": "Control Sonolith on your computer from this phone.",
   "start_url": "/",
   "scope": "/",

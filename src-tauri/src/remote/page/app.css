@@ -87,7 +87,7 @@ main {
 /* ---------- Top app bar ---------- */
 .appbar { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 4px; }
 .appbar-icon { width: 32px; height: 32px; border-radius: var(--m3-corner-sm); }
-.appbar-title { flex: 1; font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: 0; }
+.appbar-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: 0; }
 /* Assist chip with the connection state */
 .chip {
   height: 32px;

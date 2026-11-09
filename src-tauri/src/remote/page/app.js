@@ -217,7 +217,7 @@ function showItem(item) {
   const url = item && typeof item.thumbnailUrl === "string" && item.thumbnailUrl.startsWith("https://") ? item.thumbnailUrl : null;
   if (url && art.getAttribute("src") !== url) art.src = url;
   art.hidden = !url;
-  document.title = item ? `${item.title} · Sonolith remote` : "Sonolith remote";
+  document.title = item ? `${item.title} · Sonolith Remote` : "Sonolith Remote";
 }
 
 function setPosition(p) {
