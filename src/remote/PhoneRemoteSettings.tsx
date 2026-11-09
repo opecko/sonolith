@@ -102,6 +102,8 @@ export default function PhoneRemoteSettings() {
               )}
             </>
           )}
+          <SettingRow title="Add it to the home screen"
+            detail="On the phone, open the browser's menu: iPhone: Share, then Add to Home Screen; Android: ⋮, then Add to Home screen. It then opens like an app, with its own icon. (Browsers only offer a full install over HTTPS, which a link on your network can't have.)" />
           <SettingRow title="Paired phones" detail={`${phones(status.paired, status.connected)} They're listed in Connected apps, where you can remove one or take away access.`} />
           <SettingRow title="Make a new link" detail="Unpairs every phone and stops the old link and QR code from working.">
             <button className={outlined} onClick={() => void newLink()}><RefreshCw size={16} aria-hidden /> New link</button>

@@ -101,6 +101,11 @@ Testing the API implementation:
   `src-tauri/src/remote/page/logic.js`, tested by `logic.test.ts` next to it (vitest picks it up). The page itself is
   plain HTML/CSS/JS embedded with `include_str!`, no build step: edit it and rebuild the Rust side. To try it with a
   phone, turn it on in Settings → Phone remote; a firewall must allow the port (48765 by default) on the LAN.
+  The page's icon is `src-tauri/src/remote/page/icons/icon.svg` (full-bleed, artwork inside the central 80 % so it
+  also works as a maskable icon); after editing it, render the PNGs with
+  `rsvg-convert -w 512 icon.svg -o icon-512.png`, `-w 192 … icon-192.png` and `-w 180 … apple-touch-icon.png`.
+  The page also gets Sonolith's font (`/font.woff2`, the bundled Google Sans Flex). It can't be fully installed
+  (browsers want HTTPS for that), but "Add to Home Screen" opens it standalone with its icon.
 
 ## Testing approach
 
