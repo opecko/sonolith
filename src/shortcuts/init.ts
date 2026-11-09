@@ -1,5 +1,6 @@
 import { stepVolume } from "../components/VolumeControl";
 import { useOnboarding } from "../onboarding/store";
+import { openPalette } from "../palette/store";
 import { useRecapUi } from "../recap/ui";
 import { usePlayer } from "../stores/player";
 import { useSettings } from "../stores/settings";
@@ -24,6 +25,7 @@ const RUN: Record<ShortcutAction, () => void> = {
   seekForward: () => seekBy(SEEK_STEP),
   volumeUp: () => showVolume(stepVolume(1)),
   volumeDown: () => showVolume(stepVolume(-1)),
+  commandPalette: () => openPalette(),
 };
 
 function onKeyDown(e: KeyboardEvent) {
@@ -33,12 +35,13 @@ function onKeyDown(e: KeyboardEvent) {
   // The recap player has its own keys (←/→, Space, Esc) and turns the app's off while it's open.
   if (!enabled || useShortcutUi.getState().recording || useOnboarding.getState().open || useRecapUi.getState().open) return;
   const target = e.target as HTMLElement | null;
-  if (isTyping(target)) return;
   const action = matchAction(
     { key: e.key, ctrlKey: e.ctrlKey, altKey: e.altKey, metaKey: e.metaKey, shiftKey: e.shiftKey, repeat: e.repeat, altGraph: e.getModifierState?.("AltGraph") },
     bindings,
   );
   if (!action) return;
+  // Typing keeps its keys; only the command palette opens from a text field too (the search box, say).
+  if (isTyping(target) && action !== "commandPalette") return;
   if (e.key === " " && spaceOwnedByControl(target)) return;
   // No button activation, no page scroll.
   e.preventDefault();

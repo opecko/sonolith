@@ -1,6 +1,6 @@
 /** In-window keyboard shortcuts (separate from the global media keys in stores/mediaKeys.ts). Pure: no DOM, no stores. */
 
-export const SHORTCUT_ACTIONS = ["playPause", "prev", "next", "seekBack", "seekForward", "volumeUp", "volumeDown"] as const;
+export const SHORTCUT_ACTIONS = ["playPause", "prev", "next", "seekBack", "seekForward", "volumeUp", "volumeDown", "commandPalette"] as const;
 export type ShortcutAction = (typeof SHORTCUT_ACTIONS)[number];
 
 export const ACTION_LABELS: Record<ShortcutAction, string> = {
@@ -11,6 +11,7 @@ export const ACTION_LABELS: Record<ShortcutAction, string> = {
   seekForward: "Forward 5 seconds",
   volumeUp: "Volume up",
   volumeDown: "Volume down",
+  commandPalette: "Command palette",
 };
 
 /**
@@ -42,6 +43,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   seekForward: { key: "ArrowRight" },
   volumeUp: { key: "+" },
   volumeDown: { key: "-" },
+  commandPalette: { key: "k", ctrl: true },
 };
 
 export const DEFAULT_SHORTCUTS: ShortcutSettings = { enabled: true, bindings: DEFAULT_BINDINGS };

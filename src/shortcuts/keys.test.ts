@@ -19,6 +19,9 @@ describe("key matching", () => {
     expect(match(ev("ArrowRight", { ctrlKey: true }))).toBeNull();
     expect(match(ev("+"))).toBe("volumeUp");
     expect(match(ev("-"))).toBe("volumeDown");
+    expect(match(ev("k", { ctrlKey: true }))).toBe("commandPalette");
+    expect(match(ev("K", { ctrlKey: true }))).toBe("commandPalette");
+    expect(match(ev("k"))).toBeNull();
   });
 
   it("matches the character, whatever the layout needs to type it", () => {

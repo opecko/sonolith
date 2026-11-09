@@ -1,3 +1,4 @@
+import CommandPalette from "./palette/CommandPalette";
 import { lazy, Suspense, useEffect } from "react";
 import { useAuth } from "./stores/auth";
 import { initDiscord } from "./stores/discord";
@@ -82,6 +83,7 @@ export default function App() {
       <UpdateDialog />
       <WhatsNewDialog />
       <ConfirmDialog />
+      <CommandPalette />
       <ConsentDialog />
       <Toast />
       <ShortcutFeedback />
