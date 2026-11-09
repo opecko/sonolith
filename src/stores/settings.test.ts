@@ -34,6 +34,9 @@ describe("settings migration", () => {
 
   it("windowOpacity: missing or malformed is 85 %, out of range is clamped", () => {
     expect(parseSettings({ appearance: {} }).appearance.windowOpacity).toBe(0.85);
+    // Keep the screen on: on unless switched off.
+    expect(parseSettings({}).keepAwake).toBe(true);
+    expect(parseSettings({ keepAwake: false }).keepAwake).toBe(false);
     expect(parseSettings({ appearance: { windowOpacity: "x" } }).appearance.windowOpacity).toBe(0.85);
     expect(parseSettings({ appearance: { windowOpacity: 0.05 } }).appearance.windowOpacity).toBe(0.3);
     expect(parseSettings({ appearance: { windowOpacity: 0.6 } }).appearance.windowOpacity).toBe(0.6);

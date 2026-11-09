@@ -47,10 +47,12 @@ export interface Settings {
   recap: RecapSettings;
   /** A system notification when the song changes while Sonolith isn't the focused window (off by default). */
   trackNotifications: boolean;
+  /** The screen doesn't dim, lock or sleep while music plays (on by default). */
+  keepAwake: boolean;
 }
 
 const KEY = "settings";
-const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS, karaokeStyle: "sweep", lyricsEnabled: true, visualizer: DEFAULT_VISUALIZER, saveButton: DEFAULT_SAVE_BUTTON, gapless: true, recap: DEFAULT_RECAP, trackNotifications: false };
+const DEFAULTS: Settings = { autoplay: true, discordRpc: true, discordButton: true, saveHistory: true, podcastSpeed: 1, discordPodcasts: false, updateCheck: true, appearance: DEFAULT_APPEARANCE, lastSeenVersion: null, onboardingCompleted: false, afterEpisode: "next", shortcuts: DEFAULT_SHORTCUTS, lyricsProviders: DEFAULT_LYRICS_PROVIDERS, karaokeStyle: "sweep", lyricsEnabled: true, visualizer: DEFAULT_VISUALIZER, saveButton: DEFAULT_SAVE_BUTTON, gapless: true, recap: DEFAULT_RECAP, trackNotifications: false, keepAwake: true };
 
 /** Stored JSON → Settings. Missing keys (older versions) get the defaults; normalizing drops malformed values. */
 export function parseSettings(stored: unknown): Settings {
@@ -70,6 +72,7 @@ export function parseSettings(stored: unknown): Settings {
     karaokeStyle: normalizeKaraoke(s.karaokeStyle),
     lyricsEnabled: s.lyricsEnabled !== false,
     trackNotifications: s.trackNotifications === true,
+    keepAwake: s.keepAwake !== false,
     visualizer: normalizeVisualizer(s.visualizer),
     saveButton: normalizeSaveButton(s.saveButton),
     gapless: s.gapless !== false,
@@ -93,8 +96,8 @@ function read(): Settings {
 
 function write() {
   try {
-    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton, gapless, recap, trackNotifications } = useSettings.getState();
-    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton, gapless, recap, trackNotifications }));
+    const { autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton, gapless, recap, trackNotifications, keepAwake } = useSettings.getState();
+    localStorage.setItem(KEY, JSON.stringify({ autoplay, discordRpc, discordButton, saveHistory, podcastSpeed, discordPodcasts, updateCheck, appearance, lastSeenVersion, onboardingCompleted, shortcuts, afterEpisode, lyricsProviders, karaokeStyle, lyricsEnabled, visualizer, saveButton, gapless, recap, trackNotifications, keepAwake }));
   } catch {
     /* storage unavailable */
   }

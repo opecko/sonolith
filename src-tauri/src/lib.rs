@@ -1,4 +1,5 @@
 mod api;
+mod awake;
 mod auth;
 mod discord;
 mod fonts;
@@ -79,6 +80,7 @@ pub fn run() {
         .setup(|app| {
             window::create_main(app.handle())?;
             app.manage(lyrics::LyricsState::new(app.handle()));
+            app.manage(awake::AwakeState::new());
             // Before ensure_fresh: its install creates the directory that marks an existing install.
             app.manage(render::PriorData(render::prior_data_on_disk(app.handle())));
             ytdlp::ensure_fresh(app.handle().clone());
@@ -123,6 +125,7 @@ pub fn run() {
             window::window_set_transparent,
             window::window_show,
             track_note::track_notify,
+            awake::awake_set,
             window::window_set_splash,
             window::app_restart,
             lyrics::lyrics_get,

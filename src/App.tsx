@@ -1,3 +1,4 @@
+import { initKeepAwake } from "./stores/keepAwake";
 import { initRecentQueues } from "./stores/recentQueues";
 import { initTrackNotes } from "./stores/trackNotes";
 import CommandPalette from "./palette/CommandPalette";
@@ -58,6 +59,7 @@ export default function App() {
     initHistory();
     initTrackNotes();
     initRecentQueues();
+    initKeepAwake();
     initPlayLog();
     initHistoryImport();
     initRecaps();
