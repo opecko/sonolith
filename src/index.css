@@ -183,5 +183,6 @@ button:disabled { cursor: default; }
 [data-setting][data-focused] { background: var(--m3-primary-container); transition: none; }
 
 /* The phone remote's QR code (Settings → Phone remote): dark on light in every theme, as scanners expect. */
-.qr-code { background: #ffffff; color: #000000; }
+:root { --qr-light: #ffffff; --qr-dark: #000000; }
+.qr-code { background: var(--qr-light); color: var(--qr-dark); }
 .qr-code svg { display: block; width: 100%; height: auto; }
