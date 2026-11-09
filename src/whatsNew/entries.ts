@@ -1,4 +1,4 @@
-import { AudioWaveform, Clapperboard, Keyboard, Layers, LayoutDashboard, ListMusic, Lock, LogIn, MicVocal, Palette, Plug, Podcast, Settings2, Sparkles, Terminal, Zap } from "lucide-react";
+import { AudioWaveform, Clapperboard, Command, Keyboard, LayoutDashboard, ListMusic, Lock, LogIn, MicVocal, MonitorSmartphone, Palette, Plug, Podcast, Settings2, Smartphone, Sparkles, Terminal, Zap } from "lucide-react";
 import type { WhatsNewEntry } from "./types";
 
 /**
@@ -8,20 +8,44 @@ import type { WhatsNewEntry } from "./types";
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     version: "2.6.0",
-    title: "One look, and a transparent window",
+    title: "Sonolith 2.6: your phone as a remote",
     highlights: [
       {
-        icon: Palette,
-        title: "Sonolith is now Material 3 Expressive only",
-        text: "The Classic style is gone, and the Style setting with it. Everything you chose besides the style stays as it was; the Classic layout for Now Playing is still available.",
+        icon: Smartphone,
+        title: "Sonolith Remote",
+        text: "Play, pause, skip, seek and change the volume from your phone's browser on the same Wi-Fi. Scan the QR code in Settings → Phone remote, then add it to your home screen. It sees your queue or library only if you allow it here.",
       },
       {
-        icon: Layers,
-        title: "Transparent window (Linux only)",
-        text: "Let your desktop show through Sonolith, blurred if your compositor does blur, and pick how solid the surfaces are in Settings → Look → Window.",
+        icon: Command,
+        title: "Command palette and new keys",
+        text: "Ctrl+K finds any page, playback action or setting. ← and → jump 5 seconds, F11 goes full screen. Change the keys in Settings → Keyboard shortcuts.",
+      },
+      {
+        icon: Palette,
+        title: "One look: Material 3 Expressive",
+        text: "The Classic style is gone; everything else you chose stays as it was, and the Classic layout for Now Playing is still there. On Linux the window can also be see-through (Settings → Look → Window).",
+      },
+      {
+        icon: Sparkles,
+        title: "Recaps: right now, and your year from November 1",
+        text: "Recaps show today's, this week's and this month's listening as it happens. If you haven't unlocked your year early, it's ready now.",
+      },
+      {
+        icon: ListMusic,
+        title: "Your queue, kept",
+        text: "Save the queue as a playlist, or go back to one of the last five queues, from the ⋮ next to Up next.",
+      },
+      {
+        icon: MonitorSmartphone,
+        title: "Small windows and playback",
+        text: "Make the window small and it turns into a mini player. While music plays the screen stays on, and a notification can tell you what's playing (Settings → Playback).",
       },
     ],
-    actions: [{ label: "Look settings", action: { type: "openSettings", section: "look" } }],
+    actions: [
+      { label: "Set up the phone remote", action: { type: "openSettings", section: "remote" } },
+      { label: "Open Recaps", action: { type: "openRecaps" } },
+      { label: "Playback settings", action: { type: "openSettings", section: "playback" } },
+    ],
   },
   {
     version: "2.5.1",
