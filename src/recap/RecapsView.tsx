@@ -11,6 +11,7 @@ import { clockNow } from "./clock";
 import { formatDay, dayOf } from "./days";
 import { duration } from "./format";
 import { useHistoryImport } from "./importer";
+import LiveStats from "./LiveStats";
 import { canUnlockEarly, periodTitle, type Availability } from "./periods";
 import { loadRecaps, openRecap, recapEntries, unlockYearEarly, useRecaps, type RecapEntry } from "./store";
 import { openRecapPlayer } from "./ui";
@@ -82,6 +83,7 @@ export default function RecapsView() {
         Your monthly and yearly listening, computed on your computer. Nothing is uploaded anywhere.
         {signedIn && importError && ` ${importError} Recaps opened now are previews from this computer's log.`}
       </p>
+      <LiveStats />
       <div className="m3-section mb-6 flex select-text items-start gap-3 rounded-[var(--radius)] bg-[var(--c-surface)] p-4 text-sm">
         <Info size={18} aria-hidden className="mt-0.5 shrink-0 text-[var(--c-text-muted)]" />
         <p>
