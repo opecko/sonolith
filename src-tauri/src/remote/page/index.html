@@ -4,22 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#030303">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sonolith">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Sonolith remote</title>
 <link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/app.css">
 <link rel="stylesheet" href="/theme.css">
 <script type="module" src="/app.js"></script>
 </head>
 <body>
 <main id="app">
+  <header class="appbar">
+    <img src="/icon.svg" alt="" class="appbar-icon" width="32" height="32">
+    <span class="appbar-title">Sonolith</span>
+    <span id="status" class="chip" role="status" aria-live="polite" hidden></span>
+  </header>
+
   <section id="message" class="message" hidden>
-    <h1 id="message-title">Sonolith remote</h1>
-    <p id="message-text"></p>
-    <button id="retry" class="btn tonal" type="button" hidden>Try again</button>
+    <img src="/icon.svg" alt="" class="message-icon" width="96" height="96">
+    <h1 id="message-title" class="headline">Sonolith remote</h1>
+    <p id="message-text" class="body"></p>
+    <button id="retry" class="btn filled" type="button" hidden>Try again</button>
   </section>
 
   <section id="player" class="player" hidden>
-    <p id="status" class="status" role="status" aria-live="polite"></p>
     <div class="art-wrap"><img id="art" class="art" alt="" hidden></div>
     <div class="meta">
       <h1 id="title" class="title">Nothing playing</h1>
@@ -30,20 +43,32 @@
       <div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div>
     </div>
     <div class="controls">
-      <button id="prev" class="btn icon" type="button" aria-label="Previous">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg>
+      <button id="shuffle" class="btn toggle" type="button" aria-label="Shuffle" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/></svg>
       </button>
-      <button id="toggle" class="btn play" type="button" aria-label="Play">
-        <svg id="icon-play" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-        <svg id="icon-pause" viewBox="0 0 24 24" aria-hidden="true" hidden><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>
-      </button>
-      <button id="next" class="btn icon" type="button" aria-label="Next">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+      <div class="group" role="group" aria-label="Playback">
+        <button id="prev" class="btn side start" type="button" aria-label="Previous">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="solid" d="M17.5 5.2v13.6a1 1 0 0 1-1.5.86L5.9 13.1a1.3 1.3 0 0 1 0-2.2L16 4.35a1 1 0 0 1 1.5.85Z"/><path d="M5 5v14"/></svg>
+        </button>
+        <button id="toggle" class="btn play" type="button" aria-label="Play">
+          <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path class="solid" d="M7 4.6v14.8a1.1 1.1 0 0 0 1.7.95l11.6-7.4a1.1 1.1 0 0 0 0-1.9L8.7 3.65A1.1 1.1 0 0 0 7 4.6Z"/></svg>
+          <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><rect class="solid" x="5.5" y="4" width="4.5" height="16" rx="1.4"/><rect class="solid" x="14" y="4" width="4.5" height="16" rx="1.4"/></svg>
+        </button>
+        <button id="next" class="btn side end" type="button" aria-label="Next">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="solid" d="M6.5 5.2v13.6a1 1 0 0 0 1.5.86l10.1-6.56a1.3 1.3 0 0 0 0-2.2L8 4.35a1 1 0 0 0-1.5.85Z"/><path d="M19 5v14"/></svg>
+        </button>
+      </div>
+      <button id="repeat" class="btn toggle" type="button" aria-label="Repeat: off" aria-pressed="false">
+        <svg class="icon-repeat" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+        <svg class="icon-repeat-one" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/><path d="M11 10h1v4"/></svg>
       </button>
     </div>
     <div class="volume">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/></svg>
-      <input id="volume" class="slider" type="range" min="0" max="100" value="50" step="1" aria-label="Volume">
+      <button id="mute" class="btn standard" type="button" aria-label="Mute" aria-pressed="false">
+        <svg class="icon-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></svg>
+        <svg class="icon-muted" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/></svg>
+      </button>
+      <input id="volume" class="slider small" type="range" min="0" max="100" value="50" step="1" aria-label="Volume">
     </div>
 
     <section class="queue">

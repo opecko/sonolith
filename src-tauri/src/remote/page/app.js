@@ -54,7 +54,12 @@ function showPlayer() {
   $("player").hidden = false;
 }
 
-const setStatus = (text) => ($("status").textContent = text);
+/** The connection chip in the app bar; hidden while all is well. */
+function setStatus(text) {
+  const chip = $("status");
+  chip.textContent = text;
+  chip.hidden = !text;
+}
 
 async function pair(secret) {
   try {
@@ -128,6 +133,7 @@ function onEvent(e) {
   }
   if (e.name === "hello") {
     session = msg.session;
+    refreshTheme();
     if (typeof msg.serverTime === "number") clockOffset = msg.serverTime - Date.now();
     scopes = msg.hello.grantedScopes || [];
     attempt = 0;
@@ -155,7 +161,7 @@ function onEvent(e) {
       setPosition(p);
       break;
     case "player.volumeChanged":
-      showVolume(p.volume);
+      showVolume(p.volume, p.muted);
       break;
     case "queue.changed":
       loadQueue(p.currentIndex);
@@ -198,7 +204,8 @@ function call(method, params = {}) {
 function applyState(s) {
   showItem(s.item);
   setPosition(s);
-  showVolume(s.volume);
+  showVolume(s.volume, s.muted);
+  showModes(s.shuffle, s.repeat);
   $("prev").disabled = s.canGoPrevious === false;
   $("next").disabled = s.canGoNext === false;
 }
@@ -219,10 +226,9 @@ function setPosition(p) {
   pos = { positionMs: p.positionMs, positionAt, durationMs: p.durationMs || 0, status: p.status, rate: p.rate || 1 };
   duration = pos.durationMs;
   const playing = p.status === "playing";
+  // The icons follow the class in CSS: `hidden` on an <svg> isn't the HTML property, so setting it did nothing.
   $("toggle").classList.toggle("playing", playing);
   $("toggle").setAttribute("aria-label", playing ? "Pause" : "Play");
-  $("icon-play").hidden = playing;
-  $("icon-pause").hidden = !playing;
   $("position").disabled = !duration;
   $("duration").textContent = formatTime(duration);
   clearInterval(ticker);
@@ -240,7 +246,26 @@ function drawPosition() {
   $("elapsed").textContent = formatTime(now);
 }
 
-function showVolume(v) {
+const REPEAT_NEXT = { off: "all", all: "one", one: "off" };
+const REPEAT_LABEL = { off: "Repeat: off", all: "Repeat: all", one: "Repeat: one" };
+let repeat = "off";
+
+function showModes(shuffle, mode) {
+  if (typeof shuffle === "boolean") $("shuffle").setAttribute("aria-pressed", String(shuffle));
+  if (mode in REPEAT_NEXT) {
+    repeat = mode;
+    const b = $("repeat");
+    b.setAttribute("aria-pressed", String(mode !== "off"));
+    b.setAttribute("aria-label", REPEAT_LABEL[mode]);
+    b.classList.toggle("one", mode === "one");
+  }
+}
+
+function showVolume(v, muted) {
+  if (typeof muted === "boolean") {
+    $("mute").setAttribute("aria-pressed", String(muted));
+    $("mute").setAttribute("aria-label", muted ? "Unmute" : "Mute");
+  }
   if (typeof v !== "number" || volumeHeld) return;
   const slider = $("volume");
   slider.value = String(v);
@@ -311,6 +336,7 @@ async function loadQueue(currentIndex) {
         const text = document.createElement("div");
         text.className = "q-text";
         const t = document.createElement("span");
+        t.className = "q-title";
         t.textContent = e.item ? e.item.title : "";
         const a = document.createElement("span");
         a.className = "q-sub";
@@ -329,6 +355,21 @@ function wire() {
   $("toggle").addEventListener("click", () => call("player.toggle").catch(() => {}));
   $("prev").addEventListener("click", () => call("player.previous").catch(() => {}));
   $("next").addEventListener("click", () => call("player.next").catch(() => {}));
+  $("shuffle").addEventListener("click", () => {
+    const on = $("shuffle").getAttribute("aria-pressed") !== "true";
+    showModes(on);
+    call("player.setShuffle", { enabled: on }).catch(() => {});
+  });
+  $("repeat").addEventListener("click", () => {
+    const mode = REPEAT_NEXT[repeat];
+    showModes(undefined, mode);
+    call("player.setRepeat", { mode }).catch(() => {});
+  });
+  $("mute").addEventListener("click", () => {
+    const muted = $("mute").getAttribute("aria-pressed") !== "true";
+    showVolume(undefined, muted);
+    call("player.setVolume", { muted }).catch(() => {});
+  });
   const position = $("position");
   position.addEventListener("input", () => {
     seeking = true;
@@ -357,8 +398,31 @@ function wire() {
   $("retry").addEventListener("click", () => location.reload());
 }
 
+/** The browser's bar (and an installed app's title bar) in the app's background color. */
+function themeColor() {
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--c-bg").trim();
+  if (bg) document.querySelector('meta[name="theme-color"]').setAttribute("content", bg);
+}
+
+/**
+ * The app's colors again: they may have changed since the page loaded (another palette, or Sonolith had only just
+ * started and hadn't sent them yet). On every (re)connection and whenever the page comes back to the front.
+ */
+function refreshTheme() {
+  const old = document.querySelector('link[href^="/theme.css"]');
+  const link = old.cloneNode();
+  link.href = `/theme.css?t=${Date.now()}`;
+  link.addEventListener("load", () => {
+    old.remove();
+    themeColor();
+  });
+  old.after(link);
+}
+
 async function start() {
   wire();
+  themeColor();
+  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && refreshTheme());
   const secret = secretFromHash(location.hash);
   if (secret) {
     // The secret leaves the address bar and history at once.
