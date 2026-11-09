@@ -10,6 +10,7 @@ mod live;
 mod proxy;
 mod recap;
 mod render;
+mod track_note;
 mod tray;
 mod update;
 mod window;
@@ -119,6 +120,7 @@ pub fn run() {
             window::window_info,
             window::window_set_transparent,
             window::window_show,
+            track_note::track_notify,
             window::window_set_splash,
             window::app_restart,
             lyrics::lyrics_get,

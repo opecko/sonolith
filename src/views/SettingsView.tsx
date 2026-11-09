@@ -108,7 +108,7 @@ function YtdlpSettings() {
 }
 
 function PlaybackSettings() {
-  const { saveHistory, afterEpisode, gapless, set } = useSettings();
+  const { saveHistory, afterEpisode, gapless, trackNotifications, set } = useSettings();
   return (
     <>
       <SettingCard title="Music">
@@ -120,6 +120,9 @@ function PlaybackSettings() {
         </SettingRow>
         <SettingRow id="gapless" title="Gapless playback" detail="The next song loads in the background near the end of the current one and starts the moment it ends, with no pause between them.">
           <Switch on={gapless} onChange={(v) => set({ gapless: v })} label="Gapless playback" />
+        </SettingRow>
+        <SettingRow id="trackNotifications" title="Notify when the song changes" detail="A system notification with the song and its cover, only while Sonolith isn't the window you're using.">
+          <Switch on={trackNotifications} onChange={(v) => set({ trackNotifications: v })} label="Notify when the song changes" />
         </SettingRow>
       </SettingCard>
       <SettingCard title="Podcasts">

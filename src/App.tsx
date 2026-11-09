@@ -1,3 +1,4 @@
+import { initTrackNotes } from "./stores/trackNotes";
 import CommandPalette from "./palette/CommandPalette";
 import { lazy, Suspense, useEffect } from "react";
 import { useAuth } from "./stores/auth";
@@ -54,6 +55,7 @@ export default function App() {
     initDiscord();
     void initMpris();
     initHistory();
+    initTrackNotes();
     initPlayLog();
     initHistoryImport();
     initRecaps();
