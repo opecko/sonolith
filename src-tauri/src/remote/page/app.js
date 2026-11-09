@@ -18,6 +18,9 @@ let attempt = 0;
 let unpaired = false;
 let queueOn = false;
 let ticker = null;
+/** Sonolith's clock minus the phone's, from the stream's hello (the LAN delay is small next to a second). */
+let clockOffset = 0;
+const serverNow = () => Date.now() + clockOffset;
 
 function loadCreds() {
   try {
@@ -125,6 +128,7 @@ function onEvent(e) {
   }
   if (e.name === "hello") {
     session = msg.session;
+    if (typeof msg.serverTime === "number") clockOffset = msg.serverTime - Date.now();
     scopes = msg.hello.grantedScopes || [];
     attempt = 0;
     setStatus("");
@@ -211,7 +215,8 @@ function showItem(item) {
 
 function setPosition(p) {
   if (typeof p.positionMs !== "number") return;
-  pos = { positionMs: p.positionMs, durationMs: p.durationMs || 0, status: p.status, rate: p.rate || 1, receivedAt: Date.now() };
+  const positionAt = typeof p.positionAt === "number" ? p.positionAt : serverNow();
+  pos = { positionMs: p.positionMs, positionAt, durationMs: p.durationMs || 0, status: p.status, rate: p.rate || 1 };
   duration = pos.durationMs;
   const playing = p.status === "playing";
   $("toggle").classList.toggle("playing", playing);
@@ -227,7 +232,7 @@ function setPosition(p) {
 
 function drawPosition() {
   if (seeking) return;
-  const now = positionNow(pos, Date.now());
+  const now = positionNow(pos, serverNow());
   const fraction = duration ? now / duration : 0;
   const slider = $("position");
   slider.value = String(Math.round(fraction * 1000));
@@ -334,7 +339,7 @@ function wire() {
   position.addEventListener("change", () => {
     const ms = Math.round((Number(position.value) / 1000) * duration);
     seeking = false;
-    if (pos) pos = { ...pos, positionMs: ms, receivedAt: Date.now() };
+    if (pos) pos = { ...pos, positionMs: ms, positionAt: serverNow() };
     call("player.seek", { positionMs: ms }).catch(() => {});
   });
   const volume = $("volume");

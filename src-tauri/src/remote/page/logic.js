@@ -35,10 +35,13 @@ export function parseEvents(text) {
   return { events, rest };
 }
 
-/** Where playback is now: the last reported position, moved on by the time since, while playing. */
-export function positionNow(p, now) {
+/**
+ * Where playback is now. `positionMs` was the position at `positionAt` (Sonolith's clock); `serverNow` is Sonolith's
+ * clock now, as the phone estimates it. While playing, the position moves on from there.
+ */
+export function positionNow(p, serverNow) {
   if (!p) return 0;
-  const moving = p.status === "playing" ? (now - p.receivedAt) * (p.rate || 1) : 0;
+  const moving = p.status === "playing" ? (serverNow - p.positionAt) * (p.rate || 1) : 0;
   const pos = p.positionMs + Math.max(0, moving);
   return p.durationMs ? Math.min(pos, p.durationMs) : pos;
 }

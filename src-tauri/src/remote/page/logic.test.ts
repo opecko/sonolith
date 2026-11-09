@@ -26,10 +26,12 @@ describe("phone remote page logic", () => {
   });
 
   it("moves the position on only while playing, up to the duration", () => {
-    const p = { positionMs: 10_000, receivedAt: 1000, durationMs: 12_000, status: "playing", rate: 1 };
+    const p = { positionMs: 10_000, positionAt: 1000, durationMs: 12_000, status: "playing", rate: 1 };
     expect(positionNow(p, 2000)).toBe(11_000);
     expect(positionNow(p, 9000)).toBe(12_000);
     expect(positionNow({ ...p, status: "paused" }, 9000)).toBe(10_000);
+    // A clock behind the anchor never moves it back.
+    expect(positionNow(p, 500)).toBe(10_000);
     expect(positionNow(null, 1)).toBe(0);
   });
 

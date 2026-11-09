@@ -231,7 +231,7 @@ impl Remote {
         self.sessions.lock().unwrap().insert(sid.clone(), Session { app_id, tx });
 
         let mut first = http::stream_head();
-        first.extend(http::event(Some("hello"), &json!({ "session": sid, "hello": session }).to_string()));
+        first.extend(http::event(Some("hello"), &json!({ "session": sid, "hello": session, "serverTime": now_ms() }).to_string()));
         let (mut sock_rd, mut sock_wr) = tokio::io::split(sock);
         if put(&mut sock_wr, &first).await {
             let mut keepalive = tokio::time::interval(KEEPALIVE);
@@ -423,6 +423,7 @@ mod tests {
         let hello = next_data(&mut lines).await;
         assert_eq!(hello["hello"]["grantedScopes"], json!(PAIRED_SCOPES));
         assert_eq!(hello["hello"]["identity"]["kind"], "remote");
+        assert!(hello["serverTime"].as_u64().unwrap() > 0);
         let sid = hello["session"].as_str().unwrap().to_string();
 
         let call = |body: &str| post("/api/rpc", Some(&auth), &format!("X-Session: {sid}\r\n"), body);
