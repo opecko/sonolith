@@ -43,7 +43,8 @@ its shape.
 - **Icons: lucide-react only.**
 - **Colors only through tokens**: `bg-[var(--c-surface)]`, `text-[var(--c-text-muted)]`, `border-[var(--c-outline)]`,
   or the Tailwind token colors (`bg-fg/10`, `bg-scrim/60`, `bg-button text-on-button`, `text-on-accent`). No
-  `bg-white`, `text-black`, hex or `rgba()` outside `index.css :root` and `src/theme/`. Overlays on artwork use
+  `bg-white`, `text-black`, hex or `rgba()` outside `index.css :root` and `src/theme/` (the phone remote page has its
+  own default tokens in the `:root` block of `src-tauri/src/remote/page/app.css`). Overlays on artwork use
   `scrim`; dialog backdrops use `--c-overlay`.
 - Radius: `rounded-[var(--radius)]` or Tailwind `rounded-*` (mapped to `--radius`). Spacing: Tailwind steps (compact
   density shrinks `--spacing`).

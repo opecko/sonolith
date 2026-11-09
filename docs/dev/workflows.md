@@ -96,6 +96,11 @@ Testing the API implementation:
   in that folder (a fake server in Python; never a real account). It also runs against the live test server above.
 - Things only the running app can show (account writes, the real consent dialog, Settings):
   [api-manual-test.md](api-manual-test.md).
+- Phone remote: `cargo test --lib remote::` (HTTP parsing, pairing limits, QR, and a phone streaming through the
+  bridge to a real API server, over in-memory streams). The page's pure helpers are in
+  `src-tauri/src/remote/page/logic.js`, tested by `logic.test.ts` next to it (vitest picks it up). The page itself is
+  plain HTML/CSS/JS embedded with `include_str!`, no build step: edit it and rebuild the Rust side. To try it with a
+  phone, turn it on in Settings → Phone remote; a firewall must allow the port (48765 by default) on the LAN.
 
 ## Testing approach
 

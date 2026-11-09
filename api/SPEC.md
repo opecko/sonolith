@@ -117,7 +117,9 @@ with backoff, handling `session.revoked`, and a "Disconnect from Sonolith" butto
 
 ## 3. Transport
 
-Sonolith listens on a local endpoint that only the current user can open. There is no network listener.
+Sonolith listens on a local endpoint that only the current user can open. Apps never reach the API over the
+network. The one network listener is the phone remote (section 3.7), which is off by default and serves only phones
+the user paired.
 
 ### 3.1 Linux
 
@@ -202,6 +204,32 @@ The endpoint and the discovery file exist only while Sonolith runs **and** the A
 - Any number of apps can be connected at once, within the [limits](#12-limits).
 - One app MAY open several connections. Each connection authenticates on its own with `session.hello` and has its
   own subscriptions. Rate limits are shared by all connections of an app.
+
+### 3.7 Phone remote
+
+The phone remote (Settings → Phone remote) lets a phone's browser on the same local network control Sonolith. It is
+not a transport for apps: Sonolith serves its own page and bridges each phone to this API. It is described here
+because a paired phone is an API client like any other.
+
+- It is **off by default**. While it is on, Sonolith listens on TCP (all IPv4 interfaces, port 48765 or a free one
+  when that is taken) over **plain HTTP**. Turning it off closes the listener and every phone connection; it starts
+  again with Sonolith until it is turned off.
+- **Pairing.** Settings shows a link and its QR code, `http://<address>:<port>/#k=<secret>`. The secret (256 random
+  bits) is in the fragment, which browsers do not send; the page posts it once to `/api/pair`. Sonolith compares it in
+  constant time and limits wrong guesses (5 per address and 30 overall per 10 minutes). At most 10 phones can be
+  paired. **Making a new link** replaces the secret and unpairs every phone.
+- **A paired phone** is a registered app with an app id `dev.sonolith.remote.<random>` (the reserved prefix, so no
+  other app can register one), the identity kind `remote` (section 6.6), and the scopes `player:read` and
+  `player:control`. Showing the phone the link is the user's consent to those. For anything more it calls
+  `app.requestScopes`, and the user answers on the usual consent screen. It appears in Settings → Connected apps,
+  where the user can remove or block it or revoke scopes.
+- **The bridge.** The phone opens `GET /api/stream` with `Authorization: Bearer <appId>:<token>`. Sonolith starts an
+  in-memory connection, says `session.hello` for it, and streams every message the server sends as server-sent events
+  (the first event, `hello`, carries a stream id and the `session.hello` result). The phone sends requests with
+  `POST /api/rpc` (the same header plus `X-Session: <stream id>`, one JSON-RPC request of at most 16 KB); the
+  response arrives on the stream. `app.register` and `session.hello` are refused there: authentication is Sonolith's.
+- Limits: 32 open TCP connections, 16 streams, request heads of 8 KB, 10 seconds to send a request. Responses are
+  not cached, and requests whose `Origin` is another site are refused.
 
 ---
 
@@ -405,7 +433,9 @@ path, its command line, its working directory, its environment and, on Linux, wh
 It is built so that ordinary updates (a new Python, a new Node version through a version manager, an updated
 AppImage, a new install folder of a self-updating app) keep the same identity.
 
-Sonolith checks these rules in order and uses the first that applies:
+A phone paired with the phone remote (section 3.7) is not a process: its identity has the kind `remote`, the key
+`remote:<appId>` and an empty `executable`. For processes, Sonolith checks these rules in order and uses the first
+that applies:
 
 1. **Flatpak** (Linux): the process runs in a Flatpak sandbox. The identity is the Flatpak app id. Key:
    `flatpak:<app-id>`.
@@ -853,7 +883,9 @@ The API is a local, per-user service. This section says plainly what it protects
 
 - **Other users on the same computer.** The socket (Linux, mode `0600` in a `0700` directory) and the pipe
   (Windows, access list for the current user only) can be opened only by the user's own processes.
-- **Remote access.** There is no network listener. Windows remote pipe clients are rejected.
+- **Remote access.** Apps can't reach the API over the network, and Windows remote pipe clients are rejected. The
+  phone remote (section 3.7) is the exception the user turns on: only phones that presented the pairing secret get
+  in, and only with the player scopes unless the user allows more.
 - **Apps the user did not approve.** Without a token there is nothing beyond `app.info`, `app.register` and
   `session.hello`. Registration needs the user's explicit approval on a screen showing the app identity.
 - **Approved apps overreaching.** Every method checks the app's scopes. The user sees and controls the scopes, and
@@ -887,6 +919,10 @@ The API is a local, per-user service. This section says plainly what it protects
   another user could create a pipe with the expected name and receive the tokens clients send to it. Clients reduce
   this by taking the name from `discovery.json` (in the user's private profile) and checking the server process id
   (section 3.2). On Linux, the socket directory belongs to the user, so this cannot happen.
+- **The phone remote's network.** It uses plain HTTP, so anyone who can see the local network's traffic can read
+  the secret or a phone's token and control what the phone may. Anyone who gets the link or QR code can pair a phone.
+  It is meant for trusted networks such as a home Wi-Fi; Settings says so next to the switch. Making a new link
+  unpairs every phone.
 - **What approved apps do with data.** An app with `library:read` can read the user's library and history and send
   it anywhere. The consent screen is the user's decision point.
 

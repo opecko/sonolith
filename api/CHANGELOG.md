@@ -3,6 +3,11 @@
 The API's own version history, separate from Sonolith's app changelog. The API follows semantic versioning; see
 "Versioning" in [SPEC.md](SPEC.md) for the compatibility promise and the deprecation policy.
 
+## Unreleased
+
+- Phone remote (SPEC section 3.7): phones paired over the local network are API clients with the new identity kind
+  `remote` and reserved app ids `dev.sonolith.remote.*`. Other apps are not affected.
+
 ## 1.0.0
 
 The first stable version of the local API, in Sonolith 2.4.0.
