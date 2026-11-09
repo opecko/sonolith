@@ -19,10 +19,19 @@ pub(crate) fn flag(app: &AppHandle, key: &str, default: bool) -> bool {
     read_config(app).get(key).and_then(|v| v.as_bool()).unwrap_or(default)
 }
 
+/// Any stored value (Null when missing).
+pub(crate) fn value(app: &AppHandle, key: &str) -> serde_json::Value {
+    read_config(app).get(key).cloned().unwrap_or(serde_json::Value::Null)
+}
+
 pub(crate) fn write_flag(app: &AppHandle, key: &str, value: bool) -> Result<(), String> {
+    write_value(app, key, serde_json::Value::Bool(value))
+}
+
+pub(crate) fn write_value(app: &AppHandle, key: &str, value: serde_json::Value) -> Result<(), String> {
     let path = config_path(app).ok_or("no config dir")?;
     let mut cfg = read_config(app);
-    cfg[key] = serde_json::Value::Bool(value);
+    cfg[key] = value;
     std::fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
     std::fs::write(path, serde_json::to_string_pretty(&cfg).unwrap()).map_err(|e| e.to_string())
 }

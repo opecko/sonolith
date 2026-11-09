@@ -119,6 +119,7 @@ pub fn run() {
             window::window_info,
             window::window_set_transparent,
             window::window_show,
+            window::window_set_splash,
             window::app_restart,
             lyrics::lyrics_get,
             lyrics::lyrics_clear_cache,

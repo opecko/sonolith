@@ -32,8 +32,13 @@ filters (WebKitGTK renders them in software and they flicker; see pitfalls.md).
   React's first render replaces it. Its colors are the palette's background and text saved by the last run
   (localStorage `splash`). A transparent window gets `window.__sonolithGlass` from an initialization script, so the
   inline script in `index.html` sets `data-glass` on `<html>` before any stylesheet paints and applies the saved
-  surface opacity. The window is created hidden and shown once that screen is parsed (`window_show`, with the page's
-  load as the fallback), so it never appears as an empty, fully transparent frame.
+  surface opacity. Rust keeps the same background in `config.json` (`splash`, sent by `window_set_splash`): the window
+  shows as soon as the webview exists, painted that color by WebKit's own background
+  (`webkit_web_view_set_background_color`; tao's background for transparent windows passes 0–255 channels to cairo
+  unscaled and comes out white), about a second before the page loads. Once the screen is parsed (`window_show`,
+  with the page's load as the fallback) that color goes, or it would sit under the app's translucent surfaces.
+  Without a saved color the window stays hidden until then, so it never appears as an empty, fully transparent
+  frame.
 - **Contrast warnings** (color editor) assume an opaque background; the setting's description says so.
 - **No per-frame work** is added: the tokens are rewritten only when the theme, the cover colors or the opacity
   change.

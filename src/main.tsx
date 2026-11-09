@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { openMenuAt } from "./components/Menu";
 import "./index.css";
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { coverTokens, initCoverColors, paintCoverScope } from "./stores/coverColors";
 import { useSettings } from "./stores/settings";
@@ -42,10 +43,13 @@ useSettings.subscribe((s, prev) => {
     setMotionEnabled(a.animations);
   }
 });
-// Colors for the next start's startup screen: the palette's, not a cover's.
+// Colors for the next start's startup screen: the palette's, not a cover's. Rust keeps the background too, for the
+// moments before the page loads (window.rs).
 const keepSplash = () => {
   const a = useSettings.getState().appearance;
-  saveSplash(splashFor(effectiveTokens(a), a.windowOpacity));
+  const s = splashFor(effectiveTokens(a), a.windowOpacity);
+  saveSplash(s);
+  invoke("window_set_splash", { bg: s.bg, opacity: s.opacity }).catch(() => {});
 };
 keepSplash();
 useSettings.subscribe((s, prev) => {
