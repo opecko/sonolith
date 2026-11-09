@@ -98,10 +98,22 @@ impl Remote {
 
     /// One request on one connection.
     pub async fn handle<S: AsyncRead + AsyncWrite + Unpin + Send>(self: Arc<Self>, mut sock: S, ip: IpAddr) {
-        let Ok(Some((head, rest))) = tokio::time::timeout(READ_TIMEOUT, read_head(&mut sock)).await else {
-            let _ = sock.write_all(&http::json(431, &json!({ "error": "badRequest" }))).await;
-            return;
+        let (head, rest) = match tokio::time::timeout(READ_TIMEOUT, read_head(&mut sock)).await {
+            Ok(Ok(h)) => h,
+            Ok(Err(status)) => {
+                let _ = sock.write_all(&http::json(status, &json!({ "error": "badRequest" }))).await;
+                return;
+            }
+            Err(_) => {
+                let _ = sock.write_all(&http::json(408, &json!({ "error": "timeout" }))).await;
+                return;
+            }
         };
+        // Only requests to this computer's address, as the link has it (see Head::host_is_ip).
+        if !head.host_is_ip() {
+            let _ = sock.write_all(&http::json(403, &json!({ "error": "wrongHost" }))).await;
+            return;
+        }
         let out = match (head.method.as_str(), head.path.as_str()) {
             ("GET", "/") => http::response(200, "text/html; charset=utf-8", &format!("Content-Security-Policy: {}\r\n", http::PAGE_CSP), INDEX.as_bytes()),
             ("GET", "/app.js") => http::response(200, "text/javascript; charset=utf-8", "", SCRIPT.as_bytes()),
@@ -263,23 +275,23 @@ async fn put<W: AsyncWrite + Unpin>(w: &mut W, bytes: &[u8]) -> bool {
     matches!(tokio::time::timeout(WRITE_TIMEOUT, w.write_all(bytes)).await, Ok(Ok(())))
 }
 
-/// Reads up to the end of the head. Returns it and whatever body bytes came along; None on a malformed or
-/// oversized head or a closed connection.
-async fn read_head<S: AsyncRead + Unpin>(sock: &mut S) -> Option<(Head, Vec<u8>)> {
+/// Reads up to the end of the head. Returns it and whatever body bytes came along; Err(status) for a malformed
+/// head or a closed connection (400) and an oversized one (431).
+async fn read_head<S: AsyncRead + Unpin>(sock: &mut S) -> Result<(Head, Vec<u8>), u16> {
     let mut buf = Vec::with_capacity(1024);
     let mut chunk = [0u8; 1024];
     loop {
-        let n = sock.read(&mut chunk).await.ok()?;
+        let n = sock.read(&mut chunk).await.map_err(|_| 400u16)?;
         if n == 0 {
-            return None;
+            return Err(400);
         }
         buf.extend_from_slice(&chunk[..n]);
         if let Some(end) = http::head_end(&buf) {
-            let head = http::parse_head(&buf[..end])?;
-            return Some((head, buf.split_off(end)));
+            let head = http::parse_head(&buf[..end]).ok_or(400u16)?;
+            return Ok((head, buf.split_off(end)));
         }
         if buf.len() > http::MAX_HEAD {
-            return None;
+            return Err(431);
         }
     }
 }
@@ -363,10 +375,13 @@ mod tests {
     #[tokio::test]
     async fn serves_the_page_with_a_strict_policy() {
         let r = remote("page");
-        let page = request(&r, "GET / HTTP/1.1\r\nHost: x\r\n\r\n".into()).await;
+        let page = request(&r, "GET / HTTP/1.1\r\nHost: 10.0.0.2:48765\r\n\r\n".into()).await;
         assert!(page.starts_with("HTTP/1.1 200 OK") && page.contains("Content-Security-Policy: default-src 'none'"));
-        assert!(request(&r, "GET /secret HTTP/1.1\r\n\r\n".into()).await.starts_with("HTTP/1.1 404"));
-        assert!(request(&r, "DELETE / HTTP/1.1\r\n\r\n".into()).await.starts_with("HTTP/1.1 405"));
+        assert!(request(&r, "GET /secret HTTP/1.1\r\nHost: 10.0.0.2\r\n\r\n".into()).await.starts_with("HTTP/1.1 404"));
+        // A host name (DNS rebinding) or no Host at all: refused before anything else.
+        assert!(request(&r, "GET / HTTP/1.1\r\nHost: evil.example:48765\r\n\r\n".into()).await.starts_with("HTTP/1.1 403"));
+        assert!(request(&r, "GET / HTTP/1.1\r\n\r\n".into()).await.starts_with("HTTP/1.1 403"));
+        assert!(request(&r, "DELETE / HTTP/1.1\r\nHost: 10.0.0.2\r\n\r\n".into()).await.starts_with("HTTP/1.1 405"));
         assert!(request(&r, format!("GET /{} HTTP/1.1\r\n", "a".repeat(9000))).await.starts_with("HTTP/1.1 431"));
     }
 
@@ -413,12 +428,12 @@ mod tests {
         let r = remote("stream");
         let paired = body(&request(&r, post("/api/pair", None, "", r#"{"secret":"s3cret-link-value"}"#)).await);
         let auth = format!("{}:{}", paired["appId"].as_str().unwrap(), paired["token"].as_str().unwrap());
-        assert!(request(&r, "GET /api/stream HTTP/1.1\r\nAuthorization: Bearer x.y.z:snl_bad\r\n\r\n".into()).await.starts_with("HTTP/1.1 401"));
+        assert!(request(&r, "GET /api/stream HTTP/1.1\r\nHost: 10.0.0.2\r\nAuthorization: Bearer x.y.z:snl_bad\r\n\r\n".into()).await.starts_with("HTTP/1.1 401"));
 
         let (ours, theirs) = tokio::io::duplex(64 * 1024);
         tokio::spawn(r.clone().handle(theirs, "192.168.1.30".parse().unwrap()));
         let (rd, mut wr) = tokio::io::split(ours);
-        wr.write_all(format!("GET /api/stream HTTP/1.1\r\nAuthorization: Bearer {auth}\r\n\r\n").as_bytes()).await.unwrap();
+        wr.write_all(format!("GET /api/stream HTTP/1.1\r\nHost: 10.0.0.2\r\nAuthorization: Bearer {auth}\r\n\r\n").as_bytes()).await.unwrap();
         let mut lines = BufReader::new(rd).lines();
         let hello = next_data(&mut lines).await;
         assert_eq!(hello["hello"]["grantedScopes"], json!(PAIRED_SCOPES));

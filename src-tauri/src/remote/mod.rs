@@ -39,13 +39,13 @@ pub struct RemoteState {
     theme_css: Mutex<String>,
 }
 
-fn saved_path(app: &AppHandle) -> std::path::PathBuf {
-    app.path().app_data_dir().unwrap_or_default().join("remote.json")
+/// None without an app data directory: the secret is never written anywhere else (such as the working directory).
+fn saved_path(app: &AppHandle) -> Option<std::path::PathBuf> {
+    app.path().app_data_dir().ok().map(|d| d.join("remote.json"))
 }
 
 fn load(app: &AppHandle) -> Saved {
-    let path = saved_path(app);
-    if let Some(s) = std::fs::read_to_string(&path).ok().and_then(|t| serde_json::from_str::<Saved>(&t).ok()) {
+    if let Some(s) = saved_path(app).and_then(|p| std::fs::read_to_string(p).ok()).and_then(|t| serde_json::from_str::<Saved>(&t).ok()) {
         if s.secret.len() >= 32 {
             return s;
         }
@@ -56,7 +56,7 @@ fn load(app: &AppHandle) -> Saved {
 }
 
 fn save(app: &AppHandle, s: &Saved) -> std::io::Result<()> {
-    let path = saved_path(app);
+    let path = saved_path(app).ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "no app data directory"))?;
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)?;
     }

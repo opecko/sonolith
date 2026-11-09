@@ -229,7 +229,8 @@ because a paired phone is an API client like any other.
   `POST /api/rpc` (the same header plus `X-Session: <stream id>`, one JSON-RPC request of at most 16 KB); the
   response arrives on the stream. `app.register` and `session.hello` are refused there: authentication is Sonolith's.
 - Limits: 32 open TCP connections, 16 streams, request heads of 8 KB, 10 seconds to send a request. Responses are
-  not cached, and requests whose `Origin` is another site are refused.
+  not cached. Requests whose `Host` is not an IP address (a site's name pointing at this computer, as a DNS rebinding
+  attack would use) and requests whose `Origin` is another site are refused.
 
 ---
 

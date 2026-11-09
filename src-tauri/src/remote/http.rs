@@ -29,11 +29,31 @@ impl Head {
         }
     }
 
+    /// The `Host` names an IP address (with or without a port), as the pairing link does. A host *name* means the
+    /// request came through DNS, possibly a rebinding attack (a site whose name points at this computer): refused.
+    pub fn host_is_ip(&self) -> bool {
+        let Some(h) = self.header("host") else { return false };
+        let addr = match h.strip_prefix('[') {
+            // [v6] or [v6]:port
+            Some(rest) => rest.split_once(']').filter(|(_, port)| port.is_empty() || port.strip_prefix(':').is_some_and(port_ok)).map(|(a, _)| a),
+            None => match h.rsplit_once(':') {
+                Some((a, port)) if port_ok(port) => Some(a),
+                Some(_) => None,
+                None => Some(h),
+            },
+        };
+        addr.is_some_and(|a| a.parse::<std::net::IpAddr>().is_ok())
+    }
+
     /// `Authorization: Bearer <appId>:<token>`.
     pub fn bearer(&self) -> Option<(&str, &str)> {
         let v = self.header("authorization")?.strip_prefix("Bearer ")?;
         v.trim().split_once(':')
     }
+}
+
+fn port_ok(p: &str) -> bool {
+    !p.is_empty() && p.len() <= 5 && p.bytes().all(|b| b.is_ascii_digit())
 }
 
 /// Where the head ends (the index after the blank line), once it is all in `buf`.
@@ -81,6 +101,7 @@ pub fn reason(status: u16) -> &'static str {
         403 => "Forbidden",
         404 => "Not Found",
         405 => "Method Not Allowed",
+        408 => "Request Timeout",
         409 => "Conflict",
         413 => "Payload Too Large",
         429 => "Too Many Requests",
@@ -150,6 +171,20 @@ mod tests {
         let bad = parse_head(b"POST / HTTP/1.1\r\nContent-Length: -1\r\n\r\n").unwrap();
         assert_eq!(bad.content_length(), None);
         assert!(head_end(b"GET / HTTP/1.1\r\n").is_none());
+    }
+
+    #[test]
+    fn only_ip_hosts_pass() {
+        let h = |v: &str| Head { method: "GET".into(), path: "/".into(), headers: vec![("host".into(), v.into())] };
+        assert!(h("192.168.1.10:48765").host_is_ip());
+        assert!(h("192.168.1.10").host_is_ip());
+        assert!(h("[fe80::1]:48765").host_is_ip());
+        assert!(h("[::1]").host_is_ip());
+        assert!(!h("evil.example:48765").host_is_ip());
+        assert!(!h("evil.example").host_is_ip());
+        assert!(!h("192.168.1.10:port").host_is_ip());
+        assert!(!h("[::1]x").host_is_ip());
+        assert!(!Head { method: "GET".into(), path: "/".into(), headers: vec![] }.host_is_ip());
     }
 
     #[test]
