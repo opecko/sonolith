@@ -1,3 +1,4 @@
+import { initRecentQueues } from "./stores/recentQueues";
 import { initTrackNotes } from "./stores/trackNotes";
 import CommandPalette from "./palette/CommandPalette";
 import { lazy, Suspense, useEffect } from "react";
@@ -56,6 +57,7 @@ export default function App() {
     void initMpris();
     initHistory();
     initTrackNotes();
+    initRecentQueues();
     initPlayLog();
     initHistoryImport();
     initRecaps();

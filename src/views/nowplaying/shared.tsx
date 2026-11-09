@@ -1,6 +1,8 @@
 import type { BrowseRef } from "../../api/types";
 import { getRelated } from "../../api/ytm";
+import { History, ListPlus } from "lucide-react";
 import AutoplayToggle from "../../components/AutoplayToggle";
+import Menu, { type MenuEntry } from "../../components/Menu";
 import { QueueChips } from "../../components/QueueChips";
 import QueueList from "../../components/QueueList";
 import { Shelves } from "../../components/Shelves";
@@ -11,6 +13,7 @@ import { lyricsShown } from "../../lyrics/pick";
 import { useLyrics } from "../../lyrics/store";
 import { useSettings } from "../../stores/settings";
 import { usePlayer } from "../../stores/player";
+import { restoreQueue, saveQueueAsPlaylist, useRecentQueues } from "../../stores/recentQueues";
 
 /** Now Playing panels shared by every layout: the queue, lyrics and related music of the current track. */
 export type Tab = "upnext" | "related" | "lyrics";
@@ -36,6 +39,20 @@ export function RelatedPanel({ videoId, related, held }: { videoId: string; rela
   return held ? <Loading variant="list" label="Loading related" /> : <EmptyState title="Nothing related" />;
 }
 
+/** Up next's ⋮: the queue as a playlist, and the last queues it replaced. */
+function queueMenu(): MenuEntry[] {
+  const recent = useRecentQueues.getState().list;
+  return [
+    { label: "Save queue as playlist", icon: <ListPlus size={18} aria-hidden />, onSelect: () => void saveQueueAsPlaylist() },
+    {
+      label: "Recent queues",
+      icon: <History size={18} aria-hidden />,
+      disabled: !recent.length,
+      submenu: () => recent.map((q) => ({ label: `${q.title} · ${q.tracks.length} songs`, onSelect: () => restoreQueue(q) })),
+    },
+  ];
+}
+
 export function UpNextTab() {
   const header = usePlayer((s) => s.watch?.header);
   const contextTitle = usePlayer((s) => s.context.title);
@@ -49,7 +66,10 @@ export function UpNextTab() {
           <p className="text-xs text-[var(--c-text-muted)]">{caption}</p>
           {title && <p className="truncate text-base font-semibold">{title}</p>}
         </div>
-        <AutoplayToggle />
+        <div className="flex shrink-0 items-center gap-1">
+          <AutoplayToggle />
+          <Menu label="Queue actions" entries={queueMenu} />
+        </div>
       </div>
       <div className="shrink-0"><QueueChips /></div>
       <div className="scroll-y min-h-0 flex-1 pr-1">
