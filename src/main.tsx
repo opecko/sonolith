@@ -13,6 +13,7 @@ import { glassOpacity, setGlassOpacity } from "./theme/glass";
 import { saveSplash, splashFor } from "./theme/splash";
 import { initMorph, setMotionEnabled } from "./motion";
 import { initFocusMode } from "./focusMode";
+import { sendRemoteTheme } from "./remote/store";
 
 // Appearance goes on synchronously before the first render, so startup never flashes the default colors. A
 // transparent window is known already (index.html set data-glass), so the surfaces start translucent too.
@@ -20,6 +21,7 @@ if (document.documentElement.hasAttribute("data-glass")) setGlassOpacity(useSett
 const applyColors = () => {
   applyTheme(useSettings.getState().appearance, coverTokens());
   paintCoverScope();
+  sendRemoteTheme();
 };
 const applyZoom = (z: number) => void getCurrentWebview().setZoom(z).catch(() => {});
 applyColors();

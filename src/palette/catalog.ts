@@ -18,7 +18,8 @@ const SECTION_TITLES: Record<SettingsSection, [string, string[]]> = {
   recaps: ["Recaps", ["stats", "takeout"]],
   shortcuts: ["Keyboard shortcuts", ["keys", "hotkeys"]],
   discord: ["Discord", ["rich presence"]],
-  apps: ["Connected apps", ["local api", "remote"]],
+  apps: ["Connected apps", ["local api", "integrations"]],
+  remote: ["Phone remote", ["remote control", "mobile", "qr code", "pair phone"]],
   system: ["System", ["tray", "graphics", "gpu", "updates", "yt-dlp"]],
   about: ["About", ["version", "changelog", "setup", "license"]],
 };

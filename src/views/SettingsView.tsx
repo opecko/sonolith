@@ -1,6 +1,6 @@
 import {
   ArrowLeft, ChevronDown, ChevronRight, Cpu, Disc3, Download, ExternalLink, Hand, Info, Keyboard, MessageCircle, MicVocal, Paintbrush, Palette, Play,
-  Plug, RefreshCw, ScrollText, Sparkles, type LucideIcon,
+  Plug, RefreshCw, ScrollText, Smartphone, Sparkles, type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
@@ -16,6 +16,7 @@ import { rerunOnboarding } from "../onboarding/store";
 import ShortcutSettings from "../shortcuts/ShortcutSettings";
 import LyricsProviderSettings from "../lyrics/LyricsProviderSettings";
 import ConnectedAppsSettings from "../localApi/ConnectedAppsSettings";
+import PhoneRemoteSettings from "../remote/PhoneRemoteSettings";
 import RecapSettings from "../recap/RecapSettings";
 import { useSettingsNav, type SettingsSection } from "../stores/nav";
 import { useSettings } from "../stores/settings";
@@ -266,6 +267,7 @@ const GROUPS: { tone: string; items: Category[] }[] = [
     { id: "shortcuts", title: "Keyboard shortcuts", detail: "Keys inside Sonolith", icon: Keyboard, page: () => <ShortcutSettings /> },
     { id: "discord", title: "Discord", detail: "Show what you're playing", icon: MessageCircle, page: () => <DiscordSettings /> },
     { id: "apps", title: "Connected apps", detail: "Let other apps use Sonolith", icon: Plug, page: () => <ConnectedAppsSettings /> },
+    { id: "remote", title: "Phone remote", detail: "Control playback from your phone", icon: Smartphone, page: () => <PhoneRemoteSettings /> },
   ] },
   { tone: "pink", items: [
     { id: "system", title: "System", detail: "Tray, graphics, updates, yt-dlp", icon: Cpu, page: () => <SystemSettings /> },

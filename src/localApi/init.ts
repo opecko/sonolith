@@ -7,6 +7,7 @@ import { dispatch, type Call } from "./dispatch";
 import { bridgeError } from "./errors";
 import { initPublishing, publishAll, setPublishing } from "./publish";
 import { useLocalApi, type Consent } from "./store";
+import { sendRemoteTheme, useRemote } from "../remote/store";
 
 interface ApiCall extends Call {
   id: number;
@@ -41,8 +42,16 @@ export async function initLocalApi() {
   await listen<boolean>("api:lyrics-wanted", ({ payload }) => setLyricsWantedByApps(payload));
   await listen<{ message: string }>("api:toast", ({ payload }) => useToast.getState().show(payload.message, "info"));
   // The state only matters to the server while it runs.
-  api.subscribe((s, p) => s.status?.running !== p.status?.running && setPublishing(!!s.status?.running));
+  // The phone remote is an API client too, with its own switch.
+  const publishing = () => setPublishing(!!api.getState().status?.running || !!useRemote.getState().status?.running);
+  api.subscribe((s, p) => s.status?.running !== p.status?.running && publishing());
+  useRemote.subscribe((s, p) => {
+    if (s.status?.running === p.status?.running) return;
+    publishing();
+    sendRemoteTheme();
+  });
   await api.getState().refresh().catch(() => {});
+  await useRemote.getState().refresh().catch(() => {});
   // After a reload, the server may have requests waiting and apps that want lyrics.
   const ready = await invoke<{ lyricsWanted: boolean; consents: Consent[] }>("api_ready").catch(() => null);
   if (ready) {

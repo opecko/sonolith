@@ -181,3 +181,7 @@ button:disabled { cursor: default; }
 /* A setting a link pointed at: lit up, then fading back. */
 [data-setting] { transition: background-color 700ms; }
 [data-setting][data-focused] { background: var(--m3-primary-container); transition: none; }
+
+/* The phone remote's QR code (Settings → Phone remote): dark on light in every theme, as scanners expect. */
+.qr-code { background: #ffffff; color: #000000; }
+.qr-code svg { display: block; width: 100%; height: auto; }
