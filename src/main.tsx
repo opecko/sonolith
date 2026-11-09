@@ -7,12 +7,15 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { coverTokens, initCoverColors, paintCoverScope } from "./stores/coverColors";
 import { useSettings } from "./stores/settings";
 import { initWindowGlass } from "./stores/windowGlass";
-import { applyAnimations, applyLayout, applyTheme } from "./theme";
+import { applyAnimations, applyLayout, applyTheme, effectiveTokens } from "./theme";
 import { glassOpacity, setGlassOpacity } from "./theme/glass";
+import { saveSplash, splashFor } from "./theme/splash";
 import { initMorph, setMotionEnabled } from "./motion";
 import { initFocusMode } from "./focusMode";
 
-// Appearance goes on synchronously before the first render, so startup never flashes the default colors.
+// Appearance goes on synchronously before the first render, so startup never flashes the default colors. A
+// transparent window is known already (index.html set data-glass), so the surfaces start translucent too.
+if (document.documentElement.hasAttribute("data-glass")) setGlassOpacity(useSettings.getState().appearance.windowOpacity);
 const applyColors = () => {
   applyTheme(useSettings.getState().appearance, coverTokens());
   paintCoverScope();
@@ -38,6 +41,16 @@ useSettings.subscribe((s, prev) => {
     applyAnimations(a);
     setMotionEnabled(a.animations);
   }
+});
+// Colors for the next start's startup screen: the palette's, not a cover's.
+const keepSplash = () => {
+  const a = useSettings.getState().appearance;
+  saveSplash(splashFor(effectiveTokens(a), a.windowOpacity));
+};
+keepSplash();
+useSettings.subscribe((s, prev) => {
+  const a = s.appearance, p = prev.appearance;
+  if (a.palette !== p.palette || a.mode !== p.mode || a.overrides !== p.overrides || a.windowOpacity !== p.windowOpacity) keepSplash();
 });
 initCoverColors(applyColors);
 initWindowGlass(applyColors);

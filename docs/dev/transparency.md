@@ -28,6 +28,12 @@ filters (WebKitGTK renders them in software and they flicker; see pitfalls.md).
   canvases (ambient light, visualizer, Recaps) keep their own colors. Menus, dialogs, tooltips, list boxes and
   `[data-float]` elements swap in the `-float` tokens and re-derive the roles (m3.css). "Colors from album art"
   goes through the same functions, so it keeps working, on the whole app or on Now Playing alone.
+- **Startup screen** (`index.html`, `src/theme/splash.css`, `src/theme/splash.ts`): `#root` holds a logo screen until
+  React's first render replaces it. Its colors are the palette's background and text saved by the last run
+  (localStorage `splash`). A transparent window gets `window.__sonolithGlass` from an initialization script, so the
+  inline script in `index.html` sets `data-glass` on `<html>` before any stylesheet paints and applies the saved
+  surface opacity. The window is created hidden and shown once that screen is parsed (`window_show`, with the page's
+  load as the fallback), so it never appears as an empty, fully transparent frame.
 - **Contrast warnings** (color editor) assume an opaque background; the setting's description says so.
 - **No per-frame work** is added: the tokens are rewritten only when the theme, the cover colors or the opacity
   change.

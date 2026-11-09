@@ -42,6 +42,17 @@ pub fn create_main(app: &AppHandle) -> tauri::Result<()> {
         let composited = composited();
         let transparent = render::flag(app, KEY, false) && composited != Some(false);
         builder = builder.transparent(transparent);
+        if transparent {
+            // index.html reads it before any stylesheet loads (the startup screen, data-glass on <html>).
+            builder = builder.initialization_script("window.__sonolithGlass = true;");
+            // Mapped before the page has loaded, a transparent window shows nothing at all for a moment. It stays
+            // hidden until index.html has its startup screen (`window_show`), or at the latest once the page loaded.
+            builder = builder.visible(false).on_page_load(|w, p| {
+                if p.event() == tauri::webview::PageLoadEvent::Finished {
+                    let _ = w.show();
+                }
+            });
+        }
         WindowState { transparent, composited }
     };
     #[cfg(not(target_os = "linux"))]
@@ -89,6 +100,16 @@ pub fn window_set_transparent(app: AppHandle, enabled: bool) -> Result<(), Strin
         return Err("Transparent windows are only available on Linux.".into());
     }
     render::write_flag(&app, KEY, enabled)
+}
+
+/// index.html: the startup screen is in place, a hidden (transparent) main window may show now.
+#[tauri::command]
+pub fn window_show(app: AppHandle) {
+    if let Some(w) = app.get_webview_window("main") {
+        if !w.is_visible().unwrap_or(true) {
+            let _ = w.show();
+        }
+    }
 }
 
 /// "Restart Sonolith" after changing a setting that only applies at startup.

@@ -6,9 +6,35 @@
     <!-- Google CDNs (googlevideo audio, ytimg/ggpht images) may reject the app's own origin as Referer. -->
     <meta name="referrer" content="no-referrer" />
     <title>Sonolith</title>
+    <link rel="stylesheet" href="/src/theme/splash.css" />
+    <script>
+      // A transparent window (window.rs sets __sonolithGlass before the page loads): <html> gets data-glass now, so the
+      // stylesheets never paint it opaque. The startup screen's colors come from the last run (src/theme/splash.ts),
+      // at the saved surface opacity when the window is transparent.
+      if (window.__sonolithGlass) document.documentElement.setAttribute("data-glass", "");
+      try {
+        var s = JSON.parse(localStorage.getItem("splash") || "null");
+        var hex = /^#[0-9a-f]{6}$/i;
+        if (s && hex.test(s.bg) && hex.test(s.fg) && s.opacity >= 0.3 && s.opacity <= 1) {
+          var r = document.documentElement;
+          var glass = r.hasAttribute("data-glass");
+          r.style.setProperty("--splash-bg", glass ? "color-mix(in srgb, " + s.bg + " " + s.opacity * 100 + "%, transparent)" : s.bg);
+          r.style.setProperty("--splash-fg", s.fg);
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="splash" role="status" aria-label="Loading Sonolith">
+        <img src="/src-tauri/icons/128x128@2x.png" alt="" />
+        <span>Sonolith</span>
+      </div>
+    </div>
+    <script>
+      // A transparent window waits hidden for this (window.rs): the startup screen is there to show now.
+      if (window.__sonolithGlass) window.__TAURI_INTERNALS__.invoke("window_show").catch(function () {});
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,0 +1,18 @@
+/* The startup screen (index.html): shown until React's first render replaces #root's content. Colors come from the
+   last run (src/theme/splash.ts, set inline on <html> by index.html); these are the built-in look's for a first start. */
+.splash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--splash-bg, #030303);
+  color: var(--splash-fg, #ffffff);
+  font: 500 16px/1.5 system-ui, sans-serif;
+  letter-spacing: 0.15px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.splash img { width: 96px; height: 96px; }
