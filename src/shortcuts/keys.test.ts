@@ -8,10 +8,15 @@ const ev = (key: string, mods: Partial<KeyEventLike> = {}): KeyEventLike => ({ k
 const match = (e: KeyEventLike) => matchAction(e, DEFAULT_BINDINGS);
 
 describe("key matching", () => {
-  it("defaults: Space, <, >, +, -", () => {
+  it("defaults: Space, <, >, ←, →, +, -", () => {
     expect(match(ev(" "))).toBe("playPause");
     expect(match(ev("<"))).toBe("prev");
     expect(match(ev(">"))).toBe("next");
+    expect(match(ev("ArrowLeft"))).toBe("seekBack");
+    expect(match(ev("ArrowRight"))).toBe("seekForward");
+    // Shift+← is another key (text selection and the like), Ctrl+→ too.
+    expect(match(ev("ArrowLeft", { shiftKey: true }))).toBeNull();
+    expect(match(ev("ArrowRight", { ctrlKey: true }))).toBeNull();
     expect(match(ev("+"))).toBe("volumeUp");
     expect(match(ev("-"))).toBe("volumeDown");
   });
@@ -42,14 +47,16 @@ describe("key matching", () => {
   it("a combo the user bound matches only with its modifiers", () => {
     const bindings = { ...DEFAULT_BINDINGS, next: { key: "ArrowRight", ctrl: true } };
     expect(matchAction(ev("ArrowRight", { ctrlKey: true }), bindings)).toBe("next");
-    expect(matchAction(ev("ArrowRight"), bindings)).toBeNull();
+    // Bare → is still the default seek.
+    expect(matchAction(ev("ArrowRight"), bindings)).toBe("seekForward");
     expect(matchAction(ev("ArrowRight", { ctrlKey: true, shiftKey: true }), bindings)).toBeNull();
   });
 
-  it("held keys: only volume repeats", () => {
+  it("held keys: only seeking and volume repeat", () => {
     expect(match(ev(" ", { repeat: true }))).toBeNull();
     expect(match(ev(">", { repeat: true }))).toBeNull();
     expect(match(ev("<", { repeat: true }))).toBeNull();
+    expect(match(ev("ArrowRight", { repeat: true }))).toBe("seekForward");
     expect(match(ev("+", { repeat: true }))).toBe("volumeUp");
     expect(match(ev("-", { repeat: true }))).toBe("volumeDown");
   });

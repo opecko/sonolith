@@ -6,11 +6,22 @@ import { useSettings } from "../stores/settings";
 import { isTyping, matchAction, spaceOwnedByControl, type ShortcutAction } from "./keys";
 import { showVolume, useShortcutUi } from "./store";
 
+/** Seconds the arrow keys move the playhead. */
+const SEEK_STEP = 5;
+
+/** Within the current track; a live stream (no timeline) and an empty queue ignore it. */
+function seekBy(sec: number) {
+  const p = usePlayer.getState();
+  if (p.index >= 0 && !p.live) p.skipBy(sec);
+}
+
 /** The same player actions the buttons use (play / pause goes through the element-truth toggle). */
 const RUN: Record<ShortcutAction, () => void> = {
   playPause: () => usePlayer.getState().togglePlay(),
   prev: () => usePlayer.getState().prev(),
   next: () => usePlayer.getState().next(),
+  seekBack: () => seekBy(-SEEK_STEP),
+  seekForward: () => seekBy(SEEK_STEP),
   volumeUp: () => showVolume(stepVolume(1)),
   volumeDown: () => showVolume(stepVolume(-1)),
 };

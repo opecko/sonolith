@@ -1,12 +1,14 @@
 /** In-window keyboard shortcuts (separate from the global media keys in stores/mediaKeys.ts). Pure: no DOM, no stores. */
 
-export const SHORTCUT_ACTIONS = ["playPause", "prev", "next", "volumeUp", "volumeDown"] as const;
+export const SHORTCUT_ACTIONS = ["playPause", "prev", "next", "seekBack", "seekForward", "volumeUp", "volumeDown"] as const;
 export type ShortcutAction = (typeof SHORTCUT_ACTIONS)[number];
 
 export const ACTION_LABELS: Record<ShortcutAction, string> = {
   playPause: "Play / pause",
   prev: "Previous track",
   next: "Next track",
+  seekBack: "Back 5 seconds",
+  seekForward: "Forward 5 seconds",
   volumeUp: "Volume up",
   volumeDown: "Volume down",
 };
@@ -36,6 +38,8 @@ export const DEFAULT_BINDINGS: Bindings = {
   playPause: { key: " " },
   prev: { key: "<" },
   next: { key: ">" },
+  seekBack: { key: "ArrowLeft" },
+  seekForward: { key: "ArrowRight" },
   volumeUp: { key: "+" },
   volumeDown: { key: "-" },
 };
@@ -43,7 +47,7 @@ export const DEFAULT_BINDINGS: Bindings = {
 export const DEFAULT_SHORTCUTS: ShortcutSettings = { enabled: true, bindings: DEFAULT_BINDINGS };
 
 /** Held down, these repeat; the rest fire once per press. */
-const REPEATS: ReadonlySet<ShortcutAction> = new Set(["volumeUp", "volumeDown"]);
+const REPEATS: ReadonlySet<ShortcutAction> = new Set(["seekBack", "seekForward", "volumeUp", "volumeDown"]);
 
 /** What of a KeyboardEvent the matching needs. */
 export interface KeyEventLike {
@@ -85,7 +89,7 @@ export const sameBinding = (a: KeyBinding, b: KeyBinding) =>
 
 /**
  * The action a key press triggers, or null. Unbound combos (Ctrl+…, Alt+…: app zoom and the like) and anything
- * with Super never match; held-down keys only repeat the volume actions.
+ * with Super never match; held-down keys only repeat seeking and the volume actions.
  */
 export function matchAction(e: KeyEventLike, bindings: Bindings): ShortcutAction | null {
   const pressed = bindingFromEvent(e);
