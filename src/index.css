@@ -95,6 +95,9 @@ button:disabled { cursor: default; }
 /* Horizontal rows (queue chips): always room for the thin bar, so nothing moves when the row starts to overflow. */
 .scroll-x { overflow-x: scroll; overflow-y: hidden; }
 .no-scrollbar { scrollbar-width: none; }
+/* Menus as tall as the window allows: past that, the scrollbar shows all the time, so it's clear there's more. */
+.menu-scroll::-webkit-scrollbar-thumb { background: var(--c-scrollbar); }
+.menu-scroll::-webkit-scrollbar-thumb:hover { background: var(--c-scrollbar-hover); }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
 /* A short list's row that opens or plays wherever it's clicked: its title button's ::after stretches over the row

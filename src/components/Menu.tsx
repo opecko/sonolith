@@ -1,6 +1,7 @@
 import { ChevronLeft, MoreVertical } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { placeMenu, type MenuPlace } from "./menuPlace";
 
 export interface MenuEntry {
   label: string;
@@ -51,21 +52,29 @@ export default function Menu({ entries, label = "More actions", className = "", 
   const [open, setOpen] = useState(false);
   /** Open submenus (the root list always comes from `entries()`). */
   const [stack, setStack] = useState<MenuEntry[][]>([]);
-  const [pos, setPos] = useState({ left: 0, top: 0, up: false });
+  const [pos, setPos] = useState<MenuPlace & { left: number }>({ left: 0, top: 0, up: false, maxHeight: 0 });
+  /** What the menu opens from: the ⋮ button, or the point of a right-click (gap 0). */
+  const anchor = useRef({ left: 0, top: 0, bottom: 0, gap: 4 });
 
   useLayoutEffect(() => {
     if (!open || !btn.current) return;
     const at = pointerAnchor;
     pointerAnchor = null;
     if (at) {
-      const up = at.y + 320 > window.innerHeight;
-      setPos({ left: Math.max(8, Math.min(at.x, window.innerWidth - W - 8)), top: at.y, up });
-      return;
+      anchor.current = { left: Math.max(8, Math.min(at.x, window.innerWidth - W - 8)), top: at.y, bottom: at.y, gap: 0 };
+    } else {
+      const r = btn.current.getBoundingClientRect();
+      anchor.current = { left: Math.max(8, Math.min(r.right - W, window.innerWidth - W - 8)), top: r.top, bottom: r.bottom, gap: 4 };
     }
-    const r = btn.current.getBoundingClientRect();
-    const up = r.bottom + 320 > window.innerHeight;
-    setPos({ left: Math.max(8, Math.min(r.right - W, window.innerWidth - W - 8)), top: up ? r.top - 4 : r.bottom + 4, up });
   }, [open]);
+
+  // Placed once its content is known (and again for a submenu): before the first paint, so it never jumps.
+  const list = stack.at(-1) ?? (open ? entries() : []);
+  useLayoutEffect(() => {
+    if (!open || !pop.current) return;
+    const a = anchor.current;
+    setPos({ left: a.left, ...placeMenu(a, pop.current.scrollHeight, window.innerHeight, a.gap) });
+  }, [open, stack, list.length]);
 
   useEffect(() => {
     if (!open) return;
@@ -85,7 +94,6 @@ export default function Menu({ entries, label = "More actions", className = "", 
     };
   }, [open]);
 
-  const list = stack.at(-1) ?? (open ? entries() : []);
   return (
     <>
       <button
@@ -109,8 +117,8 @@ export default function Menu({ entries, label = "More actions", className = "", 
           <div
             ref={pop}
             role="menu"
-            className="m3-menu fixed z-50 max-h-80 overflow-y-auto rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] py-2 shadow-2xl"
-            style={{ left: pos.left, width: W, ...(pos.up ? { bottom: window.innerHeight - pos.top } : { top: pos.top }) }}
+            className="m3-menu menu-scroll fixed z-50 overflow-y-auto rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-3)] py-2 shadow-2xl"
+            style={{ left: pos.left, width: W, maxHeight: pos.maxHeight || undefined, ...(pos.up ? { bottom: window.innerHeight - pos.top } : { top: pos.top }) }}
           >
             {stack.length > 0 && (
               <button role="menuitem" onClick={() => setStack((s) => s.slice(0, -1))}
