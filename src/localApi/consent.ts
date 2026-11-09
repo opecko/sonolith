@@ -16,6 +16,8 @@ export function identityRows(id: AppIdentity): { label: string; value: string }[
 
 function rows(id: AppIdentity): { label: string; value: string }[] {
   switch (id.kind) {
+    case "remote":
+      return [{ label: "Device", value: "A phone paired with the phone remote, over the local network" }];
     case "flatpak":
       return [{ label: "Flatpak app", value: id.flatpakId ?? id.key }];
     case "appimage":

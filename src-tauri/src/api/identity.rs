@@ -30,6 +30,8 @@ pub enum Kind {
     Interpreter,
     Appimage,
     Flatpak,
+    /// A phone paired with the remote (src/remote): not a process, so nothing is derived for it.
+    Remote,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -67,6 +69,25 @@ impl Fs for RealFs {
             }
             Err(_) => path.to_string(),
         }
+    }
+}
+
+impl AppIdentity {
+    /// The identity of a paired phone, bound to its own app id.
+    pub fn remote(app_id: &str) -> AppIdentity {
+        AppIdentity {
+            kind: Kind::Remote,
+            key: format!("remote:{app_id}"),
+            executable: String::new(),
+            interpreter: None,
+            script: None,
+            app_image: None,
+            flatpak_id: None,
+        }
+    }
+
+    pub fn is_remote(&self) -> bool {
+        self.kind == Kind::Remote
     }
 }
 

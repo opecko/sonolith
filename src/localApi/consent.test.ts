@@ -12,6 +12,7 @@ describe("identityRows", () => {
     expect(identityRows({ ...script, key: "interp:python3:module:mybar", script: null })[0].value).toBe("Module mybar");
     expect(identityRows({ ...script, key: "interp:node:-", script: null })[0].value).toBe("Inline code or an interactive session");
     expect(identityRows({ ...base, kind: "flatpak", flatpakId: "com.example.Bar" })).toEqual([{ label: "Flatpak app", value: "com.example.Bar" }]);
+    expect(identityRows({ ...base, kind: "remote", executable: "", key: "remote:dev.sonolith.remote.pa" })[0].label).toBe("Device");
   });
 
   it("shows invisible and direction characters in paths instead of obeying them", () => {

@@ -252,7 +252,7 @@ fn tmp_path(path: &Path) -> PathBuf {
 /// Writes a new file readable only by the user (a temp file, renamed into place after). A leftover from a crash is
 /// removed first (a link is removed, not followed); the file is then created fresh (O_EXCL, O_NOFOLLOW), so a link
 /// planted in between makes the write fail instead of writing through it.
-pub(super) fn write_private(path: &Path, data: &[u8]) -> std::io::Result<()> {
+pub(crate) fn write_private(path: &Path, data: &[u8]) -> std::io::Result<()> {
     use std::io::Write;
     let _ = std::fs::remove_file(path);
     let mut options = std::fs::OpenOptions::new();

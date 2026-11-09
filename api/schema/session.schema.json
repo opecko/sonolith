@@ -69,9 +69,9 @@
       "required": ["kind", "key", "executable", "interpreter", "script", "appImage", "flatpakId"],
       "properties": {
         "kind": {
-          "description": "`executable` (a native program), `interpreter` (a script run by an interpreter), `appimage` or `flatpak`.",
+          "description": "`executable` (a native program), `interpreter` (a script run by an interpreter), `appimage`, `flatpak`, or `remote` (a phone paired with Sonolith's phone remote; `executable` is then empty).",
           "type": "string",
-          "enum": ["executable", "interpreter", "appimage", "flatpak"]
+          "enum": ["executable", "interpreter", "appimage", "flatpak", "remote"]
         },
         "key": { "description": "The normalized identity Sonolith compares, for example `interp:python3:/home/alex/bin/bar.py`. Version segments are replaced by `*`; lower case on Windows.", "type": "string" },
         "executable": { "description": "The verified executable path as the operating system reports it.", "type": "string" },

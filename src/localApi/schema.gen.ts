@@ -118,7 +118,7 @@ export type RequestScopesResult = { status: "pending" | "granted"; requestId: st
 /** Parameters of `registration.resolved`. */
 export type RegistrationOutcome = { requestId: string; kind: "register" | "scopes" | "identity"; status: "approved" | "denied" | "blocked" | "expired"; token: Token | null; grantedScopes: Scope[] | null; retryAfterMs: number | null };
 /** Who the calling process is, as Sonolith derives it from the operating system (SPEC section 6.6). A token is bound to `key`. */
-export type AppIdentity = { kind: "executable" | "interpreter" | "appimage" | "flatpak"; key: string; executable: string; interpreter: string | null; script: string | null; appImage: string | null; flatpakId: string | null };
+export type AppIdentity = { kind: "executable" | "interpreter" | "appimage" | "flatpak" | "remote"; key: string; executable: string; interpreter: string | null; script: string | null; appImage: string | null; flatpakId: string | null };
 /** A client token: `snl_` followed by 43 base64url characters (256 random bits). A secret: store it like a password. */
 export type Token = string;
 /** The authenticated session. */

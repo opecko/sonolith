@@ -808,3 +808,35 @@ async fn live_server_for_examples() {
     task.abort();
     endpoint.cleanup();
 }
+
+#[tokio::test]
+async fn phones_have_their_own_switch_and_reserved_ids() {
+    let env = start("remote").await;
+    let (app_id, token) = env.server.pair_remote("iPhone", &["player:read", "player:control"]);
+    assert!(app_id.starts_with("dev.sonolith.remote."));
+    let phone = || {
+        let (ours, theirs) = UnixStream::pair().unwrap();
+        tokio::spawn(env.server.clone().serve_as(theirs, Some(AppIdentity::remote(&app_id)), std::future::pending()));
+        Client::over(ours)
+    };
+    let mut p = phone();
+    assert_eq!(p.ok("session.hello", hello(&app_id, &token)).await["identity"]["kind"], "remote");
+    // A local program can't use a phone's id or token.
+    let mut c = Client::connect(&env.socket).await;
+    assert_eq!(code(&c.err("session.hello", hello(&app_id, &token)).await), -32602);
+
+    // Turning the API off ends other apps' sessions only; turning the remote off ends the phone's.
+    let other = register(&env, "com.example.other", &["player:read"]).await;
+    let mut s = session(&env, "com.example.other", &other).await;
+    env.server.close_all();
+    s.until_closed().await;
+    assert_eq!(p.ok("app.info", json!({})).await["session"]["appId"], app_id.as_str());
+    env.server.close_remote();
+    p.until_closed().await;
+
+    // A new link unpairs every phone.
+    assert_eq!(env.server.remote_counts().0, 1);
+    env.server.remove_remote_apps();
+    assert!(!env.server.remote_token_ok(&app_id, &token));
+    assert_eq!(code(&phone().err("session.hello", hello(&app_id, &token)).await), -32001);
+}

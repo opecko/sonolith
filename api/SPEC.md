@@ -4593,7 +4593,7 @@ Who the calling process is, as Sonolith derives it from the operating system (SP
 
 | Field | Type | Description |
 |---|---|---|
-| `kind` | "executable" \| "interpreter" \| "appimage" \| "flatpak" | `executable` (a native program), `interpreter` (a script run by an interpreter), `appimage` or `flatpak`. |
+| `kind` | "executable" \| "interpreter" \| "appimage" \| "flatpak" \| "remote" | `executable` (a native program), `interpreter` (a script run by an interpreter), `appimage`, `flatpak`, or `remote` (a phone paired with Sonolith's phone remote; `executable` is then empty). |
 | `key` | string | The normalized identity Sonolith compares, for example `interp:python3:/home/alex/bin/bar.py`. Version segments are replaced by `*`; lower case on Windows. |
 | `executable` | string | The verified executable path as the operating system reports it. |
 | `interpreter` | string \| null | The interpreter family, for example `python3` or `node`, when `kind` is `interpreter`; otherwise null. |

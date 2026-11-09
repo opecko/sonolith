@@ -12,7 +12,7 @@ mod notify;
 mod peer;
 mod protocol;
 pub mod server;
-mod store;
+pub(crate) mod store;
 #[cfg(all(test, target_os = "linux"))]
 mod tests;
 mod transport;
@@ -59,7 +59,7 @@ impl Host for TauriHost {
     }
 }
 
-fn server(app: &AppHandle) -> Arc<Server> {
+pub(crate) fn server(app: &AppHandle) -> Arc<Server> {
     let state = app.state::<ApiState>();
     state
         .server

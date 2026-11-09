@@ -883,7 +883,9 @@ impl Server {
             return Err(RpcError::new(Code::InvalidRequest).reason("alreadyAuthenticated"));
         }
         let v = Params::new(p, &["appId", "token", "apiVersion"])?;
-        let app_id = v.app_id("appId")?;
+        // Paired phones use the reserved `dev.sonolith.remote.` ids; nothing else may present one.
+        let phone = identity.as_ref().is_some_and(AppIdentity::is_remote);
+        let app_id = if phone { v.text("appId", 1, 128)? } else { v.app_id("appId")? };
         let token = v.text("token", 1, 100)?;
         v.version()?;
         let identity = identity.ok_or_else(|| RpcError::new(Code::Unavailable).reason("peerUnverified"))?;
@@ -1116,11 +1118,74 @@ impl Server {
 
     /// Ends every connection at once (the API was turned off), also those of clients that stopped reading. Tokens
     /// stay valid.
+    /// Ends every connection of other apps (the API is turned off). Paired phones have their own switch.
     pub fn close_all(&self) {
-        let ids: Vec<u64> = self.conns.lock().unwrap().keys().copied().collect();
+        self.abort_where(|c| !c.identity.as_ref().is_some_and(AppIdentity::is_remote));
+    }
+
+    /// Ends every phone connection (the remote is turned off).
+    pub fn close_remote(&self) {
+        self.abort_where(|c| c.identity.as_ref().is_some_and(AppIdentity::is_remote));
+    }
+
+    fn abort_where(&self, pred: impl Fn(&Conn) -> bool) {
+        let ids: Vec<u64> = self.conns.lock().unwrap().iter().filter(|(_, c)| pred(c)).map(|(id, _)| *id).collect();
         for id in ids {
             self.abort(id);
         }
+    }
+
+    // ------------------------------------------------------------ phone remote
+
+    /// Registers a phone that proved it holds the pairing secret: the user showed it the link, which is the consent
+    /// for `scopes`. Anything more goes through `app.requestScopes` and the consent screen like any app. Returns the
+    /// new app id and token; the app id uses the reserved `dev.sonolith.` prefix, so no app can register under it.
+    pub fn pair_remote(&self, name: &str, scopes: &[&str]) -> (String, String) {
+        let suffix: String = store::random_id("").to_ascii_lowercase().chars().filter(char::is_ascii_alphanumeric).collect();
+        let app_id = format!("dev.sonolith.remote.p{suffix}");
+        let token = store::new_token();
+        let now = now_ms();
+        {
+            let mut reg = self.registry.lock().unwrap();
+            reg.apps.push(AppRecord {
+                app_id: app_id.clone(),
+                name: name.to_string(),
+                description: "Controls Sonolith from a phone's browser on the local network.".into(),
+                publisher: "Sonolith".into(),
+                homepage: None,
+                icon: None,
+                identity: AppIdentity::remote(&app_id),
+                token_hash: store::hash_token(&token),
+                scopes: scopes.iter().map(|s| s.to_string()).collect(),
+                registered_at: now,
+                last_used_at: None,
+            });
+            let _ = reg.save(&self.registry_path);
+        }
+        self.emit_apps_changed();
+        (app_id, token)
+    }
+
+    /// Whether this is a paired phone's app id and token (constant-time hash comparison).
+    pub fn remote_token_ok(&self, app_id: &str, token: &str) -> bool {
+        let reg = self.registry.lock().unwrap();
+        reg.app(app_id).is_some_and(|a| a.identity.is_remote()) && reg.token_matches(app_id, token)
+    }
+
+    /// Unpairs every phone (a new link was made): their tokens stop working and their sessions end.
+    pub fn remove_remote_apps(&self) {
+        let ids: Vec<String> =
+            self.registry.lock().unwrap().apps.iter().filter(|a| a.identity.is_remote()).map(|a| a.app_id.clone()).collect();
+        for id in ids {
+            self.remove_app(&id);
+        }
+    }
+
+    /// Paired phones and how many are connected now, for Settings.
+    pub fn remote_counts(&self) -> (usize, usize) {
+        let paired = self.registry.lock().unwrap().apps.iter().filter(|a| a.identity.is_remote()).count();
+        let connected = self.conns.lock().unwrap().values().filter(|c| c.app_id.is_some() && !c.closing && c.identity.as_ref().is_some_and(AppIdentity::is_remote)).count();
+        (paired, connected)
     }
 
     // ------------------------------------------------------------ events

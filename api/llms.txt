@@ -224,7 +224,7 @@ Not replayed after reconnect; subscribe again. Extrapolate position: `positionMs
 - RegistrationPending {status: "pending", requestId: string, expiresAt: integer (ms since epoch), identity: AppIdentity}
 - RequestScopesResult {status: "pending" | "granted", requestId: string | null, expiresAt: integer (ms since epoch) | null, grantedScopes: Scope[]}
 - RegistrationOutcome {requestId: string, kind: "register" | "scopes" | "identity", status: "approved" | "denied" | "blocked" | "expired", token: string | null, grantedScopes: Scope[] | null, retryAfterMs: integer | null}
-- AppIdentity {kind: "executable" | "interpreter" | "appimage" | "flatpak", key: string, executable: string, interpreter: string | null, script: string | null, appImage: string | null, flatpakId: string | null}
+- AppIdentity {kind: "executable" | "interpreter" | "appimage" | "flatpak" | "remote", key: string, executable: string, interpreter: string | null, script: string | null, appImage: string | null, flatpakId: string | null}
 - HelloResult {apiVersion: string, appVersion: string, appId: string, grantedScopes: Scope[], signedIn: boolean, identity: AppIdentity}
 - SessionInfo {appId: string, grantedScopes: Scope[], signedIn: boolean, identity: AppIdentity}
 - ServerInfo {apiVersion: string, appVersion: string, platform: "linux" | "windows", methods: string[], topics: Topic[], session: SessionInfo | null}
