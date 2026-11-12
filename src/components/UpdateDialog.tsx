@@ -32,13 +32,18 @@ function AurUpdate({ aur }: { aur: { package: string; helpers: string[] } }) {
   );
 }
 
-/** Installed by xbps (Void Linux): the update comes with the system update, run as root. */
-function XbpsUpdate({ xbps }: { xbps: { package: string } }) {
+/** Installed by xbps (Void Linux) from a local repository: the new .xbps goes into that folder first. */
+function XbpsUpdate({ xbps }: { xbps: { package: string; asset: string | null } }) {
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm text-[var(--c-text-muted)]">
-        You installed Sonolith with xbps ({xbps.package}). Update it as root, or with your usual system update:
+    <div className="flex flex-col gap-2 text-sm text-[var(--c-text-muted)]">
+      <p>You installed Sonolith with xbps. To update it:</p>
+      <p>
+        1. Download {xbps.asset ? <code className="select-text font-mono">{xbps.asset}</code> : "the new .xbps file"} from the
+        release page into your Sonolith repository folder (~/sonolith-repo if you followed the README).
       </p>
+      <p>2. Add it to the repository:</p>
+      <Command text="xbps-rindex -a ~/sonolith-repo/*.xbps" />
+      <p>3. Update as root (sudo or doas):</p>
       <Command text={`xbps-install -Su ${xbps.package}`} />
     </div>
   );
@@ -91,7 +96,23 @@ export default function UpdateDialog() {
           {info.xbps && <div className="mb-4"><XbpsUpdate xbps={info.xbps} /></div>}
           <div className="flex items-center justify-between gap-4">
             <p className="text-xs text-[var(--c-text-subtle)]">You can turn off update checks in Settings.</p>
-            {info.aur || info.xbps ? null : info.installer ? (
+            {info.xbps ? (
+              <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                <button onClick={() => (info.simulated ? useToast.getState().show("Simulated update: GitHub wasn't opened.", "info") : void invoke("update_open_page").catch(() => {}))}
+                  className={info.xbps.asset
+                    ? "m3-btn m3-outlined flex h-10 items-center gap-2 rounded-full border border-[var(--c-outline)] px-5 text-sm font-medium hover:bg-[var(--c-hover)]"
+                    : "m3-btn m3-filled flex h-10 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button"}>
+                  <ExternalLink size={18} aria-hidden /> Open release page
+                </button>
+                {info.xbps.asset && (
+                  <button onClick={() => (info.simulated ? useToast.getState().show("Simulated update: nothing was downloaded.", "info")
+                    : void invoke("update_open_xbps", { version: info.latest, name: info.xbps!.asset }).catch(() => {}))}
+                    className="m3-btn m3-filled flex h-10 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button">
+                    <Download size={18} aria-hidden /> Download .xbps
+                  </button>
+                )}
+              </div>
+            ) : info.aur ? null : info.installer ? (
               <button onClick={() => void installNow()} disabled={busy}
                 className="m3-btn m3-filled flex h-10 shrink-0 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button disabled:opacity-60">
                 {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Download size={18} aria-hidden />}

@@ -32,7 +32,7 @@ function fakeUpdate(current: string, flavor: Flavor): UpdateInfo {
     url: "",
     installer: flavor === "installer",
     aur: flavor === "aur" ? { package: "sonolith-bin", helpers: ["yay", "paru"] } : null,
-    xbps: flavor === "xbps" ? { package: "sonolith" } : null,
+    xbps: flavor === "xbps" ? { package: "sonolith", asset: `sonolith-${latest}_1.x86_64.xbps` } : null,
     simulated: true,
   };
 }

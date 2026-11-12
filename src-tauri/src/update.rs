@@ -49,6 +49,8 @@ pub struct UpdateInfo {
 pub struct XbpsInstall {
     /// The xbps package that owns the binary ("sonolith").
     package: String,
+    /// The `.xbps` file attached to the latest release, if any ("sonolith-2.7.0_1.x86_64.xbps").
+    asset: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -109,12 +111,19 @@ fn xbps_install() -> Option<XbpsInstall> {
         return None;
     }
     let package = xbps_owner(&String::from_utf8_lossy(&out.stdout))?;
-    (package == "sonolith").then_some(XbpsInstall { package })
+    (package == "sonolith").then_some(XbpsInstall { package, asset: None })
 }
 
 #[cfg(not(target_os = "linux"))]
 fn xbps_install() -> Option<XbpsInstall> {
     None
+}
+
+/// Whether `name` is the Void package of `version`: "sonolith-<version>_<revision>.x86_64.xbps".
+fn is_xbps_asset(name: &str, version: &str) -> bool {
+    name.strip_prefix(&format!("sonolith-{version}_"))
+        .and_then(|rest| rest.strip_suffix(".x86_64.xbps"))
+        .is_some_and(|rev| !rev.is_empty() && rev.bytes().all(|b| b.is_ascii_digit()))
 }
 
 #[derive(Clone, Serialize)]
@@ -201,6 +210,7 @@ pub async fn update_check(app: AppHandle) -> Result<UpdateInfo, String> {
     let current = app.package_info().version.to_string();
     let latest = rel.tag_name.trim_start_matches('v').to_owned();
     let installer = cfg!(windows) && rel.assets.iter().any(|a| a.name == installer_name(&latest));
+    let xbps_asset = rel.assets.iter().map(|a| a.name.clone()).find(|n| is_xbps_asset(n, &latest));
     Ok(UpdateInfo {
         newer: !rel.draft && !rel.prerelease && is_newer(&latest, &current),
         current,
@@ -210,7 +220,11 @@ pub async fn update_check(app: AppHandle) -> Result<UpdateInfo, String> {
         installer,
         // pacman and xbps-query are quick local queries, but still keep them off the async runtime.
         aur: tauri::async_runtime::spawn_blocking(aur_install).await.ok().flatten(),
-        xbps: tauri::async_runtime::spawn_blocking(xbps_install).await.ok().flatten(),
+        xbps: tauri::async_runtime::spawn_blocking(xbps_install)
+            .await
+            .ok()
+            .flatten()
+            .map(|x| XbpsInstall { asset: xbps_asset, ..x }),
     })
 }
 
@@ -220,6 +234,19 @@ pub fn update_open_page(app: AppHandle) -> Result<(), String> {
     app.opener()
         .open_url(format!("https://github.com/{REPO}/releases/latest"), None::<&str>)
         .map_err(|e| e.to_string())
+}
+
+/// Download URL of a release's `.xbps`, built here from REPO; only a valid version and package name are accepted.
+fn xbps_asset_url(version: &str, name: &str) -> Option<String> {
+    (parse_version(version).is_some() && !version.contains(['/', '?', '#']) && is_xbps_asset(name, version))
+        .then(|| format!("https://github.com/{REPO}/releases/download/v{version}/{name}"))
+}
+
+/// Opens the download of the `.xbps` attached to the release of `version` (the browser saves it).
+#[tauri::command]
+pub fn update_open_xbps(app: AppHandle, version: String, name: String) -> Result<(), String> {
+    let url = xbps_asset_url(&version, &name).ok_or("not a Sonolith .xbps of that release")?;
+    app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
 }
 
 /// Opens a known page from Settings (About's project links, Recaps' Google Takeout). Only these links, never an
@@ -334,6 +361,22 @@ mod tests {
         assert_eq!(xbps_owner("garbage"), None);
         assert_eq!(xbps_owner("sonolith: /usr/bin/sonolith (regular file)"), None);
         assert_eq!(xbps_owner("sonolith-2.6.0: /usr/bin/sonolith (regular file)"), None);
+    }
+
+    #[test]
+    fn xbps_assets() {
+        assert!(is_xbps_asset("sonolith-2.7.0_1.x86_64.xbps", "2.7.0"));
+        assert!(is_xbps_asset("sonolith-2.7.0_12.x86_64.xbps", "2.7.0"));
+        assert!(!is_xbps_asset("sonolith-2.7.0_1.x86_64.xbps", "2.6.1"));
+        assert!(!is_xbps_asset("sonolith-2.7.0_1.x86_64-musl.xbps", "2.7.0"));
+        assert!(!is_xbps_asset("sonolith-2.7.0_.x86_64.xbps", "2.7.0"));
+        assert!(!is_xbps_asset("sonolith_2.7.0_amd64.deb", "2.7.0"));
+        assert_eq!(
+            xbps_asset_url("2.7.0", "sonolith-2.7.0_1.x86_64.xbps").as_deref(),
+            Some("https://github.com/opecko/sonolith/releases/download/v2.7.0/sonolith-2.7.0_1.x86_64.xbps")
+        );
+        assert_eq!(xbps_asset_url("2.7.0", "evil.xbps"), None);
+        assert_eq!(xbps_asset_url("../x", "sonolith-../x_1.x86_64.xbps"), None);
     }
 
     #[test]

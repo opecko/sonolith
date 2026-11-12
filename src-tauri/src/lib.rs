@@ -146,6 +146,7 @@ pub fn run() {
             update::update_check,
             update::update_changelog,
             update::update_open_page,
+            update::update_open_xbps,
             update::open_credit,
             fonts::fonts_list,
             update::update_install,

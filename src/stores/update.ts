@@ -14,8 +14,8 @@ export interface UpdateInfo {
   installer: boolean;
   /** Installed from the AUR ("sonolith" / "sonolith-bin", or ytdesk / ytdesk-bin from before the rename), with the AUR helpers found (yay, paru). */
   aur: { package: string; helpers: string[] } | null;
-  /** Installed by xbps (Void Linux), with the owning package ("sonolith"). */
-  xbps: { package: string } | null;
+  /** Installed by xbps (Void Linux): the owning package ("sonolith") and the release's `.xbps` file, if attached. */
+  xbps: { package: string; asset: string | null } | null;
   /** Made up by the dev toolkit to exercise this UI: nothing is downloaded, installed or opened. */
   simulated?: boolean;
 }
