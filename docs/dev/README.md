@@ -14,6 +14,7 @@ Vite / Tailwind v4** (frontend in `src/`), state in **zustand**, music data from
 | [m3-expressive.md](m3-expressive.md) | Working on the Material 3 style: springs, corners, type, component specs. |
 | [recap.md](recap.md) | Working on Recaps: YouTube history findings, the local play log, data model, adding a slide style. |
 | [transparency.md](transparency.md) | The transparent window (Linux): window creation, surface tokens, blur per compositor, measuring the cost. |
+| [packaging.md](packaging.md) | Working on a package (AUR, deb, Void, Windows) or what distro builds need from the app. |
 | [api-manual-test.md](api-manual-test.md) | Checking the local API by hand in the running app (needs `socat`, `jq`, fish). |
 
 The local API for other apps is specified in [`api/SPEC.md`](../../api/SPEC.md).
