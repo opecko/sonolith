@@ -1,0 +1,42 @@
+# Template file for 'sonolith'
+pkgname=sonolith
+version=2.6.0
+revision=1
+archs="x86_64"
+build_wrksrc=src-tauri
+build_style=cargo
+# custom-protocol embeds the built frontend (what `tauri build` enables);
+# system-ytdlp uses the packaged yt-dlp and never downloads its own copy.
+configure_args="--features tauri/custom-protocol,system-ytdlp"
+hostmakedepends="pkg-config nodejs"
+makedepends="libwebkit2gtk41-devel gtk+3-devel libsoup3-devel dbus-devel"
+# libayatana-appindicator is loaded with dlopen (tray icon), so the shlib scan misses it.
+# nodejs is the JavaScript runtime yt-dlp needs for YouTube.
+depends="yt-dlp nodejs libayatana-appindicator gst-plugins-good1 gst-libav"
+short_desc="YouTube Music desktop client"
+maintainer="NAME <EMAIL>"
+license="MIT"
+homepage="https://github.com/opecko/sonolith"
+changelog="https://github.com/opecko/sonolith/releases"
+distfiles="https://github.com/opecko/sonolith/archive/refs/tags/v${version}.tar.gz"
+# PLACEHOLDER: replace with the sha256 of the release tarball (xgensum -i sonolith).
+checksum=0000000000000000000000000000000000000000000000000000000000000000
+
+pre_build() {
+	# The frontend is embedded into the binary at compile time.
+	cd "${wrksrc}"
+	npm ci --no-audit --no-fund
+	npm run build
+}
+
+post_install() {
+	cd "${wrksrc}"
+	vinstall packaging/linux/sonolith.desktop 644 usr/share/applications
+	vinstall src-tauri/icons/32x32.png 644 usr/share/icons/hicolor/32x32/apps sonolith.png
+	vinstall src-tauri/icons/64x64.png 644 usr/share/icons/hicolor/64x64/apps sonolith.png
+	vinstall src-tauri/icons/128x128.png 644 usr/share/icons/hicolor/128x128/apps sonolith.png
+	vinstall src-tauri/icons/128x128@2x.png 644 usr/share/icons/hicolor/256x256/apps sonolith.png
+	vinstall src-tauri/icons/icon.png 644 usr/share/icons/hicolor/512x512/apps sonolith.png
+	vinstall src-tauri/app-icon.svg 644 usr/share/icons/hicolor/scalable/apps sonolith.svg
+	vlicense LICENSE
+}
