@@ -21,7 +21,12 @@ locked by `Cargo.lock` and `package-lock.json`, so no vendor tarball is needed.
 
 ## Build and test locally
 
-You need a clone of void-packages. On Void itself:
+From the Sonolith checkout on any distribution with Docker, `scripts/void-build.sh` does the container build
+below for the current HEAD: it writes `release/void/sonolith-<version>_1.x86_64.xbps` and its repository index,
+prints the sha256 and removes the build files (`--keep-cache` keeps the cargo and xbps download caches). It takes
+about 20 minutes on a 4-core machine.
+
+By hand, you need a clone of void-packages. On Void itself:
 
 ```sh
 git clone https://github.com/void-linux/void-packages ~/void-packages
