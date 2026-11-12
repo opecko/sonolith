@@ -1,6 +1,6 @@
 # Template file for 'sonolith'
 pkgname=sonolith
-version=2.6.0
+version=2.6.1
 revision=1
 archs="x86_64"
 build_wrksrc=src-tauri
@@ -14,12 +14,13 @@ makedepends="libwebkit2gtk41-devel gtk+3-devel libsoup3-devel dbus-devel"
 # nodejs is the JavaScript runtime yt-dlp needs for YouTube.
 depends="yt-dlp nodejs libayatana-appindicator gst-plugins-good1 gst-libav"
 short_desc="YouTube Music desktop client"
+# PLACEHOLDER: the maintainer's "Name <email>"; xlint rejects it until filled in.
 maintainer="NAME <EMAIL>"
 license="MIT"
 homepage="https://github.com/opecko/sonolith"
 changelog="https://github.com/opecko/sonolith/releases"
 distfiles="https://github.com/opecko/sonolith/archive/refs/tags/v${version}.tar.gz"
-# PLACEHOLDER: replace with the sha256 of the release tarball (xgensum -i sonolith).
+# PLACEHOLDER: the sha256 of the v${version} tag tarball; fill in with xgensum -i sonolith once the tag exists.
 checksum=0000000000000000000000000000000000000000000000000000000000000000
 
 pre_build() {
