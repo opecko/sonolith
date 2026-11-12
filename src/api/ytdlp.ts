@@ -6,6 +6,8 @@ export interface YtdlpStatus {
   managed: boolean;
   configured: string | null;
   jsRuntime: string | null;
+  /** Distro build: yt-dlp comes from the system packages, so Install and Update are unavailable. */
+  system: boolean;
 }
 
 export const ytdlpStatus = () => invoke<YtdlpStatus>("ytdlp_status");

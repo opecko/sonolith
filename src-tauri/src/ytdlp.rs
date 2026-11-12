@@ -9,6 +9,11 @@ const DEFAULT_BIN: &str = "yt-dlp";
 const UPDATE_EVERY: Duration = Duration::from_secs(7 * 24 * 3600);
 const RELEASE_BASE: &str = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/";
 
+/// Distro packages build with `--features system-ytdlp`: yt-dlp then comes from the system package manager (PATH),
+/// and Sonolith never downloads or updates a copy of its own.
+const SYSTEM_YTDLP: bool = cfg!(feature = "system-ytdlp");
+const SYSTEM_MANAGED: &str = "yt-dlp comes from your system packages in this build: install or update it with your package manager.";
+
 /// `Command` that never opens a console window on Windows (yt-dlp.exe is a console program).
 fn command(bin: impl AsRef<std::ffi::OsStr>) -> Command {
     #[allow(unused_mut)]
@@ -137,11 +142,26 @@ fn configured_path(app: &AppHandle) -> Option<String> {
         .filter(|p| !p.trim().is_empty())
 }
 
-/// Configured path, else the managed standalone binary, else whatever is on PATH (often an outdated distro build).
-fn resolve_bin(app: &AppHandle) -> String {
-    configured_path(app)
-        .or_else(|| managed_path(app).filter(|p| p.exists()).map(|p| p.to_string_lossy().into_owned()))
+/// Configured path, else the managed standalone binary (`managed`: its path if it exists), else whatever is on PATH
+/// (often an outdated distro build). With `system` (distro packages) the managed copy is never used.
+fn pick_bin(system: bool, configured: Option<String>, managed: Option<String>) -> String {
+    configured
+        .or(if system { None } else { managed })
         .unwrap_or_else(|| DEFAULT_BIN.to_owned())
+}
+
+fn resolve_bin(app: &AppHandle) -> String {
+    let managed = managed_path(app).filter(|p| p.exists()).map(|p| p.to_string_lossy().into_owned());
+    pick_bin(SYSTEM_YTDLP, configured_path(app), managed)
+}
+
+/// What to do when yt-dlp can't be started.
+fn missing_hint(system: bool) -> &'static str {
+    if system {
+        "Install the yt-dlp package with your system package manager, or set its path in Settings."
+    } else {
+        "Install yt-dlp from Settings or set its path."
+    }
 }
 
 fn version_of(bin: &str) -> Option<String> {
@@ -255,7 +275,7 @@ pub async fn ytdlp_stream_url(app: AppHandle, video_id: String, codecs: Vec<Stri
         }
         cmd.arg("--").arg(format!("https://music.youtube.com/watch?v={video_id}"));
         let out = output_with_timeout(&mut cmd, STREAM_TIMEOUT)
-            .map_err(|e| if e.contains("was stopped") { e } else { format!("cannot run '{bin}': {e}. Install yt-dlp from Settings or set its path.") })?;
+            .map_err(|e| if e.contains("was stopped") { e } else { format!("cannot run '{bin}': {e}. {}", missing_hint(SYSTEM_YTDLP)) })?;
         drop(cookies);
         if !out.status.success() {
             let mut msg = format!("yt-dlp failed: {}", error_summary(&String::from_utf8_lossy(&out.stderr)));
@@ -278,6 +298,8 @@ pub struct YtdlpStatus {
     managed: bool,
     configured: Option<String>,
     js_runtime: Option<String>,
+    /// Built for a distro package: yt-dlp comes from the system, Install and Update are unavailable.
+    system: bool,
 }
 
 #[tauri::command]
@@ -291,6 +313,7 @@ pub async fn ytdlp_status(app: AppHandle) -> Result<YtdlpStatus, String> {
         managed,
         configured,
         js_runtime: find_js_runtime().map(|(n, p)| format!("{n} ({})", p.display())),
+        system: SYSTEM_YTDLP,
     })
     .await
     .map_err(|e| e.to_string())
@@ -299,6 +322,9 @@ pub async fn ytdlp_status(app: AppHandle) -> Result<YtdlpStatus, String> {
 /// Downloads the official standalone binary into <app data>/bin and returns its version.
 #[tauri::command]
 pub async fn ytdlp_install(app: AppHandle) -> Result<String, String> {
+    if SYSTEM_YTDLP {
+        return Err(SYSTEM_MANAGED.into());
+    }
     let dest = managed_path(&app).ok_or("no app data dir")?;
     std::fs::create_dir_all(dest.parent().unwrap()).map_err(|e| e.to_string())?;
     let url = format!("{RELEASE_BASE}{}", asset_name());
@@ -324,6 +350,9 @@ pub async fn ytdlp_install(app: AppHandle) -> Result<String, String> {
 /// Runs `yt-dlp -U` on the managed binary.
 #[tauri::command]
 pub async fn ytdlp_update(app: AppHandle) -> Result<String, String> {
+    if SYSTEM_YTDLP {
+        return Err(SYSTEM_MANAGED.into());
+    }
     let bin = managed_path(&app).filter(|p| p.exists()).ok_or("managed yt-dlp is not installed")?;
     tauri::async_runtime::spawn_blocking(move || {
         let out = command(&bin).arg("-U").output().map_err(|e| e.to_string())?;
@@ -352,8 +381,12 @@ pub fn ytdlp_set_path(app: AppHandle, path: Option<String>) -> Result<(), String
     std::fs::write(file, serde_json::to_string_pretty(&cfg).unwrap()).map_err(|e| e.to_string())
 }
 
-/// Startup: install the managed binary if missing (unless the user pinned a path), update it weekly.
+/// Startup: install the managed binary if missing (unless the user pinned a path), update it weekly. Distro builds
+/// (`system-ytdlp`) never do either.
 pub fn ensure_fresh(app: AppHandle) {
+    if SYSTEM_YTDLP {
+        return;
+    }
     tauri::async_runtime::spawn(async move {
         if configured_path(&app).is_some() {
             return;
@@ -434,6 +467,20 @@ mod tests {
             t.0.clone()
         };
         assert!(!p.exists());
+    }
+
+    #[test]
+    fn bin_choice() {
+        let m = Some("/data/bin/yt-dlp".to_string());
+        let c = Some("/opt/yt-dlp".to_string());
+        assert_eq!(pick_bin(false, None, m.clone()), "/data/bin/yt-dlp");
+        assert_eq!(pick_bin(false, c.clone(), m.clone()), "/opt/yt-dlp");
+        assert_eq!(pick_bin(false, None, None), "yt-dlp");
+        // Distro builds ignore a leftover managed copy and use PATH, but still honour the user's path.
+        assert_eq!(pick_bin(true, None, m.clone()), "yt-dlp");
+        assert_eq!(pick_bin(true, c, m), "/opt/yt-dlp");
+        assert!(missing_hint(true).contains("package manager"));
+        assert!(missing_hint(false).contains("from Settings"));
     }
 
     #[test]

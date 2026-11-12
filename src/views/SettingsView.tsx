@@ -81,23 +81,29 @@ function YtdlpSettings() {
       {status.error ? <ErrorBox error={status.error} onRetry={status.reload} /> : !s ? <Loading variant="list" /> : (
         <>
           <Row label="Binary">{s.path}{s.managed && <span className="ml-2 text-xs text-[var(--c-text-subtle)]">(managed)</span>}</Row>
-          <Row label="Version">{s.version ?? <span className="text-[var(--c-error)]">not runnable</span>}</Row>
+          <Row label="Version">{s.version ?? <span className="text-[var(--c-error)]">{s.system ? "not found: install the yt-dlp package" : "not runnable"}</span>}</Row>
           <Row label="JS runtime">{s.jsRuntime ?? <span className="text-[var(--c-error)]">none found: install deno (recommended) or node</span>}</Row>
         </>
       )}
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button className="chip inline-flex items-center gap-2" disabled={!!busy} onClick={() => run("Install", ytdlpInstall)}>
-          <Download size={16} aria-hidden /> {busy === "Install" ? "Downloading…" : "Install / reinstall"}
-        </button>
-        <button className="chip inline-flex items-center gap-2" disabled={!!busy || !s?.managed} onClick={() => run("Update", ytdlpUpdate)}>
-          <RefreshCw size={16} aria-hidden className={busy === "Update" ? "animate-spin" : ""} /> Update (yt-dlp -U)
-        </button>
-      </div>
+      {s?.system ? (
+        <p className="mt-4 text-sm text-[var(--c-text-muted)]">
+          This build uses yt-dlp from your system packages. Install and update it with your package manager.
+        </p>
+      ) : (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button className="chip inline-flex items-center gap-2" disabled={!!busy} onClick={() => run("Install", ytdlpInstall)}>
+            <Download size={16} aria-hidden /> {busy === "Install" ? "Downloading…" : "Install / reinstall"}
+          </button>
+          <button className="chip inline-flex items-center gap-2" disabled={!!busy || !s?.managed} onClick={() => run("Update", ytdlpUpdate)}>
+            <RefreshCw size={16} aria-hidden className={busy === "Update" ? "animate-spin" : ""} /> Update (yt-dlp -U)
+          </button>
+        </div>
+      )}
       <form className="mt-6 flex gap-2" onSubmit={(e) => { e.preventDefault(); void run("Save path", () => ytdlpSetPath(path?.trim() || null)); }}>
         <input
           value={path ?? s?.configured ?? ""}
           onChange={(e) => setPath(e.target.value)}
-          placeholder="Custom yt-dlp path (empty = managed copy)"
+          placeholder={s?.system ? "Custom yt-dlp path (empty = yt-dlp from PATH)" : "Custom yt-dlp path (empty = managed copy)"}
           aria-label="Custom yt-dlp path"
           className="m3-field h-10 min-w-0 flex-1 select-text rounded-lg border border-[var(--c-outline)] bg-[var(--c-surface-2)] px-4 text-sm outline-none focus:border-[var(--c-text-subtle)]"
         />

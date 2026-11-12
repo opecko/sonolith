@@ -11,6 +11,10 @@ repository = "https://github.com/opecko/sonolith"
 name = "sonolith_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[features]
+# Distro packages: run yt-dlp from PATH and never download or update it (see docs/dev/packaging.md).
+system-ytdlp = []
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
