@@ -128,3 +128,26 @@ the software's developer.
 5. Commit as `sonolith: update to <version>.` and open a pull request.
 
 A change to the template without a new version bumps `revision` instead and is committed as `sonolith: <reason>`.
+
+## Fallback: a signed third-party repository (not set up)
+
+If void-packages doesn't accept the package, Sonolith could publish its own xbps repository so that users get
+updates with their normal `xbps-install -Su`. Nothing of this exists yet, and no signing key has been created.
+
+- **Key.** One RSA key for the repository, created once with `openssl genrsa -out sonolith-xbps.pem 4096` and kept
+  offline (never in this repository or in CI logs). Losing it means every user has to trust a new key by hand.
+- **Building.** `scripts/void-build.sh` for each release, plus a rebuild whenever Void updates a library the binary
+  links against with a new soname (WebKitGTK, ICU, libsoup, …). Without those rebuilds the repository breaks
+  installs; this is the main cost of running one.
+- **Signing.** In the repository directory, after `xbps-rindex -a *.xbps`:
+  `xbps-rindex --privkey sonolith-xbps.pem --signedby "Sonolith <email>" --sign .` signs the index, and
+  `xbps-rindex --privkey sonolith-xbps.pem --sign-pkg *.xbps` writes a `.sig2` next to every package. Remove old
+  versions with `xbps-rindex -r .` and `xbps-rindex -c .`. xbps refuses unsigned remote repositories.
+- **Hosting.** Any static HTTPS host that serves `x86_64-repodata`, the `.xbps` files and their `.sig2` files from
+  one directory (GitHub Pages, or a server). Check that the host serves the files directly; redirects (such as
+  GitHub release asset URLs) need testing with `xbps-install` first.
+- **Users.** `echo 'repository=https://<host>/void/current' | sudo tee /etc/xbps.d/20-sonolith.conf`, then
+  `sudo xbps-install -S`. xbps shows the key's fingerprint and asks whether to import it (it lands in
+  `/var/db/xbps/keys/`). Publish the fingerprint on a separate page (the main README) so users can compare it.
+- **Updates in the app.** The xbps detection already shows `xbps-install -Su sonolith`, which works the same with
+  a third-party repository.
