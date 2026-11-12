@@ -69,6 +69,34 @@ macOS isn't supported yet.
 > **Windows says "Windows protected your PC"?** The installer isn't code-signed yet, so SmartScreen warns about it.
 > Click **More info → Run anyway**.
 
+### Void Linux
+
+Sonolith isn't in the official Void repository yet. Install it from a package file instead (x86_64 glibc only).
+
+1. Download `sonolith-<version>_<rev>.x86_64.xbps` from the [**2.6.1 release**](https://github.com/opecko/sonolith/releases/tag/v2.6.1).
+   It's a Void-only pre-release, so it isn't shown as "Latest" on the Releases page.
+2. Put it in a folder of its own, turn that folder into a local repository and install (as root: `sudo` or `doas`):
+
+```sh
+mkdir -p ~/sonolith-repo && mv ~/Downloads/sonolith-*.xbps ~/sonolith-repo/
+xbps-rindex -a ~/sonolith-repo/*.xbps
+echo "repository=$HOME/sonolith-repo" | sudo tee /etc/xbps.d/20-sonolith.conf
+sudo xbps-install -S sonolith
+```
+
+The file in `/etc/xbps.d/` keeps the folder as a repository, so you don't need `--repository=…`.
+
+**Updates:** download the newer `.xbps` into the same folder, then run `xbps-rindex -a ~/sonolith-repo/*.xbps`
+and `sudo xbps-install -Su`. The app reminds you when a new version is out.
+
+Good to know:
+
+- Sign-in and media controls need a D-Bus session bus and a keyring (gnome-keyring, KeePassXC…); not every window
+  manager starts these on Void. Details: [`packaging/void/README.md`](packaging/void/README.md).
+- The tray icon needs a bar with StatusNotifier (AppIndicator) support.
+- Sonolith uses the system `yt-dlp` package and never downloads its own copy.
+- Build it yourself: the `xbps-src` template is in [`packaging/void/`](packaging/void/README.md).
+
 ## Getting started
 
 1. Open **Sonolith**. A short setup at first start lets you pick the look and a few options; you can run it again
