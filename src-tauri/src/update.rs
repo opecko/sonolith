@@ -41,6 +41,14 @@ pub struct UpdateInfo {
     installer: bool,
     /// Installed from the AUR: update with the AUR helper instead of downloading from GitHub.
     aur: Option<AurInstall>,
+    /// Installed by xbps (Void Linux): update with xbps-install instead of downloading from GitHub.
+    xbps: Option<XbpsInstall>,
+}
+
+#[derive(Serialize)]
+pub struct XbpsInstall {
+    /// The xbps package that owns the binary ("sonolith").
+    package: String,
 }
 
 #[derive(Serialize)]
@@ -78,6 +86,34 @@ fn aur_install() -> Option<AurInstall> {
 
 #[cfg(not(target_os = "linux"))]
 fn aur_install() -> Option<AurInstall> {
+    None
+}
+
+/// Package name from `xbps-query -o <file>` output, e.g. "sonolith-2.6.0_1: /usr/bin/sonolith (regular file)" →
+/// "sonolith". Files no package owns print nothing (and still exit 0).
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn xbps_owner(stdout: &str) -> Option<String> {
+    let pkgver = stdout.lines().next()?.split_once(": ")?.0.trim();
+    let (name, version) = pkgver.rsplit_once('-')?;
+    // A pkgver always ends in "<version>_<revision>".
+    let (_, revision) = version.rsplit_once('_')?;
+    (!name.is_empty() && !revision.is_empty() && revision.bytes().all(|b| b.is_ascii_digit())).then(|| name.to_owned())
+}
+
+/// The xbps package that owns the running binary, if any (Void Linux only; dev builds aren't owned).
+#[cfg(target_os = "linux")]
+fn xbps_install() -> Option<XbpsInstall> {
+    let exe = std::env::current_exe().ok()?;
+    let out = std::process::Command::new("xbps-query").arg("-o").arg(&exe).output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let package = xbps_owner(&String::from_utf8_lossy(&out.stdout))?;
+    (package == "sonolith").then_some(XbpsInstall { package })
+}
+
+#[cfg(not(target_os = "linux"))]
+fn xbps_install() -> Option<XbpsInstall> {
     None
 }
 
@@ -172,8 +208,9 @@ pub async fn update_check(app: AppHandle) -> Result<UpdateInfo, String> {
         notes: rel.body.unwrap_or_default(),
         url: rel.html_url,
         installer,
-        // pacman is a quick local query, but still keep it off the async runtime.
+        // pacman and xbps-query are quick local queries, but still keep them off the async runtime.
         aur: tauri::async_runtime::spawn_blocking(aur_install).await.ok().flatten(),
+        xbps: tauri::async_runtime::spawn_blocking(xbps_install).await.ok().flatten(),
     })
 }
 
@@ -285,6 +322,18 @@ mod tests {
         assert!(is_newer("v2.0.0", "1.99.99"));
         assert!(!is_newer("1.3.0", "2.0.0"));
         assert!(is_newer("10.0.0", "9.9.9"));
+    }
+
+    #[test]
+    fn xbps_owners() {
+        assert_eq!(xbps_owner("sonolith-2.6.0_1: /usr/bin/sonolith (regular file)\n").as_deref(), Some("sonolith"));
+        assert_eq!(xbps_owner("runit-void-20250212_4: /etc/hostname (configuration file)").as_deref(), Some("runit-void"));
+        assert_eq!(xbps_owner("gtk+3-3.24.49_1: /usr/lib/libgtk-3.so.0 (link)").as_deref(), Some("gtk+3"));
+        // Not owned: no output.
+        assert_eq!(xbps_owner(""), None);
+        assert_eq!(xbps_owner("garbage"), None);
+        assert_eq!(xbps_owner("sonolith: /usr/bin/sonolith (regular file)"), None);
+        assert_eq!(xbps_owner("sonolith-2.6.0: /usr/bin/sonolith (regular file)"), None);
     }
 
     #[test]

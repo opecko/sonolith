@@ -18,7 +18,7 @@ import { checkerOn, setChecker } from "./checker";
 import { useDevFlags } from "./flags";
 import RecapDev from "./RecapDev";
 
-type Flavor = "github" | "installer" | "aur";
+type Flavor = "github" | "installer" | "aur" | "xbps";
 
 /** A made-up newer release (next major) that drives the real update chip and dialog; marked simulated. */
 function fakeUpdate(current: string, flavor: Flavor): UpdateInfo {
@@ -32,6 +32,7 @@ function fakeUpdate(current: string, flavor: Flavor): UpdateInfo {
     url: "",
     installer: flavor === "installer",
     aur: flavor === "aur" ? { package: "sonolith-bin", helpers: ["yay", "paru"] } : null,
+    xbps: flavor === "xbps" ? { package: "sonolith" } : null,
     simulated: true,
   };
 }
@@ -144,8 +145,8 @@ export default function DevPanel({ onClose }: { onClose: () => void }) {
       <div className="scroll-y flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4">
         <Section title="Updates">
           <div className="m3-segmented flex" role="group" aria-label="Update flavor">
-            {(["github", "installer", "aur"] as const).map((f) => (
-              <button key={f} className={seg} aria-pressed={flavor === f} onClick={() => setFlavor(f)}>{f === "github" ? "GitHub" : f === "installer" ? "Installer" : "AUR"}</button>
+            {(["github", "installer", "aur", "xbps"] as const).map((f) => (
+              <button key={f} className={seg} aria-pressed={flavor === f} onClick={() => setFlavor(f)}>{f === "github" ? "GitHub" : f === "installer" ? "Installer" : f === "aur" ? "AUR" : "xbps"}</button>
             ))}
           </div>
           <div className="flex flex-wrap gap-2">

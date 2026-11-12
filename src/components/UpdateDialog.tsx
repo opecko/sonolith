@@ -32,6 +32,18 @@ function AurUpdate({ aur }: { aur: { package: string; helpers: string[] } }) {
   );
 }
 
+/** Installed by xbps (Void Linux): the update comes with the system update, run as root. */
+function XbpsUpdate({ xbps }: { xbps: { package: string } }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm text-[var(--c-text-muted)]">
+        You installed Sonolith with xbps ({xbps.package}). Update it as root, or with your usual system update:
+      </p>
+      <Command text={`xbps-install -Su ${xbps.package}`} />
+    </div>
+  );
+}
+
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
 
 /** "New version available" modal: changelog plus Download installer (Windows) or Open GitHub (Linux). */
@@ -76,9 +88,10 @@ export default function UpdateDialog() {
           )}
           {install.status === "starting" && <p className="mb-3 text-sm text-[var(--c-text-muted)]">Starting the installer. Sonolith will close now.</p>}
           {info.aur && <div className="mb-4"><AurUpdate aur={info.aur} /></div>}
+          {info.xbps && <div className="mb-4"><XbpsUpdate xbps={info.xbps} /></div>}
           <div className="flex items-center justify-between gap-4">
             <p className="text-xs text-[var(--c-text-subtle)]">You can turn off update checks in Settings.</p>
-            {info.aur ? null : info.installer ? (
+            {info.aur || info.xbps ? null : info.installer ? (
               <button onClick={() => void installNow()} disabled={busy}
                 className="m3-btn m3-filled flex h-10 shrink-0 items-center gap-2 rounded-full bg-button px-5 text-sm font-medium text-on-button disabled:opacity-60">
                 {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Download size={18} aria-hidden />}
