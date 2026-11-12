@@ -41,8 +41,9 @@ Without `tauri/custom-protocol` the binary loads the dev server URL and shows a 
   YouTube; make one a dependency.
 - **Install-source detection** (`src-tauri/src/update.rs`): the update dialog shows the right command instead of
   "Open GitHub" when `pacman -Qqo` (AUR packages) or `xbps-query -o` (the `sonolith` xbps package) owns the
-  running binary. A new package manager gets the same treatment: a pure parser of the query output with tests, and
-  a dialog section in `src/components/UpdateDialog.tsx`.
+  running binary. For xbps it lists the local-repository steps and links the release's `.xbps` asset
+  (`sonolith-<version>_<rev>.x86_64.xbps`) when there is one. A new package manager gets the same treatment: a
+  pure parser of the query output with tests, and a dialog section in `src/components/UpdateDialog.tsx`.
 
 ## Runtime dependencies that the library scan misses
 
@@ -51,6 +52,20 @@ Without `tauri/custom-protocol` the binary loads the dev server URL and shows a 
 - GStreamer plugins for audio (good + libav; WebKitGTK pulls in base).
 - A Secret Service provider (gnome-keyring, KeePassXC, …) on a running D-Bus session bus stores the sign-in cookie;
   without one, sign-in shows a clear error. MPRIS also needs the session bus.
+
+## Releasing for Void
+
+Until Sonolith is in void-packages, Void users install the `.xbps` attached to a GitHub release (see the README).
+
+- **A Void-only release** (changes that matter only to the Void package) is a numbered GitHub **pre-release**: the
+  version bump commit, a tag, and only the `.xbps` attached, no other platforms. The in-app update check and the
+  changelog skip pre-releases, so other platforms stay on the previous release.
+- **Every normal release:** build the package from the release commit with `scripts/void-build.sh` (it writes
+  `release/void/`, which is gitignored) and attach the `.xbps` to the release. The update dialog on Void links it
+  when its name is `sonolith-<version>_<rev>.x86_64.xbps`. Update the release link in the README's Void section
+  when it points at an older release.
+- The template in `packaging/void/` follows the same version; its checksum can only be filled in after the tag
+  exists (`xgensum -i sonolith`).
 
 ## Possible follow-up
 

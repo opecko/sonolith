@@ -9,8 +9,8 @@ The template builds with cargo (`build_style=cargo`) and the frontend with npm i
 - `tauri/custom-protocol`: embeds the built frontend (what `tauri build` does);
 - `system-ytdlp`: uses the `yt-dlp` package and never downloads or updates a copy of its own.
 
-The installed app detects that xbps owns it, and its update dialog shows `xbps-install -Su sonolith` instead of a
-download link. More background: [`docs/dev/packaging.md`](../../docs/dev/packaging.md).
+The installed app detects that xbps owns it, and its update dialog explains the local-repository update (download
+the new `.xbps`, `xbps-rindex -a`, `xbps-install -Su sonolith`) instead of offering an installer. More background: [`docs/dev/packaging.md`](../../docs/dev/packaging.md).
 
 ## Install from a downloaded .xbps
 
