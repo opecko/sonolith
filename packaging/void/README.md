@@ -12,6 +12,26 @@ The template builds with cargo (`build_style=cargo`) and the frontend with npm i
 The installed app detects that xbps owns it, and its update dialog shows `xbps-install -Su sonolith` instead of a
 download link. More background: [`docs/dev/packaging.md`](../../docs/dev/packaging.md).
 
+## Install from a downloaded .xbps
+
+A `.xbps` file is installed through a local repository: put it in a directory of its own, index it, and point
+`xbps-install` at that directory. The dependencies come from the official repositories as usual.
+
+```sh
+mkdir -p ~/sonolith-repo
+cp ~/Downloads/sonolith-<version>_1.x86_64.xbps ~/sonolith-repo/
+xbps-rindex -a ~/sonolith-repo/*.xbps
+sudo xbps-install --repository=$HOME/sonolith-repo -S sonolith
+```
+
+A local repository doesn't need to be signed: no extra flag is needed (xbps only requires signatures for remote
+repositories). Use an absolute path for `--repository`, since `sudo` may run in another directory. For a newer
+version, copy the new file into the same directory, run `xbps-rindex -a` on it again, and update with
+`sudo xbps-install --repository=$HOME/sonolith-repo -Su sonolith`.
+
+The package is built against the Void libraries current at build time (WebKitGTK, ICU and others). When Void
+moves one of them to a new soname, an old `.xbps` no longer installs or starts; rebuild it then.
+
 ## Dependencies and network access
 
 `xbps-src` doesn't cut off the network during the build: templates with `build_style=cargo` let cargo download
